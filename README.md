@@ -4,62 +4,70 @@ Skills globais para Claude Code com pipeline de agentes para desenvolvimento fro
 
 ## Instalação
 
-1. Copie as pastas de skills para `~/.claude/skills/`:
-
 ```bash
-# Clone o repositório direto na pasta de skills
-git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
+# Clone o repositório direto na pasta .claude
+git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude
 ```
 
-2. Adicione as regras de auto-ativação no seu `~/.claude/CLAUDE.md` (veja a seção abaixo).
+Em seguida, abra qualquer projeto e rode `/setup-project` para configurar o Analista automaticamente.
+
+## Como funciona
+
+Todo prompt passa pelo **Analista** (`🔍`), que classifica a tarefa e delega ao skill correto. Você não precisa invocar os skills manualmente — o Analista faz isso.
+
+```
+Usuário faz solicitação
+       ↓
+   🔍 Analista (classifica)
+       ↓
+   skill correto (executa)
+```
 
 ## Skills disponíveis
 
-| Skill | Descrição |
-|-------|-----------|
-| `designer` | Valida specs, garante consistência com Design System e planeja implementações |
-| `front-end-ui` | Implementa componentes visuais e UI com tokens do Design System |
-| `front-end-code` | Revisa código frontend: performance, TypeScript, acessibilidade |
+| Skill | Emoji | Descrição |
+|-------|-------|-----------|
+| `analista` | 🔍 | Orquestrador central — classifica e delega ao skill correto |
+| `setup-project` | ⚙️ | Configura um projeto novo para usar os agentes globais |
+| `designer` | 🟣 | Valida specs, garante consistência com Design System e planeja implementações |
+| `front-end-ui` | 🔵 | Implementa componentes visuais e UI com tokens do Design System |
+| `front-end-code` | 🟢 | Revisa código frontend: performance, TypeScript, acessibilidade |
 | `all-agents` | Pipeline completo: Designer → Front-end-UI → Front-end-Code → Designer |
 | `all-front-end` | Pipeline front-end: Front-end-UI → Front-end-Code |
-| `backend` | Implementa APIs, endpoints, services, controllers, DTOs e autenticação |
-| `database` | Schema, migrações, models, queries e índices de banco de dados |
-| `tester` | Testes unitários, de integração e E2E |
-| `reviewer` | Revisão geral de código e auditoria de qualidade |
+| `backend` | 🟠 | Implementa APIs, endpoints, services, controllers, DTOs e autenticação |
+| `database` | 🟡 | Schema, migrações, models, queries e índices de banco de dados |
+| `tester` | 🩷 | Testes unitários, de integração e E2E |
+| `reviewer` | 🔴 | Revisão geral de código e auditoria de qualidade |
 | `project-rules` | Regras e convenções do projeto (adaptar para cada projeto) |
 
-## Regras de auto-ativação (CLAUDE.md)
+## Configuração por projeto
 
-Adicione ao seu `~/.claude/CLAUDE.md` para ativar os skills automaticamente:
+Ao criar um projeto novo, rode uma vez:
 
-```markdown
-## Skills Front-end (Auto-ativação obrigatória)
-
-| Situação detectada | Skill a invocar |
-|--------------------|----------------|
-| Usuário pede novo componente, tela ou ajuste visual sem spec clara | `designer` |
-| Usuário pede implementação de UI com spec já definida | `front-end-ui` |
-| Usuário pede nova tela do zero sem nenhuma spec | `all-agents` |
-| Usuário pede implementar + revisar com spec já validada | `all-front-end` |
-
-## Skills Backend/Infra (Auto-ativação com gate de permissão)
-
-| Situação detectada | Skill a invocar |
-|--------------------|----------------|
-| Usuário pede endpoint, API, controller, service, DTO ou autenticação | `backend` |
-| Usuário pede schema, migração, model, query ou índice de banco | `database` |
-| Usuário pede testes unitários, integração ou E2E | `tester` |
-| Usuário pede revisão geral de código ou auditoria de qualidade | `reviewer` |
 ```
+/setup-project
+```
+
+Isso injeta automaticamente o bloco do Analista no `CLAUDE.md` local do projeto.
+
+## CLAUDE.md global
+
+O `CLAUDE.md` na raiz deste repositório já contém as regras de auto-ativação do Analista. Ele é carregado automaticamente pelo Claude Code em toda conversa.
 
 ## Uso manual
 
+Caso queira invocar um skill diretamente:
+
 ```
-/designer     - Agente de design
-/front-end-ui - Implementação visual
-/backend      - Implementação de API
-/database     - Banco de dados
-/tester       - Testes
-/reviewer     - Revisão de código
-/all-agents   - Pipeline completo
+/analista       - Orquestrador central
+/setup-project  - Configurar projeto novo
+/designer       - Agente de design
+/front-end-ui   - Implementação visual
+/front-end-code - Revisão de código frontend
+/backend        - Implementação de API
+/database       - Banco de dados
+/tester         - Testes
+/reviewer       - Revisão de código
+/all-agents     - Pipeline completo
+/all-front-end  - Pipeline front-end
 ```
