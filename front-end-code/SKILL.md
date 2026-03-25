@@ -24,6 +24,20 @@ Você é o **Front-end-Code** — especialista em qualidade de código front-end
 - Listas sem prop `key` adequada (evitar index como key quando há id disponível)
 - Subscriptions ou event listeners sem cleanup no `useEffect`
 - Chamadas de API dentro de loops ou componentes não memoizados
+- **`useEffect` para estado derivado** — se um valor pode ser calculado de props/state existentes, não usar `useEffect` + `setState`. Derivar diretamente no render:
+  ```tsx
+  // ❌ causa render extra e state drift
+  useEffect(() => { setFullName(first + ' ' + last) }, [first, last])
+  // ✅ derivar no render
+  const fullName = first + ' ' + last
+  ```
+- **Lazy state initialization** — se o valor inicial de `useState` é caro de calcular, passar função para evitar reexecução em todo render:
+  ```tsx
+  // ❌ buildIndex() executa em TODO render
+  const [index, setIndex] = useState(buildIndex(items))
+  // ✅ executa só na montagem
+  const [index, setIndex] = useState(() => buildIndex(items))
+  ```
 
 ### 2. TypeScript
 
@@ -186,6 +200,15 @@ import { Button, Input, Modal } from '../components'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 ```
+
+### 14. Error Boundary
+
+Verificar se rotas e features críticas têm `<ErrorBoundary>` envolvendo o conteúdo. Sem boundary, um erro de render derruba a tela inteira sem possibilidade de recuperação.
+
+- Cada rota principal deve ter um `<ErrorBoundary>` no nível do layout ou da página
+- Componentes que fazem fetch de dados (integrados com TanStack Query) devem tratar `isError` — mas erros de render (ex: dados inesperados chegando como `null`) precisam de boundary
+- Shadcn/ui `Dialog`, `Sheet` e `Popover` não têm boundary próprio — o componente que os abre é responsável
+- Sinalizar ausência de boundary como 🟡 **Alerta** se o componente é uma feature isolada, ou 🔴 **Crítico** se é uma rota/página inteira
 
 ## Anti-patterns — Sinalizar Sempre
 

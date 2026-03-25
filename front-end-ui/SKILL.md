@@ -104,6 +104,33 @@ Ao concluir, informe:
 - Tokens aplicados
 - Confirmação de fidelidade ao DS (Passo 5 verificado)
 
+### Passo 6 — Lazy Loading
+
+Para componentes pesados (gráficos, editores, tabelas com muitos dados, modais complexos), usar `React.lazy` + `Suspense` para não impactar o bundle inicial:
+
+```tsx
+import { lazy, Suspense } from 'react'
+
+const HeavyChart = lazy(() => import('./HeavyChart'))
+
+function Dashboard() {
+  return (
+    <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+      <HeavyChart data={data} />
+    </Suspense>
+  )
+}
+```
+
+**Quando aplicar:**
+- Componentes > ~50kb que não são necessários no carregamento inicial
+- Modais ou painéis que abrem sob demanda
+- Páginas de rotas secundárias (já coberto pelo React Router com `lazy`)
+
+**Quando NÃO aplicar:**
+- Componentes pequenos ou simples — o overhead de lazy não compensa
+- Componentes visíveis imediatamente na tela (above the fold)
+
 ## Handoff
 
 Ao concluir o Passo 5 (Relatório) → use a ferramenta **Skill** para invocar
