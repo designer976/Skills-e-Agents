@@ -137,6 +137,73 @@ Todo modal de **cadastro / edicao** deve seguir o padrao DS:
 
 ---
 
+## 9. Padrão de Formulário — React Hook Form + Zod
+
+Todos os formulários devem usar `react-hook-form` + `zod`:
+
+```tsx
+const schema = z.object({
+  name: z.string().min(1, 'Nome obrigatório'),
+  email: z.string().email('E-mail inválido'),
+})
+type FormData = z.infer<typeof schema>
+
+const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  resolver: zodResolver(schema),
+})
+
+// Campos de erro
+<p className="text-destructive text-xs mt-1">{errors.name?.message}</p>
+
+// Botão de submit
+<Button type="submit" disabled={isSubmitting}>
+  {isSubmitting ? 'Salvando…' : 'Salvar'}
+</Button>
+```
+
+- Nunca usar `useState` para controlar campos de formulário — sempre `register` ou `Controller`
+- Nunca validar manualmente — sempre via schema Zod
+- `handleSubmit` nunca chama o `onSubmit` se houver erros de validação
+
+---
+
+## 10. Padrões de TanStack Query
+
+### Busca de dados
+
+```tsx
+const { data, isLoading, error } = useQuery({
+  queryKey: ['services', filters],
+  queryFn: () => fetchServices(filters),
+})
+```
+
+- `queryKey` deve ser array e incluir todos os filtros que afetam os dados
+- Sempre tratar `isLoading` e `error` no componente
+
+### Mutação e invalidação
+
+```tsx
+const queryClient = useQueryClient()
+
+const { mutate, isPending } = useMutation({
+  mutationFn: createService,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['services'] })
+    toast.success('Serviço criado')
+  },
+  onError: (error) => {
+    toast.error('Erro ao criar serviço')
+  },
+})
+```
+
+- Após criar/editar/deletar → sempre `invalidateQueries` da query afetada
+- Usar `isPending` no botão de submit durante mutação (não `isLoading`)
+- Nunca manipular o estado local manualmente após mutação — deixar a invalidação atualizar
+
+---
+
 ## Stack do Projeto
 
 - React 18 + TypeScript + Vite

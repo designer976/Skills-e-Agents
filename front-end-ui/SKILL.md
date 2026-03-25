@@ -73,6 +73,16 @@ Aplique no arquivo/local indicado seguindo os tokens obrigatórios:
 - Retornos de função com tipos explícitos quando não inferidos automaticamente
 - Enums ou union types para status/variantes (ex: `type Status = "pago" | "cancelado"`)
 
+### Passo 4b — Estados Obrigatórios
+
+Toda UI que exibe dados assíncronos ou listas **deve** implementar os três estados:
+
+- **Loading** — skeleton ou spinner enquanto os dados carregam (`isLoading`)
+- **Empty state** — mensagem + ação quando não há dados (ex: "Nenhum serviço cadastrado" + botão "Adicionar")
+- **Error state** — mensagem amigável quando a requisição falha (`isError`)
+
+Se a spec não mencionar esses estados → implemente com padrão razoável e documente no relatório. Nunca entregar componente que quebra visualmente com array vazio ou erro de API.
+
 ### Passo 5 — Verificação de Fidelidade ao DS
 
 Antes de gerar o relatório, abra `DesignSystemPage.tsx` e localize cada componente do DS utilizado na implementação. Compare:

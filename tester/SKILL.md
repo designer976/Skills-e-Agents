@@ -58,6 +58,39 @@ Antes de escrever testes:
 - Query por role/label/text — nunca por classe CSS ou seletor complexo
 - Preferir `userEvent` sobre `fireEvent` para interações realistas
 
+#### Mock de APIs — MSW (Mock Service Worker)
+
+Para componentes que fazem chamadas de API (via TanStack Query ou fetch direto), usar **MSW** em vez de `jest.mock`:
+
+```ts
+// src/mocks/handlers.ts
+import { http, HttpResponse } from 'msw'
+
+export const handlers = [
+  http.get('/api/services', () => {
+    return HttpResponse.json([{ id: '1', name: 'Corte' }])
+  }),
+  http.post('/api/services', async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({ id: '2', ...body }, { status: 201 })
+  }),
+]
+
+// src/mocks/server.ts
+import { setupServer } from 'msw/node'
+import { handlers } from './handlers'
+export const server = setupServer(...handlers)
+
+// vitest.setup.ts
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+```
+
+- MSW intercepta na camada de rede — testa o código real sem precisar mockar módulos
+- Para sobrescrever em um teste específico: `server.use(http.get('/api/services', () => HttpResponse.error()))`
+- Usar `jest.mock` apenas para módulos sem saída de rede (utils, helpers, libs)
+
 #### Testes E2E (Cypress/Playwright)
 
 - Testar fluxos críticos do usuário do início ao fim

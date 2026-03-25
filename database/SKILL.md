@@ -65,6 +65,34 @@ Antes de propor mudanças:
 - Paginação em listas grandes (cursor ou offset+limit)
 - Transações para operações multi-tabela com `$transaction` (Prisma) ou `QueryRunner` (TypeORM)
 
+#### Soft Delete
+
+Em vez de `DELETE` físico, preferir soft delete para entidades com histórico relevante (agendamentos, serviços, clientes):
+
+```prisma
+// Prisma
+model Service {
+  id        String    @id @default(cuid())
+  name      String
+  deletedAt DateTime? // null = ativo, preenchido = deletado
+}
+```
+
+```typescript
+// Deletar
+await prisma.service.update({
+  where: { id },
+  data: { deletedAt: new Date() },
+})
+
+// Buscar apenas ativos
+await prisma.service.findMany({
+  where: { deletedAt: null },
+})
+```
+
+Antes de adicionar `deletedAt` a uma entidade existente → verificar se queries existentes precisam ser atualizadas para incluir o filtro `deletedAt: null`.
+
 ### Passo 4 — Relatório
 
 Ao concluir, informe:

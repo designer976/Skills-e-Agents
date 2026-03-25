@@ -55,12 +55,21 @@ Se o usuário não especificou o escopo:
 
 #### Segurança
 
-- Dados sensíveis em logs ou respostas de API
-- SQL injection / command injection (inputs não sanitizados)
-- XSS (HTML renderizado de input do usuário sem sanitização)
-- Secrets hardcoded no código (chaves de API, senhas)
-- CORS mal configurado
-- JWT/sessões sem expiração adequada
+Verificar os principais riscos do **OWASP Top 10** no contexto do projeto:
+
+- **A01 — Broken Access Control**: endpoints sem `@UseGuards()`, rotas que retornam dados de outros usuários sem verificar ownership
+- **A02 — Cryptographic Failures**: senhas sem hash (bcrypt), tokens em logs, dados sensíveis em responses (CPF, cartão)
+- **A03 — Injection**: inputs não validados via DTO/Zod antes de chegar ao banco, SQL raw sem parâmetros
+- **A05 — Security Misconfiguration**: CORS aberto (`origin: '*'` em produção), headers de segurança ausentes (helmet), variáveis de ambiente sem validação no startup
+- **A07 — Auth Failures**: JWT sem expiração, refresh tokens sem rotação, rotas autenticadas sem rate limiting
+- **A09 — Logging Failures**: ausência de log em operações críticas (login, pagamento, exclusão), excesso de log expondo dados sensíveis
+
+**NestJS — checks específicos:**
+- `@nestjs/helmet` instalado e configurado no `main.ts`
+- `@nestjs/throttler` em endpoints de auth (login, register, reset-password)
+- `ValidationPipe` global com `whitelist: true` e `forbidNonWhitelisted: true`
+- Nenhuma rota exposta sem `@UseGuards()` que deveria ser protegida
+- `.env` nunca commitado; variáveis validadas com `@nestjs/config` + schema Zod/Joi
 
 ### Passo 3 — Relatório
 
