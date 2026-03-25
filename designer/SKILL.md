@@ -18,6 +18,8 @@ Ao receber uma solicitação, verifique se contém:
 - **Local** onde será aplicado (rota, arquivo, componente pai)
 - **Especificação visual** (layout, componentes, cores, comportamento esperado: hover, focus, empty state)
 - **Responsividade** — como se comporta em mobile/tablet? (obrigatório; se não especificado, pergunte)
+  - Se houver elementos interativos (botões, links, inputs) → touch targets mínimos de **44×44px**
+  - Em mobile não existe `hover` — estados de feedback devem ser `:active` ou visuais imediatos
 - **Tom visual** — o que a interface deve transmitir? Use como referência:
   - *Precisão & Densidade* — painéis técnicos, dashboards de dados
   - *Acolhimento & Proximidade* — apps colaborativos, onboarding
@@ -71,6 +73,30 @@ Se o DS for baseado em **Tailwind + tokens CSS** (shadcn, diceui ou custom), os 
 
 **Exceção aceita:** cores semânticas intencionais que representam estado visual (`bg-green-500` = pago/sucesso, `bg-red-500` = cancelado/erro, `bg-yellow-500` = atendendo/alerta).
 
+#### Passo 2b — Breakpoints de Referência
+
+Ao planejar layouts responsivos, use os breakpoints padrão do Tailwind como guia:
+
+| Prefixo | Min-width | Alvo |
+|---------|-----------|------|
+| (base) | 0px | Mobile — escrever estilos base aqui |
+| `sm:` | 640px | Telefone grande / tablet pequeno |
+| `md:` | 768px | Tablet |
+| `lg:` | 1024px | Laptop |
+| `xl:` | 1280px | Desktop |
+
+**Regra mobile-first:** definir o layout mobile primeiro, depois adaptar com prefixos. Nunca o inverso.
+
+**Container queries vs breakpoints:** para componentes reutilizáveis (cards, sidebars), preferir container queries (`@container`) pois respondem ao espaço disponível, não ao viewport.
+
+#### Passo 2c — Dark Mode
+
+Se o projeto tiver dark mode configurado (verificar `darkMode: 'class'` em `tailwind.config.ts`):
+- Novos componentes precisam de variantes `dark:` para cada token de cor
+- Verificar se `src/index.css` define variáveis CSS para `:root` e `.dark`
+- Se o DS já tem suporte a dark mode → seguir exatamente os tokens `dark:` existentes
+- Se não tiver dark mode → ignorar esta verificação
+
 #### Passo 3 — Validação Visual Básica
 
 Ao analisar o DS existente ou propor um novo, verifique:
@@ -82,6 +108,24 @@ Ao analisar o DS existente ou propor um novo, verifique:
 ### Fase 3 — Plano de Implementação
 
 Antes de propor criação de novo componente, verifique se existe padrão similar em `src/components/ui/` ou nas páginas do projeto.
+
+#### Guia de escolha de componente
+
+Quando a spec mencionar feedback, confirmação ou painel, use este critério para escolher o componente correto do DS:
+
+| Necessidade | Componente | Quando usar |
+|-------------|-----------|-------------|
+| Confirmação de ação destrutiva | `AlertDialog` | Delete, cancelamento, perda de dados |
+| Formulário de cadastro/edição | `Dialog` | Criação, edição de entidade |
+| Painel lateral com contexto | `Sheet` | Detalhes, filtros, formulários longos |
+| Feedback rápido (≤5s, não crítico) | `Toast` | Salvo com sucesso, copiado, atualizado |
+| Aviso persistente inline | `Alert` | Erros de validação, avisos de estado |
+| Menu de ações contextuais | `DropdownMenu` | Ações sobre um item da lista |
+| Confirmação simples/informativa | `Dialog` com variant info | Sem ação destrutiva |
+| Seleção em lista pequena (≤8 itens) | `Select` | Dropdown nativo |
+| Seleção em lista grande / busca | `Combobox` | Com filtro/pesquisa |
+
+Se a spec não especificar o componente → selecione com base nesta tabela e justifique no plano.
 
 Monte um plano com:
 
