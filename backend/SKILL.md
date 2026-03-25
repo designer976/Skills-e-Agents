@@ -99,3 +99,83 @@ Ao concluir a implementação:
 ## Stack Assumida
 
 NestJS + TypeScript (quando não detectado outro framework)
+
+---
+
+## Referências de Padrões
+
+### N+1 Query Prevention
+
+```typescript
+// ❌ RUIM: N+1 — uma query por item
+const appointments = await this.appointmentRepo.findAll()
+for (const appt of appointments) {
+  appt.client = await this.clientRepo.findById(appt.clientId) // N queries
+}
+
+// ✅ BOM: batch fetch
+const appointments = await this.appointmentRepo.findAll()
+const clientIds = appointments.map(a => a.clientId)
+const clients = await this.clientRepo.findByIds(clientIds) // 1 query
+const clientMap = new Map(clients.map(c => [c.id, c]))
+appointments.forEach(a => { a.client = clientMap.get(a.clientId) })
+```
+
+No NestJS com TypeORM, prefira `relations` ou `QueryBuilder` com `leftJoinAndSelect` ao invés de buscar em loop.
+
+### Retry com Exponential Backoff
+
+```typescript
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  let lastError: Error
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn()
+    } catch (error) {
+      lastError = error as Error
+      if (i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000))
+      }
+    }
+  }
+  throw lastError!
+}
+```
+
+Útil para chamadas a serviços externos (pagamento, notificação, email).
+
+### Rate Limiting
+
+No NestJS, use o pacote `@nestjs/throttler`:
+
+```typescript
+// app.module.ts
+ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])
+
+// controller
+@UseGuards(ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
+@Post('auth/login')
+async login() { ... }
+```
+
+### Structured Logging
+
+```typescript
+// Prefira logger estruturado ao invés de console.log
+this.logger.log({
+  message: 'Appointment created',
+  appointmentId: result.id,
+  clientId: dto.clientId,
+  requestId,
+})
+
+this.logger.error({
+  message: 'Payment failed',
+  error: error.message,
+  stack: error.stack,
+  appointmentId,
+})
+```
+
+Use `Logger` do NestJS ou `pino`/`winston` com formato JSON em produção. Nunca logue dados sensíveis (senhas, tokens, CPF, cartão).
