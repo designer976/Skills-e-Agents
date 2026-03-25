@@ -1,0 +1,92 @@
+---
+name: all-front-end
+description: Pipeline front-end completo. Ative quando a spec visual já estiver validada e o usuário pedir implementação + revisão em sequência. Executa Front-end-UI (implementação) seguido de Front-end-Code (revisão de código). Não ativar se a spec ainda não foi validada — use /all-agents nesse caso.
+---
+
+# Pipeline Front-end Completo
+
+Execute as duas fases sequencialmente para a tarefa solicitada.
+
+---
+
+## Fase 1 — Front-end-UI (Implementação)
+
+Adote o papel do **Agente Front-end-UI**. Inicie esta fase com `🔵 **Front-end-UI**` na primeira linha da resposta.
+
+**Objetivo**: Implementar a UI conforme a spec, usando exclusivamente tokens do DS.
+
+**Passos**:
+1. Leia a spec fornecida e identifique o local de aplicação
+2. Consulte componentes existentes em `src/components/ui/`
+3. Se o componente já existe no DS → use-o sem modificar
+4. Se precisa criar → crie em `src/components/ui/`, registre na página de documentação do DS
+5. Aplique os tokens obrigatórios:
+
+| Categoria | Token correto | Proibido |
+|-----------|--------------|---------|
+| Fundo | `bg-background`, `bg-card`, `bg-muted`, `bg-secondary` | `bg-gray-*`, `bg-white`, `bg-zinc-*` |
+| Texto | `text-foreground`, `text-muted-foreground` | `text-gray-*`, `text-zinc-*` |
+| Borda | `border-border` | `border-gray-*`, `border-zinc-*` |
+| Radius | `rounded-lg` | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
+| Hover | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*`, `hover:bg-gray-*` |
+| Ícones | `import { ... } from "lucide-react"` | `@tabler/icons-react` |
+
+**Exceção aceita:** cores semânticas intencionais (`bg-green-500` = sucesso, `bg-red-500` = erro, `bg-yellow-500` = alerta).
+**Conflito spec vs DS:** se a spec pede algo que viola o DS (ex: `rounded-2xl`) → alerte o usuário e aplique o token canônico, não o pedido literal.
+
+6. TypeScript: todas as props tipadas com `interface` ou `type` nomeados, sem `any`, union types para variantes
+7. Liste os arquivos alterados antes de passar para a Fase 2
+
+---
+
+## Fase 2 — Front-end-Code (Revisão)
+
+Adote o papel do **Agente Front-end-Code**. Inicie esta fase com `🟢 **Front-end-Code**` na primeira linha da resposta.
+
+**Objetivo**: Revisar todo o código implementado na Fase 1 sem alterar nada visual.
+
+**O que revisar**:
+1. **Performance**: re-renders, `useMemo`/`useCallback` ausentes, listas sem `key`, subscriptions sem cleanup
+2. **TypeScript**: tipos corretos, sem `any`, props tipadas, generics corretos
+3. **DS Tokens**: classes proibidas nos arquivos da Fase 1, imports de `@tabler/icons-react`
+4. **Navegabilidade**: z-index, overflow, acessibilidade básica (`aria-label`, `role`)
+5. **Código limpo**: imports sem uso, `console.log`, variáveis não usadas
+
+**Regra CRÍTICA**: Não alterar nada visual. Problemas visuais → reportar, não corrigir.
+
+**Formato por problema**:
+```
+ARQUIVO: caminho/arquivo.tsx:linha
+SEVERIDADE: 🔴 Crítico | 🟡 Alerta | 🟢 Info
+PROBLEMA: descrição
+ACAO: correção aplicada (ou "→ Designer" se visual)
+```
+
+**Níveis:**
+- 🔴 Crítico — quebra de tipagem, `@tabler/icons-react`, token DS proibido, performance real (loop em render, subscription sem cleanup)
+- 🟡 Alerta — `useMemo`/`useCallback` ausente, `any` em prop, cor/radius não-canônico
+- 🟢 Info — `console.log`, import não usado, variável morta
+
+---
+
+## Resumo Final
+
+```
+PIPELINE CONCLUIDO
+
+Fase 1 - Front-end-UI:
+  - Arquivos criados/editados: [lista]
+  - O que foi implementado: [descrição]
+
+Fase 2 - Front-end-Code:
+  - 🔴 Críticos corrigidos: X
+  - 🟡 Alertas corrigidos: Y
+  - 🟢 Infos corrigidos: Z
+  - Itens para o Designer: W
+  - Arquivos alterados: [lista]
+```
+
+## Stack Assumida
+
+React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+`rounded-lg` = `var(--radius)` = token canônico de border-radius
