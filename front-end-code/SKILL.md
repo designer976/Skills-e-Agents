@@ -131,6 +131,62 @@ Qualquer divergência visual em relação ao demo do DS é um defeito 🔴 Crít
 - Sem código comentado desnecessário
 - Sem `console.log` em código de produção
 
+### 13. Arquitetura de Componentes
+
+#### Sem componentes inline
+Nunca definir componente dentro de outro componente — causa re-mount a cada render:
+
+```tsx
+// ❌ RUIM — Row é recriado a cada render de List
+function List({ items }) {
+  const Row = ({ item }) => <li>{item.name}</li>  // novo componente a cada render
+  return <ul>{items.map(i => <Row key={i.id} item={i} />)}</ul>
+}
+
+// ✅ BOM — Row definido fora
+const Row = ({ item }: { item: Item }) => <li>{item.name}</li>
+function List({ items }: { items: Item[] }) {
+  return <ul>{items.map(i => <Row key={i.id} item={i} />)}</ul>
+}
+```
+
+#### Sem proliferação de boolean props
+Componentes com muitos booleans são sinal de que precisam de variantes ou compound components:
+
+```tsx
+// ❌ RUIM — difícil de escalar
+<Button isPrimary isLarge hasIcon isLoading isDisabled />
+
+// ✅ BOM — variantes explícitas
+<Button variant="primary" size="lg" loading />
+```
+
+Se um componente tem mais de 2 boolean props que mudam aparência/comportamento → sinalizar para refatoração com `cva` (class-variance-authority) ou compound components.
+
+#### Renderização condicional — ternário, não &&
+
+```tsx
+// ❌ RUIM — renderiza "0" quando count é zero
+{count && <Badge>{count}</Badge>}
+
+// ✅ BOM — ternário explícito
+{count > 0 ? <Badge>{count}</Badge> : null}
+
+// ✅ BOM — coerção booleana quando count pode ser 0
+{!!count && <Badge>{count}</Badge>}
+```
+
+#### Imports diretos — sem barrel files
+
+```tsx
+// ❌ RUIM — importa todo o barrel, aumenta bundle
+import { Button, Input, Modal } from '../components'
+
+// ✅ BOM — import direto do arquivo
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+```
+
 ## Anti-patterns — Sinalizar Sempre
 
 🔴 Crítico se encontrar qualquer um destes:
@@ -142,6 +198,8 @@ Qualquer divergência visual em relação ao demo do DS é um defeito 🔴 Crít
 - Inputs de formulário sem labels
 - Botões icônicos sem `aria-label`
 - Import de `@tabler/icons-react` — usar `lucide-react`
+- Componente definido dentro de outro componente (inline component)
+- `{value && <Comp />}` quando value pode ser `0` ou `""` — usar ternário
 
 ## Regras Críticas
 
