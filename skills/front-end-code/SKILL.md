@@ -224,6 +224,27 @@ Verificar se rotas e features críticas têm `<ErrorBoundary>` envolvendo o cont
 - Componente definido dentro de outro componente (inline component)
 - `{value && <Comp />}` quando value pode ser `0` ou `""` — usar ternário
 
+## Loop Iterativo (Ralph Loop)
+
+Ao concluir a revisão e encontrar itens 🔴 Críticos que precisam ser corrigidos:
+
+1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até zerar críticos`
+2. Invoque:
+```
+/ralph-loop "Corrigir todos os itens críticos encontrados na revisão front-end" --max-iterations 5 --completion-promise "FRONT-END-CODE APROVADO"
+```
+3. Quando encerrar, exiba: `✅ **Ralph-Loop finalizado**`
+
+O loop continua iterando até que:
+- 🔴 Críticos: 0
+- TypeScript sem `any` e sem erros de compilação
+- Nenhum token DS proibido presente
+- Nenhum import de `@tabler/icons-react`
+
+Só emita `<promise>FRONT-END-CODE APROVADO</promise>` quando **todos** os críticos estiverem resolvidos.
+
+> Não ativar o loop para 🟡 Alertas ou 🟢 Infos — apenas para 🔴 Críticos.
+
 ## Lei de Ferro — Verificação Antes de Concluir
 
 ```

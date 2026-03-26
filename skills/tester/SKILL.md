@@ -120,6 +120,26 @@ Ao concluir:
 - Se encontrar bugs reais durante a escrita dos testes → reporte ao usuário e sugira invocar o agente correto (`backend` ou `front-end-code`).
 - Se apenas testes criados com sucesso → encerre após o relatório.
 
+## Loop Iterativo (Ralph Loop)
+
+Ao concluir a escrita dos testes e encontrar testes falhando que deveriam passar (após ciclo Red→Green→Refactor):
+
+1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até todos os testes passarem`
+2. Invoque:
+```
+/ralph-loop "Corrigir testes falhando até suite completa passar" --max-iterations 5 --completion-promise "TESTES APROVADOS"
+```
+3. Quando encerrar, exiba: `✅ **Ralph-Loop finalizado**`
+
+O loop continua iterando até que:
+- `npm run test` retorne com todos os testes passando
+- Zero falhas na suite
+- Nenhum teste com `skip` ou `todo` não intencional
+
+Só emita `<promise>TESTES APROVADOS</promise>` quando **todos** os testes passarem.
+
+> Não ativar o loop para bugs no código testado — reportar ao usuário e invocar o agente especializado.
+
 ## Lei de Ferro — TDD e Verificação
 
 ```

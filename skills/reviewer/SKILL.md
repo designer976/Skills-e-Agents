@@ -109,6 +109,26 @@ Ao concluir a revisão, com base no que foi encontrado:
 - Se múltiplas camadas afetadas → informe o usuário e invoque por prioridade (críticos primeiro).
 - Se tudo correto → declare aprovação e encerre.
 
+## Loop Iterativo (Ralph Loop)
+
+Ao concluir a revisão e encontrar itens 🔴 Críticos (especialmente segurança, dados corrompidos, quebra de produção):
+
+1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até zerar críticos`
+2. Invoque:
+```
+/ralph-loop "Corrigir todos os itens críticos encontrados na revisão de qualidade" --max-iterations 5 --completion-promise "REVISAO APROVADA"
+```
+3. Quando encerrar, exiba: `✅ **Ralph-Loop finalizado**`
+
+O loop continua iterando até que:
+- 🔴 Críticos: 0
+- Nenhuma vulnerabilidade OWASP Top 10 presente
+- Build e lint passando sem erros
+
+Só emita `<promise>REVISAO APROVADA</promise>` quando **todos** os críticos estiverem resolvidos.
+
+> Não ativar o loop para 🟡 Alertas ou 🟢 Infos — apenas para 🔴 Críticos.
+
 ## Lei de Ferro — Não Confie no Report
 
 ```

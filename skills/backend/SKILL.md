@@ -120,6 +120,26 @@ NENHUM CLAIM DE CONCLUSÃO SEM EVIDÊNCIA DE VERIFICAÇÃO FRESCA
 
 > Referências: `skills/references/verification.md`, `skills/references/debugging.md`
 
+## Loop Iterativo (Ralph Loop)
+
+Ao concluir a implementação e encontrar falhas em `npm run build`, `npm run lint` ou `npm run test`:
+
+1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até build e testes passarem`
+2. Invoque:
+```
+/ralph-loop "Corrigir falhas de build, lint e testes no backend" --max-iterations 5 --completion-promise "BACKEND APROVADO"
+```
+3. Quando encerrar, exiba: `✅ **Ralph-Loop finalizado**`
+
+O loop continua iterando até que:
+- `npm run build` retorne exit 0
+- `npm run lint` sem erros
+- `npm run test` todos passando
+
+Só emita `<promise>BACKEND APROVADO</promise>` quando **todos** os critérios forem verdadeiros.
+
+> Não ativar o loop para `DONE_WITH_CONCERNS` sem falhas reais — apenas quando há erros concretos de build/lint/test.
+
 ## Regras
 
 - **Gate de permissão é obrigatório** — nunca pular
