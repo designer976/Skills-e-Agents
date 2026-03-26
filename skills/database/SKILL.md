@@ -102,26 +102,27 @@ Ao concluir, informe:
 - Migrações geradas e nome do arquivo
 - Impacto em dados existentes (se houver)
 
-## Loop Iterativo (Ralph Loop)
+## Falhas — Sem Loop Automático
 
-Ao concluir a implementação e encontrar erros de migration, schema inconsistente ou falhas de build após mudança no banco:
+Operações de banco de dados são **irreversíveis em produção**. Por isso, o Ralph-Loop **não é usado** neste skill.
 
-1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até schema e migrations estarem corretos`
-2. Invoque:
+Ao encontrar erros de migration, schema inconsistente ou falhas de build após mudança no banco:
+
+1. **PARE imediatamente** — não tente corrigir automaticamente
+2. Exiba o erro completo para o usuário
+3. Descreva o que foi detectado e o risco envolvido
+4. Aguarde instrução manual explícita antes de qualquer nova ação
+
 ```
-/ralph-loop "Corrigir erros de migration e inconsistências de schema no banco de dados" --max-iterations 5 --completion-promise "DATABASE APROVADO"
+⚠️  ERRO DE DATABASE DETECTADO
+Arquivo: [arquivo]
+Erro: [mensagem completa]
+Risco: [o que pode ser afetado]
+
+Aguardando instrução manual para prosseguir.
 ```
-3. Quando encerrar, exiba: `✅ **Ralph-Loop finalizado**`
 
-O loop continua iterando até que:
-- Migration gerada sem erros
-- Schema consistente com o ORM
-- `npm run build` passa sem erros de tipagem relacionados ao banco
-- Operações destrutivas confirmadas e documentadas
-
-Só emita `<promise>DATABASE APROVADO</promise>` quando **todos** os critérios forem verdadeiros.
-
-> Ativar apenas para falhas concretas — não para `DONE_WITH_CONCERNS` sem erros reais.
+> Migrações com erro não devem ser re-tentadas em loop — uma tentativa errada pode corromper dados ou deixar o schema em estado inconsistente.
 
 ## Handoff
 

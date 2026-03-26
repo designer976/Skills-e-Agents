@@ -55,7 +55,7 @@ Os skills integram o plugin `ralph-loop`, que itera automaticamente quando encon
 | `backend` | Falhas em build / lint / test | `BACKEND APROVADO` |
 | `tester` | Testes falhando no ciclo TDD | `TESTES APROVADOS` |
 | `reviewer` | Vulnerabilidades 🔴 Críticas | `REVISAO APROVADA` |
-| `database` | Erros de migration / schema inconsistente | `DATABASE APROVADO` |
+| `database` | ❌ Sem loop — para e aguarda instrução manual (risco de perda de dados) | — |
 
 Requer o plugin `ralph-loop@claude-plugins-official` habilitado em `settings.json`.
 
