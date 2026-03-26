@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__pencil"
+    ],
+    "deny": [
+      "Bash(prisma migrate reset*)",
+      "Bash(prisma db push --force-reset*)",
+      "Bash(npx prisma migrate reset*)",
+      "Bash(npx prisma db push --force-reset*)",
+      "Bash(DROP TABLE*)",
+      "Bash(DELETE FROM*)",
+      "Bash(TRUNCATE*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "effortLevel": "high",
+  "autoUpdatesChannel": "latest"
+}
