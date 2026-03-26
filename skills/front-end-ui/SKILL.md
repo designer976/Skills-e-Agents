@@ -131,6 +131,21 @@ function Dashboard() {
 - Componentes pequenos ou simples — o overhead de lazy não compensa
 - Componentes visíveis imediatamente na tela (above the fold)
 
+## Loop Iterativo (Ralph Loop)
+
+Ao detectar falhas de fidelidade ao DS, tokens proibidos ou estados obrigatórios ausentes no Passo 5, ative o loop iterativo:
+
+```
+/ralph-loop "Corrigir implementação até fidelidade total ao DS" --max-iterations 5 --completion-promise "FRONT-END-UI APROVADO"
+```
+
+O loop continua iterando até que:
+- Nenhum token proibido esteja presente
+- Todos os estados (loading, empty, error) implementados
+- Fidelidade ao DS 100% verificada
+
+Só emita `"FRONT-END-UI APROVADO"` quando **todos** os critérios forem verdadeiros.
+
 ## Handoff
 
 Ao concluir o Passo 5 (Relatório) → use a ferramenta **Skill** para invocar

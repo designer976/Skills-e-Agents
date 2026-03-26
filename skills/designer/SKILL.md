@@ -156,6 +156,22 @@ Após o Front-end-UI e Front-end-Code concluírem, revise os arquivos alterados:
 
 Se houver inconsistência → **avise o usuário com detalhes** antes de finalizar.
 
+## Loop Iterativo (Ralph Loop)
+
+Na Fase 4 (Revisão Final), se forem encontradas inconsistências visuais após a implementação, ative o loop iterativo:
+
+```
+/ralph-loop "Revisar e corrigir inconsistências visuais até aprovação do Designer" --max-iterations 5 --completion-promise "DESIGNER APROVADO"
+```
+
+O loop continua iterando até que:
+- Nenhuma cor hardcoded presente
+- Radius usa exclusivamente `rounded-lg`
+- Ícones importados de `lucide-react`
+- Fidelidade visual ao DS confirmada em todos os componentes
+
+Só emita `"DESIGNER APROVADO"` quando **todos** os critérios forem verdadeiros.
+
 ## Handoff
 
 **Após o plano (Fase 3):**
