@@ -60,7 +60,15 @@ Se o usuário recusar → encerre.
 - Uso correto de generics
 - Enums ou union types onde aplicável para status/variantes
 
-### 3. Design System — Validação de Tokens e Fidelidade Visual
+### 3. Design System — Auditoria de Divergência e Validação de Tokens
+
+> ⚠️ **ATENÇÃO — Código existente pode ser legado pré-DS**
+>
+> Este projeto pode ter sido desenvolvido **antes** do Design System existir. Nesse caso, o código existente nos arquivos revisados pode conter tokens hardcoded, componentes inline e padrões que violam o DS — não porque foram descuidos recentes, mas porque são código legado que nunca foi migrado.
+>
+> Sua responsabilidade é identificar essas divergências com a mesma severidade de qualquer outro problema: **código que não segue o DS é um defeito**, independente de quando foi escrito.
+>
+> **Mesmo se o DS foi criado junto com o projeto**, verifique se o código está de fato usando os tokens e componentes definidos — não assuma conformidade sem verificar.
 
 Verificar classes proibidas nos arquivos revisados:
 

@@ -33,7 +33,22 @@ Leia a especificação fornecida (pelo Designer ou diretamente pelo usuário). I
 - Componentes a usar ou criar
 - Comportamentos visuais esperados
 
-### Passo 2 — Detecção e Consulta ao Design System
+### Passo 2 — Detecção, Consulta e Auditoria de Divergência do Design System
+
+> ⚠️ **ATENÇÃO OBRIGATÓRIA — LEIA ANTES DE ESCREVER QUALQUER CÓDIGO**
+>
+> Antes de implementar, você DEVE identificar em qual cenário o projeto se encontra:
+>
+> **Cenário A — DS criado DEPOIS do projeto (projeto legado)**
+> O projeto existia antes do DS. Podem existir telas e componentes que **foram implementados antes do DS e nunca foram corrigidos**. Neste caso:
+> - O código existente nos arquivos que você vai tocar pode estar **errado em relação ao DS**
+> - NÃO copie padrões do código existente sem verificar se eles são conformes ao DS
+> - Ao implementar, corrija divergências nos trechos que você está tocando
+>
+> **Cenário B — DS criado junto com o projeto**
+> Mesmo assim, **verifique** se o código existente ao redor da área que você vai implementar está conforme o DS. Divergências devem ser reportadas.
+>
+> **Regra absoluta: o DS é a fonte de verdade. O código existente pode estar errado. Nunca tome o código existente como referência visual sem primeiro validá-lo contra o DS.**
 
 O Design System é o guia visual obrigatório. Antes de escrever qualquer código:
 
@@ -61,11 +76,41 @@ Busque no projeto:
 - **Sim** → sugira: Shadcn/ui, Diceui, Radix UI ou Custom — aguarde escolha antes de continuar
 - **Não** → prossiga sem restrições de DS, usando boas práticas gerais de Tailwind
 
+#### Auditoria de Divergência DS vs Código Existente (OBRIGATÓRIA)
+
+Antes de implementar qualquer coisa, examine os arquivos que você vai tocar ou modificar e **compare o código existente com o DS**:
+
+```
+VERIFICAÇÃO DE DIVERGÊNCIA (execute para cada arquivo relevante)
+1. Há tokens hardcoded? (bg-gray-*, text-zinc-*, rounded-xl, etc.)
+   → Se sim: DIVERGÊNCIA — registre e corrija ao implementar
+2. Componentes do DS existem mas não estão sendo usados?
+   → Se sim: DIVERGÊNCIA — troque pelo componente do DS ao implementar
+3. Importações de libs de ícones fora de lucide-react?
+   → Se sim: DIVERGÊNCIA — corrija ao implementar
+4. O código foi escrito antes do DS existir? (verificar histórico se necessário)
+   → Se sim: trate todo o trecho como legado que precisa ser migrado
+```
+
+Se encontrar divergências → liste-as antes de implementar e inclua as correções como parte da implementação. Não implemente o novo ao lado do código divergente — corrija junto.
+
 #### Criar novo componente
 
 Se o componente **não existe** no DS:
-- Crie em `src/components/ui/` (ou equivalente do projeto)
-- Registre na página de documentação do DS
+
+> ⚠️ **ANTES de criar, estude o padrão dos componentes existentes do DS**
+>
+> Abra de 2 a 3 componentes similares em `src/components/ui/` e observe:
+> - **Estrutura do arquivo**: usa `cva`? `forwardRef`? como exporta (named ou default)?
+> - **Tipagem de props**: usa `interface` com `React.HTMLAttributes`? `VariantProps`?
+> - **Convenções de `className`**: usa `cn()` do `lib/utils`? como mescla classes externas?
+> - **Variantes**: como define `variant`, `size` — com `cva` ou ternários?
+> - **Nomes**: PascalCase para o componente, camelCase para props
+>
+> O novo componente **deve ser estruturalmente idêntico** aos existentes — mesmo padrão de exportação, mesma forma de tipar, mesma forma de compor classes. Um componente que foge do padrão do DS quebra a consistência da base inteira.
+
+- Crie em `src/components/ui/` (ou equivalente do projeto) seguindo o padrão acima
+- Registre na página de documentação do DS com exemplo de uso
 - Depois use no destino
 
 ### Passo 3 — Implementação

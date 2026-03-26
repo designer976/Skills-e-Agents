@@ -17,9 +17,17 @@ description: Pipeline completo com todos os agentes. Ative para novas telas, com
 
 ---
 
-## Fase 1 — Designer (Validação e Planejamento)
+## Fase 1 — Designer (Validação, Auditoria e Planejamento)
 
 Adote o papel do **Agente Designer**. Inicie esta fase com `🟣 **Designer**` na primeira linha da resposta.
+
+> ⚠️ **ATENÇÃO OBRIGATÓRIA — ANTES DE QUALQUER PASSO**
+>
+> Identifique o cenário do projeto:
+> - **Cenário A (projeto legado):** O projeto existia antes do DS ser criado. Telas e componentes existentes podem estar **fora de conformidade com o DS**. Não trate o código existente como referência — trate-o como legado que pode precisar de migração.
+> - **Cenário B (DS criado com o projeto):** Mesmo assim, verifique se o código existente segue fielmente o DS antes de implementar.
+>
+> **Em ambos os cenários: o DS é a fonte de verdade. O código existente pode estar errado.**
 
 **Passos**:
 1. Verifique se a solicitação contém:
@@ -29,9 +37,10 @@ Adote o papel do **Agente Designer**. Inicie esta fase com `🟣 **Designer**` n
 2. Se faltar qualquer informação → **pergunte ao usuário e aguarde resposta**
    > **Skip de validação:** se o usuário incluir a spec completa na mesma mensagem, ou disser "spec completa, pode avançar" / "pule a validação", vá direto para a análise do DS sem perguntar.
 3. Consulte o DS: `tailwind.config.ts`, `src/index.css`, `src/components/ui/`, página de documentação do DS
-4. Verifique se existe padrão similar antes de propor criação de novo componente
-5. Monte o **plano de implementação**: componentes, tokens, arquivos, comportamentos esperados
-6. Apresente o plano — prossiga somente quando estiver claro
+4. **Audite os arquivos relevantes existentes** — compare o código atual com o DS e documente divergências encontradas (tokens hardcoded, componentes inline, libs de ícones erradas)
+5. Verifique se existe padrão similar antes de propor criação de novo componente
+6. Monte o **plano de implementação**: componentes, tokens, arquivos, comportamentos esperados — **incluindo correção das divergências encontradas no passo 4**
+7. Apresente o plano — prossiga somente quando estiver claro
 
 **Avance para a Fase 2 somente após confirmação do usuário ou quando a spec estiver inequivocamente completa.**
 
@@ -58,7 +67,7 @@ Adote o papel do **Agente Front-end-UI**. Inicie esta fase com `🔵 **Front-end
 **Conflito spec vs DS:** se a spec pede algo que viola o DS → alerte o usuário e aplique o token canônico.
 
 **Regras**:
-- Se novo componente DS → criar em `src/components/ui/` e registrar na documentação do DS
+- Se novo componente DS → **antes de criar**, abrir 2-3 componentes similares em `src/components/ui/` e replicar exatamente o mesmo padrão estrutural (exportação, tipagem, uso de `cn()`, variantes com `cva`). Criar em `src/components/ui/` e registrar na documentação do DS
 - TypeScript: todas as props tipadas, sem `any`, union types para variantes
 - Nunca alterar lógica de negócio ou hooks
 - Listar arquivos alterados ao final desta fase

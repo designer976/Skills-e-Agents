@@ -32,7 +32,24 @@ Repita quantas vezes for necessário até que a spec esteja completa e clara.
 
 > **Skip de validação:** se o usuário incluir a spec completa na mesma mensagem do comando, ou disser explicitamente "spec completa, pode avançar" / "pule a validação", vá direto para a Fase 2 sem perguntar.
 
-### Fase 2 — Detecção e Análise do Design System
+### Fase 2 — Detecção, Análise e Auditoria de Divergência do Design System
+
+> ⚠️ **ATENÇÃO OBRIGATÓRIA — LEIA ANTES DE QUALQUER COISA**
+>
+> Existem dois cenários possíveis que você **DEVE** identificar antes de qualquer implementação:
+>
+> **Cenário A — DS criado DEPOIS do projeto (projeto legado)**
+> O projeto já existia antes do Design System ser criado. Isso significa que podem existir telas e componentes no sistema que **foram feitos antes do DS e nunca foram migrados**. Neste caso:
+> - Você DEVE mapear as divergências entre o que existe no sistema e o que o DS define
+> - NÃO assuma que o código existente está correto — ele pode ser legado pré-DS
+> - Inclua no plano (Fase 3) a correção das divergências encontradas
+>
+> **Cenário B — DS criado junto com o projeto**
+> O DS e o projeto nasceram juntos. Neste caso:
+> - Você ainda DEVE verificar se cada tela/componente existente segue o DS fielmente
+> - Divergências devem ser reportadas mesmo que o código seja recente
+>
+> **Em ambos os cenários: o DS é sempre a fonte de verdade. O código existente pode estar errado.**
 
 #### Passo 1 — Detectar se existe um Design System
 
@@ -52,6 +69,27 @@ Busque no projeto os seguintes indicadores:
   - **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Deseja que eu crie uma antes de prosseguir, ou continuo consultando apenas `src/components/ui/`?"
     - **Criar** → inclua criação da página no plano de implementação (Fase 3)
     - **Continuar** → valide componentes diretamente pelos arquivos de `src/components/ui/`
+
+#### Passo 1b — Auditoria Obrigatória de Divergência DS vs Sistema
+
+**Execute este passo SEMPRE que o DS existir**, independente do cenário (A ou B acima):
+
+1. **Identifique os arquivos relevantes** para a tarefa atual (telas, componentes, páginas que serão tocadas ou que são vizinhas)
+2. **Compare cada componente/tela existente com o DS**:
+   - Os tokens usados no código existente correspondem aos tokens definidos no DS?
+   - Há `bg-gray-*`, `rounded-xl`, `text-zinc-*` ou outros valores hardcoded que deveriam ser tokens?
+   - Os componentes de `src/components/ui/` estão sendo usados ou foram reescritos inline?
+   - Há importações de libs de ícones diferentes de `lucide-react`?
+3. **Documente as divergências encontradas** antes de apresentar o plano:
+   ```
+   DIVERGÊNCIA ENCONTRADA
+   Arquivo: src/pages/ExemploPage.tsx:42
+   Código atual: bg-gray-100 rounded-xl
+   DS define: bg-muted rounded-lg
+   Ação recomendada: Corrigir para conformidade com DS
+   ```
+4. **Inclua as correções de divergência no plano de implementação (Fase 3)** — não como item separado futuro, mas como parte obrigatória da entrega atual
+5. Se o volume de divergências for grande → **informe o usuário e pergunte se quer um plano de migração completo** antes de prosseguir com a tarefa solicitada
 
 **Se não encontrou DS** → pergunte ao usuário:
 > "Não encontrei um Design System neste projeto. Deseja criar um agora?"
@@ -113,6 +151,16 @@ Ao analisar o DS existente ou propor um novo, verifique:
 ### Fase 3 — Plano de Implementação
 
 Antes de propor criação de novo componente, verifique se existe padrão similar em `src/components/ui/` ou nas páginas do projeto.
+
+> ⚠️ **Se for criar um componente novo, o plano DEVE incluir:**
+>
+> 1. **Análise de componentes existentes similares** — indicar quais arquivos de `src/components/ui/` serão estudados como referência de padrão
+> 2. **Padrão estrutural a seguir** — confirmar que o novo componente usará a mesma estrutura dos existentes:
+>    - Mesma forma de exportação (named export com `forwardRef` se aplicável)
+>    - Mesma forma de tipagem (`interface` + `React.HTMLAttributes`, `VariantProps` se usar `cva`)
+>    - Mesmo uso de `cn()` para composição de classes
+>    - Mesmo padrão de variantes (`cva` se o DS usa, ternário se não usa)
+> 3. **Divergir do padrão do DS é bloqueante** — um novo componente fora do padrão estrutural dos existentes não deve ser implementado
 
 #### Guia de escolha de componente
 

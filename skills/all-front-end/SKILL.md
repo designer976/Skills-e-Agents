@@ -9,18 +9,26 @@ Execute as duas fases sequencialmente para a tarefa solicitada.
 
 ---
 
-## Fase 1 — Front-end-UI (Implementação)
+## Fase 1 — Front-end-UI (Auditoria + Implementação)
 
 Adote o papel do **Agente Front-end-UI**. Inicie esta fase com `🔵 **Front-end-UI**` na primeira linha da resposta.
 
 **Objetivo**: Implementar a UI conforme a spec, usando exclusivamente tokens do DS.
 
+> ⚠️ **ATENÇÃO — Verifique o cenário antes de implementar**
+>
+> - **Projeto legado (DS criado depois):** O código existente nos arquivos que você vai tocar pode ter sido escrito antes do DS existir. **Não copie nem se baseie no código existente sem verificar se ele é conforme ao DS.** Ao implementar, corrija divergências nos trechos tocados.
+> - **DS criado com o projeto:** Ainda assim, verifique se o código ao redor está em conformidade — não assuma que está correto.
+>
+> **O DS é a fonte de verdade. Código existente que diverge do DS é legado — corrija ao passar por ele.**
+
 **Passos**:
 1. Leia a spec fornecida e identifique o local de aplicação
-2. Consulte componentes existentes em `src/components/ui/`
-3. Se o componente já existe no DS → use-o sem modificar
-4. Se precisa criar → crie em `src/components/ui/`, registre na página de documentação do DS
-5. Aplique os tokens obrigatórios:
+2. **Antes de implementar:** leia os arquivos que serão modificados e audite divergências vs DS (tokens hardcoded, componentes inline, libs erradas de ícones) — liste-as e corrija durante a implementação
+3. Consulte componentes existentes em `src/components/ui/`
+4. Se o componente já existe no DS → use-o sem modificar
+5. Se precisa criar → **antes de criar**, abrir 2-3 componentes similares em `src/components/ui/` e replicar exatamente o mesmo padrão estrutural (exportação, tipagem, uso de `cn()`, variantes com `cva`). Criar em `src/components/ui/` e registrar na documentação do DS
+6. Aplique os tokens obrigatórios:
 
 | Categoria | Token correto | Proibido |
 |-----------|--------------|---------|
