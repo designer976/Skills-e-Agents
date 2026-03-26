@@ -59,19 +59,31 @@ Execute os seguintes comandos com as ferramentas disponíveis:
 
 **1. Detectar o DS:**
 - Use **Glob** para `components.json` ou `shadcn.json` na raiz
-- Use **Glob** para listar todos os arquivos em `src/components/ui/`
-- Use **Glob** com padrão `**/*DesignSystem* ` ou `**/*design-system*` ou `**/*design_system*` em `src/`
+- Use **Glob** `src/components/ui/**` para obter a lista de todos os arquivos
+- Use **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/`
 
-**2. LER os arquivos encontrados (obrigatório):**
-- Use **Read** para abrir `src/index.css` (ou `src/styles/globals.css`) — identifique todos os tokens CSS disponíveis (variáveis `--`, classes customizadas)
-- Use **Read** para abrir `tailwind.config.ts` — identifique o `theme.extend` com cores, radius, fontes e demais tokens
-- Use **Glob** + **Read** para listar e abrir a página de documentação do DS (`DesignSystemPage.tsx` ou equivalente) — leia os exemplos de uso de cada componente
-- Use **Glob** + **Read** para abrir os componentes relevantes de `src/components/ui/` — entenda quais existem e como são usados
+**2. LER os tokens do projeto:**
+- Use **Read** → `src/index.css` (ou `globals.css`) — leia as variáveis CSS (`--background`, `--primary`, `--radius`, etc.)
+- Use **Read** → `tailwind.config.ts` — leia `theme.extend` para cores, radius e fontes
 
-**Somente após ter lido esses arquivos** você poderá:
-- Saber quais componentes já existem (nunca propor criar o que já existe)
-- Identificar os tokens disponíveis (nunca usar valores hardcoded)
-- Verificar fidelidade: casing, variantes, ícones, estados visuais
+**3. LER a documentação do DS:**
+- Use **Read** → página de documentação do DS (`DesignSystemPage.tsx` ou equivalente) — leia os exemplos de uso, casing de texto, variantes e ícones de cada componente
+
+**4. LER CADA COMPONENTE individualmente (OBRIGATÓRIO):**
+
+> ⚠️ **Glob lista nomes de arquivo — isso NÃO é ler o DS. Você DEVE abrir cada arquivo de `src/components/ui/` com Read, um por um, e entender seu conteúdo real antes de tomar qualquer decisão.**
+
+Para cada arquivo listado em `src/components/ui/`, use **Read** para abrir e extrair:
+- Nome e propósito do componente
+- Props disponíveis e seus tipos (`variant`, `size`, `className`, etc.)
+- Variantes definidas (ex: `default`, `destructive`, `outline`, `ghost`)
+- Se usa `cva`, `forwardRef`, `cn()`
+- Exemplos de uso (imports, JSX esperado)
+
+Somente após ter lido **todos** os componentes você saberá:
+- Quais componentes já existem — nunca propor criar o que já existe
+- Quais props e variantes usar — nunca inventar props que não existem
+- O padrão estrutural exato para criar novos componentes
 
 **Se não encontrou página de documentação do DS** → avise o usuário: "Não encontrei página de documentação do DS. Deseja que eu crie uma antes de prosseguir, ou continuo consultando apenas `src/components/ui/`?"
 - **Criar** → inclua criação da página no plano de implementação (Fase 3)

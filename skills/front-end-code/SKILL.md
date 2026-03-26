@@ -88,10 +88,21 @@ Verificar classes proibidas nos arquivos revisados:
 Antes de verificar fidelidade, **LEIA os arquivos do DS com as ferramentas** (não apenas saiba onde estão):
 
 - Use **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/` para localizar a página de documentação
-- **Se encontrou** → use **Read** para abrir e ler a página — ela é a referência obrigatória para cada componente verificado abaixo
-- **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Validando fidelidade apenas pelos props e tokens em `src/components/ui/`." e use **Read** nos arquivos de componentes relevantes em `src/components/ui/`
+- **Se encontrou** → use **Read** para abrir e ler a página — ela é a referência obrigatória
+- **Se não encontrou** → avise e use **Read** nos arquivos de `src/components/ui/`
 
 > ⚠️ **Afirmar "verifiquei fidelidade ao DS" sem ter aberto os arquivos com Read é inválido.**
+
+**LER CADA COMPONENTE individualmente (OBRIGATÓRIO):**
+
+Use **Glob** em `src/components/ui/**` para obter a lista completa. Depois use **Read** em **cada arquivo**, um por um. Para cada componente lido, extraia:
+- Props e variantes reais (o que `cva` define, quais `variant` e `size` existem)
+- Como o componente exporta e se usa `forwardRef`
+- Padrão de composição de `className` com `cn()`
+
+> ⚠️ **Glob lista nomes — NÃO é ler o DS. Você DEVE chamar Read em cada arquivo individualmente. Nunca assuma props, variantes ou comportamento de um componente sem ter lido seu código.**
+
+Para cada componente do DS utilizado nos arquivos revisados, compare o que foi implementado com o que o Read revelou:
 
 Para cada componente do DS (`src/components/ui/`) utilizado nos arquivos revisados, verificar:
 

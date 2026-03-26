@@ -60,19 +60,30 @@ Execute com as ferramentas disponíveis:
 
 **1. Detectar:**
 - **Glob** `components.json` ou `shadcn.json` na raiz
-- **Glob** para listar `src/components/ui/**`
-- **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/`
+- **Glob** `src/components/ui/**` para obter a lista completa de arquivos
+- **Glob** `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/`
 
-**2. LER obrigatoriamente:**
-- **Read** → `src/index.css` (ou `globals.css`) — identifique todos os tokens CSS (`--background`, `--primary`, etc.)
-- **Read** → `tailwind.config.ts` — identifique `theme.extend` com cores, radius, fontes
-- **Read** → página de documentação do DS (ex: `DesignSystemPage.tsx`) — veja os exemplos de uso de cada componente, casing de texto, variantes e ícones usados
-- **Read** → componentes de `src/components/ui/` relevantes para a tarefa — entenda props, variantes e estrutura
+**2. LER os tokens:**
+- **Read** → `src/index.css` (ou `globals.css`) — variáveis CSS (`--background`, `--primary`, `--radius`, etc.)
+- **Read** → `tailwind.config.ts` — `theme.extend` com cores, radius, fontes
 
-**Somente após ter lido** você poderá:
-- Confirmar quais componentes existem (nunca criar o que já existe)
-- Usar apenas tokens definidos (nunca hardcoded)
-- Garantir fidelidade visual: casing, props, variantes, ícones, estados
+**3. LER a documentação do DS:**
+- **Read** → `DesignSystemPage.tsx` (ou equivalente) — exemplos de uso, casing, variantes e ícones de cada componente
+
+**4. LER CADA COMPONENTE individualmente (OBRIGATÓRIO):**
+
+> ⚠️ **Glob lista nomes de arquivo — isso NÃO é conhecer o DS. Você DEVE abrir cada arquivo de `src/components/ui/` com Read, um por um. Nunca assuma o que um componente faz, quais props tem ou como deve ser usado sem ter lido seu código.**
+
+Para cada arquivo de `src/components/ui/`, use **Read** e extraia:
+- Props disponíveis e tipos (`variant`, `size`, `asChild`, etc.)
+- Variantes definidas via `cva` ou equivalente
+- Se usa `forwardRef`, `cn()`, como exporta
+- Padrão de composição de className
+
+Somente após ler **cada componente** você poderá:
+- Confirmar o que existe (nunca criar o que já existe)
+- Usar props e variantes corretas (nunca inventar)
+- Replicar o padrão estrutural exato ao criar um novo componente
 
 **Se não encontrou página de documentação do DS** → avise: "Não encontrei página de documentação do DS. Prossigo validando apenas `src/components/ui/`, ou prefere criar a página primeiro?"
 - **Criar** → crie antes de implementar
