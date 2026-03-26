@@ -52,24 +52,31 @@ Leia a especificação fornecida (pelo Designer ou diretamente pelo usuário). I
 
 O Design System é o guia visual obrigatório. Antes de escrever qualquer código:
 
-#### Detectar o DS
+#### Detectar e LER o DS (OBRIGATÓRIO — use as ferramentas)
 
-Busque no projeto:
-- Arquivo `components.json` ou `shadcn.json` na raiz
-- Pasta `src/components/ui/` ou `components/ui/`
-- Tokens CSS em `src/index.css`, `src/styles/globals.css` ou equivalente
+> ⚠️ **"Consultar o DS" significa ABRIR E LER os arquivos com Read/Glob/Grep. Frases como "verifiquei o DS" sem ter chamado as ferramentas são inválidas. Nunca tome decisão visual sem ter lido os arquivos.**
 
-**Se encontrou DS:**
-1. Consulte a pasta de componentes UI — se o componente já existe, use-o sem modificar
-2. Localize a página de documentação do DS usando busca por padrão:
-   - Procure por `*DesignSystem*`, `*design-system*`, `*design_system*` em `src/`
-   - **Se encontrou** → consulte para ver exemplos de uso de cada componente
-   - **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Desejo prosseguir validando apenas os tokens de `src/components/ui/`, ou prefere criar a página primeiro?"
-     - **Criar** → registre os componentes existentes e crie a página antes de implementar
-     - **Prosseguir** → valide tokens e props diretamente nos arquivos de `src/components/ui/`
-3. Consulte `tailwind.config.ts` e `src/index.css` para tokens disponíveis
-4. **O DS é a fonte de verdade visual** — nunca criar componente que já existe no DS, nunca usar valores fora dos tokens definidos
-5. **Fidelidade visual é obrigatória**: o resultado renderizado deve ser idêntico ao demo do DS — isso inclui casing de texto (ex: `"Nome"` não `"NOME"`), props, variantes, ícones e estados visuais
+Execute com as ferramentas disponíveis:
+
+**1. Detectar:**
+- **Glob** `components.json` ou `shadcn.json` na raiz
+- **Glob** para listar `src/components/ui/**`
+- **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/`
+
+**2. LER obrigatoriamente:**
+- **Read** → `src/index.css` (ou `globals.css`) — identifique todos os tokens CSS (`--background`, `--primary`, etc.)
+- **Read** → `tailwind.config.ts` — identifique `theme.extend` com cores, radius, fontes
+- **Read** → página de documentação do DS (ex: `DesignSystemPage.tsx`) — veja os exemplos de uso de cada componente, casing de texto, variantes e ícones usados
+- **Read** → componentes de `src/components/ui/` relevantes para a tarefa — entenda props, variantes e estrutura
+
+**Somente após ter lido** você poderá:
+- Confirmar quais componentes existem (nunca criar o que já existe)
+- Usar apenas tokens definidos (nunca hardcoded)
+- Garantir fidelidade visual: casing, props, variantes, ícones, estados
+
+**Se não encontrou página de documentação do DS** → avise: "Não encontrei página de documentação do DS. Prossigo validando apenas `src/components/ui/`, ou prefere criar a página primeiro?"
+- **Criar** → crie antes de implementar
+- **Prosseguir** → leia os componentes diretamente em `src/components/ui/`
 
 **Se não encontrou DS:**
 > Pergunte ao usuário: "Não encontrei um Design System neste projeto. Deseja criar um antes de implementar?"

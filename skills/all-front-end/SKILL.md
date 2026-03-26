@@ -25,7 +25,10 @@ Adote o papel do **Agente Front-end-UI**. Inicie esta fase com `🔵 **Front-end
 **Passos**:
 1. Leia a spec fornecida e identifique o local de aplicação
 2. **Antes de implementar:** leia os arquivos que serão modificados e audite divergências vs DS (tokens hardcoded, componentes inline, libs erradas de ícones) — liste-as e corrija durante a implementação
-3. Consulte componentes existentes em `src/components/ui/`
+3. **LEIA o DS com as ferramentas** (obrigatório):
+   - **Glob** → liste `src/components/ui/**`
+   - **Read** → `tailwind.config.ts` e `src/index.css` para tokens reais
+   - **Glob + Read** → localize e leia a página de documentação do DS (`*DesignSystem*`, `*design-system*`)
 4. Se o componente já existe no DS → use-o sem modificar
 5. Se precisa criar → **antes de criar**, abrir 2-3 componentes similares em `src/components/ui/` e replicar exatamente o mesmo padrão estrutural (exportação, tipagem, uso de `cn()`, variantes com `cva`). Criar em `src/components/ui/` e registrar na documentação do DS
 6. Aplique os tokens obrigatórios:

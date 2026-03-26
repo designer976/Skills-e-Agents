@@ -85,10 +85,13 @@ Verificar classes proibidas nos arquivos revisados:
 
 #### Fidelidade visual ao DS (obrigatório)
 
-Antes de verificar fidelidade, localize a página de documentação do DS:
-- Busque por `*DesignSystem*`, `*design-system*`, `*design_system*` em `src/`
-- **Se encontrou** → use como referência para cada componente abaixo
-- **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Validando fidelidade apenas pelos props e tokens em `src/components/ui/`." e prossiga com o que estiver disponível
+Antes de verificar fidelidade, **LEIA os arquivos do DS com as ferramentas** (não apenas saiba onde estão):
+
+- Use **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/` para localizar a página de documentação
+- **Se encontrou** → use **Read** para abrir e ler a página — ela é a referência obrigatória para cada componente verificado abaixo
+- **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Validando fidelidade apenas pelos props e tokens em `src/components/ui/`." e use **Read** nos arquivos de componentes relevantes em `src/components/ui/`
+
+> ⚠️ **Afirmar "verifiquei fidelidade ao DS" sem ter aberto os arquivos com Read é inválido.**
 
 Para cada componente do DS (`src/components/ui/`) utilizado nos arquivos revisados, verificar:
 

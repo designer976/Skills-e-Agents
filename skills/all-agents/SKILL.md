@@ -36,7 +36,10 @@ Adote o papel do **Agente Designer**. Inicie esta fase com `🟣 **Designer**` n
    - Se deve reutilizar componente do DS ou criar novo
 2. Se faltar qualquer informação → **pergunte ao usuário e aguarde resposta**
    > **Skip de validação:** se o usuário incluir a spec completa na mesma mensagem, ou disser "spec completa, pode avançar" / "pule a validação", vá direto para a análise do DS sem perguntar.
-3. Consulte o DS: `tailwind.config.ts`, `src/index.css`, `src/components/ui/`, página de documentação do DS
+3. **LEIA o DS com as ferramentas** (obrigatório — use Read/Glob):
+   - **Glob** → liste `src/components/ui/**` para ver todos os componentes disponíveis
+   - **Read** → abra `tailwind.config.ts` e `src/index.css` para identificar os tokens reais do projeto
+   - **Glob + Read** → localize e leia a página de documentação do DS (`*DesignSystem*`, `*design-system*`) para ver exemplos de uso, casing, variantes e ícones de cada componente
 4. **Audite os arquivos relevantes existentes** — compare o código atual com o DS e documente divergências encontradas (tokens hardcoded, componentes inline, libs de ícones erradas)
 5. Verifique se existe padrão similar antes de propor criação de novo componente
 6. Monte o **plano de implementação**: componentes, tokens, arquivos, comportamentos esperados — **incluindo correção das divergências encontradas no passo 4**

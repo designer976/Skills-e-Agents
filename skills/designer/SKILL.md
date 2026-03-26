@@ -51,24 +51,31 @@ Repita quantas vezes for necessário até que a spec esteja completa e clara.
 >
 > **Em ambos os cenários: o DS é sempre a fonte de verdade. O código existente pode estar errado.**
 
-#### Passo 1 — Detectar se existe um Design System
+#### Passo 1 — Detectar e LER o Design System (OBRIGATÓRIO — use as ferramentas)
 
-Busque no projeto os seguintes indicadores:
+> ⚠️ **"Consultar" significa ABRIR E LER os arquivos com a ferramenta Read/Glob/Grep. Não é suficiente saber onde estão — você DEVE ler o conteúdo antes de tomar qualquer decisão visual.**
 
-- Arquivo `components.json` ou `shadcn.json` na raiz (indica shadcn/ui)
-- Pasta `src/components/ui/` ou `components/ui/` com componentes
-- Tokens CSS customizados em `src/index.css`, `src/styles/globals.css` ou equivalente
-- Qualquer arquivo com "design-system" ou "design_system" no nome
+Execute os seguintes comandos com as ferramentas disponíveis:
 
-**Se encontrou DS** → o DS é o guia visual obrigatório. Consulte-o antes de qualquer decisão visual:
-- Verifique quais componentes já existem — nunca propor criar o que já existe
-- Identifique os tokens disponíveis — use sempre os tokens do DS, nunca valores hardcoded
-- Localize a página de documentação do DS buscando por padrão em `src/`:
-  - Padrões: `*DesignSystem*`, `*design-system*`, `*design_system*`
-  - **Se encontrou** → consulte para referência de componentes, tokens e exemplos de uso
-  - **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Deseja que eu crie uma antes de prosseguir, ou continuo consultando apenas `src/components/ui/`?"
-    - **Criar** → inclua criação da página no plano de implementação (Fase 3)
-    - **Continuar** → valide componentes diretamente pelos arquivos de `src/components/ui/`
+**1. Detectar o DS:**
+- Use **Glob** para `components.json` ou `shadcn.json` na raiz
+- Use **Glob** para listar todos os arquivos em `src/components/ui/`
+- Use **Glob** com padrão `**/*DesignSystem* ` ou `**/*design-system*` ou `**/*design_system*` em `src/`
+
+**2. LER os arquivos encontrados (obrigatório):**
+- Use **Read** para abrir `src/index.css` (ou `src/styles/globals.css`) — identifique todos os tokens CSS disponíveis (variáveis `--`, classes customizadas)
+- Use **Read** para abrir `tailwind.config.ts` — identifique o `theme.extend` com cores, radius, fontes e demais tokens
+- Use **Glob** + **Read** para listar e abrir a página de documentação do DS (`DesignSystemPage.tsx` ou equivalente) — leia os exemplos de uso de cada componente
+- Use **Glob** + **Read** para abrir os componentes relevantes de `src/components/ui/` — entenda quais existem e como são usados
+
+**Somente após ter lido esses arquivos** você poderá:
+- Saber quais componentes já existem (nunca propor criar o que já existe)
+- Identificar os tokens disponíveis (nunca usar valores hardcoded)
+- Verificar fidelidade: casing, variantes, ícones, estados visuais
+
+**Se não encontrou página de documentação do DS** → avise o usuário: "Não encontrei página de documentação do DS. Deseja que eu crie uma antes de prosseguir, ou continuo consultando apenas `src/components/ui/`?"
+- **Criar** → inclua criação da página no plano de implementação (Fase 3)
+- **Continuar** → leia os componentes diretamente pelos arquivos de `src/components/ui/`
 
 #### Passo 1b — Auditoria Obrigatória de Divergência DS vs Sistema
 
