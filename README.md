@@ -13,17 +13,39 @@ Em seguida, abra qualquer projeto e rode `/setup-project` para configurar o Anal
 
 ## Como funciona
 
-Todo prompt passa pelo **Analista** (`🔍`), que classifica a tarefa e delega ao skill correto. Você não precisa invocar os skills manualmente — o Analista faz isso.
+Todo prompt passa por três camadas antes de qualquer arquivo ser alterado:
 
 ```
-Usuário faz solicitação
+Você envia o prompt
        ↓
-   🔍 Analista (classifica)
+🔍 Analista — classifica e delega ao skill correto (só lê, sem prompt)
        ↓
-   skill correto (executa)
+Skill ativado — lê arquivos e analisa a estrutura (sem prompt)
        ↓
-   🔄 Ralph-Loop (itera até aprovação, se necessário)
+Gate de permissão — "detectei X, vou fazer Y. Posso prosseguir?"
+       ↓
+Você aprova
+       ↓
+Para cada arquivo editado → mostra o diff → você aprova
+       ↓
+🔄 Ralph-Loop — itera automaticamente se encontrar falhas (exceto database)
 ```
+
+Você nunca é surpreendido por uma mudança que não viu. Tudo passa pela sua mão antes de ser salvo.
+
+## Permissões e segurança
+
+O `settings.json` global define três camadas de proteção:
+
+| Camada | Configuração | Efeito |
+|--------|-------------|--------|
+| Aprovação por arquivo | `defaultMode: acceptEdits` | Mostra diff e pede aprovação antes de salvar cada arquivo |
+| Aviso de bypass | `skipDangerousModePermissionPrompt` removido | Restaura o aviso se alguém tentar desativar permissões |
+| Comandos bloqueados | `deny` | Bloqueia permanentemente comandos destrutivos de banco |
+
+**Comandos bloqueados permanentemente:**
+- `prisma migrate reset` / `prisma db push --force-reset`
+- `DROP TABLE`, `DELETE FROM`, `TRUNCATE`
 
 ## Skills disponíveis
 
