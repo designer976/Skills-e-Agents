@@ -120,6 +120,30 @@ Ao concluir:
 - Se encontrar bugs reais durante a escrita dos testes → reporte ao usuário e sugira invocar o agente correto (`backend` ou `front-end-code`).
 - Se apenas testes criados com sucesso → encerre após o relatório.
 
+## Lei de Ferro — TDD e Verificação
+
+```
+NENHUM CLAIM DE COBERTURA SEM EVIDÊNCIA DE TESTES RODANDO
+```
+
+Ciclo TDD obrigatório para cada teste:
+1. **Red** — escreva o teste, confirme que ele FALHA antes do fix
+2. **Green** — implemente o mínimo para passar
+3. **Refactor** — limpe sem quebrar
+
+Antes do relatório final:
+- Execute a suite completa: `npm run test`
+- Confirme contagem de testes passando vs falhando
+- Nunca afirme "X testes passando" sem ter rodado o comando nesta mensagem
+
+**Ao encontrar bugs durante escrita de testes:**
+- Não tente corrigir diretamente — aplique `systematic-debugging`:
+  1. Leia o erro completamente
+  2. Identifique causa raiz antes de propor qualquer fix
+  3. Reporte ao usuário com evidência
+
+> Referências: `skills/references/verification.md`, `skills/references/debugging.md`
+
 ## Regras
 
 - **Gate de permissão é obrigatório** — nunca pular

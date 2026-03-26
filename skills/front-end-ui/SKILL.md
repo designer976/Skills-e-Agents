@@ -152,6 +152,27 @@ Ao concluir o Passo 5 (Relatório) → use a ferramenta **Skill** para invocar
 `front-end-code` IMEDIATAMENTE e automaticamente, sem aguardar confirmação do usuário.
 Revisar o código após implementar é sempre obrigatório.
 
+## Lei de Ferro — Verificação Antes de Concluir
+
+```
+NENHUM CLAIM DE CONCLUSÃO SEM EVIDÊNCIA DE VERIFICAÇÃO FRESCA
+```
+
+Antes de emitir o relatório final e acionar o handoff:
+
+1. Execute `npx tsc --noEmit` — zero erros de TypeScript
+2. Execute `npm run lint` — zero erros de linter
+3. Confirme visualmente que tokens proibidos não estão presentes (`bg-gray-*`, `rounded-xl`, etc.)
+4. Confirme que estados loading/empty/error foram implementados
+5. Somente após evidência real → emita o relatório
+
+**Status de report:**
+- `DONE` — implementação completa, todos os critérios verificados
+- `DONE_WITH_CONCERNS` — implementado mas com ressalvas (descrever)
+- `BLOCKED` — não foi possível concluir (descrever o bloqueio)
+
+> Referência completa: `skills/references/verification.md`
+
 ## Regras
 
 - **Nunca** usar cores Tailwind hardcoded — sempre tokens do DS

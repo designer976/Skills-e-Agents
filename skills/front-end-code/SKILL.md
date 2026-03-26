@@ -224,6 +224,26 @@ Verificar se rotas e features críticas têm `<ErrorBoundary>` envolvendo o cont
 - Componente definido dentro de outro componente (inline component)
 - `{value && <Comp />}` quando value pode ser `0` ou `""` — usar ternário
 
+## Lei de Ferro — Verificação Antes de Concluir
+
+```
+NENHUM CLAIM DE CONCLUSÃO SEM EVIDÊNCIA DE VERIFICAÇÃO FRESCA
+```
+
+Antes de emitir o resumo final e declarar "REVISAO CONCLUIDA":
+
+1. Execute o linter: `npm run lint` — leia o output completo
+2. Verifique TypeScript: `npx tsc --noEmit` — zero erros antes de prosseguir
+3. Se testes existirem: rode-os e confirme que continuam passando
+4. Somente após evidência real → emita o resumo
+
+**Red Flags — PARE:**
+- Usar "deveria estar correto", "parece que passou"
+- Afirmar conclusão sem ter rodado verificação nesta mensagem
+- Confiar em análise visual sem rodar o compilador
+
+> Referência completa: `skills/references/verification.md`
+
 ## Regras Críticas
 
 - **NÃO alterar nada visual** — nem margin, padding, cor, tamanho de fonte, gap, layout

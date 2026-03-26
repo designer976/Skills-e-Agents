@@ -89,6 +89,37 @@ Ao concluir a implementação:
 - Se o usuário pedir testes após a implementação → use a ferramenta **Skill** para invocar `tester` IMEDIATAMENTE.
 - Se apenas implementação sem pendências → encerre após o relatório.
 
+## Lei de Ferro — Debugging e Verificação
+
+### Ao encontrar bugs ou falhas:
+
+```
+NENHUM FIX SEM INVESTIGAÇÃO DE CAUSA RAIZ PRIMEIRO
+```
+
+1. Leia a mensagem de erro completamente (stack trace, line numbers)
+2. Reproduza consistentemente antes de propor qualquer fix
+3. Trace o fluxo de dados até a origem do problema
+4. Se ≥ 3 fixes falharam → PARE e discuta a arquitetura com o usuário
+
+### Ao concluir implementação:
+
+```
+NENHUM CLAIM DE CONCLUSÃO SEM EVIDÊNCIA DE VERIFICAÇÃO FRESCA
+```
+
+1. Execute `npm run build` — exit 0 obrigatório
+2. Execute `npm run lint` — zero erros
+3. Execute `npm run test` — todos os testes passando
+4. Somente então emita o relatório final
+
+**Status de report:**
+- `DONE` — implementação completa, build e testes verificados
+- `DONE_WITH_CONCERNS` — implementado mas com ressalvas (descrever)
+- `BLOCKED` — não foi possível concluir (descrever o bloqueio)
+
+> Referências: `skills/references/verification.md`, `skills/references/debugging.md`
+
 ## Regras
 
 - **Gate de permissão é obrigatório** — nunca pular

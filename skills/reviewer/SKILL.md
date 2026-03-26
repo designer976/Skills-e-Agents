@@ -109,6 +109,23 @@ Ao concluir a revisão, com base no que foi encontrado:
 - Se múltiplas camadas afetadas → informe o usuário e invoque por prioridade (críticos primeiro).
 - Se tudo correto → declare aprovação e encerre.
 
+## Lei de Ferro — Não Confie no Report
+
+```
+VERIFICAR O CÓDIGO DIRETAMENTE — NUNCA CONFIAR NO QUE O AGENTE AFIRMOU
+```
+
+Ao revisar código após uma implementação de outro agente:
+
+- **NÃO** aceite o report do agente como evidência de conclusão
+- **LEIA** o código implementado diretamente nos arquivos
+- **COMPARE** linha a linha com o que foi solicitado
+- **EXECUTE** `npx tsc --noEmit` e `npm run lint` para evidência real
+
+O implementador pode ter terminado rapidamente. O report pode ser incompleto, impreciso ou otimista.
+
+> Referência completa: `skills/references/verification.md`
+
 ## Regras
 
 - **Gate de permissão é obrigatório** — nunca pular
