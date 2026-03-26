@@ -135,16 +135,19 @@ function Dashboard() {
 
 Ao detectar falhas de fidelidade ao DS, tokens proibidos ou estados obrigatórios ausentes no Passo 5, ative o loop iterativo:
 
+1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até fidelidade total ao DS`
+2. Invoque:
 ```
 /ralph-loop "Corrigir implementação até fidelidade total ao DS" --max-iterations 5 --completion-promise "FRONT-END-UI APROVADO"
 ```
+3. Quando o loop encerrar (promise emitida ou limite atingido), exiba: `✅ **Ralph-Loop finalizado**`
 
 O loop continua iterando até que:
 - Nenhum token proibido esteja presente
 - Todos os estados (loading, empty, error) implementados
 - Fidelidade ao DS 100% verificada
 
-Só emita `"FRONT-END-UI APROVADO"` quando **todos** os critérios forem verdadeiros.
+Só emita `<promise>FRONT-END-UI APROVADO</promise>` quando **todos** os critérios forem verdadeiros.
 
 ## Handoff
 

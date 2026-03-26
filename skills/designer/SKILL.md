@@ -160,9 +160,12 @@ Se houver inconsistência → **avise o usuário com detalhes** antes de finaliz
 
 Na Fase 4 (Revisão Final), se forem encontradas inconsistências visuais após a implementação, ative o loop iterativo:
 
+1. Exiba: `🔄 **Ralph-Loop iniciado** — iterando até aprovação visual do Designer`
+2. Invoque:
 ```
 /ralph-loop "Revisar e corrigir inconsistências visuais até aprovação do Designer" --max-iterations 5 --completion-promise "DESIGNER APROVADO"
 ```
+3. Quando o loop encerrar (promise emitida ou limite atingido), exiba: `✅ **Ralph-Loop finalizado**`
 
 O loop continua iterando até que:
 - Nenhuma cor hardcoded presente
@@ -170,7 +173,7 @@ O loop continua iterando até que:
 - Ícones importados de `lucide-react`
 - Fidelidade visual ao DS confirmada em todos os componentes
 
-Só emita `"DESIGNER APROVADO"` quando **todos** os critérios forem verdadeiros.
+Só emita `<promise>DESIGNER APROVADO</promise>` quando **todos** os critérios forem verdadeiros.
 
 ## Handoff
 
