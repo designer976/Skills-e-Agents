@@ -46,7 +46,12 @@ Busque no projeto os seguintes indicadores:
 **Se encontrou DS** → o DS é o guia visual obrigatório. Consulte-o antes de qualquer decisão visual:
 - Verifique quais componentes já existem — nunca propor criar o que já existe
 - Identifique os tokens disponíveis — use sempre os tokens do DS, nunca valores hardcoded
-- Consulte a página de documentação do DS (ex: `DesignSystemPage.tsx` ou equivalente) para ver exemplos de uso
+- Localize a página de documentação do DS buscando por padrão em `src/`:
+  - Padrões: `*DesignSystem*`, `*design-system*`, `*design_system*`
+  - **Se encontrou** → consulte para referência de componentes, tokens e exemplos de uso
+  - **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Deseja que eu crie uma antes de prosseguir, ou continuo consultando apenas `src/components/ui/`?"
+    - **Criar** → inclua criação da página no plano de implementação (Fase 3)
+    - **Continuar** → valide componentes diretamente pelos arquivos de `src/components/ui/`
 
 **Se não encontrou DS** → pergunte ao usuário:
 > "Não encontrei um Design System neste projeto. Deseja criar um agora?"

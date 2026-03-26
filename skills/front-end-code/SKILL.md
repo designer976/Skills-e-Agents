@@ -77,7 +77,12 @@ Verificar classes proibidas nos arquivos revisados:
 
 #### Fidelidade visual ao DS (obrigatório)
 
-Para cada componente do DS (`src/components/ui/`) utilizado nos arquivos revisados, localizar seu demo em `DesignSystemPage.tsx` e verificar:
+Antes de verificar fidelidade, localize a página de documentação do DS:
+- Busque por `*DesignSystem*`, `*design-system*`, `*design_system*` em `src/`
+- **Se encontrou** → use como referência para cada componente abaixo
+- **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Validando fidelidade apenas pelos props e tokens em `src/components/ui/`." e prossiga com o que estiver disponível
+
+Para cada componente do DS (`src/components/ui/`) utilizado nos arquivos revisados, verificar:
 
 - 🔴 **Casing de texto**: props de texto (headers, labels, placeholders) devem usar o mesmo casing do demo — `"Nome do Serviço"` não `"NOME DO SERVIÇO"`
 - 🔴 **Props e variantes**: variant, size, className devem estar alinhados com o demo

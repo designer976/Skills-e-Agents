@@ -46,7 +46,12 @@ Busque no projeto:
 
 **Se encontrou DS:**
 1. Consulte a pasta de componentes UI — se o componente já existe, use-o sem modificar
-2. Consulte a página de documentação do DS (ex: `DesignSystemPage.tsx` ou equivalente) para ver exemplos de uso
+2. Localize a página de documentação do DS usando busca por padrão:
+   - Procure por `*DesignSystem*`, `*design-system*`, `*design_system*` em `src/`
+   - **Se encontrou** → consulte para ver exemplos de uso de cada componente
+   - **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Desejo prosseguir validando apenas os tokens de `src/components/ui/`, ou prefere criar a página primeiro?"
+     - **Criar** → registre os componentes existentes e crie a página antes de implementar
+     - **Prosseguir** → valide tokens e props diretamente nos arquivos de `src/components/ui/`
 3. Consulte `tailwind.config.ts` e `src/index.css` para tokens disponíveis
 4. **O DS é a fonte de verdade visual** — nunca criar componente que já existe no DS, nunca usar valores fora dos tokens definidos
 5. **Fidelidade visual é obrigatória**: o resultado renderizado deve ser idêntico ao demo do DS — isso inclui casing de texto (ex: `"Nome"` não `"NOME"`), props, variantes, ícones e estados visuais
