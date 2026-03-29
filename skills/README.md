@@ -41,6 +41,8 @@ git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
 | `security-reviewer` | Auditoria OWASP Top 10 + extras (timing attack, mass assignment, JWT, supply chain). Nunca corrige — só reporta e aciona `security-fixer` |
 | `security-fixer` | Corrige vulnerabilidades identificadas com fix patterns completos. Debate Gate obrigatório quando escopo > 3 arquivos ou múltiplas camadas |
 | `pagespeed` | Auditoria Pareto-first de Core Web Vitals / Lighthouse. Debate Gate quando > 5 componentes ou impacto visual |
+| `seo-manager` | Auditoria de SEO técnico (meta tags, structured data, sitemap, robots.txt) e de conteúdo (keywords, topic clusters). Coordena com `pagespeed`, `front-end-ui` e `redator` |
+| `redator` | Copywriting para landing pages, pricing, e-mails e UX writing (labels, tooltips, erros). Nunca escreve sem briefing de brand voice, persona e diferenciais |
 
 ### Utilitários
 
@@ -66,6 +68,8 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 | Revisão de segurança, vulnerabilidades, OWASP | `security-reviewer` |
 | Corrigir vulnerabilidades já identificadas | `security-fixer` |
 | PageSpeed, Lighthouse score, Core Web Vitals | `pagespeed` |
+| SEO, ranqueamento, meta tags, structured data, sitemap, GSC | `seo-manager` |
+| Copy de landing page, pricing, e-mails, textos de UI, UX writing | `redator` |
 
 ## Uso manual
 
@@ -80,6 +84,8 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 /security-reviewer - Auditoria de segurança (OWASP)
 /security-fixer    - Correção de vulnerabilidades
 /pagespeed         - Otimização de performance / Lighthouse
+/seo-manager       - SEO técnico e de conteúdo
+/redator           - Copywriting e UX writing
 ```
 
 ## Debate Gate

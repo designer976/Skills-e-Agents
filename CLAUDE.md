@@ -41,6 +41,8 @@ Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementa
 | Revisão de segurança, auditoria de vulnerabilidades, OWASP | `security-reviewer` |
 | Corrigir vulnerabilidades já identificadas | `security-fixer` |
 | PageSpeed, Lighthouse score, Core Web Vitals, performance | `pagespeed` |
+| SEO, ranqueamento, meta tags, structured data, sitemap, GSC | `seo-manager` |
+| Copy de landing page, pricing, e-mails, textos de UI, UX writing | `redator` |
 
 ### Regras de desempate
 
