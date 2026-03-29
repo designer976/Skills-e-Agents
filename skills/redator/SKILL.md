@@ -23,15 +23,42 @@ Antes de qualquer escrita, coletar o briefing. **Se o usuário não fornecer, pe
 
 | Pergunta | Por que importa |
 |----------|----------------|
-| Qual é a voz da marca? (formal/conversacional, técnico/acessível) | Define tom de tudo |
 | Quem é o público-alvo principal? (persona, cargo, nível técnico) | Define vocabulário e benefícios |
 | Quais são os 3 principais diferenciais do produto? | Sem isso: copy genérica |
 | Há algum guia de estilo ou textos existentes para manter consistência? | Evita contradição |
-| O site é PT-BR? Usa "você" ou linguagem mais formal? | Evita inconsistência de tratamento |
+
+**Modelo de linguagem (SEMPRE perguntar — obrigatório antes de qualquer escrita):**
+
+| Dimensão | Opções | Pergunta ao usuário |
+|----------|--------|---------------------|
+| Formalidade | Formal / Semiformal / Casual | "A marca fala de forma formal, semiformal ou casual?" |
+| Contexto | B2B (empresa→empresa) / B2C (empresa→consumidor) | "O produto é vendido para empresas ou para pessoas físicas?" |
+| Registro técnico | Técnico (fala com devs/TI) / Acessível (fala com gestores/usuários) / Misto | "O leitor principal é técnico ou não-técnico?" |
+| Tratamento | "você" direto / "você" formal / impessoal | "A marca trata o usuário como 'você' informal, 'você' formal, ou de forma impessoal?" |
+| Idioma | PT-BR / PT-PT / EN / bilíngue | "O conteúdo é em PT-BR ou outro idioma?" |
+
+**Exemplo prático de como o modelo muda o texto:**
+
+| Modelo | Headline de exemplo |
+|--------|-------------------|
+| Formal + B2B + Técnico | "Solução enterprise de gestão de identidade com SSO e MFA integrados" |
+| Casual + B2B + Acessível | "Chega de senhas espalhadas. Um login para tudo." |
+| Formal + B2C + Acessível | "Sua identidade digital protegida em um só lugar." |
+
+**Se o usuário não souber definir o modelo → mostrar os exemplos acima e pedir que escolha o mais próximo.**
+
+**Verificação de SEO (para TODA entrega pública — landing page, pricing, blog, docs):**
+
+Antes de escrever qualquer texto que será indexado pelo Google, perguntar:
+
+> "Esta página precisa ranquear para alguma palavra-chave específica?"
+
+- **Se sim** → incorporar a keyword principal no H1, no primeiro parágrafo e na meta description. Densidade alvo: 0.5–1.5%. Após a entrega, invocar `seo-manager` para validar.
+- **Se não** → escrever focado em conversão/usabilidade sem forçar keywords.
+- **UX writing e e-mails** → SEO não se aplica. Não perguntar.
 
 **Adicionalmente para Landing Page:**
 
-- Quais palavras-chave SEO a página precisa ranquear?
 - Qual é a única ação que o visitante deve realizar na página? (CTA principal)
 - Existem provas sociais reais? (depoimentos, logos de clientes, números)
 - O produto tem período de teste gratuito ou freemium?
