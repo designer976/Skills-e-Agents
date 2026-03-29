@@ -1,6 +1,6 @@
 # Skills & Agents — Claude Code
 
-Skills globais para Claude Code com pipeline de agentes para desenvolvimento frontend, backend e banco de dados.
+Skills globais para Claude Code com pipeline de agentes para desenvolvimento frontend, backend, banco de dados, segurança, performance, SEO e conteúdo.
 
 ## Instalação
 
@@ -63,6 +63,11 @@ O `settings.json` global define três camadas de proteção:
 | `database` | 🗄️ | Schema, migrações, models, queries e índices de banco de dados |
 | `tester` | 🧪 | Testes unitários, de integração e E2E |
 | `reviewer` | 🔍 | Revisão geral de código e auditoria de qualidade |
+| `security-reviewer` | 🛡️ | Auditoria OWASP Top 10 + extras. Nunca corrige — só reporta e aciona `security-fixer` |
+| `security-fixer` | 🔧 | Corrige vulnerabilidades com fix patterns completos. Debate Gate obrigatório |
+| `pagespeed` | ⚡ | Auditoria Pareto-first de Core Web Vitals / Lighthouse. Debate Gate quando > 5 componentes |
+| `seo-manager` | 📈 | SEO técnico (meta tags, JSON-LD, sitemap) e de conteúdo (keywords, topic clusters) |
+| `redator` | ✍️ | Copywriting para landing pages, pricing, e-mails e UX writing. Nunca escreve sem briefing |
 | `project-rules` | — | Regras e convenções do projeto (adaptar para cada projeto) |
 
 ## Ralph-Loop — iteração automática
@@ -120,6 +125,11 @@ Caso queira invocar um skill diretamente:
 /database              - Banco de dados
 /tester                - Testes
 /reviewer              - Revisão de código
+/security-reviewer     - Auditoria de segurança (OWASP)
+/security-fixer        - Correção de vulnerabilidades
+/pagespeed             - Otimização de performance / Lighthouse
+/seo-manager           - SEO técnico e de conteúdo
+/redator               - Copywriting e UX writing
 /all-agents            - Pipeline completo
 /all-front-end         - Pipeline front-end
 ```
