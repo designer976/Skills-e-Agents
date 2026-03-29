@@ -1,6 +1,6 @@
 # Skills & Agents — Claude Code
 
-Skills globais para Claude Code com pipeline de agentes para desenvolvimento frontend, backend e banco de dados.
+Skills globais para Claude Code com pipeline de agentes para desenvolvimento frontend, backend, banco de dados, segurança, performance, SEO e conteúdo.
 
 ## Instalação
 
@@ -90,7 +90,14 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 
 ## Debate Gate
 
-Os skills `security-reviewer`, `security-fixer` e `pagespeed` possuem um **Debate Gate** integrado:
-quando o escopo de mudanças excede um threshold (arquivos > N, múltiplas camadas, impacto visual),
-o agente pausa e apresenta 3 opções ao usuário antes de prosseguir. A aprovação antecipada
-("pode fazer tudo") **não** bypassa o gate.
+Os skills abaixo possuem um **Debate Gate** integrado: quando o escopo excede um threshold,
+o agente pausa, apresenta 3 opções e aguarda escolha explícita antes de prosseguir.
+A aprovação antecipada ("pode fazer tudo") **não** bypassa o gate.
+
+| Skill | Threshold de ativação |
+|-------|----------------------|
+| `security-reviewer` | > 5 arquivos afetados ou mudanças arquiteturais |
+| `security-fixer` | > 3 arquivos ou > 1 camada (backend + frontend) |
+| `pagespeed` | > 5 componentes ou qualquer impacto visual |
+| `seo-manager` | Reestruturação de URL ou > 5 páginas com mudanças técnicas |
+| `redator` | > 3 tipos de entrega simultâneos → propõe sequência faseada |
