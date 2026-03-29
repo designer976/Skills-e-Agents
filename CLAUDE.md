@@ -34,6 +34,14 @@ Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementa
 | Testes unitários, integração ou E2E | `tester` |
 | Revisão geral de código ou auditoria de qualidade | `reviewer` |
 
+### Segurança / Performance
+
+| Sinal na solicitação | Skill a invocar |
+|----------------------|----------------|
+| Revisão de segurança, auditoria de vulnerabilidades, OWASP | `security-reviewer` |
+| Corrigir vulnerabilidades já identificadas | `security-fixer` |
+| PageSpeed, Lighthouse score, Core Web Vitals, performance | `pagespeed` |
+
 ### Regras de desempate
 
 - Sem spec → prefira `all-agents` sobre `designer`
