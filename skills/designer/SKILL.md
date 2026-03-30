@@ -30,7 +30,11 @@ Ao receber uma solicitação, verifique se contém:
   - Concorrentes ou produtos similares com visual interessante
   - Screenshots, mockups ou wireframes existentes
   - Bibliotecas de componentes preferidas (Tailwind UI, shadcn examples, Vercel Design)
-  - Se não tiver referências → pergunte se quer sugestões baseadas no tom visual definido
+  - **Se não tiver referências** → use as ferramentas do Pencil para oferecer sugestões visuais:
+    1. **`get_guidelines`** → buscar guidelines por tipo (landing-page, mobile-app, web-app, design-system)
+    2. **`get_style_guide_tags`** → descobrir tags disponíveis
+    3. **`get_style_guide`** → mostrar style guides baseados em tom visual e tags relevantes
+    4. **Opção avançada:** `batch_design` → criar mockup visual antes da implementação
 - Se deve **reutilizar** componente existente do DS ou criar novo
 
 Se faltar qualquer informação → **pergunte ao usuário antes de continuar**.
@@ -172,6 +176,66 @@ Ao analisar o DS existente ou propor um novo, verifique:
 - **Contraste WCAG AA**: texto sobre fundo deve ter contraste ≥ 4.5:1; componentes UI (bordas, ícones) ≥ 3:1. Se não atender → alerte o usuário antes de prosseguir.
 - **Escala de espaçamento**: valores de padding/gap/margin devem seguir múltiplos de 4px (4, 8, 12, 16, 24, 32…). Nunca propor valores arbitrários como 7px, 13px, 22px.
 - **Escala tipográfica**: tamanhos de fonte devem seguir escala definida no DS (ex: `text-sm`, `text-base`, `text-lg`). Nunca propor tamanhos fora da escala sem justificativa.
+
+#### Passo 4 — Ferramentas Visuais (Pencil Integration)
+
+**Quando o usuário não tiver referências visuais claras**, use as ferramentas do Pencil para oferecer inspiração visual concreta:
+
+**1. Buscar Guidelines por Tipo de Projeto:**
+```
+get_guidelines(topic="landing-page")  // Para landing pages
+get_guidelines(topic="mobile-app")    // Para apps mobile
+get_guidelines(topic="web-app")       // Para dashboards/SaaS
+get_guidelines(topic="design-system") // Para componentes reutilizáveis
+```
+
+**2. Descobrir Tags e Style Guides:**
+```
+get_style_guide_tags()  // Lista todas as tags disponíveis
+get_style_guide(tags=["modern", "tech", "AI", "startup", "landing"])  // Busca por tags relevantes
+```
+
+**3. Workflow Visual (OBRIGATÓRIO quando sem referências):**
+```
+Pré-requisito: get_editor_state() → verificar se .pen está ativo
+Se não estiver → orientar usuário sobre setup básico (2 min)
+
+Sequência obrigatória:
+1. get_guidelines(topic=tipo_projeto) → padrões específicos
+2. get_style_guide_tags()            → descobrir tags disponíveis
+3. get_style_guide(tags=relevantes)  → inspiração visual concreta
+4. Apresentar resultados visuais para aprovação
+5. Se aprovado → prosseguir com plano de implementação
+```
+
+**Não pular este workflow por:**
+- "Usuário tem pressa" → Pencil evita retrabalho posterior
+- "Usuário não conhece" → Mostre os resultados, experiência convence
+- "Setup é complexo" → 2 min de setup vs horas de alinhamento depois
+
+**Exemplo de uso:**
+```
+Usuário: "Landing page para startup de IA, moderna e inovadora"
+
+1. get_guidelines(topic="landing-page")     // Padrões de landing pages
+2. get_style_guide_tags()                   // Ver tags disponíveis
+3. get_style_guide(tags=["AI", "tech", "modern", "startup"])  // Inspiração visual
+4. Mostrar resultados para aprovação antes de implementar
+```
+
+**Resistindo a Racionalizações Comuns:**
+
+| Racionalização | Resposta Correta |
+|----------------|------------------|
+| "Usuário tem pressa, vou pular Pencil" | Pencil **acelera** o processo - inspiração visual evita retrabalho |
+| "Usuário não conhece Pencil, vou usar texto" | Mostre os resultados do Pencil - experiência visual convence mais |
+| "Sem arquivo .pen, melhor usar método antigo" | Inicie `get_editor_state()` para verificar se pode abrir novo documento |
+| "Configurar Pencil vai demorar muito" | 2 minutos de setup economizam horas de alinhamento posterior |
+
+**Não usar Pencil apenas quando:**
+- Usuário já tem referências visuais específicas (links, screenshots)
+- Projeto tem Design System consolidado e usuário quer seguir fielmente
+- Tarefa é apenas ajuste pequeno em interface existente
 
 ### Fase 3 — Plano de Implementação
 
