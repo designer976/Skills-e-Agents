@@ -55,6 +55,7 @@ O `settings.json` global define três camadas de proteção:
 | `setup-project` | ⚙️ | Configura um projeto novo para usar os agentes globais |
 | `atualizar-skill-agent` | 🔄 | Sincroniza os skills com a versão mais recente do GitHub |
 | `designer` | 🟣 | Valida specs, garante consistência com Design System e planeja implementações |
+| `designer-ux` | 🎨 | Auditoria UX (Nielsen), acessibilidade WCAG 2.2, design de interação e fundamentos visuais |
 | `front-end-ui` | 🔵 | Implementa componentes visuais e UI com tokens do Design System |
 | `front-end-code` | 🟢 | Revisa código frontend: performance, TypeScript, acessibilidade |
 | `all-agents` | — | Pipeline completo: Designer → Front-end-UI → Front-end-Code → Designer |
@@ -119,6 +120,7 @@ Caso queira invocar um skill diretamente:
 /setup-project         - Configurar projeto novo
 /atualizar-skill-agent - Sincronizar skills com GitHub
 /designer              - Agente de design
+/designer-ux           - Auditoria de UX, acessibilidade WCAG e interação
 /front-end-ui          - Implementação visual
 /front-end-code        - Revisão de código frontend
 /backend               - Implementação de API

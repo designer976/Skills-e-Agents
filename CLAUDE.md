@@ -23,6 +23,7 @@ Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementa
 | Nova tela do zero sem nenhuma spec | `all-agents` |
 | Implementar + revisar com spec já validada | `all-front-end` |
 | Novo componente, tela ou ajuste visual sem spec clara | `designer` |
+| UX audit, acessibilidade WCAG, animações, estados, hierarquia visual | `designer-ux` |
 | Implementação de UI com spec já definida | `front-end-ui` |
 
 ### Backend / Infra

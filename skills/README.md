@@ -20,6 +20,7 @@ git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
 | Skill | Descrição |
 |-------|-----------|
 | `designer` | Valida specs, garante consistência com Design System e planeja implementações |
+| `designer-ux` | Auditoria de UX (Nielsen), acessibilidade WCAG 2.2, design de interação (estados, animações, timing) e fundamentos visuais |
 | `front-end-ui` | Implementa componentes visuais e UI com tokens do Design System |
 | `front-end-code` | Revisa código frontend: performance, TypeScript, acessibilidade |
 | `all-agents` | Pipeline completo: Designer → Front-end-UI → Front-end-Code → Designer |
@@ -60,6 +61,7 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 | Nova tela do zero sem spec | `all-agents` |
 | Implementar + revisar com spec validada | `all-front-end` |
 | Componente ou ajuste visual sem spec clara | `designer` |
+| UX audit, acessibilidade, animações, estados, hierarquia visual | `designer-ux` |
 | Implementação de UI com spec definida | `front-end-ui` |
 | Endpoint, API, controller, service, DTO | `backend` |
 | Schema, migração, model, query, índice | `database` |
@@ -75,6 +77,7 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 
 ```
 /designer          - Agente de design
+/designer-ux       - Auditoria de UX, acessibilidade WCAG e interação
 /front-end-ui      - Implementação visual
 /backend           - Implementação de API
 /database          - Banco de dados
@@ -101,3 +104,4 @@ A aprovação antecipada ("pode fazer tudo") **não** bypassa o gate.
 | `pagespeed` | > 5 componentes ou qualquer impacto visual |
 | `seo-manager` | Reestruturação de URL ou > 5 páginas com mudanças técnicas |
 | `redator` | > 3 tipos de entrega simultâneos → propõe sequência faseada |
+| `designer-ux` | > 4 páginas/componentes afetados ou mudanças em componentes base |
