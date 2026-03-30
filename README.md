@@ -189,15 +189,44 @@ Ao criar um projeto novo, rode uma vez:
 
 Isso injeta automaticamente o bloco do Analista no `CLAUDE.md` local do projeto.
 
-## Manter skills atualizados
+## Manter skills e plugins atualizados
 
+### Skills
 Para sincronizar os skills com a versão mais recente do GitHub:
 
 ```
 /atualizar-skill-agent
 ```
 
-Após atualizar, abra uma nova conversa para carregar os skills atualizados.
+### Plugins
+Para atualizar plugins que fornecem funcionalidades aos skills:
+
+```bash
+# Verificar plugins instalados e versões
+/plugin list
+
+# Atualizar plugin específico
+/plugin update github@claude-plugins-official
+
+# Atualizar todos os plugins
+/plugin update
+
+# Verificar se há updates disponíveis
+/plugin check-updates
+```
+
+### Automação
+Configure atualizações automáticas:
+
+```bash
+# Skills: a cada 7 dias
+/loop 7d /atualizar-skill-agent
+
+# Plugins: a cada 30 dias
+/loop 30d /plugin update
+```
+
+**Após atualizar skills ou plugins, abra uma nova conversa para carregar as versões atualizadas.**
 
 ## CLAUDE.md global
 
