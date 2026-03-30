@@ -25,6 +25,12 @@ Ao receber uma solicitação, verifique se contém:
   - *Acolhimento & Proximidade* — apps colaborativos, onboarding
   - *Sofisticação & Confiança* — ferramentas enterprise, financeiro
   - *Clareza & Objetividade* — utilidades, produtividade
+- **Referências visuais** — tem exemplos específicos que inspirem a direção visual?
+  - Links de sites que gosta (Awwwards, Dribbble, sites de referência)
+  - Concorrentes ou produtos similares com visual interessante
+  - Screenshots, mockups ou wireframes existentes
+  - Bibliotecas de componentes preferidas (Tailwind UI, shadcn examples, Vercel Design)
+  - Se não tiver referências → pergunte se quer sugestões baseadas no tom visual definido
 - Se deve **reutilizar** componente existente do DS ou criar novo
 
 Se faltar qualquer informação → **pergunte ao usuário antes de continuar**.
