@@ -2,6 +2,64 @@
 
 Skills globais para Claude Code com pipeline de agentes para desenvolvimento completo: inception de projeto, design, frontend, backend, banco de dados, segurança, performance, SEO, DevOps e conteúdo.
 
+## Por que este modelo é diferente?
+
+### 🛡️ **Safety-First vs Speed-First**
+**Agentes tradicionais:** Focam em automação rápida - "como posso te ajudar a ir mais rápido?"
+**Nosso modelo:** Força disciplina engenharia mesmo quando "atrapalha" - bloqueia push direto para main, exige Business Canvas, resiste a shortcuts sob pressão.
+
+### 🎭 **Especialização Profissional Real**
+**Multi-agent systems atuais:** Agentes genéricos (research, writing, analysis)
+**Nosso modelo:** Espelha equipe de desenvolvimento real com expertise específica:
+- `project-manager` → Business Canvas obrigatório antes de tech
+- `database` → EnterWorktree para operações destrutivas
+- `devops` → Production Readiness Checklist
+- `github-integrator` → Bloqueia workflows perigosos
+
+### 🔄 **TDD Aplicado à Documentação**
+**Únicos que conhecemos:** RED-GREEN-REFACTOR para criar skills:
+- **RED**: Testar pressure scenarios, capturar racionalizações típicas
+- **GREEN**: Skills que resistem especificamente a esses shortcuts
+- **REFACTOR**: Plugar novos buracos encontrados em testing
+
+### 🚨 **Pressure Resistance Sistemática**
+**Agentes comuns:** "Ok, como você quiser" quando usuário tem pressa
+**Nosso modelo:** Tabelas de rationalization resistance:
+
+```
+"É emergência" → "Emergências causam bugs. PR leva 2 min."
+"É só uma linha" → "Bugs pequenos quebram sistemas grandes."
+"Já testei local" → "Local ≠ produção. CI/CD exists for a reason."
+```
+
+### 🧠 **Context-Aware Auto-Delegation**
+**Diferencial:** Analista que detecta tipo de tarefa e aciona especialista correto automaticamente:
+
+```
+"fazer login" → `all-agents` (nova tela sem spec)
+"query lenta" → `database` (performance)
+"deploy produção" → `devops` (deployment)
+```
+
+### 🔗 **Safety-Aware Handoffs**
+**Inovação:** Handoffs baseados em risco e completude real:
+```
+Database change completo → `reviewer` audita qualidade
+Review aprovado → `devops` faz Production Readiness
+Schema breaking → `backend` alinha mudanças
+```
+
+### 🏢 **Business-First Architecture**
+**Outros:** Assumem tech stack ou perguntam preferência técnica
+**Nosso:** `project-manager` FORÇA investigação de negócio antes de sugerir qualquer tecnologia.
+
+---
+
+**Resultado:** Como ter uma **equipe sênior virtual** que se auto-organiza, cada um expert na sua área, com safety protocols que não permitem ser quebrados mesmo sob pressão.
+
+**Most agents:** "How can I help you go faster?"
+**Our agents:** "How can I help you go safely and avoid shortcuts you'll regret?"
+
 ## Instalação
 
 ```bash
