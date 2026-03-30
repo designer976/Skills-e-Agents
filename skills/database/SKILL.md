@@ -15,10 +15,38 @@ Antes de qualquer alteração, apresente ao usuário:
 
 1. O que foi detectado (ex: "Adicionar tabela `services` com relação a `professionals`")
 2. O que será feito (arquivos a alterar, migrações a gerar)
-3. **Se for operação destrutiva** (DROP, DELETE, ALTER removendo colunas) → destacar explicitamente e pedir confirmação reforçada
+3. **Análise de destrutividade** e **isolamento obrigatório:**
+
+### Operações Destrutivas - WORKTREE OBRIGATÓRIO
+
+**SEMPRE use `EnterWorktree` para:**
+- `DROP TABLE`, `DROP COLUMN`, `DROP INDEX`
+- `ALTER TABLE ... DROP COLUMN` ou mudanças de tipo que causam perda
+- Migrations que removem dados existentes
+- Mudanças de schema que quebram código backend
+
+**Razão:** Protege branch principal de operações irreversíveis durante testes e correções.
+
+### Safety Checks Obrigatórios
+
+**Para operações destrutivas, SEMPRE:**
+
+1. **Backup check:** "⚠️ Você tem backup recente dos dados que serão perdidos?"
+2. **Environment check:** "⚠️ Esta mudança será aplicada em PRODUÇÃO? Se sim, operação deve ser feita fora horário pico."
+3. **Dependencies check:** "⚠️ Código backend usa dados que serão removidos? Você tem plano de migração?"
+4. **Rollback plan:** "⚠️ Como reverter se algo der errado? (backup restore, migration down, etc.)"
+
+### Confirmation Levels
+
+| Tipo de Operação | Confirmação |
+|------------------|-------------|
+| **Additive** (CREATE, ADD COLUMN) | Confirmação simples |
+| **Destructive** (DROP, ALTER removing data) | "Digite CONFIRMO DESTRUIÇÃO" |
+| **Schema breaking** (Rename, change types) | Worktree + "CONFIRMO DESTRUIÇÃO" |
+
 4. Peça confirmação: "Posso prosseguir?"
 
-**Migrações podem ser irreversíveis em produção. Sempre confirmar antes de aplicar.**
+**Migrações podem ser irreversíveis em produção. NUNCA pular safety checks.**
 Se o usuário recusar → encerre sem modificar nada.
 
 ## Workflow

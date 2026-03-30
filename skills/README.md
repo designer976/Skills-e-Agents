@@ -19,21 +19,29 @@ git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
 
 | Skill | Descrição |
 |-------|-----------|
-| `designer` | Valida specs, garante consistência com Design System e planeja implementações |
+| `designer` | Valida specs, garante consistência com Design System, planeja implementações. **Enhanced:** Visual references (Awwwards, Dribbble), Pencil integration para mockups |
 | `designer-ux` | Auditoria de UX (Nielsen), acessibilidade WCAG 2.2, design de interação (estados, animações, timing) e fundamentos visuais |
 | `front-end-ui` | Implementa componentes visuais e UI com tokens do Design System |
 | `front-end-code` | Revisa código frontend: performance, TypeScript, acessibilidade |
 | `all-agents` | Pipeline completo: Designer → Front-end-UI → Front-end-Code → Designer |
 | `all-front-end` | Pipeline front-end: Front-end-UI → Front-end-Code |
 
+### Projeto & DevOps
+
+| Skill | Descrição |
+|-------|-----------|
+| `project-manager` | **NEW:** Business Canvas, tech stack selection, project inception. Força investigação de negócio ANTES de sugerir tecnologia |
+| `github-integrator` | **NEW:** Git/GitHub workflows seguros. Previne push direto para main, força PR workflow, commits semânticos obrigatórios |
+| `devops` | **NEW:** CI/CD, production deployment, monitoring setup. Production Readiness Checklist obrigatório antes de deploy |
+
 ### Backend / Infra
 
 | Skill | Descrição |
 |-------|-----------|
 | `backend` | Implementa APIs, endpoints, services, controllers, DTOs e autenticação |
-| `database` | Schema, migrações, models, queries e índices de banco de dados |
+| `database` | Schema, migrações, models, queries e índices de banco de dados. **Enhanced:** EnterWorktree obrigatório para operações destrutivas, safety checks |
 | `tester` | Testes unitários, de integração e E2E |
-| `reviewer` | Revisão geral de código e auditoria de qualidade |
+| `reviewer` | Revisão geral de código e auditoria de qualidade. **Enhanced:** GitHub integration, PR workflows, EnterWorktree para mudanças arriscadas |
 
 ### Segurança / Performance
 
@@ -58,15 +66,22 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 
 | Sinal na solicitação | Skill |
 |----------------------|-------|
+| **Projeto & Setup** |  |
+| Setup novo projeto, escolha de stack, "criar/construir do zero" | `project-manager` |
+| Deploy produção, CI/CD, configurar hosting | `devops` |
+| PR, Git workflows, branch operations | `github-integrator` |
+| **Frontend/Visual** |  |
 | Nova tela do zero sem spec | `all-agents` |
 | Implementar + revisar com spec validada | `all-front-end` |
 | Componente ou ajuste visual sem spec clara | `designer` |
 | UX audit, acessibilidade, animações, estados, hierarquia visual | `designer-ux` |
 | Implementação de UI com spec definida | `front-end-ui` |
+| **Backend/Infra** |  |
 | Endpoint, API, controller, service, DTO | `backend` |
 | Schema, migração, model, query, índice | `database` |
 | Testes unitários, integração ou E2E | `tester` |
 | Revisão geral ou auditoria de qualidade | `reviewer` |
+| **Segurança/Performance** |  |
 | Revisão de segurança, vulnerabilidades, OWASP | `security-reviewer` |
 | Corrigir vulnerabilidades já identificadas | `security-fixer` |
 | PageSpeed, Lighthouse score, Core Web Vitals | `pagespeed` |
@@ -76,14 +91,25 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 ## Uso manual
 
 ```
-/designer          - Agente de design
+# Projeto & Setup
+/project-manager   - Setup de projeto, Business Canvas, escolha de stack
+/github-integrator - Git workflows seguros, PR management
+/devops            - CI/CD, production deployment, monitoring
+
+# Frontend / Visual
+/designer          - Agente de design (Enhanced: visual references, Pencil)
 /designer-ux       - Auditoria de UX, acessibilidade WCAG e interação
 /front-end-ui      - Implementação visual
-/backend           - Implementação de API
-/database          - Banco de dados
-/tester            - Testes
-/reviewer          - Revisão de código
 /all-agents        - Pipeline completo
+/all-front-end     - Pipeline frontend
+
+# Backend / Infra
+/backend           - Implementação de API
+/database          - Banco de dados (Enhanced: safety layer, worktrees)
+/tester            - Testes
+/reviewer          - Revisão de código (Enhanced: GitHub integration)
+
+# Segurança / Performance
 /security-reviewer - Auditoria de segurança (OWASP)
 /security-fixer    - Correção de vulnerabilidades
 /pagespeed         - Otimização de performance / Lighthouse
@@ -91,11 +117,12 @@ O Analista classifica cada solicitação e aciona o skill correto automaticament
 /redator           - Copywriting e UX writing
 ```
 
-## Debate Gate
+## Safety Gates & Protection Mechanisms
 
-Os skills abaixo possuem um **Debate Gate** integrado: quando o escopo excede um threshold,
-o agente pausa, apresenta 3 opções e aguarda escolha explícita antes de prosseguir.
-A aprovação antecipada ("pode fazer tudo") **não** bypassa o gate.
+Os skills possuem diferentes níveis de proteção para prevenir ações arriscadas:
+
+### Debate Gate (Escopo Elevado)
+Quando o escopo excede um threshold, o agente pausa e apresenta opções antes de prosseguir:
 
 | Skill | Threshold de ativação |
 |-------|----------------------|
@@ -105,3 +132,14 @@ A aprovação antecipada ("pode fazer tudo") **não** bypassa o gate.
 | `seo-manager` | Reestruturação de URL ou > 5 páginas com mudanças técnicas |
 | `redator` | > 3 tipos de entrega simultâneos → propõe sequência faseada |
 | `designer-ux` | > 4 páginas/componentes afetados ou mudanças em componentes base |
+
+### Permission Gate (Operações Críticas)
+Confirmação obrigatória antes de executar:
+
+| Skill | Protection Level |
+|-------|------------------|
+| `database` | 🔴 **EnterWorktree obrigatório** para DROP, ALTER destrutivos. Confirmação "CONFIRMO DESTRUIÇÃO" |
+| `github-integrator` | 🔴 **Bloqueia push direto para main**. Força PR workflow sempre |
+| `devops` | 🔴 **Production Readiness Checklist** obrigatório antes de deploy produção |
+| `project-manager` | 🟡 **Business Canvas obrigatório** antes de sugestões de tech stack |
+| `reviewer` | 🟡 **EnterWorktree recomendado** para mudanças arriscadas ou refactoring grande |

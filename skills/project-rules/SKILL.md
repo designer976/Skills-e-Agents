@@ -1,9 +1,9 @@
 ---
 name: project-rules
-description: Regras e instruções obrigatórias do projeto Easy Salon. Ative sempre que um agente precisar de contexto sobre as convenções do projeto antes de implementar qualquer coisa.
+description: Regras e instruções obrigatórias do projeto Rios ID. Ative sempre que um agente precisar de contexto sobre as convenções do projeto antes de implementar qualquer coisa.
 ---
 
-# Regras do Projeto — Easy Salon
+# Regras do Projeto — Rios ID
 
 > Estas regras são obrigatórias para **todos os agentes e skills**. Qualquer implementação deve seguir estas instruções antes de escrever qualquer código.
 
@@ -12,17 +12,17 @@ description: Regras e instruções obrigatórias do projeto Easy Salon. Ative se
 ## 1. Design System é a base de tudo — REGRA INVIOLÁVEL
 
 - **Antes de qualquer implementação**, consulte o Design System:
-  - Componentes disponíveis: `src/components/ui/`
-  - Documentação visual: `src/pages/DesignSystemPage.tsx`
-  - Tokens de cor e espaçamento: `tailwind.config.ts` e `src/index.css`
+  - Componentes disponíveis: `components/ui/`
+  - Documentação visual: `app/admin/design-system/page.tsx`
+  - Tokens de cor e espaçamento: `tailwind.config.ts` e `app/globals.css`
 
 - O DS é o componente **Mestre / Pai**. Toda tela, modal, form e elemento visual do sistema deve herdar seus padrões.
 
-- **Nunca reimplemente** o que já existe no DS. Se o componente existe em `src/components/ui/`, use-o sem modificar.
+- **Nunca reimplemente** o que já existe no DS. Se o componente existe em `components/ui/`, use-o sem modificar.
 
 ### Fidelidade visual obrigatória
 
-O resultado renderizado **deve ser visualmente idêntico** ao demo em `DesignSystemPage.tsx`. Qualquer diferença é um defeito a corrigir — sem exceção.
+O resultado renderizado **deve ser visualmente idêntico** ao demo em `app/admin/design-system/page.tsx`. Qualquer diferença é um defeito a corrigir — sem exceção.
 
 Isso inclui:
 - **Casing de texto**: headers de tabela em Title Case (`"Nome do Serviço"`, não `"NOME DO SERVIÇO"`)
@@ -31,7 +31,7 @@ Isso inclui:
 - **Ícones**: usar os mesmos ícones mostrados no DS — não substituir por equivalentes
 - **Estados visuais**: hover, focus, disabled, destructive — exatamente como o DS demonstra
 
-> **Regra prática**: antes de considerar qualquer implementação concluída, abra `DesignSystemPage.tsx`, localize o componente usado e compare visualmente. Se houver qualquer diferença → corrija antes de fechar.
+> **Regra prática**: antes de considerar qualquer implementação concluída, abra `app/admin/design-system/page.tsx`, localize o componente usado e compare visualmente. Se houver qualquer diferença → corrija antes de fechar.
 
 ---
 
@@ -42,8 +42,8 @@ Se a tarefa exigir um componente que **não existe** no DS:
 1. O agente **deve perguntar ao usuário** antes de criar:
    > "O componente `XYZ` não existe no DS. Deseja que eu o crie?"
 2. Se o usuário confirmar, **ativar o agente `/front-end-ui`** para criar o componente.
-3. O novo componente deve ser criado **primeiro** em `src/components/ui/`.
-4. Depois registrar na documentação em `src/pages/DesignSystemPage.tsx`.
+3. O novo componente deve ser criado **primeiro** em `components/ui/`.
+4. Depois registrar na documentação em `app/admin/design-system/page.tsx`.
 5. Só então usar na feature/tela destino.
 
 **Nunca criar componente novo sem aprovação explícita do usuário.**
@@ -59,7 +59,7 @@ Se a tarefa exigir um componente que **não existe** no DS:
 | Borda | `border-border` | `border-gray-*`, `border-zinc-*` |
 | Radius | `rounded-lg` | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
 | Hover | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*`, `hover:bg-gray-*` |
-| Icones | `import { ... } from "lucide-react"` | `@tabler/icons-react`, outras libs |
+| Icones | `import { ... } from "lucide-react"` | outras libs de ícones |
 
 **Excecao aceita:** cores semanticas intencionais (`bg-green-500` = sucesso, `bg-red-500` = erro, `bg-yellow-500` = alerta, cores de marca em modais de celebracao/onboarding).
 
@@ -100,7 +100,7 @@ Todo modal de **cadastro / edicao** deve seguir o padrao DS:
 - Labels sempre com `<Label>` do DS
 - Campos de erro com `<p className="text-destructive text-xs mt-1">`
 - Required marker: `<span className="text-destructive">*</span>`
-- Inputs usam `className="salon-input w-full"`
+- Inputs usam `className="w-full"` com o componente `<Input>` do DS
 - Spacing entre campos: `space-y-4` ou `space-y-6`
 
 ---
@@ -173,8 +173,8 @@ const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<
 
 ```tsx
 const { data, isLoading, error } = useQuery({
-  queryKey: ['services', filters],
-  queryFn: () => fetchServices(filters),
+  queryKey: ['recursos', filters],
+  queryFn: () => fetchRecursos(filters),
 })
 ```
 
@@ -187,13 +187,13 @@ const { data, isLoading, error } = useQuery({
 const queryClient = useQueryClient()
 
 const { mutate, isPending } = useMutation({
-  mutationFn: createService,
+  mutationFn: createRecurso,
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['services'] })
-    toast.success('Serviço criado')
+    queryClient.invalidateQueries({ queryKey: ['recursos'] })
+    toast.success('Criado com sucesso')
   },
-  onError: (error) => {
-    toast.error('Erro ao criar serviço')
+  onError: () => {
+    toast.error('Erro ao salvar')
   },
 })
 ```
@@ -206,10 +206,12 @@ const { mutate, isPending } = useMutation({
 
 ## Stack do Projeto
 
-- React 18 + TypeScript + Vite
+- Next.js 16 + React 19 + TypeScript
 - Tailwind CSS + shadcn/ui + Radix UI
 - React Hook Form + Zod
 - TanStack Query (React Query)
-- React Router DOM
-- Lucide React (icones)
-- `rounded-lg` = `var(--radius)` = token canonico de border-radius
+- Next.js App Router (pasta `app/`)
+- Lucide React (ícones)
+- Sonner (toasts)
+- `rounded-lg` = `var(--radius)` = token canônico de border-radius
+- Fonte: Plus Jakarta Sans (`var(--font-plus-jakarta)`)

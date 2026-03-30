@@ -15,10 +15,26 @@ Antes de qualquer revisão, apresente ao usuário:
 
 1. Escopo identificado (arquivos ou pastas que serão revisados)
 2. Tipo de revisão (qualidade geral, segurança, performance, arquitetura)
-3. Peça confirmação: "Posso prosseguir?"
+3. **GitHub workflow** (se aplicável):
+   - Usar worktree isolado? → `EnterWorktree` para review sem contaminar branch principal
+   - Criar PR após review aprovado? → `gh pr create` com template adequado
+   - Branch de destino → main/master ou custom
+4. Peça confirmação: "Posso prosseguir?"
 
 **Aguarde confirmação explícita antes de iniciar a análise.**
 Se o usuário recusar → encerre.
+
+### Decidindo sobre Worktree
+
+**Use `EnterWorktree` quando:**
+- Review envolve mudanças arriscadas (schema, auth, migrations)
+- Usuário quer testar correções sem impactar branch principal
+- Código pode quebrar durante iterações do Ralph Loop
+
+**Não use worktree quando:**
+- Review é apenas leitura/análise estática
+- Mudanças são pequenas e seguras
+- Usuário já está em branch feature
 
 ## Workflow
 
@@ -98,16 +114,77 @@ REVISAO CONCLUIDA
 - Arquivos revisados: [lista]
 ```
 
+## GitHub Integration (Pós-Review)
+
+**Quando review está aprovado** (0 🔴 Críticos):
+
+### Opção A: Finalizar em Worktree + Criar PR
+Se usou `EnterWorktree`:
+```bash
+1. ExitWorktree(action="keep")  // Mantém branch com changes
+2. gh pr create --title "[Tipo] Descrição" --body "Template baseado no tipo de mudança"
+3. gh pr ready  // Marca como ready for review se estava em draft
+```
+
+### Opção B: Criar PR no Branch Atual
+Se não usou worktree:
+```bash
+1. gh pr create --title "[Tipo] Descrição" --body "Template baseado no tipo"
+2. Opcional: gh pr edit --add-reviewer @team/reviewers
+```
+
+### Templates de PR por Tipo
+
+| Tipo de Mudança | Título | Body Template |
+|------------------|--------|---------------|
+| **Security fix** | `[SECURITY] Fix: descrição` | OWASP issues resolved + security checklist |
+| **Feature** | `[FEAT] Add: descrição` | Feature overview + testing instructions |
+| **Bugfix** | `[FIX] Resolve: descrição` | Bug description + fix approach |
+| **Refactor** | `[REFACTOR] Improve: descrição` | Changes made + performance impact |
+
+**Pergunte ao usuário:**
+> "Review aprovado! Quer que eu crie o PR automaticamente? Qual tipo de mudança é essa?"
+
+### Quando NÃO criar PR automaticamente
+- Review tem 🔴 Críticos ainda não resolvidos
+- Usuário está fazendo work-in-progress
+- Branch não está ready for review
+- Mudanças são parte de feature maior
+
 ## Handoff
 
-Ao concluir a revisão, com base no que foi encontrado:
+### Quando review tem 🔴 Críticos:
 
+Delegar correções por tipo de problema:
 - Problemas exclusivamente de UI/componentes React → use a ferramenta **Skill** para invocar `front-end-code` IMEDIATAMENTE.
 - Problemas de backend/API → use a ferramenta **Skill** para invocar `backend` IMEDIATAMENTE.
 - Problemas de schema/queries → use a ferramenta **Skill** para invocar `database` IMEDIATAMENTE.
 - Problemas de cobertura de testes → use a ferramenta **Skill** para invocar `tester` IMEDIATAMENTE.
 - Se múltiplas camadas afetadas → informe o usuário e invoque por prioridade (críticos primeiro).
-- Se tudo correto → declare aprovação e encerre.
+
+### Quando review aprovado (0 🔴 Críticos):
+
+**Pergunte ao usuário sobre GitHub workflow:**
+> "Review aprovado! Próximas opções:
+> A) Criar PR automaticamente (especifique tipo: FEAT/FIX/SECURITY/REFACTOR)
+> B) Finalizar aqui e você cria PR manualmente depois
+> C) Executar testes adicionais antes do PR
+>
+> Se usou worktree, posso fazer `ExitWorktree(keep)` e criar PR na sequência."
+
+### GitHub Actions (se usuário escolher opção A):
+
+```bash
+1. Se em worktree → ExitWorktree(action="keep")
+2. gh pr create --title "[TIPO] Título baseado no escopo" \
+   --body "$(generate_pr_template_based_on_review_type)" \
+   --draft  # Inicialmente em draft até confirmação final
+3. gh pr ready  # Remove draft status se usuário aprovar
+```
+
+### Finalização
+- Se GitHub workflow executado → confirmar PR criado e URL
+- Se usuário escolheu manual → declare aprovação e encerre
 
 ## Loop Iterativo (Ralph Loop)
 
