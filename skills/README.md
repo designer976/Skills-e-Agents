@@ -54,7 +54,102 @@ Skills globais para Claude Code com pipeline de agentes para desenvolvimento fro
 git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
 ```
 
-2. Adicione as regras de auto-ativação no seu `~/.claude/CLAUDE.md` (veja a seção abaixo).
+2. Configure ativação manual no seu `~/.claude/CLAUDE.md` (veja a seção abaixo).
+
+## 🎯 Como Ativar/Desativar Skills e Agents
+
+### Ativação Manual (Recomendado)
+
+Skills **só ativam quando explicitamente chamados**:
+
+```
+# Análise e roteamento
+/analista              - Classifica tarefa e aciona skill apropriado
+
+# Skills individuais  
+/designer              - Validação de design e specs
+/backend               - APIs, endpoints, autenticação
+/database              - Schema, migrações, queries
+/tester                - Testes unitários, integração, E2E
+/security-reviewer     - Auditoria de segurança
+/pagespeed            - Otimização de performance
+```
+
+### Desativar Temporariamente
+```
+/inactive-agents       - Desativa sistema completamente
+```
+
+### Configuração no CLAUDE.md
+Adicione ao seu `~/.claude/CLAUDE.md`:
+
+```markdown
+# Regras Globais — Claude Code
+
+## ⚠️ IMPORTANTE: SEM ATIVAÇÃO AUTOMÁTICA
+
+**NÃO ative skills automaticamente.** 
+
+**Responda diretamente** para:
+- Perguntas conceituais ("Como funciona X?")
+- Explicações de código ("O que faz esta função?") 
+- Discussões técnicas ("Devo usar X ou Y?")
+- Troubleshooting ("Por que este erro?")
+
+**Use `/analista` APENAS** quando explicitamente chamado pelo usuário.
+```
+
+## 🤔 Quando Usar Skills vs. Trabalho Direto
+
+### Use Skills Quando:
+
+**🟢 Tarefas Complexas:**
+- Implementar nova funcionalidade completa
+- Setup de projeto do zero
+- Auditoria de segurança/performance
+- Workflow que envolve múltiplas etapas
+
+**🟡 Tarefas Especializadas:**
+- Design de componentes com spec
+- Implementação de APIs com regras de negócio
+- Testes que precisam de estratégia específica
+- Correções de vulnerabilidades identificadas
+
+### Trabalhe Diretamente Quando:
+
+**🟢 Tarefas Simples:**
+- Inserir template ou código pré-definido
+- Explicar conceito ou código existente
+- Corrigir erro de syntax específico
+- Responder pergunta conceitual
+
+**🟢 Troubleshooting Rápido:**
+- "Por que este erro?"
+- "Como funciona esta função?"
+- "O que significa este warning?"
+
+**🟢 Modificações Pontuais:**
+- Alterar valor de configuração
+- Ajustar estilo CSS específico
+- Renomear variável
+
+### Regra Prática:
+
+```
+Se você consegue explicar a tarefa em 1 frase simples = trabalhe diretamente
+Se precisa de várias etapas ou validações = use skill apropriado
+```
+
+**Exemplos:**
+
+| Solicitação | Abordagem |
+|-------------|-----------|
+| "Explique este código React" | **Direto** - é explicação |
+| "Crie componente de login completo" | **Skill** - `/designer` → `/front-end-ui` |
+| "Corrija este erro de TypeScript" | **Direto** - correção pontual |
+| "Implemente autenticação JWT" | **Skill** - `/backend` |
+| "O que é Next.js?" | **Direto** - pergunta conceitual |
+| "Otimize performance desta página" | **Skill** - `/pagespeed` |
 
 ## Skills disponíveis
 
