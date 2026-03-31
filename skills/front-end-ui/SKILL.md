@@ -328,3 +328,4 @@ npm run lint
 - **Simple-by-default** — complex workflows only when necessary
 - **User experience first** — always consider loading, empty, error states
 - **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. A bug fix doesn't need surrounding code cleaned up. A simple feature doesn't need extra configurability. Don't add docstrings, comments, or type annotations to code you didn't change
+- **NO NPM UPDATES** — Never suggest npm update, npm audit fix, or package version updates. Work with existing dependencies as-is

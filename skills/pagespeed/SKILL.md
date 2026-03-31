@@ -221,3 +221,4 @@ MELHORIAS IMPLEMENTADAS
 - Nunca declarar conclusão sem build limpo como evidência
 - Ganhos devem ser estimados com contexto — "vai melhorar" sem número é inútil
 - **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. A performance fix doesn't need code cleanup. Focus only on the specific performance metrics requested
+- **NO NPM UPDATES** — Never suggest npm update, npm audit fix, or package version updates. Optimize performance with existing dependencies

@@ -306,3 +306,4 @@ CORREÇÕES APLICADAS
 - Após cada camada corrigida, invocar o skill especializado via ferramenta Skill
 - Nunca declarar conclusão sem evidência de verificação (tsc + lint)
 - Se a correção exigir mudança arquitetural → escalar para debate antes de prosseguir
+- **NO NPM UPDATES** — Never suggest npm update, npm audit fix, or package version updates to fix vulnerabilities. Fix vulnerabilities through code changes, not dependency updates

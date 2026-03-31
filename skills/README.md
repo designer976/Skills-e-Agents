@@ -39,6 +39,12 @@ Skills globais para Claude Code com pipeline de agentes para desenvolvimento fro
 - Focus only on specific request - no "while I'm here" improvements
 - No extra documentation, comments, or optimizations unless explicitly requested
 
+### 🚫 **7. NPM Update Protection (NEW)**
+- **NO NPM UPDATES** rule em todos os skills que lidam com dependências
+- Never suggest npm update, npm audit fix, or package version updates
+- Work with existing dependencies as-is
+- Fix issues through code changes, not dependency changes
+
 ## Instalação
 
 1. Copie as pastas de skills para `~/.claude/skills/`:

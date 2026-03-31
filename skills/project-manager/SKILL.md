@@ -258,3 +258,4 @@ Perfect architecture means nothing if team can't execute
 - **Proven technology bias** — stability over trendiness
 - **Team skills priority** — what they can maintain > perfect architecture
 - **MVP thinking** — start simple, add complexity when proven necessary
+- **NO NPM UPDATES** — Never suggest npm update or package version updates during project setup. Use stable, current versions as-is

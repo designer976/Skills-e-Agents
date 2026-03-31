@@ -344,3 +344,4 @@ test('should create user', () => {
 - **Simple-by-default** — complex patterns only when necessary
 - **Graceful degradation** — provide value even without ideal testing setup
 - **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. Test only what was requested. Don't add extra test cases, complex setup, or test utilities not explicitly needed
+- **NO NPM UPDATES** — Never suggest npm update, npm audit fix, or package version updates. Work with existing testing dependencies as-is
