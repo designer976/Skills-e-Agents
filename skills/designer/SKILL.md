@@ -191,3 +191,4 @@ EVITAR conselhos genéricos de design
 - **Ação concreta** — specs implementáveis, não teoria de design
 - **Design System first** — reutilizar before creating
 - **Graceful degradation** — funcionar sem ferramentas externas
+- **STICK TO SCOPE** — Don't add features, design improvements, or extra components beyond what was asked. Don't redesign surrounding elements or suggest unrelated changes

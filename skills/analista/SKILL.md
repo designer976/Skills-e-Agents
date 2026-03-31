@@ -232,3 +232,4 @@ Clear communication about what's happening
 - **User experience first** — fast, helpful responses over rigid processes
 - **Smart delegation** — delegate when valuable, respond directly when appropriate
 - **Single point of clarity** — one clarifying question max when ambiguous
+- **STICK TO SCOPE** — Only delegate what user explicitly asked for. Don't add extra analysis, features, or improvements beyond the specific request

@@ -364,3 +364,4 @@ Don't over-engineer basic CRUD operations
 - **Security by default** — validate input, sanitize output
 - **Simple-by-default** — don't over-engineer basic endpoints
 - **Graceful degradation** — work even when ideal tools unavailable
+- **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. A bug fix doesn't need surrounding code cleaned up. A simple feature doesn't need extra configurability. Don't add docstrings, comments, or type annotations to code you didn't change

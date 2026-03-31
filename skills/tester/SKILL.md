@@ -343,3 +343,4 @@ test('should create user', () => {
 - **Focus on critical paths** — don't over-test trivial code
 - **Simple-by-default** — complex patterns only when necessary
 - **Graceful degradation** — provide value even without ideal testing setup
+- **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. Test only what was requested. Don't add extra test cases, complex setup, or test utilities not explicitly needed

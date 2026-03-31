@@ -1,0 +1,199 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Agentes e Skills — Ativação Manual APENAS
+
+Os agentes são ativados **apenas** quando explicitamente chamados:
+
+- **`/analista`** → Classifica tarefa e aciona skill apropriado  
+- **Skills individuais** → `/designer`, `/backend`, `/database`, etc.
+- **Pipelines** → `/all-agents`, `/all-front-end`
+
+### ⚠️ IMPORTANTE: SEM ATIVAÇÃO AUTOMÁTICA
+
+**NÃO ative skills automaticamente.** 
+
+**Responda diretamente** para:
+- Perguntas conceituais ("Como funciona X?")
+- Explicações de código ("O que faz esta função?") 
+- Discussões técnicas ("Devo usar X ou Y?")
+- Troubleshooting ("Por que este erro?")
+
+**Use `/analista` APENAS** quando explicitamente chamado pelo usuário.
+
+### Tabela de Classificação (APENAS para quando /analista for chamado)
+
+| Sinal na solicitação | Skill |
+|----------------------|-------|
+| Nova tela do zero sem spec | `all-agents` |
+| Implementar + revisar com spec validada | `all-front-end` |
+| Componente ou ajuste visual sem spec clara | `designer` |
+| Implementação de UI com spec definida | `front-end-ui` |
+| Endpoint, API, controller, service, DTO | `backend` |
+| Schema, migração, model, query, índice | `database` |
+| Testes unitários, integração ou E2E | `tester` |
+| Revisão geral ou auditoria de qualidade | `reviewer` |
+
+## Development Commands
+
+### Backend (NestJS)
+
+- `cd backend && npm run start:dev` - Development server with hot reload on port 3000
+- `cd backend && npm run build` - Production build
+- `cd backend && npm run test` - Run unit tests
+- `cd backend && npm run test:cov` - Run tests with coverage
+- `cd backend && npm run test:e2e` - Run end-to-end tests
+- `cd backend && npm run lint` - Run ESLint with auto-fix
+- `cd backend && npm run seed` - Run database seeds
+
+### Frontend (React + Vite)
+
+- `cd frontend && npm run dev` - Development server on port 8080
+- `cd frontend && npm run build` - Production build
+- `cd frontend && npm run test` - Run Vitest tests
+- `cd frontend && npm run test:coverage` - Run tests with coverage
+- `cd frontend && npm run lint` - Run ESLint
+
+### Docker Development
+
+- `docker compose up -d` - Start PostgreSQL and Redis services
+- `docker compose down` - Stop all services
+- `docker compose logs -f postgres` - View database logs
+
+## Architecture Overview
+
+Easy Salon is a multi-tenant SaaS platform for beauty salon management built as a monorepo with:
+
+### Core Technologies
+
+- **Backend**: NestJS + TypeORM + PostgreSQL (multi-tenant with schema-per-tenant)
+- **Frontend**: React 18 + TypeScript + Vite + shadcn/ui + Tailwind CSS
+- **Real-time**: WebSocket for live updates
+- **Cache**: Redis for sessions and hot data
+- **Authentication**: JWT with role-based access control
+
+### Multi-Tenant Architecture
+
+- **Platform Schema**: Shared data (tenants, users, plans)
+- **Tenant Schemas**: Isolated data per tenant (tenant_xyz.\*)
+- **Roles**: Easy Salon (platform admin), Profissional, Recepcionista
+
+### Project Structure
+
+```
+monorepo-easy-salon/
+├── backend/           # NestJS API with TypeORM
+├── frontend/          # React SPA with Vite
+├── packages/          # Shared packages
+│   └── shared-types/  # TypeScript types (when implemented)
+└── docs/             # Architecture and PRD documentation
+```
+
+### Key Backend Modules
+
+- **Auth**: JWT authentication with Passport strategies
+- **Salons**: Multi-tenant salon management with schema generation
+- **Users**: Role-based user management with schedules
+- **Services**: Service catalog with professional assignments
+- **Appointments**: Calendar-based scheduling system
+- **Booking**: Public booking flow for customers
+- **Requests**: Solicitation management (Solicitações)
+- **WebSocket**: Real-time updates for agenda and notifications
+
+### Frontend Architecture
+
+- **Pages**: Route components organized by admin/salon roles
+- **Components**: Reusable UI with shadcn/ui and custom forms/modals
+- **Services**: API clients with mock/real backend switching
+- **Contexts**: AuthContext and WebSocketProvider for global state
+- **Types**: Comprehensive TypeScript definitions for all entities
+
+### Database Design
+
+The system uses PostgreSQL with multi-tenant isolation:
+
+- Each tenant gets its own schema (tenant_xyz)
+- Row-level security and tenant-aware queries
+- Shared platform schema for cross-tenant data
+- Declare table colums in snake_case mode - real postgresql pattern, but notice we have a legact with camelCase, but using lib SnakeNamingStrategy 
+- Be careful to create Indexes and Foreign Keys, check duplication
+
+### Key Features
+
+1. **Multi-tenant salon management** with complete data isolation
+2. **Role-based access control** with three user types
+3. **Real-time appointment scheduling** with WebSocket updates
+4. **Public booking portal** accessible via salon slug
+5. **Service management** with professional assignments
+6. **Request system** for appointment solicitations
+7. **User schedule management** with break periods
+
+### Development Notes
+
+- Uses shared TypeScript types between frontend and backend (planned in packages/shared-types)
+- Backend runs on port 3000, frontend on port 8080
+- Take into account to use Best practices for Style code with Eslint and Prettier rules when you're generating code and use these rules for backend/ and frontend/
+- Don't allow Typescript compilation issues such as: Any Type, Non Return Declared, read tsconfig.json in each project and get the rules.
+- Don't leave functions without Return Types declared
+- Don't leave functions without Any Parameters
+- Be careful about codesmells, make Clean Code, Effective and Simple to get it
+- WebSocket events for real-time agenda updates
+- Comprehensive test coverage requirements (80% for backend)
+- ESLint configuration for both projects with auto-fix
+- Reusable functions, and references for backend and frontend
+- Reusable componentes for frontend
+- When need to create some logics, creare, reusable in functions or classes.
+- Don't use any types, create typos, interfaces or typescript types
+- Test the code base each step that you're implementing some code
+- Docker Compose provides PostgreSQL and Redis for local development
+- Ask the user for the connections, from backend
+  ```
+  DATABASE_HOST=localhost
+  DATABASE_PORT=5432
+  DATABASE_USER=easysalon_user_dev
+  DATABASE_USERNAME=easysalon_user_dev
+  DATABASE_PASSWORD=B1Ww0fc55JD1otJE
+  DATABASE_NAME=easysalon_db_dev
+  DATABASE_SSL=false
+  ```
+- Build application after implementation
+
+### Database Migrations
+
+- Located in `backend/src/migrations/` with schema-specific SQL files. Seeds available in `backend/src/seeds/`.
+- Do not use E:\Dev\Waproject\easy-salon-monorepo\backend\migrations\archive
+- You must create migrations with timestamp prefix on the files, exampla: `1759507979203-do-something`
+- You must create rollback migrations with the same prefix, but add a suffix `rollback` on the
+  end of file, example: `1759507979203-do-somenthing-rollback`
+- When migration has critical level for execution, make a dump first
+
+### Important Architectural Decisions
+
+- Schema-per-tenant for strong data isolation
+- JWT stateless authentication for scalability
+- TypeORM for database operations with multi-tenant connection service
+- WebSocket Gateway for real-time features
+- Mock services in frontend for development/testing
+- Working with concurrency, database transactions, lock
+- Working with UTC dates, build a system for all peaple in the world
+
+# important-instruction-reminders
+
+- Do what has been asked; nothing more, nothing less.
+- As a Software Engineer Senior, You **MUST** build eligible, smart, and reusable code.
+- You **MUST** use Domain Driven Design Phylosophy to make smart and reusable code for Domain Business Rules.
+- You **MUST** create types, interfaces for parameters, function or method returns, Don't declare directly return types.
+- You **MUST** create functions or methods with correct signature, example:
+
+```
+type FnArgType = {}
+type FnReturnType = {}
+function a(arg: FnArgType): Promise<FnArgType> {}
+```
+
+- You **MUST** refactor duplicated code, **FOREVER** and **EVER\***:
+- NEVER create files unless they're absolutely necessary for achieving your goal.
+- ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.
+- You **MUST** remove unused code, unused imports

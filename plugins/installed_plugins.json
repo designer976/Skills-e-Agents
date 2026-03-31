@@ -24,20 +24,20 @@
     "frontend-design@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "C:\\Users\\charl\\.claude\\plugins\\cache\\claude-plugins-official\\frontend-design\\8058cc7743a9",
-        "version": "8058cc7743a9",
+        "installPath": "C:\\Users\\charl\\.claude\\plugins\\cache\\claude-plugins-official\\frontend-design\\8d2be9f67675",
+        "version": "8d2be9f67675",
         "installedAt": "2026-03-30T13:26:36.357Z",
-        "lastUpdated": "2026-03-31T13:33:38.547Z",
+        "lastUpdated": "2026-03-31T13:43:18.022Z",
         "gitCommitSha": "82a3994b0d940bcb153499a89fab4741c5fb1f12"
       }
     ],
     "github@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "C:\\Users\\charl\\.claude\\plugins\\cache\\claude-plugins-official\\github\\8058cc7743a9",
-        "version": "8058cc7743a9",
+        "installPath": "C:\\Users\\charl\\.claude\\plugins\\cache\\claude-plugins-official\\github\\8d2be9f67675",
+        "version": "8d2be9f67675",
         "installedAt": "2026-03-30T13:38:23.848Z",
-        "lastUpdated": "2026-03-31T13:33:38.535Z",
+        "lastUpdated": "2026-03-31T13:43:17.988Z",
         "gitCommitSha": "01611e1e4135a4e3532ed24ddaa8fe675b5bede0"
       }
     ]

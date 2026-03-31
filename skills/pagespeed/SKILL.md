@@ -220,3 +220,4 @@ MELHORIAS IMPLEMENTADAS
 - Mudanças de performance não devem alterar comportamento ou aparência — se alterar, é mudança de feature, não de performance
 - Nunca declarar conclusão sem build limpo como evidência
 - Ganhos devem ser estimados com contexto — "vai melhorar" sem número é inútil
+- **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. A performance fix doesn't need code cleanup. Focus only on the specific performance metrics requested

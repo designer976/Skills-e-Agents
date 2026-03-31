@@ -1,0 +1,292 @@
+{
+  "numStartups": 15,
+  "installMethod": "native",
+  "autoUpdates": false,
+  "hasSeenTasksHint": true,
+  "tipsHistory": {
+    "new-user-warmup": 9,
+    "plan-mode-for-complex-tasks": 11,
+    "terminal-setup": 12,
+    "memory-command": 2,
+    "theme-command": 2,
+    "status-line": 2,
+    "prompt-queue": 7,
+    "enter-to-steer-in-relatime": 2,
+    "todo-list": 2,
+    "install-github-app": 15,
+    "install-slack-app": 15,
+    "drag-and-drop-images": 15,
+    "double-esc-code-restore": 15,
+    "continue": 15,
+    "shift-tab": 15,
+    "image-paste": 4,
+    "desktop-app": 5,
+    "web-app": 5,
+    "mobile-app": 5,
+    "custom-agents": 6,
+    "agent-flag": 6,
+    "feedback-command": 6,
+    "frontend-design-plugin": 9,
+    "color-when-multi-clauding": 7,
+    "permissions": 11,
+    "rename-conversation": 11,
+    "custom-commands": 11,
+    "shift-enter-setup": 12
+  },
+  "promptQueueUseCount": 19,
+  "firstStartTime": "2026-03-18T14:53:40.321Z",
+  "opusProMigrationComplete": true,
+  "sonnet1m45MigrationComplete": true,
+  "userID": "22459ac911e52e6f06d4e91ea49d0e949cf927c09cb9a2cb5ad3921b1d926e53",
+  "changelogLastFetched": 1774275822975,
+  "autoUpdatesProtectedForNative": true,
+  "hasCompletedOnboarding": true,
+  "lastOnboardingVersion": "2.1.78",
+  "clientDataCache": {
+    "data": null,
+    "timestamp": 1773846370657
+  },
+  "lastReleaseNotesSeen": "2.1.80",
+  "projects": {
+    "C:/Users/charl": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "projectOnboardingSeenCount": 2,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": []
+    },
+    "C:/WINDOWS/System32": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "hasCompletedProjectOnboarding": true
+    },
+    "C:/Users/charl/OneDrive/Área de Trabalho/WA/easy-salon-monorepo": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "hasCompletedProjectOnboarding": true,
+      "lastCost": 0.0721506,
+      "lastAPIDuration": 48439,
+      "lastAPIDurationWithoutRetries": 48398,
+      "lastToolDuration": 2630,
+      "lastDuration": 119344,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 305,
+      "lastTotalOutputTokens": 631,
+      "lastTotalCacheCreationInputTokens": 12930,
+      "lastTotalCacheReadInputTokens": 44277,
+      "lastTotalWebSearchRequests": 0,
+      "lastFpsAverage": 5.92,
+      "lastFpsLow1Pct": 31.72,
+      "lastModelUsage": {
+        "us.anthropic.claude-sonnet-4-6": {
+          "inputTokens": 305,
+          "outputTokens": 631,
+          "cacheReadInputTokens": 44277,
+          "cacheCreationInputTokens": 12930,
+          "webSearchRequests": 0,
+          "costUSD": 0.0721506
+        }
+      },
+      "lastSessionId": "580d1ed7-dd26-4c18-ac43-573568f6515a",
+      "lastSessionMetrics": {
+        "frame_duration_ms_count": 666,
+        "frame_duration_ms_min": 0.08729999999923166,
+        "frame_duration_ms_max": 167.23210000000108,
+        "frame_duration_ms_avg": 2.5674384384387916,
+        "frame_duration_ms_p50": 0.9400999999961641,
+        "frame_duration_ms_p95": 8.251149999996414,
+        "frame_duration_ms_p99": 30.45990500000011,
+        "pre_tool_hook_duration_ms_count": 2,
+        "pre_tool_hook_duration_ms_min": 0,
+        "pre_tool_hook_duration_ms_max": 11,
+        "pre_tool_hook_duration_ms_avg": 5.5,
+        "pre_tool_hook_duration_ms_p50": 5.5,
+        "pre_tool_hook_duration_ms_p95": 10.45,
+        "pre_tool_hook_duration_ms_p99": 10.89
+      }
+    },
+    "C:/Users/charl/OneDrive/Área de Trabalho/WA/Easy/easy-salon-monorepo": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "hasCompletedProjectOnboarding": true
+    },
+    "C:/Users/charl/OneDrive/Área de Trabalho/WA/Easy": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false
+    },
+    "c:/Users/charl/OneDrive/Área de Trabalho/WA/Severino": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false
+    }
+  },
+  "officialMarketplaceAutoInstallAttempted": true,
+  "officialMarketplaceAutoInstalled": true,
+  "githubRepoPaths": {
+    "waproject/easy-salon-monorepo": [
+      "C:\\Users\\charl\\OneDrive\\Área de Trabalho\\WA\\Easy\\easy-salon-monorepo",
+      "C:\\Users\\charl\\OneDrive\\Área de Trabalho\\WA\\easy-salon-monorepo"
+    ]
+  },
+  "skillUsage": {
+    "gerar-pr": {
+      "usageCount": 2,
+      "lastUsedAt": 1773936291993
+    },
+    "commit": {
+      "usageCount": 1,
+      "lastUsedAt": 1773935881080
+    },
+    "update-config": {
+      "usageCount": 2,
+      "lastUsedAt": 1774534183554
+    },
+    "all-agents": {
+      "usageCount": 6,
+      "lastUsedAt": 1774878946556
+    },
+    "front-end-code": {
+      "usageCount": 103,
+      "lastUsedAt": 1774964822553
+    },
+    "front-end-ui": {
+      "usageCount": 115,
+      "lastUsedAt": 1774965015245
+    },
+    "designer": {
+      "usageCount": 31,
+      "lastUsedAt": 1774964978186
+    },
+    "all-front-end": {
+      "usageCount": 7,
+      "lastUsedAt": 1774902434372
+    },
+    "analista": {
+      "usageCount": 17,
+      "lastUsedAt": 1774640891471
+    },
+    "atualizar-skill-agent": {
+      "usageCount": 3,
+      "lastUsedAt": 1774879647782
+    },
+    "reviewer": {
+      "usageCount": 12,
+      "lastUsedAt": 1774903191671
+    },
+    "setup-project": {
+      "usageCount": 4,
+      "lastUsedAt": 1774639889485
+    },
+    "project-rules": {
+      "usageCount": 1,
+      "lastUsedAt": 1774624193233
+    },
+    "backend": {
+      "usageCount": 5,
+      "lastUsedAt": 1774909957457
+    },
+    "tester": {
+      "usageCount": 4,
+      "lastUsedAt": 1774902962833
+    },
+    "superpowers:writing-skills": {
+      "usageCount": 8,
+      "lastUsedAt": 1774878330754
+    },
+    "database": {
+      "usageCount": 2,
+      "lastUsedAt": 1774878347482
+    },
+    "pagespeed": {
+      "usageCount": 1,
+      "lastUsedAt": 1774827139213
+    },
+    "ralph-loop:ralph-loop": {
+      "usageCount": 1,
+      "lastUsedAt": 1774877775737
+    },
+    "loop": {
+      "usageCount": 2,
+      "lastUsedAt": 1774880205390
+    },
+    "review": {
+      "usageCount": 1,
+      "lastUsedAt": 1774902730393
+    },
+    "redator": {
+      "usageCount": 1,
+      "lastUsedAt": 1774910449287
+    },
+    "superpowers:systematic-debugging": {
+      "usageCount": 2,
+      "lastUsedAt": 1774963922599
+    },
+    "superpowers:using-superpowers": {
+      "usageCount": 1,
+      "lastUsedAt": 1774964032752
+    },
+    "designer-ux": {
+      "usageCount": 1,
+      "lastUsedAt": 1774964129563
+    }
+  },
+  "feedbackSurveyState": {
+    "lastShownTime": 1773934920589
+  },
+  "showSpinnerTree": false,
+  "hasIdeOnboardingBeenShown": {
+    "vscode": true
+  },
+  "mcpServers": {
+    "pencil": {
+      "command": "c:\\Users\\charl\\.vscode\\extensions\\highagency.pencildev-0.6.36\\out\\mcp-server-windows-x64.exe",
+      "args": [
+        "--app",
+        "visual_studio_code"
+      ],
+      "env": {},
+      "type": "stdio"
+    }
+  },
+  "migrationVersion": 11
+}

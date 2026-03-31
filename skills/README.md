@@ -33,6 +33,12 @@ Skills globais para Claude Code com pipeline de agentes para desenvolvimento fro
 - Mesmo sistema de níveis (🟢 🟡 🔴)
 - Predictable behavior across skills
 
+### 🎯 **6. Scope Creep Protection (NEW)**
+- **STICK TO SCOPE** rule em todos os skills principais
+- Don't add features, refactor code, or make "improvements" beyond what was asked
+- Focus only on specific request - no "while I'm here" improvements
+- No extra documentation, comments, or optimizations unless explicitly requested
+
 ## Instalação
 
 1. Copie as pastas de skills para `~/.claude/skills/`:

@@ -1,0 +1,69 @@
+# Regras Globais — Claude Code
+
+## Agentes e Skills — Ativação Manual APENAS
+
+Os agentes são ativados **apenas** quando explicitamente chamados:
+
+- **`/analista`** → Classifica tarefa e aciona skill apropriado  
+- **Skills individuais** → `/designer`, `/backend`, `/database`, etc.
+- **Pipelines** → `/all-agents`, `/all-front-end`
+
+### Desativar Agentes
+- **`/inactive-agents`** → Desativa sistema de agentes temporariamente
+
+---
+
+## ⚠️ IMPORTANTE: SEM ATIVAÇÃO AUTOMÁTICA
+
+**NÃO ative skills automaticamente.** 
+
+**Responda diretamente** para:
+- Perguntas conceituais ("Como funciona X?")
+- Explicações de código ("O que faz esta função?") 
+- Discussões técnicas ("Devo usar X ou Y?")
+- Troubleshooting ("Por que este erro?")
+
+**Use `/analista` APENAS** quando explicitamente chamado pelo usuário.
+
+---
+
+## Tabela de Classificação (APENAS para quando /analista for chamado)
+
+### Projeto & Setup
+| Sinal na solicitação | Skill a invocar |
+|----------------------|----------------|
+| Setup novo projeto, escolha de stack, "criar/construir do zero" | `project-manager` |
+| Deploy produção, CI/CD, configurar hosting | `devops` |
+| PR, Git workflows, branch operations | `github-integrator` |
+
+### Frontend / Visual
+| Sinal na solicitação | Skill a invocar |
+|----------------------|----------------|
+| Nova tela do zero sem nenhuma spec | `all-agents` |
+| Implementar + revisar com spec já validada | `all-front-end` |
+| Novo componente, tela ou ajuste visual sem spec clara | `designer` |
+| UX audit, acessibilidade WCAG, animações, estados, hierarquia visual | `designer-ux` |
+| Implementação de UI com spec já definida | `front-end-ui` |
+
+### Backend / Infra
+| Sinal na solicitação | Skill a invocar |
+|----------------------|----------------|
+| Endpoint, API, controller, service, DTO ou autenticação | `backend` |
+| Schema, migração, model, query ou índice de banco | `database` |
+| Testes unitários, integração ou E2E | `tester` |
+| Revisão geral de código ou auditoria de qualidade | `reviewer` |
+
+### Segurança / Performance
+| Sinal na solicitação | Skill a invocar |
+|----------------------|----------------|
+| Revisão de segurança, auditoria de vulnerabilidades, OWASP | `security-reviewer` |
+| Corrigir vulnerabilidades já identificadas | `security-fixer` |
+| PageSpeed, Lighthouse score, Core Web Vitals, performance | `pagespeed` |
+| SEO, ranqueamento, meta tags, structured data, sitemap, GSC | `seo-manager` |
+| Copy de landing page, pricing, e-mails, textos de UI, UX writing | `redator` |
+
+### Regras de desempate
+- Sem spec → prefira `all-agents` sobre `designer`
+- Implementar + revisar → prefira `all-front-end` sobre `front-end-ui`
+- Solicitação mista (ex: endpoint + tela) → invoque `backend` primeiro, depois o skill visual
+- Ajuste visual pequeno com spec clara → `front-end-ui` direto
