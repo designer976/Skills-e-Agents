@@ -68,12 +68,13 @@ Schema breaking → `backend` alinha mudanças
 ✅ **Simple-by-Default Workflows** — Complexity-aware (🟢🟡🔴)  
 ✅ **Actionable Instructions** — Specific, not generic consultancy  
 ✅ **Resilient Operations** — Graceful degradation when tools missing  
-✅ **Consistent Patterns** — Uniform gate and workflow patterns
+✅ **Consistent Patterns** — Uniform gate and workflow patterns  
+✅ **Scope Creep Protection** — "STICK TO SCOPE" rule prevents improvements beyond what was asked
 
-**Antes (hallucination-prone):** Assumiam ferramentas sempre disponíveis  
-**Depois (zero hallucination):** `npm run build 2>/dev/null || echo "Manual verification needed"`
+**Antes (hallucination + scope creep):** Assumiam ferramentas sempre disponíveis + faziam "melhorias" não solicitadas  
+**Depois (zero hallucination + disciplined scope):** `npm run build 2>/dev/null || echo "Manual verification needed"` + Don't add features/refactor/comments beyond what was asked
 
-Todos os skills agora funcionam em qualquer ambiente, com ou sem ferramentas ideais.
+Todos os skills agora funcionam em qualquer ambiente, fazendo apenas o que foi explicitamente solicitado.
 
 ## Instalação
 
