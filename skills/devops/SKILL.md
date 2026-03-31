@@ -9,25 +9,6 @@ description: Use when deploying to production, setting up CI/CD pipelines, confi
 
 Você é o **DevOps** — especialista em deployment seguro, CI/CD robusto e infraestrutura production-ready.
 
-## Iron Rule — Production-Ready Antes de Deploy
-
-```
-NUNCA deploy sem Production Readiness Checklist completo
-SEMPRE validar ambiente de staging primeiro
-ZERO deploy direto para produção sem rollback plan
-```
-
-**Racionalizações proibidas:**
-
-| Racionalização | Realidade |
-|----------------|-----------|
-| "Vercel/Netlify cuida de tudo" | Platform ≠ production readiness |
-| "É só um MVP, pode ser simples" | MVP quebrado = usuários perdidos |
-| "Monitoramento depois" | Depois = quando já quebrou |
-| "Backup depois" | Depois = quando dados já sumiram |
-| "Security headers depois" | Depois = quando já foi atacado |
-| "É deploy de teste" | Todo deploy pode afetar usuários |
-
 ## Gate de Permissão (OBRIGATÓRIO — executar PRIMEIRO)
 
 Antes de qualquer deployment:
@@ -36,543 +17,334 @@ Antes de qualquer deployment:
    - 🟢 **Development** — ambiente de testes/desenvolvimento
    - 🟡 **Staging** — ambiente de homologação pré-produção
    - 🔴 **Production** — ambiente final com usuários reais
-2. **Production Readiness level atual** (0-100%)
-3. **Timeline:** quando precisa estar no ar?
-4. **Risk tolerance:** pode ter downtime? por quanto tempo?
-5. Pergunta: "Posso executar Production Readiness Checklist antes de prosseguir?"
+2. **Current platform detection** (Vercel, Netlify, AWS, self-hosted)
+3. **Readiness assessment** necessário baseado no ambiente
+4. Pergunta: "Posso prosseguir com deployment [ambiente] checklist?"
 
-**Para deploy 🔴 Production: Production Readiness Checklist é OBRIGATÓRIO.**
+## Platform Detection - Auto-Adapt Strategy
 
-## Production Readiness Checklist
+### Auto-detect Current Setup
 
-### 📋 Infrastructure & Platform (0-25%)
+**Check for deployment indicators:**
 
-**Platform Evaluation (NUNCA assumir automaticamente):**
+1. **Vercel:**
+   ```
+   Look for: vercel.json, .vercel folder, vercel CLI in package.json
+   Platform characteristics: Next.js optimized, automatic HTTPS
+   ```
 
-| Requirement | Vercel | Railway | AWS | Azure | GCP |
-|-------------|--------|---------|-----|-------|-----|
-| **Custom domains** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Environment variables** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Database hosting** | Partner | ✅ | ✅ | ✅ | ✅ |
-| **File storage** | Limited | ❌ | ✅ | ✅ | ✅ |
-| **Background jobs** | Functions | ✅ | ✅ | ✅ | ✅ |
-| **Cost at scale** | High | Medium | Variable | Variable | Variable |
-| **EU data residency** | Limited | ✅ | ✅ | ✅ | ✅ |
-| **SLA availability** | 99.9% | 99% | 99.99% | 99.99% | 99.99% |
+2. **Netlify:**
+   ```  
+   Look for: netlify.toml, _redirects, netlify CLI
+   Platform characteristics: Static sites, serverless functions
+   ```
 
-**Perguntas obrigatórias ANTES de escolher platform:**
-- Volume de tráfego esperado em 6 meses?
-- Onde dados podem ser armazenados? (LGPD/GDPR)
-- Orçamento mensal para infraestrutura?
-- Precisa de background processing?
-- SLA mínimo aceitável?
+3. **Railway/Render:**
+   ```
+   Look for: railway.json, render.yaml, Dockerfile
+   Platform characteristics: Full-stack applications
+   ```
 
-### 🔒 Security & Compliance (25-50%)
+4. **AWS/Docker:**
+   ```
+   Look for: Dockerfile, docker-compose.yml, aws-cli config
+   Platform characteristics: Full control, complex setup
+   ```
 
-**Security Headers obrigatórios:**
+5. **Not detected:**
+   ```
+   Ask user: "What platform are you planning to deploy to?"
+   Provide platform-agnostic guidance
+   ```
+
+## Deployment Workflows por Ambiente
+
+### 🟢 Development Workflow (Simple)
+
+**Para ambiente de desenvolvimento:**
+- Local testing environment
+- Development builds
+- Basic functionality verification
+
+**Simplified checklist:**
+1. Application builds successfully
+2. Core functionality works locally
+3. No critical errors in console
+4. Environment variables configured
+
+### 🟡 Staging Workflow (Medium)  
+
+**Para pré-produção:**
+
+**Essential checks:**
+1. **Build verification:** Application builds without errors
+2. **Environment parity:** Staging mirrors production setup
+3. **Core functionality:** Critical paths work end-to-end
+4. **Performance baseline:** Acceptable load times
+5. **Security basics:** HTTPS enabled, no dev secrets
+
+**Platform-specific deployment:**
+- Use platform's staging environment feature
+- Test with production-like data (anonymized)
+- Verify integrations work with staging APIs
+
+### 🔴 Production Workflow (Full Checklist)
+
+**Para produção com usuários reais:**
+
+**Mandatory requirements:**
+1. **Staging validation:** Successfully deployed and tested in staging
+2. **Security headers:** Platform-appropriate security configuration  
+3. **Monitoring setup:** Error tracking and uptime monitoring
+4. **Backup strategy:** Data backup and recovery plan
+5. **Rollback plan:** How to revert if deployment fails
+
+## Platform-Specific Configurations
+
+### Auto-Configured Platforms (Vercel, Netlify)
+
+**Benefits:** Automatic HTTPS, CDN, basic security
+**Still need:**
+- Custom domain setup
+- Environment variable management
+- Error monitoring integration
+- Performance monitoring
+
+**Security headers (auto-handle many):**
 ```javascript
-// next.config.js
-const nextConfig = {
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-DNS-Prefetch-Control', value: 'on' },
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
-          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'" }
-        ]
-      }
-    ]
-  }
-}
+// next.config.js or netlify.toml headers
+// Platform handles: HTTPS, HSTS
+// You add: CSP, frame options if needed
 ```
 
-**Environment Management:**
-- [ ] Separate environments: dev, staging, production
-- [ ] Secrets em service seguro (não .env em repo)
-- [ ] Database URLs diferentes por ambiente
-- [ ] API keys rotacionáveis
-- [ ] No hardcoded credentials em código
+### Self-Managed Platforms (AWS, VPS)
 
-**Access Control:**
-- [ ] Deploy keys com permissões mínimas
-- [ ] Branch protection em main/master
-- [ ] Required reviews para production deploy
-- [ ] Two-factor auth habilitado para contas críticas
+**Required manual setup:**
+- SSL/TLS certificates
+- Security headers configuration  
+- Server monitoring
+- Backup automation
+- Load balancing (if needed)
 
-### 🔄 CI/CD Pipeline (50-75%)
+**Security essentials:**
+- Firewall configuration
+- Regular security updates
+- Access key management
+- Database security
 
-**Multi-stage pipeline obrigatório:**
+## CI/CD Pipeline Essentials
 
+### Detect Existing CI/CD
+
+**Check for:**
+```
+GitHub Actions: .github/workflows/
+GitLab CI: .gitlab-ci.yml
+Vercel: Auto-deploy on push
+Netlify: Auto-deploy on push  
+No CI/CD: Manual deployment
+```
+
+### Basic Pipeline Requirements
+
+**Minimum viable pipeline:**
+1. **Build stage:** Application builds successfully
+2. **Test stage:** Critical tests pass (if tests exist)
+3. **Deploy stage:** Deploy to target environment
+
+**Enhanced pipeline (when appropriate):**
+- Linting and code quality checks
+- Security vulnerability scanning
+- Performance testing  
+- Automated rollback on failure
+
+### Sample CI/CD Patterns
+
+**GitHub Actions (generic):**
 ```yaml
-name: Production Deploy
+name: Deploy
 on:
   push:
     branches: [main]
-
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run type-check
-      - run: npm run test
+      - run: npm install
       - run: npm run build
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm audit --audit-level moderate
-      - uses: github/super-linter@v4
-        env:
-          DEFAULT_BRANCH: main
-
-  deploy-staging:
-    needs: [test, security-scan]
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - name: Deploy to staging
-        # Deploy logic here
-
-  smoke-tests:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    steps:
-      - name: Health check staging
-        run: curl -f $STAGING_URL/api/health
-
-  deploy-production:
-    needs: smoke-tests
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Deploy to production
-        # Deploy logic here
-      - name: Health check production
-        run: curl -f $PRODUCTION_URL/api/health
+      - run: npm run test
+      # Platform-specific deploy step
 ```
-
-**Gates obrigatórios:**
-- ✅ All tests passing
-- ✅ Security scan clean
-- ✅ Staging deploy successful
-- ✅ Smoke tests passing
-- ✅ Manual approval para production
-
-### 📊 Monitoring & Observability (75-100%)
-
-**Error Tracking obrigatório:**
-```bash
-# Install error tracking
-npm install @sentry/nextjs
-# ou
-npm install @bugsnag/js @bugsnag/plugin-react
-```
-
-**Performance Monitoring:**
-- [ ] Core Web Vitals tracking
-- [ ] API response time monitoring
-- [ ] Database query performance
-- [ ] Memory/CPU usage alerts
-
-**Uptime Monitoring:**
-```bash
-# Health check endpoint obrigatório
-# pages/api/health.js
-export default function handler(req, res) {
-  // Check database connection
-  // Check external APIs
-  // Check critical services
-
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: process.env.VERCEL_GIT_COMMIT_SHA || 'local'
-  })
-}
-```
-
-**Alerting setup:**
-- [ ] Error rate > 1% → immediate alert
-- [ ] Response time > 3s → warning
-- [ ] Uptime < 99% → critical alert
-- [ ] Disk/Memory > 80% → warning
-
-## Deployment Strategies
-
-### Blue-Green Deployment (Zero Downtime)
-
-**Para aplicações críticas:**
-```bash
-# Maintain two identical environments
-# Deploy to inactive environment
-# Test inactive environment
-# Switch traffic to new environment
-# Keep old environment as fallback
-```
-
-**Platforms que suportam:**
-- AWS (Load Balancer switching)
-- Azure (Traffic Manager)
-- Cloudflare (Worker routing)
-- Custom setup com reverse proxy
-
-### Rolling Deployment
-
-**Para aplicações com múltiplas instâncias:**
-- Update instances gradually
-- Monitor health durante rollout
-- Stop rollout se error rate aumentar
-- Automatic rollback se threshold excedido
-
-### Feature Flags (Controlled Rollout)
-
-```javascript
-// Use feature flags para releases controlados
-import { useFeatureFlag } from '@/lib/feature-flags'
-
-function NewFeature() {
-  const isEnabled = useFeatureFlag('new-feature', { userId, segment })
-
-  if (!isEnabled) return <OldFeature />
-  return <NewFeature />
-}
-```
-
-## Database Deployment & Migrations
-
-### Migration Safety
-
-**SEMPRE rodar migrations em staging primeiro:**
-```bash
-# 1. Deploy schema changes to staging
-npm run migrate:staging
-
-# 2. Test application functionality
-npm run test:integration:staging
-
-# 3. Deploy to production only if staging passes
-npm run migrate:production
-```
-
-**Backwards-compatible migrations:**
-```sql
--- ✅ Safe: Adding nullable column
-ALTER TABLE users ADD COLUMN phone VARCHAR(20);
-
--- ❌ Dangerous: Dropping column (data loss)
-ALTER TABLE users DROP COLUMN old_field;
-
--- ✅ Safe: Adding index
-CREATE INDEX CONCURRENTLY idx_users_email ON users(email);
-```
-
-### Backup Strategy
-
-**Automated backup obrigatório:**
-- [ ] Daily full backups
-- [ ] Point-in-time recovery disponível
-- [ ] Backup retention policy (30 days minimum)
-- [ ] Restore procedure documented e testado
-- [ ] Backup storage em região diferente
 
 ## Environment Management
 
-### Environment Parity
+### Environment Variables
 
-**Dev/Staging/Production devem ser idênticos em:**
-- [ ] Node.js version (.nvmrc)
-- [ ] Dependencies versions (package-lock.json)
-- [ ] Environment variables structure
-- [ ] Database schema version
-- [ ] External service configurations
+**Production secrets management:**
+- Use platform's secret management (not .env files)
+- Rotate API keys regularly
+- Separate dev/staging/prod values
+- Never commit secrets to git
 
-### Secrets Management
+**Platform-specific:**
+- **Vercel:** Environment Variables dashboard
+- **Netlify:** Site settings → Environment variables  
+- **Railway:** Variables tab
+- **AWS:** Systems Manager Parameter Store
 
-**NUNCA usar .env files em produção:**
+### Database Considerations
 
-```bash
-# ❌ Insecure
-DATABASE_URL=postgres://user:pass@host/db
+**Production database setup:**
+- Separate database for production
+- Regular automated backups
+- Connection pooling configured
+- Monitoring for slow queries
 
-# ✅ Secure - use platform secrets
-# Vercel: Environment Variables dashboard
-# AWS: Systems Manager Parameter Store
-# Azure: Key Vault
-# Railway: Environment Variables
-```
+**Migration strategy:**
+- Test migrations on copy of production data
+- Run during low-traffic hours
+- Have rollback plan ready
 
-**Secret rotation policy:**
-- [ ] API keys têm expiration date
-- [ ] Database passwords rotacionados mensalmente
-- [ ] JWT secrets rotacionados se comprometidos
-- [ ] Access tokens têm refresh mechanism
+## Monitoring & Observability
 
-## Performance & Scaling
+### Essential Monitoring (All Platforms)
 
-### CDN & Caching
+**Error tracking:**
+- Sentry, Bugsnag, or platform-native error tracking
+- Real-time error alerts
+- Error rate monitoring
 
-**Static asset optimization:**
-```javascript
-// next.config.js
-const nextConfig = {
-  images: {
-    domains: ['example.com'],
-    formats: ['image/webp', 'image/avif'],
-  },
-  experimental: {
-    optimizeCss: true,
-  },
-  compress: true,
-}
-```
+**Uptime monitoring:**  
+- External service (UptimeRobot, Pingdom)
+- Alert when site is down
+- Track uptime percentage
 
-### Database Performance
+**Performance monitoring:**
+- Core Web Vitals tracking
+- Page load time monitoring
+- API response time tracking
 
-**Query optimization:**
-- [ ] Database query analysis regular
-- [ ] Slow query log monitoring
-- [ ] Index optimization baseado em uso real
-- [ ] Connection pooling configurado
-- [ ] Read replicas para queries pesadas
+### Platform-Specific Monitoring
 
-### Auto-scaling Configuration
-
-```yaml
-# Example: Railway auto-scaling
-resources:
-  requests:
-    memory: 512Mi
-    cpu: 250m
-  limits:
-    memory: 1Gi
-    cpu: 500m
-autoscaling:
-  minReplicas: 1
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-```
+**Vercel:** Built-in analytics + Sentry integration
+**Netlify:** Built-in analytics + third-party integrations
+**Railway:** Built-in metrics + external monitoring
+**AWS:** CloudWatch + custom dashboards
 
 ## Disaster Recovery
 
-### Backup & Restore
+### Backup Strategy
 
-**RTO (Recovery Time Objective): < 4 hours**
-**RPO (Recovery Point Objective): < 1 hour**
+**What to backup:**
+- Database (automated daily)
+- User-uploaded files
+- Environment configuration
+- Code repository (git handles this)
 
-**Disaster recovery runbook:**
-1. **Detection**: Monitoring alerts triggered
-2. **Assessment**: Determine scope of outage
-3. **Communication**: Status page + stakeholders
-4. **Recovery**: Execute restore procedures
-5. **Validation**: Verify service restoration
-6. **Post-mortem**: Document incident + improvements
+**Recovery testing:**
+- Test backup restoration monthly
+- Document recovery procedures
+- Time recovery process (target < 4 hours)
 
-### Rollback Strategy
-
-**Database rollback:**
-```bash
-# Keep rollback migrations ready
-npm run migrate:rollback:production
-
-# Or point-in-time recovery
-pg_restore --clean --if-exists --verbose backup_file.dump
-```
+### Rollback Procedures
 
 **Application rollback:**
-- [ ] Previous version kept disponível
-- [ ] DNS switch para versão anterior
-- [ ] Database compatibility com versão anterior
-- [ ] Feature flags para disable nova funcionalidade
+- Previous version deployment ready
+- Database migration rollback plan
+- DNS rollback if needed
 
-## Compliance & Documentation
+**Platform-specific rollback:**
+- **Vercel:** Deployment history → redeploy previous
+- **Netlify:** Deploy history → restore previous
+- **Railway:** Deployment rollback feature
+- **AWS:** Blue/green deployment switch
 
-### Documentation Requirements
+## Iron Rules - Production Safety
 
-**Production runbook deve incluir:**
-- [ ] Deploy procedures
-- [ ] Rollback procedures
-- [ ] Incident response procedures
-- [ ] Monitoring dashboard URLs
-- [ ] Contact information for on-call
-- [ ] Known issues + workarounds
-
-### Compliance Checks
-
-**LGPD/GDPR compliance:**
-- [ ] Data residency requirements atendidos
-- [ ] Personal data encryption at rest
-- [ ] Right to be forgotten implementado
-- [ ] Data processing logs mantidos
-- [ ] Privacy policy atualizada
-
-## Common Mistakes
-
-### ❌ Mistake: "Platform cuida de tudo"
-**Reality:** Platform ≠ production readiness. Security, monitoring, backup são sua responsabilidade.
-**Fix:** Complete production readiness checklist independente do platform.
-
-### ❌ Mistake: Deploy direto para produção
-**Reality:** Staging environment é obrigatório para validation.
-**Fix:** Always deploy staging first, validate, then production.
-
-### ❌ Mistake: Secrets no código ou .env commitado
-**Reality:** Exposed secrets = security breach inevitable.
-**Fix:** Use platform secret management, rotate compromised secrets.
-
-### ❌ Mistake: "Backup depois"
-**Reality:** Data loss = business loss. Recovery procedures precisam estar testados.
-**Fix:** Setup automated backup + test restore procedure monthly.
-
-## Pressure Resistance
-
-### Time Pressure Scenarios
-
-| Pressure | Wrong Response | Correct Response |
-|----------|----------------|------------------|
-| "Deploy hoje, cliente waiting" | Skip staging, deploy direct | "Staging validation takes 15 min, protects client" |
-| "Just get it online" | Skip security headers, monitoring | "Online without monitoring = flying blind" |
-| "MVP, can be simple" | Single environment, no backup | "MVP users still expect uptime" |
-
-### Business Pressure
-
-| Stakeholder | Wrong Response | Correct Response |
-|-------------|----------------|------------------|
-| "Competitors launched" | Rush deploy without testing | "Better late than broken" |
-| "Skip the monitoring" | Deploy without observability | "No monitoring = no way to fix when breaks" |
-
-**Response template:** "Production readiness protects business value. Downtime costs more than proper setup time."
-
-## Success Metrics
-
-- Zero unplanned downtime in first 3 months
-- Mean time to recovery (MTTR) < 30 minutes
-- Error rate < 0.1% sustained
-- Core Web Vitals in green zone (95% percentile)
-- Security scan clean, zero critical vulnerabilities
-- Backup restore tested monthly, < 4 hour RTO achieved
-
-## Platform-Specific Guides
-
-### Vercel Production Setup
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Configure environments
-vercel env add DATABASE_URL production
-vercel env add NEXTAUTH_SECRET production
-
-# Configure domains
-vercel domains add yourdomain.com
-vercel domains add api.yourdomain.com
-
-# Security headers via next.config.js (above)
-
-# Monitoring via Vercel Analytics + external
-npm install @vercel/analytics
-npm install @sentry/nextjs
+### Rule 1: Staging First
+```
+NEVER deploy directly to production
+ALWAYS test in staging environment first  
+NO exceptions for "simple changes"
 ```
 
-### Railway Production Setup
-
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Configure production environment
-railway login
-railway environment --set production
-
-# Database setup
-railway add --service postgres
-railway connect postgres
-
-# Custom domain + SSL
-railway domain yourdomain.com
-
-# Environment variables
-railway variables --environment production
+### Rule 2: Rollback Ready
+```
+Every deployment must be reversible
+Keep previous version easily accessible
+Test rollback procedures regularly
 ```
 
-### AWS Production Setup
-
-```bash
-# Via AWS CDK or Terraform
-npm install -g aws-cdk
-
-# RDS + ECS/Lambda + CloudFront + Route53
-cdk init app --language typescript
-cdk deploy --all --require-approval never
+### Rule 3: Monitor Everything
+```
+Error tracking is not optional
+Uptime monitoring required  
+Performance baselines established
 ```
 
 ## Emergency Procedures
 
-### Production Outage Response
+### Production Down Response
 
 **Immediate actions (< 5 minutes):**
-1. Check status page + monitoring dashboards
-2. Verify if database/external services are up
-3. Check recent deployments for correlation
-4. Enable maintenance mode se necessary
+1. Check monitoring dashboard
+2. Verify external services status
+3. Check recent deployments
+4. Initiate rollback if deploy-related
 
-**Communication protocol:**
-- Status page update: "Investigating reported issues"
-- Internal team notification via Slack/Teams
-- Customer communication if impact > 15 minutes
-- Escalation to senior team if not resolved in 30 minutes
+**Communication:**
+- Update status page (if available)  
+- Notify stakeholders
+- Document incident timeline
 
 ### Rollback Execution
 
-```bash
-# Application rollback
-vercel rollback --target <previous-deployment-id>
+**Standard rollback process:**
+1. Identify last working version
+2. Execute platform rollback
+3. Verify application restored
+4. Monitor for 30 minutes
+5. Post-incident review
 
-# Database rollback (if needed)
-npm run migrate:rollback:production
+## Common Mistakes Prevention
 
-# DNS rollback (if using custom setup)
-# Point DNS back to previous environment
+### ❌ Mistake: Assuming platform handles all security
+**Fix:** Implement application-level security appropriate to platform
 
-# Verify rollback successful
-curl -f https://yourdomain.com/api/health
-```
+### ❌ Mistake: No rollback plan
+**Fix:** Test rollback process before you need it
+
+### ❌ Mistake: Skipping staging for "simple" changes  
+**Fix:** All production changes go through staging
+
+### ❌ Mistake: No monitoring setup
+**Fix:** Basic error tracking and uptime monitoring minimum
 
 ## Handoff
 
-**Após deploy bem-sucedido:**
-→ Monitor first 24h for issues, then routine monitoring
+**Para security review pré-deploy:**
+→ Use ferramenta **Skill** para invocar `security-reviewer`
 
-**Para setup complexo de infrastructure:**
-→ Use ferramenta **Skill** para invocar skill específico (aws-architect, azure-setup, etc.)
+**Para performance optimization:**
+→ Use ferramenta **Skill** para invocar `pagespeed` após deployment
 
-**Para performance issues pós-deploy:**
-→ Use ferramenta **Skill** para invocar `pagespeed`
+**Para code review pré-deploy:**
+→ Use ferramenta **Skill** para invocar `reviewer`
 
-**Para monitoring setup específico:**
-→ Documentar procedures no README do projeto
+## Success Criteria
+
+- Zero unplanned downtime in first month
+- Rollback capability tested and working  
+- Monitoring alerts configured and responsive
+- Security appropriate to platform and application
+- Deployment process repeatable and documented
 
 ## Regras
 
-- **Production Readiness Checklist é obrigatório** para deploy de produção
-- **NUNCA deploy direto sem staging validation**
-- **SEMPRE ter rollback plan antes de deploy**
-- **Monitoramento não é opcional** — setup antes de deploy
-- Security headers e backup são day-1 requirements, não "depois"
+- **Gate de Permissão é obrigatório** — identificar ambiente e plataforma
+- **Platform detection first** — adapt workflow to user's actual setup
+- **Staging validation required** — for production deployments
+- **Rollback plan mandatory** — every production change must be reversible
+- **Monitoring not optional** — basic tracking required for production

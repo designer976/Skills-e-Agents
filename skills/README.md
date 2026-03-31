@@ -2,6 +2,37 @@
 
 Skills globais para Claude Code com pipeline de agentes para desenvolvimento frontend, backend, banco de dados, segurança, performance, SEO e conteúdo.
 
+## ⚙️ Skills Corrigidos - Zero Alucinação
+
+**Problema identificado:** Skills anteriormente faziam **assumptions falsas** sobre ferramentas disponíveis e usavam workflows over-engineered.
+
+**Solução aplicada:** Systematic debugging com 5 princípios implementados:
+
+### 🔍 **1. Validation-First Approach**
+- Skills checam disponibilidade de ferramentas antes de usar
+- Auto-detect platform/stack ao invés de assumir  
+- Graceful degradation quando ferramentas específicas não existem
+
+### ⚡ **2. Simple-by-Default Workflows**  
+- Operações simples = processos simples
+- Workflows complexos apenas quando realmente necessário
+- Complexity-aware: detecta automaticamente nível necessário
+
+### 🎯 **3. Actionable Instructions**
+- Comandos específicos que realmente funcionam
+- Specs concretas para implementação
+- Evita consultoria genérica, foca em ação
+
+### 🛡️ **4. Resilient Operations**
+- Funciona mesmo sem ferramentas ideais
+- Fallback strategies para cenários reais
+- Never fail completely due to missing dependencies
+
+### 🔄 **5. Consistent Patterns**
+- Gate de Permissão padronizado em todos os skills
+- Mesmo sistema de níveis (🟢 🟡 🔴)
+- Predictable behavior across skills
+
 ## Instalação
 
 1. Copie as pastas de skills para `~/.claude/skills/`:
@@ -19,7 +50,7 @@ git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
 
 | Skill | Descrição |
 |-------|-----------|
-| `designer` | Valida specs, garante consistência com Design System, planeja implementações. **Enhanced:** Visual references (Awwwards, Dribbble), Pencil integration para mockups |
+| `designer` | Valida specs, garante consistência com Design System, planeja implementações. **FIXED:** Complexity-aware workflows, no tool dependencies, graceful validation |
 | `designer-ux` | Auditoria de UX (Nielsen), acessibilidade WCAG 2.2, design de interação (estados, animações, timing) e fundamentos visuais |
 | `front-end-ui` | Implementa componentes visuais e UI com tokens do Design System |
 | `front-end-code` | Revisa código frontend: performance, TypeScript, acessibilidade |
@@ -30,16 +61,16 @@ git clone https://github.com/designer976/Skills-e-Agents.git ~/.claude/skills
 
 | Skill | Descrição |
 |-------|-----------|
-| `project-manager` | **NEW:** Business Canvas, tech stack selection, project inception. Força investigação de negócio ANTES de sugerir tecnologia |
-| `github-integrator` | **NEW:** Git/GitHub workflows seguros. Previne push direto para main, força PR workflow, commits semânticos obrigatórios |
-| `devops` | **NEW:** CI/CD, production deployment, monitoring setup. Production Readiness Checklist obrigatório antes de deploy |
+| `project-manager` | Tech stack selection, project inception. **FIXED:** Simple-by-default approach, optional Business Canvas, context-aware complexity |
+| `github-integrator` | Git/GitHub workflows seguros. **FIXED:** Tool validation, graceful CLI fallbacks, flexible commit standards, proportional safety |
+| `devops` | CI/CD, production deployment, monitoring setup. **FIXED:** Platform auto-detection, environment-aware checklists, no static tables |
 
 ### Backend / Infra
 
 | Skill | Descrição |
 |-------|-----------|
 | `backend` | Implementa APIs, endpoints, services, controllers, DTOs e autenticação |
-| `database` | Schema, migrações, models, queries e índices de banco de dados. **Enhanced:** EnterWorktree obrigatório para operações destrutivas, safety checks |
+| `database` | Schema, migrações, models, queries e índices de banco de dados. **FIXED:** Tool validation, proportional safety, graceful degradation when tools unavailable |
 | `tester` | Testes unitários, de integração e E2E |
 | `reviewer` | Revisão geral de código e auditoria de qualidade. **Enhanced:** GitHub integration, PR workflows, EnterWorktree para mudanças arriscadas |
 
