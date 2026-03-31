@@ -1,0 +1,189 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Development Commands
+
+- `npm run dev` - Start development server on port 8080
+- `npm run build` - Production build
+- `npm run build:dev` - Development build
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
+
+## Known Issues
+
+The project has a dependency conflict with date-fns. The current package.json specifies date-fns@4.1.0 but react-day-picker@8.10.1 requires date-fns@^2.28.0 || ^3.0.0. This causes build failures on deployment. Consider downgrading date-fns to version 3.x to resolve this conflict.
+
+## Architecture Overview
+
+This is a React SPA built with Vite, TypeScript, and Tailwind CSS for a salon management system called "Easy Salon". The application supports multi-tenant salon management with role-based access control.
+
+### Core Technologies
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Framework**: shadcn/ui components + Radix UI primitives
+- **Styling**: Tailwind CSS
+- **State Management**: React Context + TanStack Query
+- **Routing**: React Router DOM
+- **Authentication**: Mock service (src/services/mockAuthService.ts)
+
+### Project Structure
+
+```
+src/
+├── components/         # Reusable UI components
+│   ├── ui/            # shadcn/ui components
+│   ├── layout/        # Layout components (sidebar, header)
+│   ├── forms/         # Form components
+│   ├── modals/        # Modal components
+│   ├── booking/       # Booking flow components
+│   └── auth/          # Authentication components
+├── pages/             # Route components
+│   ├── admin/         # Admin pages (Easy Salon role)
+│   └── salon/         # Salon management pages
+├── contexts/          # React contexts
+├── hooks/             # Custom React hooks
+├── types/             # TypeScript type definitions
+├── services/          # External service integrations
+├── mocks/             # Mock data
+└── config/            # Configuration files
+```
+
+### Authentication & Roles
+
+The app uses a role-based system with three user types:
+
+- **Easy Salon**: Platform admin with full access
+- **Profissional**: Salon professional with limited access to agenda
+- **Recepcionista**: Receptionist with access to agenda, solicitations, and clients
+
+Mock credentials:
+
+- Admin: adm@easy.com / Senha@123
+- Professional: profissional@easy.com / Senha@123
+
+### Key Features
+
+1. **Salon Management**: Multi-tenant system where each salon can manage users, services, and appointments
+2. **Online Booking**: Public booking flow accessible via `/agenda/:salonSlug`
+3. **Agenda System**: Calendar-based appointment management
+4. **Service Management**: CRUD operations for salon services and specialties
+5. **User Management**: Role-based user creation and management
+6. **Request System**: Solicitation management with Kanban-style interface
+
+### Important Architectural Notes
+
+- Uses mock authentication service - no real backend integration yet
+- Navigation is dynamically generated based on user roles (src/config/navigation.ts)
+- Two separate booking type definitions exist (booking.ts and booking-new.ts) - the new version supports service requests
+- TypeScript configuration is relaxed (noImplicitAny: false, strictNullChecks: false)
+- Path alias `@/*` maps to `src/*`
+
+### Component Organization
+
+- **UI Components**: Located in `components/ui/` - these are shadcn/ui components
+- **Layout Components**: Header, sidebar, and main layout wrappers
+- **Form Components**: Reusable form fields and specialized forms
+- **Modal Components**: Pop-up dialogs for various actions
+- **Booking Components**: Multi-step booking flow with progress indicators
+
+### State Management Patterns
+
+- **Authentication**: React Context (AuthContext)
+- **Server State**: TanStack Query for data fetching
+- **Local State**: React useState/useReducer
+- **Booking Flow**: Custom hooks (useBookingFlow, useNewBookingFlow)
+
+### Styling Conventions
+
+- Tailwind CSS utility classes
+- Component variants using class-variance-authority
+- Responsive design patterns
+- Custom CSS in index.css for global styles
+
+### Design System Rules — OBRIGATORIO PARA TODO AGENTE
+
+Estas regras se aplicam a **qualquer** tarefa visual neste projeto, sem excecao.
+
+#### 1. Consultar o DS antes de qualquer implementacao
+
+- Leia `src/pages/DesignSystemPage.tsx` antes de criar qualquer elemento visual
+- Consulte `src/components/ui/` para componentes existentes
+- Consulte `tailwind.config.ts` e `src/index.css` para tokens disponíveis
+- O DS e o componente **Mestre / Pai** — toda tela, modal, form e elemento herda seus padroes
+
+#### 2. Reuso obrigatorio
+
+- **SEMPRE** reuse componentes de `src/components/ui/` — nunca reimplemente o que ja existe
+- **NUNCA** crie um novo componente de UI sem permissao explícita do usuario
+- Se o componente nao existir no DS: **pergunte ao usuario** antes de criar
+- Quando aprovado: crie em `src/components/ui/` → registre em `DesignSystemPage.tsx` → use na feature
+- Mudanca visual em componente do DS deve ser propagada para **todas as instancias**
+
+#### 3. Tokens obrigatorios
+
+| Categoria | Correto | Proibido |
+|-----------|---------|----------|
+| Fundo | `bg-background`, `bg-card`, `bg-muted`, `bg-secondary` | `bg-white`, `bg-gray-*`, `bg-zinc-*` |
+| Texto | `text-foreground`, `text-muted-foreground` | `text-gray-*`, `text-zinc-*` |
+| Borda | `border-border` | `border-gray-*`, `border-zinc-*` |
+| Radius | `rounded-lg` | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
+| Hover | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*`, `hover:bg-gray-*` |
+| Icones | `import { ... } from "lucide-react"` | `@tabler/icons-react`, outras libs |
+
+Excecao aceita: cores semanticas (`bg-green-500` = sucesso, `bg-red-500` = erro, `bg-yellow-500` = alerta).
+
+#### 4. Padrao de Dialog (Modal)
+
+Todo modal de cadastro/edicao segue este padrao:
+
+```tsx
+<DialogContent className="w-[95vw] md:max-w-lg flex flex-col gap-0">
+  <DialogHeader className="border-b pb-3 shrink-0">
+    <DialogTitle>Titulo</DialogTitle>
+    <DialogDescription>Subtitulo.</DialogDescription>
+    {/* TabsList aqui se houver abas */}
+  </DialogHeader>
+
+  <DialogBody>
+    {/* -mx-6 px-6 embutido no default — focus rings nunca sao clipados */}
+    {/* conteudo */}
+  </DialogBody>
+
+  <DialogFooter className="border-t pt-6 shrink-0">
+    <Button variant="outline">Cancelar</Button>
+    <Button>Salvar</Button>
+  </DialogFooter>
+</DialogContent>
+```
+
+- `DialogContent` usa `p-6` (padrao) + `flex flex-col gap-0` — o padding de 24px vem do `DialogContent`, nao das secoes internas
+- `DialogHeader` e `DialogFooter` NAO recebem `px-*` — o `DialogContent p-6` ja provê os 24px laterais
+- **`DialogBody` sem `className` adicional** — `overflow-y-auto`, `-mx-6 px-6` e `py-6` ja embutidos no default; focus rings nunca clipados
+- NAO usar `p-0` em `DialogContent` — o padrao `p-6` e a fonte do padding visual de 24px
+- NAO usar `overflow-hidden` em `DialogContent` — o `DialogBody` ja gerencia o overflow
+- NAO colocar `py-*` em divs filhos do `DialogBody` — o `DialogBody` ja tem `py-6` embutido
+- Sempre incluir `DialogDescription`
+- Abas (`TabsList`) ficam dentro do `DialogHeader`
+- `text-right` + `justify-end` na coluna Acoes de DataTables
+
+### important-instruction-reminders
+
+- Do what has been asked; nothing more, nothing less.
+- As a Software Engineer Senior, You **MUST** build eligible, smart, and reusable code.
+- Declare constants or Enums to constant values and become that reusable
+- You **MUST** use Domain Driven Design Phylosophy to make smart and reusable code for Domain Business Rules.
+- You **MUST** create types, interfaces for parameters, function or method returns, Don't declare directly return types.
+- You **MUST** create functions or methods with correct signature, example:
+
+```
+type FnArgType = {}
+type FnReturnType = {}
+function a(arg: FnArgType): Promise<FnArgType> {}
+```
+
+- You **MUST** refactor duplicated code, **FOREVER** and **EVER\***:
+- NEVER create files unless they're absolutely necessary for achieving your goal.
+- ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.
+- You **MUST** remove unused code, unused imports

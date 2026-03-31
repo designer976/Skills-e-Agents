@@ -1,0 +1,242 @@
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+export type FaseVistoria =
+  | "Agendada"
+  | "Vistoriador atribuído"
+  | "A caminho"
+  | "Chegou no local"
+  | "Em execução"
+  | "Finalizada"
+  | "Enviada para Qualidade"
+
+export const FASES_ORDERED: FaseVistoria[] = [
+  "Agendada",
+  "Vistoriador atribuído",
+  "A caminho",
+  "Chegou no local",
+  "Em execução",
+  "Finalizada",
+  "Enviada para Qualidade",
+]
+
+export interface EventoTimeline {
+  id: number
+  dataHora: string
+  fase: FaseVistoria
+  descricao: string
+  origem: "Sistema" | "App" | "Backoffice"
+}
+
+export interface Anotacao {
+  id: number
+  autor: string
+  dataHora: string
+  texto: string
+  tag: "Ocorrência" | "Cliente" | "Acesso" | "Financeiro" | "Geral"
+}
+
+export interface VistoriaAndamento {
+  id: string
+  // Agendamento
+  dataAgendada: string
+  horaAgendada: string
+  // Cliente
+  clienteNome: string
+  clienteTipo: "PF" | "PJ"
+  // Imóvel
+  endereco: string
+  cidade: string
+  uf: string
+  complemento?: string
+  bairro: string
+  cep: string
+  tipoImovel: string
+  areaUtil: number
+  mobilia: string
+  statusImovel: string
+  referenciaAcesso?: string
+  // Vistoria
+  tipo: string
+  valor: string
+  // Vistoriador
+  vistoriadorNome: string
+  vistoriadorNivel: "Júnior" | "Pleno" | "Sênior"
+  // Fase
+  faseAtual: FaseVistoria
+  ultimaAtualizacaoDataHora: string
+  semUpdateHaMins: number
+  temAlerta: boolean
+  // Timeline
+  eventos: EventoTimeline[]
+  // Anotações internas (só backoffice)
+  anotacoes: Anotacao[]
+}
+
+// ─── Mock ─────────────────────────────────────────────────────────────────────
+
+export const VISTORIAS_ANDAMENTO: VistoriaAndamento[] = [
+  {
+    id: "V-2026-0301",
+    dataAgendada: "26/03/2026",
+    horaAgendada: "09:00",
+    clienteNome: "Construtora Alfa Ltda",
+    clienteTipo: "PJ",
+    endereco: "Av. Paulista, 1000",
+    complemento: "Apto 42",
+    bairro: "Bela Vista",
+    cidade: "São Paulo",
+    uf: "SP",
+    cep: "01310-100",
+    tipoImovel: "Apartamento",
+    areaUtil: 72,
+    mobilia: "Semi-mobiliado",
+    statusImovel: "Desocupado",
+    referenciaAcesso: "Portaria principal, solicitar crachá com João",
+    tipo: "Entrada",
+    valor: "R$ 179,90",
+    vistoriadorNome: "Carlos Mendonça",
+    vistoriadorNivel: "Sênior",
+    faseAtual: "Em execução",
+    ultimaAtualizacaoDataHora: "26/03/2026 09:47",
+    semUpdateHaMins: 8,
+    temAlerta: false,
+    eventos: [
+      { id: 1, dataHora: "24/03/2026 10:00", fase: "Agendada",               descricao: "Vistoria aceita e agendada pelo sistema.",             origem: "Sistema"   },
+      { id: 2, dataHora: "24/03/2026 10:05", fase: "Vistoriador atribuído",  descricao: "Carlos Mendonça atribuído à vistoria.",                origem: "Sistema"   },
+      { id: 3, dataHora: "26/03/2026 08:30", fase: "A caminho",              descricao: "Rota iniciada — Carlos saindo para o local.",           origem: "App"       },
+      { id: 4, dataHora: "26/03/2026 08:58", fase: "Chegou no local",        descricao: "Carlos chegou no endereço.",                            origem: "App"       },
+      { id: 5, dataHora: "26/03/2026 09:05", fase: "Em execução",            descricao: "Vistoria iniciada.",                                    origem: "App"       },
+      { id: 6, dataHora: "26/03/2026 09:47", fase: "Em execução",            descricao: "Heartbeat — vistoria em andamento.",                   origem: "App"       },
+    ],
+    anotacoes: [
+      { id: 1, autor: "Admin João", dataHora: "26/03/2026 08:55", texto: "Porteiro informou que Carlos deve buscar crachá com João na guarita.", tag: "Acesso" },
+    ],
+  },
+  {
+    id: "V-2026-0302",
+    dataAgendada: "26/03/2026",
+    horaAgendada: "10:30",
+    clienteNome: "Imobiliária Beta S.A.",
+    clienteTipo: "PJ",
+    endereco: "Rua Funchal, 418",
+    complemento: "Sala 301",
+    bairro: "Vila Olímpia",
+    cidade: "São Paulo",
+    uf: "SP",
+    cep: "04538-133",
+    tipoImovel: "Sala Comercial",
+    areaUtil: 95,
+    mobilia: "Sem mobília",
+    statusImovel: "Desocupado",
+    tipo: "Saída",
+    valor: "R$ 249,90",
+    vistoriadorNome: "Ana Ferreira",
+    vistoriadorNivel: "Pleno",
+    faseAtual: "A caminho",
+    ultimaAtualizacaoDataHora: "26/03/2026 10:12",
+    semUpdateHaMins: 43,
+    temAlerta: true,
+    eventos: [
+      { id: 1, dataHora: "23/03/2026 14:00", fase: "Agendada",              descricao: "Vistoria aceita e agendada pelo sistema.",   origem: "Sistema" },
+      { id: 2, dataHora: "23/03/2026 14:10", fase: "Vistoriador atribuído", descricao: "Ana Ferreira atribuída à vistoria.",         origem: "Sistema" },
+      { id: 3, dataHora: "26/03/2026 10:12", fase: "A caminho",             descricao: "Rota iniciada — Ana saindo para o local.",   origem: "App"     },
+    ],
+    anotacoes: [
+      { id: 1, autor: "Admin Maria", dataHora: "26/03/2026 10:00", texto: "Síndico não autorizou fotos nas áreas comuns do condomínio.", tag: "Ocorrência" },
+    ],
+  },
+  {
+    id: "V-2026-0303",
+    dataAgendada: "26/03/2026",
+    horaAgendada: "08:00",
+    clienteNome: "Carlos Eduardo Mendes",
+    clienteTipo: "PF",
+    endereco: "Praça da Sé, 1",
+    bairro: "Sé",
+    cidade: "São Paulo",
+    uf: "SP",
+    cep: "01001-000",
+    tipoImovel: "Apartamento",
+    areaUtil: 55,
+    mobilia: "Mobiliado",
+    statusImovel: "Ocupado",
+    tipo: "Conferência",
+    valor: "R$ 159,90",
+    vistoriadorNome: "Roberto Lima",
+    vistoriadorNivel: "Pleno",
+    faseAtual: "Enviada para Qualidade",
+    ultimaAtualizacaoDataHora: "26/03/2026 09:55",
+    semUpdateHaMins: 0,
+    temAlerta: false,
+    eventos: [
+      { id: 1, dataHora: "24/03/2026 09:00", fase: "Agendada",              descricao: "Vistoria aceita e agendada.",                           origem: "Sistema"   },
+      { id: 2, dataHora: "24/03/2026 09:05", fase: "Vistoriador atribuído", descricao: "Roberto Lima atribuído.",                               origem: "Sistema"   },
+      { id: 3, dataHora: "26/03/2026 07:45", fase: "A caminho",             descricao: "Rota iniciada.",                                        origem: "App"       },
+      { id: 4, dataHora: "26/03/2026 07:58", fase: "Chegou no local",       descricao: "Roberto chegou no endereço.",                           origem: "App"       },
+      { id: 5, dataHora: "26/03/2026 08:05", fase: "Em execução",           descricao: "Vistoria iniciada.",                                    origem: "App"       },
+      { id: 6, dataHora: "26/03/2026 09:40", fase: "Finalizada",            descricao: "Vistoria finalizada pelo vistoriador.",                 origem: "App"       },
+      { id: 7, dataHora: "26/03/2026 09:55", fase: "Enviada para Qualidade",descricao: "Laudo enviado para revisão de qualidade.",              origem: "Sistema"   },
+    ],
+    anotacoes: [],
+  },
+  {
+    id: "V-2026-0304",
+    dataAgendada: "26/03/2026",
+    horaAgendada: "14:00",
+    clienteNome: "Ana Paula Ferreira",
+    clienteTipo: "PF",
+    endereco: "Av. Borges de Medeiros, 1501",
+    complemento: "Cobertura",
+    bairro: "Praia de Belas",
+    cidade: "Porto Alegre",
+    uf: "RS",
+    cep: "90010-150",
+    tipoImovel: "Cobertura",
+    areaUtil: 130,
+    mobilia: "Mobiliado",
+    statusImovel: "Desocupado",
+    tipo: "Saída Completa",
+    valor: "R$ 350,00",
+    vistoriadorNome: "Patrícia Souza",
+    vistoriadorNivel: "Sênior",
+    faseAtual: "Agendada",
+    ultimaAtualizacaoDataHora: "25/03/2026 16:00",
+    semUpdateHaMins: 0,
+    temAlerta: false,
+    eventos: [
+      { id: 1, dataHora: "25/03/2026 15:30", fase: "Agendada",              descricao: "Vistoria aceita e agendada pelo sistema.",   origem: "Sistema" },
+      { id: 2, dataHora: "25/03/2026 16:00", fase: "Vistoriador atribuído", descricao: "Patrícia Souza atribuída à vistoria.",       origem: "Sistema" },
+    ],
+    anotacoes: [
+      { id: 1, autor: "Admin João", dataHora: "25/03/2026 16:10", texto: "Imóvel tem elevador privativo — chave com Patrícia no sistema.", tag: "Acesso"    },
+      { id: 2, autor: "Admin Maria", dataHora: "25/03/2026 17:00", texto: "Cliente pediu para entrar em contato antes de chegar.", tag: "Cliente" },
+    ],
+  },
+]
+
+export function getVistoriaAndamentoById(id: string): VistoriaAndamento | undefined {
+  return VISTORIAS_ANDAMENTO.find((v) => v.id === id)
+}
+
+// Helpers
+export function faseIndex(fase: FaseVistoria): number {
+  return FASES_ORDERED.indexOf(fase)
+}
+
+export const FASE_CONFIG: Record<FaseVistoria, { color: string; bg: string; label: string }> = {
+  "Agendada":               { color: "text-gray-600",   bg: "bg-gray-100",    label: "Agendada"               },
+  "Vistoriador atribuído":  { color: "text-blue-700",   bg: "bg-blue-50",     label: "Vistoriador atribuído"  },
+  "A caminho":              { color: "text-orange-700", bg: "bg-orange-50",   label: "A caminho"              },
+  "Chegou no local":        { color: "text-yellow-700", bg: "bg-yellow-50",   label: "Chegou no local"        },
+  "Em execução":            { color: "text-[#0B7A8F]",  bg: "bg-[#0B7A8F]/10",label: "Em execução"            },
+  "Finalizada":             { color: "text-green-700",  bg: "bg-green-50",    label: "Finalizada"             },
+  "Enviada para Qualidade": { color: "text-purple-700", bg: "bg-purple-50",   label: "Enviada para Qualidade" },
+}
+
+export const TAG_CONFIG: Record<Anotacao["tag"], { color: string; bg: string }> = {
+  Ocorrência: { color: "text-red-700",    bg: "bg-red-50"    },
+  Cliente:    { color: "text-blue-700",   bg: "bg-blue-50"   },
+  Acesso:     { color: "text-yellow-700", bg: "bg-yellow-50" },
+  Financeiro: { color: "text-purple-700", bg: "bg-purple-50" },
+  Geral:      { color: "text-gray-600",   bg: "bg-gray-100"  },
+}

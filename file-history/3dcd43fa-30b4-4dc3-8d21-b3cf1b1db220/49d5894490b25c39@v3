@@ -1,0 +1,254 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ArrowLeft as ArrowLeft, Plus as Plus } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+import type { User } from "@/types/user";
+
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { Button } from "@/components/ui/button";
+
+import { UserServicesForm } from "@/components/forms/UserServicesForm";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { serviceService } from "@/services/serviceService";
+import { userService } from "@/services/userService";
+interface UserServiceAssignment {
+  id: string;
+  serviceId: string;
+  userId: string;
+  customPrice?: number;
+  customDuration?: number;
+  commissionRate?: number;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const servicesFormSchema = z.object({
+  services: z.array(z.any()).optional(),
+});
+
+type ServicesFormData = z.infer<typeof servicesFormSchema>;
+
+export default function UserServicesPage() {
+  const navigate = useNavigate();
+  const { userId } = useParams();
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [addServicesModalOpen, setAddServicesModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [userServices, setUserServices] = useState<UserServiceAssignment[]>([]);
+  const [professionalData, setProfessionalData] = useState<User | null>(null);
+  const [availableServices, setAvailableServices] = useState<unknown[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  const form = useForm<ServicesFormData>({
+    resolver: zodResolver(servicesFormSchema),
+    defaultValues: {
+      services: [],
+    },
+  });
+
+  // Load user services from API
+  useEffect(() => {
+    loadUserServices();
+  }, [userId]);
+
+  const loadUserServices = async () => {
+    if (!userId) {
+      toast.error("ID do usuário não encontrado");
+      navigate("/salon/users");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get salonId from localStorage or context
+      const salonId = localStorage.getItem("selectedSalonId") || "";
+
+      // Use the new serviceService methods for professional services management
+      const [userData, services] = await Promise.all([
+        userService.getById(userId, salonId).catch(() => {
+          return {
+            id: userId,
+            name: "Profissional",
+            email: "",
+            role: "professional",
+            active: true,
+          } as User;
+        }),
+        serviceService.getUserServices(userId).catch(() => {
+          return [];
+        }),
+      ]);
+
+      setProfessionalData(userData);
+
+      // Transform the response to UserServiceAssignment format
+      const transformedServices: UserServiceAssignment[] = services.map(
+        (userService) => {
+          // Ensure the service object has all necessary data including category/specialty
+          const serviceObject = userService.service || {
+            id: userService.serviceId || userService.service_id,
+            name: userService.name,
+            description: userService.description,
+            duration: userService.duration,
+            price: userService.price,
+            maxPrice: userService.maxPrice,
+            categoryId: userService.categoryId,
+            category: userService.category,
+            specialty: userService.specialty,
+          };
+
+          // Preserve the categoryId if it exists in the service object
+          if (userService.service?.categoryId) {
+            serviceObject.categoryId = userService.service.categoryId;
+          }
+          // Also preserve category and specialty objects
+          if (userService.service?.category) {
+            serviceObject.category = userService.service.category;
+          }
+          if (userService.service?.specialty) {
+            serviceObject.specialty = userService.service.specialty;
+          }
+
+          return {
+            ...userService,
+            id: `${userService.serviceId || userService.id}`,
+            serviceId: userService.serviceId || userService.service_id,
+            userId: userService.userId || userService.user_id,
+            service: serviceObject,
+            customPrice: userService.customPrice || userService.custom_price,
+            customDuration:
+              userService.customDuration || userService.custom_duration,
+            commissionRate:
+              userService.commissionRate ||
+              userService.commission_rate ||
+              userService.commission ||
+              50,
+            adminFeeFixed:
+              userService.adminFeeFixed || userService.admin_fee_fixed,
+            adminFeePercent:
+              userService.adminFeePercent || userService.admin_fee_percent,
+            supplies: userService.supplies,
+            // Include base values from backend
+            basePrice: userService.basePrice || userService.price,
+            baseDuration: userService.baseDuration || userService.duration,
+            categoryId: userService.categoryId,
+            specialty: userService.specialty,
+            duration: userService.baseDuration || userService.duration,
+            maxValue: userService.maxValue,
+            priceType: userService.priceType,
+            baseCommission:
+              userService.baseCommission || userService.commission || 50,
+            isStandardService: userService.isStandardService,
+            isActive:
+              userService.isActive !== false && userService.is_active !== false,
+            createdAt: userService.createdAt || userService.created_at,
+            updatedAt: userService.updatedAt || userService.updated_at,
+          };
+        }
+      );
+
+      setUserServices(transformedServices);
+      form.reset({ services: transformedServices });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erro ao carregar dados. Tente novamente."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: ServicesFormData) => {
+    // Since operations are now handled directly in the form component,
+    // this is primarily for navigation back to the user list
+    navigate("/salon/users");
+  };
+
+  const handleGoBack = () => {
+    navigate("/salon/users");
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleGoBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="page-title">Gerenciar Serviços</h1>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner size="md" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Header com título e botões de ação */}
+            <div className="bg-card border border-border rounded-lg">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Header da aba de serviços */}
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">
+                      Serviços do Profissional{" "}
+                      {professionalData
+                        ? `- ${professionalData.nickname || professionalData.name}`
+                        : ""}
+                    </h2>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        disabled={!selectedSalon?.active}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setAddServicesModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar Serviços
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Componente de Serviços com busca integrada */}
+            <UserServicesForm
+              value={userServices}
+              onChange={() => loadUserServices()}
+              onAddServices={() => setAddServicesModalOpen(true)}
+              triggerAddServices={addServicesModalOpen}
+              onTriggerReset={() => setAddServicesModalOpen(false)}
+              userId={userId}
+            />
+          </div>
+        )}
+      </div>
+    </EasySalonLayout>
+  );
+}

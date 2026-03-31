@@ -1,0 +1,195 @@
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 as Loader2, X as X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { subscriptionService } from "@/services/subscriptionService";
+
+interface ReplaceCardModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (data: {
+        token: string;
+        brand: string;
+        last4: string;
+        holderName: string;
+        expirationDate: string;
+    }) => Promise<void>;
+}
+
+export function ReplaceCardModal({ isOpen, onClose, onSave }: ReplaceCardModalProps) {
+    const [cardData, setCardData] = useState({
+        number: '',
+        holderName: '',
+        expirationDate: '',
+        cvv: ''
+    });
+    const [processing, setProcessing] = useState(false);
+
+    const handleChange = (field: string, value: string) => {
+        let cleanValue = value;
+        if (field === 'number') cleanValue = value.replace(/\D/g, '').slice(0, 16);
+        if (field === 'cvv') cleanValue = value.replace(/\D/g, '').slice(0, 4);
+        if (field === 'expirationDate') {
+            cleanValue = value.replace(/\D/g, '');
+            if (cleanValue.length >= 2) {
+                cleanValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2, 6);
+            }
+            cleanValue = cleanValue.slice(0, 7);
+        }
+        setCardData(prev => ({ ...prev, [field]: cleanValue }));
+    };
+
+    const detectBrand = (number: string) => {
+        const brands = {
+            visa: /^4/,
+            mastercard: /^5[1-5]/,
+            amex: /^3[47]/,
+            elo: /^636368|^438935|^504175|^451416|^636297|^5067|^4576|^4011/
+        };
+        for (const [key, regex] of Object.entries(brands)) {
+            if (regex.test(number)) return key.toUpperCase();
+        }
+        return 'UNKNOWN';
+    };
+
+    const handleSave = async () => {
+        if (!cardData.number || !cardData.holderName || !cardData.expirationDate || !cardData.cvv) {
+            toast.error("Preencha todos os campos do cartão.");
+            return;
+        }
+
+        setProcessing(true);
+        try {
+            const brand = detectBrand(cardData.number);
+            const token = await subscriptionService.tokenizeCard({
+                cardNumber: cardData.number,
+                holder: cardData.holderName,
+                expirationDate: cardData.expirationDate,
+                brand
+            });
+
+            if (token) {
+                await onSave({
+                    token,
+                    brand,
+                    last4: cardData.number.slice(-4),
+                    holderName: cardData.holderName,
+                    expirationDate: cardData.expirationDate
+                });
+                onClose();
+                // Reset form
+                setCardData({
+                    number: '',
+                    holderName: '',
+                    expirationDate: '',
+                    cvv: ''
+                });
+            } else {
+                throw new Error("Token não retornado");
+            }
+        } catch (err: any) {
+            console.error(err);
+            const msg = err.response?.data?.message || err.message || "Erro ao validar cartão.";
+            toast.error(msg);
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const inputClasses = "focus-visible:border-[#dd4227] focus-visible:ring-[#dd4227]/30 focus-visible:ring-[3px]";
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && !processing && onClose()}>
+            <DialogContent className="w-[95vw] md:max-w-lg max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-lg border-none shadow-2xl overflow-hidden flex flex-col">
+                <DialogHeader className="sticky top-0 z-10 bg-background px-4 pt-4 pb-3 border-b shrink-0 text-left">
+                    <DialogTitle className="text-xl font-semibold">Substituir cartão</DialogTitle>
+                    <DialogDescription className="text-sm text-muted-foreground">
+                        Para manter sua assinatura ativa, você precisa cadastrar um novo cartão antes de excluir o atual.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="newCardNumber" className="text-sm font-medium">Número do Cartão</Label>
+                        <Input
+                            id="newCardNumber"
+                            placeholder="0000 0000 0000 0000"
+                            className={inputClasses}
+                            value={cardData.number}
+                            onChange={(e) => handleChange('number', e.target.value)}
+                            disabled={processing}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="newExpiry" className="text-sm font-medium">Validade</Label>
+                            <Input
+                                id="newExpiry"
+                                placeholder="MM/AA"
+                                className={inputClasses}
+                                value={cardData.expirationDate}
+                                onChange={(e) => handleChange('expirationDate', e.target.value)}
+                                disabled={processing}
+                                maxLength={7}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="newCvv" className="text-sm font-medium">CVV</Label>
+                            <Input
+                                id="newCvv"
+                                placeholder="123"
+                                className={inputClasses}
+                                value={cardData.cvv}
+                                onChange={(e) => handleChange('cvv', e.target.value)}
+                                disabled={processing}
+                                maxLength={4}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="newName" className="text-sm font-medium">Nome no Cartão</Label>
+                        <Input
+                            id="newName"
+                            placeholder="Nome como está no cartão"
+                            className={inputClasses}
+                            value={cardData.holderName}
+                            onChange={(e) => handleChange('holderName', e.target.value)}
+                            disabled={processing}
+                        />
+                    </div>
+                </div>
+
+                <div className="sticky bottom-0 z-10 bg-background px-4 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+                    <Button
+                        variant="outline"
+                        onClick={onClose}
+                        disabled={processing}
+                        className="w-full sm:w-auto min-h-[44px] cursor-pointer"
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={processing || !cardData.number || !cardData.cvv || !cardData.expirationDate || !cardData.holderName}
+                        className="w-full sm:w-auto min-h-[44px] bg-[#dd4227] hover:bg-[#c13a22] text-white cursor-pointer"
+                    >
+                        {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        Salvar Novo Cartão
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}

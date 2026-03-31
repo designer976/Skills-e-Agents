@@ -1,0 +1,197 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Pencil as Edit, Trash2 as Trash2, Eye as Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { DataTable, TableAction } from "@/components/ui/data-table";
+import { AdminSpecialtyModal } from "@/components/modals/AdminSpecialtyModal";
+import { ConfirmationModal } from "@/components/modals/ConfirmationModal";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { specialtyService } from "@/services/specialtyService";
+import { Specialty, CreateSpecialtyDto, UpdateSpecialtyDto } from "@/types/specialty";
+
+export default function SpecialtiesPage() {
+  const { user } = useAuth();
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty | undefined>();
+  const [specialtyToDelete, setSpecialtyToDelete] = useState<Specialty | undefined>();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadSpecialties();
+  }, []);
+
+  const loadSpecialties = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const response = await specialtyService.listNetworkSpecialties();
+      setSpecialties(response);
+    } catch (error) {
+      toast.error('Erro ao carregar especialidades');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewSpecialty = (): void => {
+    setSelectedSpecialty(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditSpecialty = useCallback((specialty: Specialty): void => {
+    setSelectedSpecialty(specialty);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleViewServices = useCallback((specialty: Specialty): void => {
+    navigate(`/admin/specialties/${specialty.id}/services`);
+  }, [navigate]);
+
+  const handleDeleteSpecialty = useCallback((specialty: Specialty): void => {
+    setSpecialtyToDelete(specialty);
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const confirmDeleteSpecialty = async (): Promise<void> => {
+    if (specialtyToDelete) {
+      setIsDeleting(true);
+      try {
+        await specialtyService.deleteNetworkSpecialty(specialtyToDelete.id);
+        toast.success("Especialidade excluída com sucesso!");
+        setSpecialties(prev => prev.filter(s => s.id !== specialtyToDelete.id));
+        setIsDeleteModalOpen(false);
+      } catch (error: any) {
+        const errorMessage = error?.message || error?.response?.data?.message || 'Erro ao excluir especialidade';
+        toast.error(errorMessage);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const handleSaveSpecialty = async (data: { name: string; description?: string; displayOrder?: number; isActive?: boolean; requestOnly?: boolean }): Promise<void> => {
+    setIsSaving(true);
+    try {
+      if (selectedSpecialty) {
+        const updateData: UpdateSpecialtyDto = {
+          name: data.name,
+          description: data.description,
+          displayOrder: data.displayOrder,
+          isActive: data.isActive,
+          requestOnly: false // Always false for admin
+        };
+
+        const updated = await specialtyService.updateNetworkSpecialty(selectedSpecialty.id, updateData);
+        setSpecialties(prev => prev.map(s => s.id === updated.id ? updated : s).sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Especialidade editada com sucesso!");
+      } else {
+        // Create new network specialty using admin endpoint
+        const createData: CreateSpecialtyDto = {
+          name: data.name,
+          description: data.description,
+          displayOrder: data.displayOrder || 0,
+          isActive: data.isActive !== false,
+          requestOnly: false, // Always false for admin
+          isDefault: true // Network-level specialties are always default
+        };
+
+        const created = await specialtyService.createNetworkSpecialty(createData);
+        setSpecialties(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Especialidade criada com sucesso!");
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error('Erro ao salvar especialidade');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const columns = [
+    {
+      key: "name" as keyof Specialty,
+      header: "Nome da Especialidade",
+    },
+  ];
+
+  const specialtyActions = useMemo<TableAction<Specialty>[]>(() => [
+    {
+      label: "Ver serviços",
+      icon: <Eye className="h-4 w-4" />,
+      onClick: (row: Specialty): void => { handleViewServices(row); },
+    },
+    {
+      label: "Editar especialidade",
+      icon: <Edit className="h-4 w-4" />,
+      onClick: (row: Specialty): void => { handleEditSpecialty(row); },
+    },
+    {
+      label: "Excluir especialidade",
+      icon: <Trash2 className="h-4 w-4" />,
+      onClick: (row: Specialty): void => { handleDeleteSpecialty(row); },
+      variant: "destructive" as const,
+    },
+  ], [handleViewServices, handleEditSpecialty, handleDeleteSpecialty]);
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || 'Easy Salon')}
+      sideNavTitle="Painel da Easy"
+      sideNavSubtitle="Área Administrativa"
+    >
+      <PageHeader
+        title="Especialidades"
+        subtitle="Gerencie as especialidades e seus serviços disponíveis para todos os salões."
+        action={{
+          label: "Nova Especialidade",
+          onClick: handleNewSpecialty,
+        }}
+      />
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner size="md" />
+        </div>
+      ) : (
+        <DataTable
+          data={specialties}
+          columns={columns}
+          actions={specialtyActions}
+          onRowClick={handleViewServices}
+          mobileView="cards"
+          mobileCardConfig={{
+            title: "name",
+            badge: (row) => row.isActive !== false ? "Ativo" : "Inativo",
+          }}
+        />
+      )}
+
+      <AdminSpecialtyModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        specialty={selectedSpecialty}
+        onSave={handleSaveSpecialty}
+        isSaving={isSaving}
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteSpecialty}
+        title="Excluir Especialidade"
+        description={`Tem certeza que deseja excluir a especialidade "${specialtyToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
+      />
+    </EasySalonLayout>
+  );
+}

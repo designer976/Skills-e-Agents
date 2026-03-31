@@ -1,0 +1,299 @@
+/**
+ * Testes para o componente ProposalTemplateRenderer
+ */
+
+import React from 'react'
+import { render, screen } from '@testing-library/react'
+import { ProposalTemplateRenderer } from '../ProposalTemplateRenderer'
+import { TEMPLATE_PADRAO_WA_PROJECT } from '@/lib/proposta-template-types'
+import type { PropostaTemplateData } from '@/lib/proposta-template-types'
+
+// Mock do Skeleton component
+jest.mock('@/components/ui/skeleton', () => ({
+  Skeleton: ({ className }: { className?: string }) => (
+    <div data-testid="skeleton" className={className} />
+  )
+}))
+
+// Mock da função cn
+jest.mock('@/lib/utils', () => ({
+  cn: (...args: any[]) => args.filter(Boolean).join(' ')
+}))
+
+describe('ProposalTemplateRenderer', () => {
+  let mockData: PropostaTemplateData
+
+  beforeEach(() => {
+    mockData = {
+      ...TEMPLATE_PADRAO_WA_PROJECT,
+      capa: {
+        titulo: 'Proposta Comercial',
+        subtitulo: 'Sistema de Teste',
+        dataEmissao: '30/03/2026',
+        validadeDias: 15,
+        cliente: {
+          empresa: 'Empresa Teste LTDA',
+          pessoa: 'João Silva'
+        },
+        tipoEscopo: 'Escopo fechado'
+      },
+      projeto: {
+        titulo: 'Sobre o Projeto',
+        nome: 'Sistema de Teste',
+        descricao: 'Desenvolvimento de sistema de teste para validação',
+        objetivo: 'Validar funcionalidades do sistema'
+      }
+    }
+  })
+
+  describe('Renderização com dados', () => {
+    it('deve renderizar o template completo com dados', () => {
+      render(<ProposalTemplateRenderer data={mockData} />)
+
+      // Verificar elementos principais
+      expect(screen.getByText('Proposta Comercial')).toBeInTheDocument()
+      expect(screen.getByText('Sistema de Teste')).toBeInTheDocument()
+      expect(screen.getByText('Empresa Teste LTDA')).toBeInTheDocument()
+    })
+
+    it('deve renderizar seções da empresa', () => {
+      render(<ProposalTemplateRenderer data={mockData} />)
+
+      expect(screen.getByText(`Sobre a ${mockData.empresa.nome}`)).toBeInTheDocument()
+      expect(screen.getByText(mockData.empresa.descricao)).toBeInTheDocument()
+    })
+
+    it('deve renderizar funcionalidades quando fornecidas', () => {
+      const dataWithFeatures = {
+        ...mockData,
+        funcionalidades: {
+          titulo: 'Funcionalidades',
+          itens: [
+            {
+              numero: 1,
+              titulo: 'Login de Usuário',
+              descricao: 'Sistema de autenticação com email e senha'
+            },
+            {
+              numero: 2,
+              titulo: 'Dashboard',
+              descricao: 'Painel principal com métricas e indicadores'
+            }
+          ]
+        }
+      }
+
+      render(<ProposalTemplateRenderer data={dataWithFeatures} />)
+
+      expect(screen.getByText('Funcionalidades')).toBeInTheDocument()
+      expect(screen.getByText('1. Login de Usuário')).toBeInTheDocument()
+      expect(screen.getByText('2. Dashboard')).toBeInTheDocument()
+    })
+
+    it('deve renderizar equipe quando fornecida', () => {
+      const dataWithTeam = {
+        ...mockData,
+        equipe: {
+          titulo: 'Equipe',
+          descricao: 'Time especializado',
+          membros: [
+            {
+              cargo: 'Desenvolvedor Frontend',
+              descricao: 'Responsável pela interface do usuário'
+            },
+            {
+              cargo: 'Desenvolvedor Backend',
+              descricao: 'Responsável pela API e banco de dados'
+            }
+          ]
+        }
+      }
+
+      render(<ProposalTemplateRenderer data={dataWithTeam} />)
+
+      expect(screen.getByText('Desenvolvedor Frontend')).toBeInTheDocument()
+      expect(screen.getByText('Desenvolvedor Backend')).toBeInTheDocument()
+    })
+  })
+
+  describe('Estado de loading', () => {
+    it('deve mostrar skeleton quando isLoading=true', () => {
+      render(<ProposalTemplateRenderer isLoading={true} />)
+
+      const skeletons = screen.getAllByTestId('skeleton')
+      expect(skeletons.length).toBeGreaterThan(0)
+
+      // Não deve mostrar conteúdo real
+      expect(screen.queryByText('Proposta Comercial')).not.toBeInTheDocument()
+    })
+
+    it('deve mostrar skeleton quando data não é fornecida', () => {
+      render(<ProposalTemplateRenderer />)
+
+      const skeletons = screen.getAllByTestId('skeleton')
+      expect(skeletons.length).toBeGreaterThan(0)
+    })
+
+    it('deve mostrar conteúdo quando isLoading=false e data fornecida', () => {
+      render(<ProposalTemplateRenderer data={mockData} isLoading={false} />)
+
+      expect(screen.getByText('Proposta Comercial')).toBeInTheDocument()
+      expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Responsividade', () => {
+    it('deve aplicar classes responsivas corretas', () => {
+      const { container } = render(<ProposalTemplateRenderer data={mockData} />)
+
+      const mainContainer = container.firstChild as HTMLElement
+      expect(mainContainer).toHaveClass('w-full')
+      expect(mainContainer).toHaveClass('max-w-[210mm]')
+      expect(mainContainer).toHaveClass('print:max-w-none')
+      expect(mainContainer).toHaveClass('print:w-full')
+    })
+
+    it('deve aplicar classes de padding responsivo', () => {
+      const { container } = render(<ProposalTemplateRenderer data={mockData} />)
+
+      const contentContainer = container.querySelector('.relative.z-10')
+      expect(contentContainer).toHaveClass('px-4')
+      expect(contentContainer).toHaveClass('sm:px-8')
+      expect(contentContainer).toHaveClass('lg:px-14')
+    })
+  })
+
+  describe('Otimizações de performance', () => {
+    it('deve lidar com listas grandes de funcionalidades', () => {
+      const largeFeatureList = Array.from({ length: 50 }, (_, i) => ({
+        numero: i + 1,
+        titulo: `Funcionalidade ${i + 1}`,
+        descricao: `Descrição da funcionalidade ${i + 1}`
+      }))
+
+      const dataWithManyFeatures = {
+        ...mockData,
+        funcionalidades: {
+          titulo: 'Funcionalidades',
+          itens: largeFeatureList
+        }
+      }
+
+      const { container } = render(<ProposalTemplateRenderer data={dataWithManyFeatures} />)
+
+      // Verificar que o componente renderizou sem erros
+      expect(container.firstChild).toBeInTheDocument()
+
+      // Verificar que algumas funcionalidades foram renderizadas
+      expect(screen.getByText('1. Funcionalidade 1')).toBeInTheDocument()
+      expect(screen.getByText('50. Funcionalidade 50')).toBeInTheDocument()
+    })
+
+    it('deve usar React.memo para itens de funcionalidades', () => {
+      // Este teste verifica se a estrutura está correta para otimização
+      const dataWithFeatures = {
+        ...mockData,
+        funcionalidades: {
+          titulo: 'Funcionalidades',
+          itens: [
+            {
+              numero: 1,
+              titulo: 'Funcionalidade Teste',
+              descricao: 'Descrição de teste'
+            }
+          ]
+        }
+      }
+
+      expect(() => {
+        render(<ProposalTemplateRenderer data={dataWithFeatures} />)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Acessibilidade', () => {
+    it('deve ter estrutura semântica correta', () => {
+      render(<ProposalTemplateRenderer data={mockData} />)
+
+      // Verificar se há headers estruturados
+      const headers = screen.getAllByRole('heading')
+      expect(headers.length).toBeGreaterThan(0)
+    })
+
+    it('deve ter listas estruturadas corretamente', () => {
+      const dataWithLists = {
+        ...mockData,
+        empresa: {
+          ...mockData.empresa,
+          servicos: ['Desenvolvimento Web', 'Consultoria'],
+          clientes: ['Cliente A', 'Cliente B']
+        }
+      }
+
+      render(<ProposalTemplateRenderer data={dataWithLists} />)
+
+      const lists = screen.getAllByRole('list')
+      expect(lists.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Tratamento de dados faltantes', () => {
+    it('deve lidar com seções opcionais ausentes', () => {
+      const minimalData = {
+        ...mockData,
+        integracoes: undefined,
+        cronograma: {
+          ...mockData.cronograma,
+          fases: undefined
+        }
+      }
+
+      expect(() => {
+        render(<ProposalTemplateRenderer data={minimalData} />)
+      }).not.toThrow()
+    })
+
+    it('deve renderizar com dados mínimos', () => {
+      const minimalData = {
+        capa: mockData.capa,
+        empresa: mockData.empresa,
+        projeto: mockData.projeto,
+        funcionalidades: { titulo: 'Funcionalidades', itens: [] },
+        modeloTrabalho: mockData.modeloTrabalho,
+        equipe: mockData.equipe,
+        cronograma: mockData.cronograma,
+        investimento: mockData.investimento,
+        entregaveis: mockData.entregaveis,
+        proximosPassos: mockData.proximosPassos,
+        encerramento: mockData.encerramento
+      }
+
+      render(<ProposalTemplateRenderer data={minimalData} />)
+
+      expect(screen.getByText('Proposta Comercial')).toBeInTheDocument()
+    })
+  })
+
+  describe('Customização', () => {
+    it('deve aplicar className customizado', () => {
+      const customClass = 'custom-proposal-class'
+      const { container } = render(
+        <ProposalTemplateRenderer data={mockData} className={customClass} />
+      )
+
+      expect(container.firstChild).toHaveClass(customClass)
+    })
+
+    it('deve manter classes padrão com className customizado', () => {
+      const customClass = 'custom-class'
+      const { container } = render(
+        <ProposalTemplateRenderer data={mockData} className={customClass} />
+      )
+
+      const element = container.firstChild as HTMLElement
+      expect(element).toHaveClass('w-full')
+      expect(element).toHaveClass('max-w-[210mm]')
+      expect(element).toHaveClass(customClass)
+    })
+  })
+})

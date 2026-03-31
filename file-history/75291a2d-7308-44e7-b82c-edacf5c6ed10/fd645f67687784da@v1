@@ -1,0 +1,489 @@
+"use client"
+
+import { use, useState, useCallback, useRef, useEffect } from "react"
+import { callProposalGeneratorAction } from "@/app/actions/severino"
+import { useRouter } from "next/navigation"
+import { useLeads } from "@/contexts/leads-context"
+import { useBreadcrumbSetter } from "@/hooks/use-breadcrumb-setter"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import {
+  BrainCircuit, SendHorizonal, Paperclip, X, Plus,
+  FileText, Download, Database, Loader2,
+} from "lucide-react"
+import { toast } from "sonner"
+import { ProposalEditorSkeleton } from "@/components/content-skeleton"
+import { MarkdownRenderer } from "@/components/markdown-renderer"
+import { buildProposalTokens } from "@/lib/proposal-pdf-utils"
+
+// Normaliza linhas que usam emoji como marcador (✅ ❌ etc.) para itens de lista markdown reais.
+// Sem isso, linhas consecutivas separadas apenas por \n colapsam num único parágrafo no ReactMarkdown.
+function normalizeListLines(content: string): string {
+  return content
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trimStart()
+      if (/^[✅❌✓✗•→]/.test(trimmed) && !trimmed.startsWith("- ")) {
+        return `- ${trimmed}`
+      }
+      return line
+    })
+    .join("\n")
+}
+
+function parseMarkdownSections(markdown: string): { key: string; title: string; content: string }[] {
+  const sections: { key: string; title: string; content: string }[] = []
+  const lines = markdown.split("\n")
+  let currentTitle = ""
+  let currentContent: string[] = []
+
+  for (const line of lines) {
+    const h2Match = line.match(/^## (.+)$/)
+    if (h2Match) {
+      if (currentTitle) {
+        sections.push({
+          key: currentTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+          title: currentTitle,
+          content: normalizeListLines(currentContent.join("\n").trim()),
+        })
+      }
+      currentTitle = h2Match[1].trim()
+      currentContent = []
+    } else if (currentTitle) {
+      currentContent.push(line)
+    }
+  }
+
+  if (currentTitle && currentContent.length > 0) {
+    sections.push({
+      key: currentTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      title: currentTitle,
+      content: normalizeListLines(currentContent.join("\n").trim()),
+    })
+  }
+
+  return sections
+}
+
+// ---- Main Page ----
+
+export default function LeadProposalEditorPage({
+  params,
+}: {
+  params: Promise<{ leadId: string; propostaId: string }>
+}) {
+  const { leadId, propostaId } = use(params)
+  const router = useRouter()
+  const { getLead, getLeadProposal, updateLeadProposal, isLoading } = useLeads()
+
+  const lead = getLead(leadId)
+  const proposal = getLeadProposal(propostaId)
+  const proposalRef = useRef(proposal)
+  proposalRef.current = proposal
+
+  useBreadcrumbSetter([
+    { label: "Leads", href: "/dashboard/leads" },
+    { label: lead?.titulo ?? "Lead", href: `/dashboard/leads/${leadId}` },
+    { label: proposal?.nome ?? "Proposta Comercial" },
+  ])
+
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [highlightedSections, setHighlightedSections] = useState<Set<string>>(new Set())
+  const [clarificationQuestions, setClarificationQuestions] = useState<string[]>([])
+  const [localLoading, setLocalLoading] = useState(true)
+
+  useEffect(() => {
+    const t = setTimeout(() => setLocalLoading(false), 500)
+    return () => clearTimeout(t)
+  }, [])
+
+  const handleDownloadPDF = async () => {
+    if (!proposal || proposal.proposalContent.length === 0) return
+    setDownloading(true)
+    try {
+      const res = await fetch("/proposta-template.html")
+      if (!res.ok) throw new Error("Template não encontrado")
+      let html = await res.text()
+
+      const tokens = buildProposalTokens({
+        empresa: lead?.titulo ?? "",
+        para: undefined,
+        projeto: proposal.nome,
+        modeloTrabalho: lead?.modeloTrabalho,
+        dataCriacao: proposal.dataCriacao,
+        sections: proposal.proposalContent,
+      })
+
+      // Novo sistema de substituição com regex e limpeza
+      for (const [key, value] of Object.entries(tokens)) {
+        html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value || '')
+      }
+
+      // Remove variáveis não utilizadas
+      html = html.replace(/\{\{[A-Z_]+\}\}/g, '')
+
+      const win = window.open("", "_blank")
+      if (!win) {
+        toast.error("Pop-up bloqueado. Permita pop-ups para este site e tente novamente.")
+        return
+      }
+      win.document.open()
+      win.document.write(html)
+      win.document.close()
+      win.addEventListener("load", () => win.print())
+      setTimeout(() => { if (win && !win.closed) win.print() }, 800)
+
+      toast.success("Proposta aberta! Selecione 'Salvar como PDF' com margens 'Nenhuma'.")
+    } catch (err) {
+      console.error("[LeadProposalPage] PDF error:", err)
+      toast.error("Erro ao gerar o PDF.")
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const handleSendMessage = useCallback(
+    async (content: string, fileName?: string) => {
+      const current = proposalRef.current
+      if (!current) return
+
+      const userMsg = { id: `u-${Date.now()}`, role: "user" as const, content, fileName }
+      const newHistory = [...current.conversationHistory, userMsg]
+      // Update local state optimistically; persist in background (non-blocking)
+      updateLeadProposal(propostaId, { conversationHistory: newHistory }).catch(() => {})
+      setIsProcessing(true)
+      setClarificationQuestions([])
+
+      // Build context string (same pattern as severino-chat.tsx)
+      const contextParts: string[] = []
+      if (lead?.titulo) contextParts.push(`Empresa: ${lead.titulo}`)
+      if (lead?.descricao) contextParts.push(`Descrição: ${lead.descricao}`)
+      if (lead?.interesse && lead.interesse !== "Vazio") contextParts.push(`Interesse/Tipo: ${lead.interesse}`)
+      if (lead?.modeloTrabalho && lead.modeloTrabalho !== "Vazio") contextParts.push(`Modelo: ${lead.modeloTrabalho}`)
+      if (lead?.observacoes?.length) {
+        const obs = lead.observacoes.map((o) => `- ${o.texto} (${o.autor})`).join("\n")
+        contextParts.push(`Observações do lead:\n${obs}`)
+      }
+      if (lead?.notasConhecimento?.length) {
+        const notas = lead.notasConhecimento.map((n) => `### ${n.titulo}\n${n.conteudo}`).join("\n\n")
+        contextParts.push(`Notas da Base de Conhecimento:\n${notas}`)
+      }
+      if (lead?.baseConhecimento?.length) {
+        const kbContent = lead.baseConhecimento.map((kb) => kb.conteudo).filter(Boolean).join("\n")
+        if (kbContent) contextParts.push(`Arquivos da Base de Conhecimento:\n${kbContent}`)
+      }
+      const context = contextParts.join("\n")
+
+      // Inject lead context as silent exchange at position 0 so the model can reference it
+      const leadContextMessages: { role: "user" | "assistant"; content: string }[] = []
+      if (context && current.conversationHistory.length === 0) {
+        leadContextMessages.push(
+          { role: "user", content: `[Contexto do lead]\n${context}` },
+          { role: "assistant", content: "Entendido. Tenho acesso às informações deste lead e vou considerá-las para ajudar a criar a proposta." }
+        )
+      }
+
+      const apiMessages = [
+        ...leadContextMessages,
+        ...current.conversationHistory.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        { role: "user" as const, content },
+      ]
+
+      try {
+        // Usa o proposal-generator para toda a conversa (clarificação + geração)
+        const data = await callProposalGeneratorAction({
+          context,
+          messages: apiMessages,
+          lead_id: leadId,
+        })
+
+        const aiMsg = { id: `a-${Date.now()}`, role: "assistant" as const, content: data.assistant_message || "Resposta recebida." }
+        const updatedHistory = [...(proposalRef.current?.conversationHistory ?? newHistory), aiMsg]
+
+        if (data.is_proposal_ready) {
+          const sections = parseMarkdownSections(data.assistant_message)
+
+          const keys = sections.map((s) => s.key)
+          setHighlightedSections(new Set(keys))
+          setTimeout(() => setHighlightedSections(new Set()), 2000)
+
+          updateLeadProposal(propostaId, {
+            conversationHistory: updatedHistory,
+            proposalContent: sections,
+            status: "Concluída",
+          }).catch(() => {})
+        } else {
+          updateLeadProposal(propostaId, { conversationHistory: updatedHistory }).catch(() => {})
+        }
+      } catch (error) {
+        console.error("[proposal-ai] Error:", error)
+        const errorMsg = { id: `a-error-${Date.now()}`, role: "assistant" as const, content: "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente." }
+        const errorHistory = [...(proposalRef.current?.conversationHistory ?? newHistory), errorMsg]
+        updateLeadProposal(propostaId, { conversationHistory: errorHistory }).catch(() => {})
+      } finally {
+        setIsProcessing(false)
+      }
+    },
+    [propostaId, lead, updateLeadProposal]
+  )
+
+  if (isLoading || localLoading || !proposal) return <ProposalEditorSkeleton />
+
+  if (!lead || !proposal) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">Proposta não encontrada.</p>
+          <Button variant="link" onClick={() => router.push(`/dashboard/leads/${leadId}`)} className="mt-2 text-primary">
+            Voltar para o Lead
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col overflow-hidden" style={{ height: "calc(100vh - 112px)" }}>
+      {/* Top bar */}
+      <div className="flex items-center gap-3 border-b bg-background px-4 py-2.5">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm font-semibold text-foreground truncate">{proposal.nome}</h1>
+          <p className="text-xs text-muted-foreground">Lead: {lead.titulo}</p>
+        </div>
+      </div>
+
+      {/* Split layout */}
+      <div className="flex flex-1 gap-4 p-4 min-h-0">
+        <div className="flex w-1/2 flex-col min-h-0">
+          <ChatPanel
+            messages={proposal.conversationHistory}
+            onSendMessage={handleSendMessage}
+            isProcessing={isProcessing}
+            knowledgeBaseCount={lead.baseConhecimento.length}
+            clarificationQuestions={clarificationQuestions}
+          />
+        </div>
+        <div className="flex w-1/2 flex-col min-h-0">
+          <DocumentPreview
+            title={proposal.nome}
+            sections={proposal.proposalContent}
+            highlightedSections={highlightedSections}
+            onDownloadPDF={handleDownloadPDF}
+            downloading={downloading}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---- Chat Panel ----
+
+function ChatPanel({
+  messages,
+  onSendMessage,
+  isProcessing,
+  knowledgeBaseCount,
+  clarificationQuestions = [],
+}: {
+  messages: { id: string; role: "user" | "assistant"; content: string; fileName?: string }[]
+  onSendMessage: (content: string, fileName?: string) => void
+  isProcessing: boolean
+  knowledgeBaseCount: number
+  clarificationQuestions?: string[]
+}) {
+  const [input, setInput] = useState("")
+  const [attachedFile, setAttachedFile] = useState<File | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages, isProcessing])
+
+  const handleSend = () => {
+    if ((!input.trim() && !attachedFile) || isProcessing) return
+    const content = input.trim() || `Arquivo anexado: ${attachedFile?.name}`
+    onSendMessage(content, attachedFile?.name)
+    setInput("")
+    setAttachedFile(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() }
+  }
+
+  return (
+    <div className="flex h-full flex-col rounded-lg border border-border bg-background">
+      <div className="border-b border-border bg-muted/50 px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <BrainCircuit className="h-5 w-5 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Assistente IA</h2>
+          </div>
+          {knowledgeBaseCount > 0 && (
+            <Badge variant="outline" className="gap-1 text-xs">
+              <Database className="h-3 w-3" />{knowledgeBaseCount} arquivo(s) na base
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-background py-4 sidebar-scroll">
+        <div className="flex flex-col gap-4 px-4">
+          {messages.length === 0 && (
+            <div className={cn("flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300")}>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
+                <BrainCircuit className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex max-w-[80%] flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">Assistente IA</span>
+                <div className="rounded-lg rounded-tl-none border border-border bg-white px-4 py-3 text-sm leading-relaxed text-foreground">
+                  Olá! Vou te ajudar a criar uma proposta comercial para este lead. Me conte sobre o projeto: qual o objetivo, escopo dos serviços, prazos, tecnologias envolvidas, investimento e qualquer outra informação relevante.
+                </div>
+              </div>
+            </div>
+          )}
+          {messages.map((msg) => {
+            const isAI = msg.role === "assistant"
+            return (
+              <div key={msg.id} className={cn("flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300", !isAI && "flex-row-reverse")}>
+                {isAI && (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
+                    <BrainCircuit className="h-4 w-4 text-white" />
+                  </div>
+                )}
+                <div className={cn("flex max-w-[80%] flex-col gap-1", !isAI && "items-end")}>
+                  <span className="text-[11px] text-muted-foreground">{isAI ? "Assistente IA" : "Você"}</span>
+                  <div className={cn(
+                    "rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                    isAI
+                      ? "rounded-tl-none bg-white border border-border text-foreground"
+                      : "rounded-tr-none bg-secondary text-foreground"
+                  )}>
+                    {msg.fileName && <div className="mb-1.5 flex items-center gap-1 text-xs opacity-70"><Paperclip className="h-3 w-3" />{msg.fileName}</div>}
+                    {msg.content}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {isProcessing && (
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
+                <BrainCircuit className="h-4 w-4 text-white" />
+              </div>
+              <div className="rounded-lg rounded-tl-none border border-border bg-white px-4 py-3">
+                <div className="flex gap-1">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-primary/40 [animation-delay:0ms]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-primary/40 [animation-delay:200ms]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-primary/40 [animation-delay:400ms]" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-border p-4">
+        <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setAttachedFile(f); e.target.value = "" }} accept=".pdf,.doc,.docx,.txt,.xlsx" />
+        <div className="rounded-2xl border border-border bg-background">
+          {attachedFile && (
+            <div className="flex items-center gap-2 rounded-t-2xl border-b bg-secondary px-3 py-1.5">
+              <Paperclip className="h-3.5 w-3.5 text-primary" />
+              <span className="flex-1 truncate text-xs text-primary">{attachedFile.name}</span>
+              <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full p-0 hover:bg-primary/10" onClick={() => setAttachedFile(null)}>
+                <X className="h-3.5 w-3.5 text-primary" />
+              </Button>
+            </div>
+          )}
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Descreva detalhes do projeto ou cole a transcrição da reunião..."
+            className="min-h-[60px] max-h-[140px] resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-sm shadow-none focus-visible:ring-0"
+            disabled={isProcessing}
+          />
+          <div className="flex items-center justify-between px-2 pb-2 pt-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary" onClick={() => fileInputRef.current?.click()} disabled={isProcessing}>
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              className={cn(
+                "h-8 w-8 shrink-0 rounded-full transition-colors",
+                (input.trim() || attachedFile) && !isProcessing
+                  ? "bg-primary text-white hover:bg-primary/90"
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
+              )}
+              onClick={handleSend}
+              disabled={(!input.trim() && !attachedFile) || isProcessing}
+            >
+              <SendHorizonal className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---- Document Preview ----
+
+function DocumentPreview({
+  title,
+  sections,
+  highlightedSections,
+  onDownloadPDF,
+  downloading,
+}: {
+  title: string
+  sections: { key: string; title: string; content: string }[]
+  highlightedSections: Set<string>
+  onDownloadPDF: () => void
+  downloading: boolean
+}) {
+  return (
+    <div className="flex h-full flex-col rounded-lg border border-border bg-background overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">Proposta Comercial</h2>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={onDownloadPDF} disabled={downloading || sections.length === 0}>
+          {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          Imprimir / Salvar PDF
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto bg-background pl-4 pr-1.5 py-4 sidebar-scroll">
+        {sections.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6">
+            <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-sm font-medium text-muted-foreground text-center">A proposta será gerada aqui conforme você fornecer informações ao assistente.</p>
+            <p className="text-xs text-muted-foreground mt-1">Comece a conversa ao lado!</p>
+          </div>
+        ) : (
+          <div className="space-y-4 rounded-lg border border-border/50 bg-muted/50 p-4">
+            <div className="text-center border-b pb-4">
+              <h1 className="text-lg font-bold text-foreground">{title}</h1>
+              <p className="text-xs text-muted-foreground mt-1">Gerada em {new Date().toLocaleDateString("pt-BR")}</p>
+            </div>
+            {sections.map((section) => (
+              <div key={section.key} className={cn("rounded-md p-3 transition-colors duration-500", highlightedSections.has(section.key) ? "bg-[#fef9c3]" : "bg-transparent")}>
+                <h3 className="text-sm font-bold text-foreground mb-2">{section.title}</h3>
+                <MarkdownRenderer content={section.content} className="prose-sm prose-h3:text-primary prose-h3:font-semibold" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

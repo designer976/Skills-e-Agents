@@ -1,0 +1,164 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { BookingProfessional } from '@/types/booking';
+import { cn } from '@/lib/utils';
+import { getUserDisplayName, getUserInitials } from '@/utils/userHelpers';
+
+interface ProfessionalSelectionProps {
+  professionals: BookingProfessional[];
+  selectedProfessional: BookingProfessional | null;
+  primaryColor: string;
+  isRequest?: boolean;
+  onProfessionalChange: (professional: BookingProfessional | null) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+export function ProfessionalSelection({
+  professionals,
+  selectedProfessional,
+  primaryColor,
+  isRequest = false,
+  onProfessionalChange,
+  onNext,
+  onBack,
+}: ProfessionalSelectionProps) {
+  const anyProfessional = { id: 'any', name: 'Qualquer Profissional' };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Escolha seu profissional
+        </h2>
+        <p className="text-gray-600">
+          Selecione o profissional de sua preferência
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Opção "Qualquer Profissional" - apenas para solicitações */}
+        {isRequest && (
+          <Card
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedProfessional?.id === 'any' && "ring-2"
+            )}
+            style={{
+              ...(selectedProfessional?.id === 'any' && { borderColor: primaryColor }),
+            }}
+            onClick={() => onProfessionalChange(anyProfessional)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback>?</AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">
+                    Qualquer Profissional
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Sistema escolherá o melhor profissional disponível
+                  </p>
+                </div>
+                
+                {selectedProfessional?.id === 'any' && (
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Lista de Profissionais */}
+        {professionals.map((professional) => (
+          <Card
+            key={professional.id}
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedProfessional?.id === professional.id && "ring-2"
+            )}
+            style={{
+              ...(selectedProfessional?.id === professional.id && { borderColor: primaryColor }),
+            }}
+            onClick={() => onProfessionalChange(professional)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={professional.avatar} />
+                  <AvatarFallback>
+                    {getUserInitials(professional)}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">
+                    {getUserDisplayName(professional)}
+                  </h3>
+                </div>
+                
+                {selectedProfessional?.id === professional.id && (
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8">
+        <Button variant="default" onClick={onBack}>
+          Voltar
+        </Button>
+        
+        <Button
+          disabled={!selectedProfessional}
+          style={{ backgroundColor: primaryColor }}
+          className="text-white"
+          onClick={onNext}
+        >
+          Continuar
+        </Button>
+      </div>
+    </div>
+  );
+}

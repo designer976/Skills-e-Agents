@@ -1,0 +1,152 @@
+import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { subscriptionState } from '@/services/subscriptionState';
+import { ReactNode, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+  requiredRole?: 'Easy Salon' | 'Tenant Admin' | 'Profissional' | 'Recepcionista' | 'Administrador';
+  allowedRoles?: ('Easy Salon' | 'Tenant Admin' | 'Profissional' | 'Recepcionista' | 'Administrador')[];
+}
+
+export function ProtectedRoute({ children, requiredRole, allowedRoles }: ProtectedRouteProps) {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Não fazer nada enquanto está carregando
+    if (isLoading) {
+      return;
+    }
+
+    // Se não estiver autenticado, redireciona para login
+    if (!isAuthenticated) {
+      navigate('/login', {
+        replace: true,
+        state: { from: location.pathname }
+      });
+      return;
+    }
+
+    // Usuários não admin não podem acessar área admin
+    if (user?.role !== 'Easy Salon' && user?.role !== 'Tenant Admin' && location.pathname.startsWith('/admin/')) {
+      navigate('/salon/agenda', { replace: true });
+      return;
+    }
+
+    // Verificar permissões por roles permitidas
+    if (allowedRoles && user?.role && !allowedRoles.includes(user.role)) {
+      if (user?.role === 'Easy Salon' || user?.role === 'Tenant Admin') {
+        navigate('/admin/salons', { replace: true });
+      } else {
+        navigate('/salon/agenda', { replace: true });
+      }
+      return;
+    }
+
+    // Verificar permissão por role específica (mantém compatibilidade)
+    if (requiredRole && user?.role !== requiredRole) {
+      // Easy Salon e Tenant Admin podem acessar tudo (admin e salon)
+      if (user?.role === 'Easy Salon' || user?.role === 'Tenant Admin') {
+        return;
+      }
+
+      // Administrador pode acessar área do salão
+      if (user?.role === 'Administrador' && !location.pathname.startsWith('/admin/')) {
+        return;
+      }
+
+      // Redirecionar para a área apropriada se não tem permissão
+      if (location.pathname.startsWith('/admin/')) {
+        navigate('/salon/agenda', { replace: true });
+      } else {
+        navigate('/admin/salons', { replace: true });
+      }
+    }
+
+    // --- SUBSCRIPTION CHECK ---
+    // Super Admin (Easy Salon) and Tenant Admin bypass subscription checks.
+    // Tenant Admins manage payments from /salon/my-plan and may freely switch salons;
+    // the per-salon enforcement happens via the httpClient 403 interceptor when they
+    // make actual API calls to guarded salon endpoints.
+    const isSuperUser = user?.role === 'Easy Salon' || user?.role === 'Tenant Admin';
+    const allowedStatuses = ['active', 'trialing'];
+
+    if (!isLoading && !isSuperUser) {
+      // A salon-bound user (Administrador, Profissional, Recepcionista) MUST have an
+      // explicit valid subscriptionStatus. undefined / 'none' / 'past_due' / 'canceled'
+      // all trigger the enforcement modal. This is fail-closed by design.
+      const isSalonBoundUser = !!user?.salonId;
+      const isUserStatusInvalid = isSalonBoundUser && !allowedStatuses.includes(user?.subscriptionStatus ?? '');
+
+      const isProtectedPath = !location.pathname.startsWith('/salon/my-plan') && !location.pathname.startsWith('/login');
+
+      if (isUserStatusInvalid && isProtectedPath) {
+        // Delegate to GlobalSubscriptionManager (single source of truth for the modal).
+        // This also works correctly when the user switches salons: useSelectedSalon
+        // calls subscriptionState.setExpired(false) on salon change, then a new probe
+        // or the next 403 will re-set it if the new salon is also inactive.
+        subscriptionState.setExpired(true);
+      } else if (!isUserStatusInvalid) {
+        // Clear only if we know the status is valid — don't clear on undefined to
+        // avoid a race window where the probe hasn't responded yet.
+        if (user?.subscriptionStatus && allowedStatuses.includes(user.subscriptionStatus)) {
+          subscriptionState.setExpired(false);
+        }
+      }
+    }
+
+  }, [isAuthenticated, user, user?.subscriptionStatus, location.pathname, navigate, requiredRole, isLoading]);
+
+
+  // Se está carregando, mostrar loading spinner
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Se não está autenticado, não renderiza nada (já está redirecionando)
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Se há conflito de role, não renderiza nada (já está redirecionando)
+  if (user?.role !== 'Easy Salon' && user?.role !== 'Tenant Admin' && location.pathname.startsWith('/admin/')) {
+    return null;
+  }
+
+  // Verificar permissões
+  let hasPermission = true;
+
+  if (allowedRoles && user?.role && !allowedRoles.includes(user.role)) {
+    hasPermission = false;
+  }
+
+  if (hasPermission && requiredRole && user?.role !== requiredRole) {
+    // Easy Salon e Tenant Admin podem acessar tudo (admin e salon)
+    const isSuperAdmin = user?.role === 'Easy Salon' || user?.role === 'Tenant Admin';
+    // Administrador pode acessar área do salão
+    const isAdminInSalon = user?.role === 'Administrador' && !location.pathname.startsWith('/admin/');
+
+    if (!isSuperAdmin && !isAdminInSalon) {
+      hasPermission = false;
+    }
+  }
+
+  if (!hasPermission) {
+    return null;
+  }
+
+  return (
+    <>
+      {children}
+      {location.pathname !== '/onboarding' && <WhatsAppButton />}
+    </>
+  );
+}

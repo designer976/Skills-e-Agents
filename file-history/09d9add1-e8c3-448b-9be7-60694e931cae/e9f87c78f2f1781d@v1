@@ -1,0 +1,162 @@
+import { ReactNode, useCallback } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { X as X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { NavItem, NavSection } from "@/types/navigation";
+import { analytics } from "@/lib/analytics";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface EasySalonSidebarProps {
+  title: string;
+  subtitle?: string;
+  items: NavItem[] | NavSection[];
+  children?: ReactNode;
+  variant?: 'sidebar' | 'drawer';
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function EasySalonSidebar({
+  title,
+  items,
+  variant = 'sidebar',
+  isOpen = false,
+  onClose,
+}: EasySalonSidebarProps) {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  const trackNavClick = useCallback((itemTitle: string, href: string): void => {
+    analytics.trackEvent("sidebar_item_clicked", {
+      item_name: itemTitle,
+      path: href,
+      role: user?.role ?? "",
+    });
+  }, [user?.role]);
+
+  const sidebarClasses = cn(
+    "flex flex-col bg-card",
+    variant === 'sidebar'
+      ? "hidden md:flex flex-col w-56 h-full border-r border-border flex-shrink-0"
+      : cn(
+          "md:hidden fixed inset-y-0 left-0 w-64 border-r border-border z-50 flex flex-col",
+          "transform transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )
+  );
+
+  // Classes reutilizáveis para nav items
+  const navLinkClasses = (isActive: boolean) => cn(
+    "flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
+    isActive
+      ? "bg-accent text-accent-foreground font-medium"
+      : "text-sidebar-foreground hover:bg-muted"
+  );
+
+  const iconClasses = (isActive: boolean) => cn(
+    "w-5 h-5 shrink-0",
+    isActive ? "text-accent-foreground" : "text-muted-foreground"
+  );
+
+  // Renderiza um NavItem como NavLink ou button
+  const renderNavItem = (navItem: NavItem, key: string) => {
+    const isActive = location.pathname === navItem.href ||
+      (location.pathname.startsWith(navItem.href + "/") && navItem.href !== "/");
+    const Icon = navItem.icon;
+
+    if (navItem.onClick) {
+      return (
+        <button
+          key={key}
+          onClick={() => {
+            trackNavClick(navItem.title, navItem.href);
+            navItem.onClick?.();
+            onClose?.();
+          }}
+          className={cn(
+            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
+            "text-sidebar-foreground hover:bg-muted"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <Icon className="w-5 h-5 shrink-0 text-muted-foreground" />
+            <span>{navItem.title}</span>
+          </div>
+        </button>
+      );
+    }
+
+    return (
+      <NavLink
+        key={key}
+        to={navItem.href}
+        onClick={() => { trackNavClick(navItem.title, navItem.href); onClose?.(); }}
+        className={navLinkClasses(isActive)}
+      >
+        <div className="flex items-center gap-3">
+          <Icon className={iconClasses(isActive)} />
+          <span>{navItem.title}</span>
+        </div>
+        {navItem.badge && (
+          <span className="w-2.5 h-2.5 bg-[#F97316] rounded-full animate-pulse shrink-0" />
+        )}
+      </NavLink>
+    );
+  };
+
+  return (
+    <div className={sidebarClasses}>
+
+      {/* Header */}
+      <div className="p-4 pt-6 border-b flex-shrink-0 flex items-center justify-between">
+        <h2 className="text-sm font-medium text-foreground">{title}</h2>
+        {variant === 'drawer' && (
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Fechar menu"
+          >
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
+        <div>
+          {items.map((item, index) => {
+            if ('items' in item) {
+              // Seção com título e subitens
+              const section = item as NavSection;
+              return (
+                <div key={index} className={cn(index > 0 && "mt-6")}>
+                  {section.title && (
+                    <p className="px-3 mb-2 text-xs font-medium text-muted-foreground tracking-wide uppercase">
+                      {section.title}
+                    </p>
+                  )}
+                  <ul className="space-y-1">
+                    {section.items.map(navItem => (
+                      <li key={navItem.href}>
+                        {renderNavItem(navItem, navItem.href)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            } else {
+              // Item direto sem seção
+              const navItem = item as NavItem;
+              return renderNavItem(navItem, navItem.href);
+            }
+          })}
+        </div>
+      </nav>
+
+      {/* Rodapé com versão */}
+      <div className="p-4 mt-auto border-t border-border flex-shrink-0">
+        <span className="text-xs text-muted-foreground">v0.0.64</span>
+      </div>
+    </div>
+  );
+}

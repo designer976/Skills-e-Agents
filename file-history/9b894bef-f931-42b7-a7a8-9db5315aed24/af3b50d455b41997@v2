@@ -1,0 +1,113 @@
+import { useRef, useEffect } from 'react';
+import { User } from '@/types/user';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { getUserDisplayName } from '@/utils/userHelpers';
+import { cn } from '@/lib/utils';
+
+interface ProfessionalCarouselProps {
+    professionals: User[];
+    selectedId: string;
+    onSelect: (id: string) => void;
+    eventCounts: Record<string, number>;
+}
+
+/**
+ * Carrossel horizontal de profissionais (versão simplificada)
+ * - Scroll horizontal suave
+ * - Avatar circular com borda de destaque
+ * - Badge de contagem de eventos
+ * - Auto-scroll para profissional selecionado
+ */
+export function ProfessionalCarousel({
+    professionals,
+    selectedId,
+    onSelect,
+    eventCounts,
+}: ProfessionalCarouselProps) {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const selectedRef = useRef<HTMLButtonElement>(null);
+
+    // Auto-scroll para profissional selecionado
+    useEffect(() => {
+        if (selectedRef.current && scrollContainerRef.current) {
+            const container = scrollContainerRef.current;
+            const selected = selectedRef.current;
+
+            const containerRect = container.getBoundingClientRect();
+            const selectedRect = selected.getBoundingClientRect();
+
+            const scrollLeft = selected.offsetLeft - (containerRect.width / 2) + (selectedRect.width / 2);
+
+            container.scrollTo({
+                left: scrollLeft,
+                behavior: 'smooth',
+            });
+        }
+    }, [selectedId]);
+
+    return (
+        <div className="sticky top-0 z-20 bg-background border-b shadow-sm w-full overflow-hidden">
+            <div
+                ref={scrollContainerRef}
+                className="flex gap-3 px-4 py-3 overflow-x-auto w-full [&::-webkit-scrollbar]:hidden"
+                style={{
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                }}
+            >
+                {professionals.map((prof) => {
+                    const isSelected = selectedId === prof.id;
+                    const eventCount = eventCounts[prof.id] || 0;
+
+                    return (
+                        <button
+                            key={prof.id}
+                            ref={isSelected ? selectedRef : null}
+                            onClick={() => onSelect(prof.id)}
+                            className="flex flex-col items-center gap-1.5 flex-shrink-0 transition-transform active:scale-95"
+                        >
+                            <div className="relative">
+                                <UserAvatar
+                                    src={prof.avatar}
+                                    name={getUserDisplayName(prof)}
+                                    size="md"
+                                    className={cn(
+                                        "transition-all",
+                                        isSelected
+                                            ? "ring-1 ring-primary ring-offset-2 scale-105"
+                                            : "ring-0 ring-transparent"
+                                    )}
+                                />
+
+                                {eventCount > 0 && (
+                                    <div
+                                        className={cn(
+                                            "absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold shadow-md",
+                                            isSelected
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted-foreground text-background"
+                                        )}
+                                    >
+                                        {eventCount}
+                                    </div>
+                                )}
+                            </div>
+
+                            <span
+                                className={cn(
+                                    "text-xs font-medium truncate max-w-[70px] transition-colors",
+                                    isSelected
+                                        ? "text-primary font-semibold"
+                                        : "text-muted-foreground"
+                                )}
+                            >
+                                {prof.nickname || prof.name?.split(' ')[0]}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,33 @@
+import * as React from "react";
+import { Badge } from "@/components/ui/badge";
+import { DsAccordion } from "@/components/ui/ds-accordion";
+
+interface UserServicesAccordionProps {
+  items: Array<{
+    id: string;
+    title: string;
+    content: React.ReactNode;
+    serviceCount?: number;
+  }>;
+  className?: string;
+}
+
+export function UserServicesAccordion({ items, className }: UserServicesAccordionProps) {
+  return (
+    <DsAccordion
+      className={className}
+      items={items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        badge:
+          item.serviceCount !== undefined && item.serviceCount > 0 ? (
+            <Badge variant="secondary">
+              {item.serviceCount}{" "}
+              {item.serviceCount === 1 ? "serviço" : "serviços"}
+            </Badge>
+          ) : undefined,
+      }))}
+    />
+  );
+}

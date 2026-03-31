@@ -1,0 +1,467 @@
+"use client"
+
+import React, { useMemo } from 'react'
+import { cn } from '@/lib/utils'
+import type { PropostaTemplateData, FuncionalidadeItem, MembroEquipe, CondicaoPagamento } from '@/lib/proposta-template-types'
+
+interface ProposalTemplateRendererProps {
+  data: PropostaTemplateData
+  className?: string
+}
+
+export function ProposalTemplateRenderer({ data, className }: ProposalTemplateRendererProps) {
+  return (
+    <div className={cn("w-full max-w-[210mm] mx-auto bg-background", className)}>
+      {/* DOCUMENTO CONTÍNUO */}
+      <div className="relative bg-background shadow-md">
+        {/* BACKGROUND WATERMARK */}
+        <div
+          className="fixed inset-0 opacity-[0.035] pointer-events-none z-0"
+          style={{
+            backgroundImage: 'url(/fundo-center.png)',
+            backgroundPosition: 'center center',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: '602px auto',
+          }}
+        />
+
+        {/* CONTEÚDO */}
+        <div className="relative z-10 px-14 py-14 space-y-8">
+          {/* === HEADER/CAPA === */}
+          <CapaSection data={data} />
+
+          {/* === SOBRE A EMPRESA === */}
+          <EmpresaSection data={data.empresa} />
+
+          {/* === SOBRE O PROJETO === */}
+          <ProjetoSection data={data.projeto} />
+
+          {/* === FUNCIONALIDADES === */}
+          <FuncionalidadesSection data={data.funcionalidades} />
+
+          {/* === INTEGRAÇÕES === */}
+          {data.integracoes && (
+            <IntegracoesSection data={data.integracoes} />
+          )}
+
+          {/* === MODELO DE TRABALHO === */}
+          <ModeloTrabalhoSection data={data.modeloTrabalho} />
+
+          {/* === EQUIPE === */}
+          <EquipeSection data={data.equipe} />
+
+          {/* === CRONOGRAMA === */}
+          <CronogramaSection data={data.cronograma} />
+
+          {/* === INVESTIMENTO === */}
+          <InvestimentoSection data={data.investimento} />
+
+          {/* === ENTREGÁVEIS === */}
+          <EntregaveisSection data={data.entregaveis} />
+
+          {/* === PRÓXIMOS PASSOS === */}
+          <ProximosPassosSection data={data.proximosPassos} />
+
+          {/* === ENCERRAMENTO === */}
+          <EncerramentoSection data={data.encerramento} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// === COMPONENTES DE SEÇÃO ===
+
+function CapaSection({ data }: { data: PropostaTemplateData }) {
+  return (
+    <header className="space-y-8">
+      {/* LOGO */}
+      <div className="flex justify-start">
+        <img
+          src="/logo-completa.png"
+          alt="Wa Project Logo"
+          width={120}
+          height={36}
+          className="h-9 w-auto object-contain"
+        />
+      </div>
+
+      {/* TÍTULOS */}
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold text-[color:var(--wa-brand-primary)] leading-tight">
+          {data.capa.titulo}
+        </h1>
+        <h2 className="text-2xl font-bold text-[color:var(--wa-brand-primary)] leading-tight">
+          {data.capa.subtitulo}
+        </h2>
+      </div>
+
+      {/* INFO DA CAPA */}
+      <div className="space-y-1">
+        <div className="text-sm font-medium text-foreground">
+          {data.capa.dataEmissao} | Válido por {data.capa.validadeDias} dias
+        </div>
+        <p className="text-sm text-foreground">
+          <strong>Para:</strong> {data.capa.cliente.empresa}
+        </p>
+        {data.capa.cliente.pessoa && (
+          <p className="text-sm text-foreground">
+            <strong>Empresa:</strong> {data.capa.cliente.pessoa}
+          </p>
+        )}
+        <p className="text-sm text-foreground">
+          <strong>Tipo:</strong> {data.capa.tipoEscopo}
+        </p>
+      </div>
+    </header>
+  )
+}
+
+function EmpresaSection({ data }: { data: PropostaTemplateData['empresa'] }) {
+  // Memoizar listas para evitar recriação desnecessária
+  const servicosItems = useMemo(() =>
+    data.servicos.map((servico) => (
+      <li key={servico} className="text-sm text-muted-foreground leading-relaxed">
+        {servico}
+      </li>
+    )), [data.servicos]
+  )
+
+  const clientesItems = useMemo(() =>
+    data.clientes.map((cliente) => (
+      <li key={cliente} className="text-sm text-muted-foreground leading-relaxed">
+        {cliente}
+      </li>
+    )), [data.clientes]
+  )
+
+  return (
+    <section className="space-y-4">
+      <SectionTitle>Sobre a {data.nome}</SectionTitle>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {data.descricao}
+      </p>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold text-foreground">Nossos serviços:</h3>
+        <ul className="list-disc pl-5 space-y-1">
+          {servicosItems}
+        </ul>
+      </div>
+
+      <div className="space-y-2">
+        <SectionTitle>Nossos Clientes</SectionTitle>
+        <ul className="list-disc pl-5 space-y-1">
+          {clientesItems}
+        </ul>
+        {data.websiteCases && (
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Cases completos: {data.websiteCases}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function ProjetoSection({ data }: { data: PropostaTemplateData['projeto'] }) {
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <h3 className="text-sm font-bold text-foreground">{data.nome}</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {data.descricao}
+      </p>
+      {data.objetivo && (
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {data.objetivo}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function FuncionalidadesSection({ data }: { data: PropostaTemplateData['funcionalidades'] }) {
+  // Otimização: para listas muito grandes (>20 itens), renderizar em chunks
+  const chunkedItems = useMemo(() => {
+    if (data.itens.length <= 20) {
+      return [data.itens] // Uma única chunk para listas pequenas
+    }
+
+    // Para listas grandes, dividir em chunks de 10 itens
+    const chunks = []
+    for (let i = 0; i < data.itens.length; i += 10) {
+      chunks.push(data.itens.slice(i, i + 10))
+    }
+    return chunks
+  }, [data.itens])
+
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      {chunkedItems.length === 1 ? (
+        // Renderização direta para listas pequenas
+        <div className="space-y-4">
+          {data.itens.map((item: FuncionalidadeItem) => (
+            <FuncionalidadeItem key={item.numero} item={item} />
+          ))}
+        </div>
+      ) : (
+        // Renderização em chunks para listas grandes
+        <div className="space-y-6">
+          {chunkedItems.map((chunk, chunkIndex) => (
+            <div key={chunkIndex} className="space-y-4">
+              {chunk.map((item: FuncionalidadeItem) => (
+                <FuncionalidadeItem key={item.numero} item={item} />
+              ))}
+              {chunkIndex < chunkedItems.length - 1 && (
+                <div className="h-px bg-border opacity-30" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+const FuncionalidadeItem = React.memo(({ item }: { item: FuncionalidadeItem }) => {
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        <strong className="text-foreground">{item.numero}. {item.titulo}</strong> - {item.descricao}
+      </p>
+    </div>
+  )
+})
+
+function IntegracoesSection({ data }: { data: NonNullable<PropostaTemplateData['integracoes']> }) {
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {data.descricao}
+      </p>
+      {data.itens && data.itens.length > 0 && (
+        <ul className="list-disc pl-5 space-y-1">
+          {data.itens.map((item, index) => (
+            <li key={index} className="text-sm text-muted-foreground leading-relaxed">
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function ModeloTrabalhoSection({ data }: { data: PropostaTemplateData['modeloTrabalho'] }) {
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        <strong className="text-foreground">{data.tipo}</strong> - {data.descricao}
+      </p>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold text-foreground">Fases do Projeto:</h3>
+        <div className="space-y-1">
+          {data.fases.map((fase) => (
+            <div key={fase.numero} className="text-sm text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Fase {fase.numero}:</strong> {fase.nome} - {fase.descricao}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function EquipeSection({ data }: { data: PropostaTemplateData['equipe'] }) {
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {data.descricao}
+      </p>
+
+      <div className="space-y-5">
+        {data.membros.map((membro: MembroEquipe, index) => (
+          <MembroEquipeItem key={index} membro={membro} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const MembroEquipeItem = React.memo(({ membro }: { membro: MembroEquipe }) => {
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-bold text-[color:var(--wa-brand-primary)]">
+        {membro.cargo}
+      </h4>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {membro.descricao}
+      </p>
+    </div>
+  )
+})
+
+function CronogramaSection({ data }: { data: PropostaTemplateData['cronograma'] }) {
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <p className="text-base font-bold text-foreground">
+        {data.prazoTotal}
+      </p>
+
+      {data.fases && data.fases.length > 0 && (
+        <div className="space-y-1">
+          {data.fases.map((fase, index) => (
+            <div key={index} className="text-sm text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">{fase.fase}:</strong> {fase.nome}: {fase.periodo}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.observacoes && (
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {data.observacoes}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function InvestimentoSection({ data }: { data: PropostaTemplateData['investimento'] }) {
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <p className="text-base font-bold text-foreground">
+        Investimento total: {data.valorTotal}
+      </p>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold text-foreground">Condições de Pagamento:</h3>
+        <div className="space-y-1">
+          {data.condicoesPagamento.map((condicao: CondicaoPagamento, index) => (
+            <div key={index} className="text-sm text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">{condicao.parcela}:</strong> {condicao.momento}: {condicao.valor}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function EntregaveisSection({ data }: { data: PropostaTemplateData['entregaveis'] }) {
+  // Otimização: memoizar entregáveis para evitar recriação desnecessária
+  const entregaveisItems = useMemo(() =>
+    data.itens.map((item, index) => (
+      <EntregavelItem key={`entregavel-${index}`} item={item} index={index} />
+    )), [data.itens]
+  )
+
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <ul className="list-disc pl-5 space-y-1">
+        {entregaveisItems}
+      </ul>
+    </section>
+  )
+}
+
+// Componente memoizado para items individuais de entregáveis
+const EntregavelItem = React.memo(({ item, index }: { item: string; index: number }) => (
+  <li className="text-sm text-muted-foreground leading-relaxed">
+    {item}
+  </li>
+))
+
+function ProximosPassosSection({ data }: { data: PropostaTemplateData['proximosPassos'] }) {
+  // Otimização: memoizar passos para evitar recriação desnecessária
+  const passosItems = useMemo(() =>
+    data.passos.map((passo, index) => (
+      <PassoItem key={`passo-${index}`} passo={passo} index={index} />
+    )), [data.passos]
+  )
+
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{data.titulo}</SectionTitle>
+      <ol className="list-decimal pl-5 space-y-2">
+        {passosItems}
+      </ol>
+
+      {data.observacao && (
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {data.observacao}
+        </p>
+      )}
+    </section>
+  )
+}
+
+// Componente memoizado para items individuais de passos
+const PassoItem = React.memo(({ passo, index }: { passo: string; index: number }) => (
+  <li className="text-sm text-muted-foreground leading-relaxed">
+    {passo}
+  </li>
+))
+
+function EncerramentoSection({ data }: { data: PropostaTemplateData['encerramento'] }) {
+  return (
+    <section className="space-y-6 pt-8">
+      {/* CITAÇÕES */}
+      <div className="space-y-2">
+        <p className="text-base font-bold text-[color:var(--wa-brand-primary)]">
+          {data.citacao1}
+        </p>
+        <p className="text-base font-bold text-[color:var(--wa-brand-primary)]">
+          {data.citacao2}
+        </p>
+      </div>
+
+      {/* INFORMAÇÕES DA EMPRESA */}
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">{data.informacoesEmpresa.nomeCompleto}</strong>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>CNPJ:</strong> {data.informacoesEmpresa.cnpj}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Website:</strong> {data.informacoesEmpresa.website}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Email:</strong> {data.informacoesEmpresa.email}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Telefone/WhatsApp:</strong> {data.informacoesEmpresa.telefone}
+        </p>
+      </div>
+
+      {/* VALIDADE */}
+      <div className="pt-4">
+        <p className="text-xs text-muted-foreground">
+          {data.textoValidade}
+        </p>
+      </div>
+    </section>
+  )
+}
+
+// === COMPONENTES AUXILIARES ===
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-lg font-bold text-[color:var(--wa-brand-primary)] break-after-avoid">
+      {children}
+    </h2>
+  )
+}
+
+export default ProposalTemplateRenderer

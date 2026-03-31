@@ -1,0 +1,427 @@
+import { BookingErrorBoundary } from "@/components/booking/BookingErrorBoundary";
+import { NewBookingProgressIndicator } from "@/components/booking/NewBookingProgressIndicator";
+import { BookingReceipt } from "@/components/booking/steps/BookingReceipt";
+import { BookingWelcome } from "@/components/booking/steps/BookingWelcome";
+import { CustomerForm } from "@/components/booking/steps/CustomerForm";
+import { NewBookingConfirmation } from "@/components/booking/steps/NewBookingConfirmation";
+import { NewServiceSelection } from "@/components/booking/steps/NewServiceSelection";
+import { ServiceConfiguration } from "@/components/booking/steps/ServiceConfiguration";
+import { Toaster } from "@/components/ui/sonner";
+import { useNewBookingFlow } from "@/hooks/useNewBookingFlow";
+import { bookingService } from "@/services/bookingService";
+import { salonService } from "@/services/salonService";
+import type {
+  BookingConfirmationResponse,
+  BookingSalonInfo,
+} from "@/types/booking-api";
+import {
+  BookingProfessional,
+  BookingService,
+  BookingTimeSlot,
+  SalonBranding,
+} from "@/types/booking-new";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { analytics } from "@/lib/analytics";
+import { trackSeverinoEvent } from "@/services/severinoService";
+
+interface AddressData {
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+}
+
+interface ProfessionalData {
+  id: string;
+  name?: string;
+  profileImage?: string;
+}
+
+interface CustomerData {
+  customerName: string;
+  customerLastName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerCpf: string;
+  customerBirthDate: Date | null;
+  customerGender: string;
+  termsAccepted?: boolean;
+}
+
+// Default salon branding
+const defaultSalonBranding: SalonBranding = {
+  primaryColor: "#8B5CF6",
+  logo: "/lovable-uploads/afe5646c-0cf6-4821-b293-94dce0aa888b.webp",
+  name: "Salão",
+  address: "",
+  phone: "",
+  workingHours: "Seg à Sáb: 8h às 18h",
+  timezone: "America/Sao_Paulo",
+  coverImage: "/lovable-uploads/ccbf1447-2f3a-4098-a9c3-39945b40cf24.png",
+};
+
+const defaultTimeSlots: BookingTimeSlot[] = [
+  { time: "08:00", available: true },
+  { time: "08:30", available: true },
+  { time: "09:00", available: true },
+  { time: "09:30", available: true },
+  { time: "10:00", available: true },
+  { time: "10:30", available: true },
+  { time: "11:00", available: true },
+  { time: "11:30", available: true },
+  { time: "14:00", available: true },
+  { time: "14:30", available: true },
+  { time: "15:00", available: true },
+  { time: "15:30", available: true },
+  { time: "16:00", available: true },
+  { time: "16:30", available: true },
+  { time: "17:00", available: true },
+  { time: "17:30", available: true },
+];
+
+const formatAddress = (
+  addr: string | AddressData | null | undefined
+): string => {
+  if (typeof addr === "string") return addr;
+  if (!addr) return "";
+  const parts = [
+    addr.street && addr.number
+      ? `${addr.street}, ${addr.number}`
+      : addr.street,
+    addr.complement,
+    addr.neighborhood,
+    addr.city && addr.state ? `${addr.city} - ${addr.state}` : addr.city,
+    addr.zipCode,
+  ].filter(Boolean);
+  return parts.join(", ");
+};
+
+export default function NewBookingPage() {
+  const { salonSlug } = useParams();
+  const [salonBranding, setSalonBranding] =
+    useState<SalonBranding>(defaultSalonBranding);
+  const [services, setServices] = useState<BookingService[]>([]);
+  const [professionals, setProfessionals] = useState<BookingProfessional[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [salonInfo, setSalonInfo] = useState<BookingSalonInfo | null>(null);
+  const [confirmations, setConfirmations] = useState<
+    BookingConfirmationResponse[]
+  >([]);
+
+  const {
+    currentStep,
+    bookingData,
+    sessionId,
+    updateBookingData,
+    updateServiceConfig,
+    addService,
+    removeService,
+    nextStep,
+    prevStep,
+    resetBooking,
+    releaseAllLocks,
+  } = useNewBookingFlow(salonSlug || undefined);
+
+  const prevStepRef = useRef<number>(-1);
+
+  useEffect(() => {
+    if (!salonSlug) return;
+
+    if (currentStep === 0 && prevStepRef.current === -1) {
+      analytics.trackEvent('booking_welcome_viewed', { salon_slug: salonSlug });
+    }
+
+    if (currentStep === 1 && prevStepRef.current === 0) {
+      analytics.trackEvent('booking_started', { salon_slug: salonSlug });
+    }
+
+    if (currentStep > 1 && prevStepRef.current === currentStep - 1) {
+      const step = prevStepRef.current as 1 | 2 | 3;
+      if (step === 1) {
+        const totalPrice = bookingData.services.reduce((sum, s) => sum + (s.price || 0), 0);
+        analytics.trackEvent('booking_step_completed', { step: 1, services_count: bookingData.services.length, total_price: totalPrice });
+      } else if (step === 2) {
+        analytics.trackEvent('booking_step_completed', { step: 2 });
+      } else if (step === 3) {
+        const isExistingClient = !!bookingData.customerPhone && bookingData.services.length > 0;
+        analytics.trackEvent('booking_step_completed', { step: 3, is_existing_client: isExistingClient });
+      }
+    }
+
+    if (currentStep === 5 && prevStepRef.current === 4) {
+      const code = confirmations[0]?.confirmationCode || '';
+      analytics.trackEvent('booking_receipt_viewed', { confirmation_code: code });
+    }
+
+    prevStepRef.current = currentStep;
+  }, [currentStep, salonSlug, bookingData, confirmations]);
+
+  const loadSalonData = useCallback(async (salonSlug): Promise<void> => {
+    if (!salonSlug) return;
+
+    setIsLoading(true);
+    try {
+      // Get salon info from booking API
+      const salon = await bookingService.getSalonInfo(salonSlug);
+      setSalonInfo(salon);
+
+      if (salon) {
+        // Buscar horários online para exibir na tela de boas-vindas
+        let displayHours = salon.openingHours || [];
+        try {
+          const onlineHours = await salonService.getOnlineBookingHours(salon.id);
+          if (onlineHours && onlineHours.length > 0) {
+            displayHours = onlineHours.map(h => ({
+              dayOfWeek: h.dayOfWeek,
+              open: h.open,
+              close: h.close,
+              isOpen: h.isOpen
+            }));
+          }
+        } catch (error) {
+          console.warn('Não foi possível buscar horários online, usando horários do salão:', error);
+        }
+
+        // Update salon branding
+        setSalonBranding({
+          primaryColor: salon.primaryColor || "#8B5CF6",
+          logo: salon.logo || defaultSalonBranding.logo,
+          name: salon.name,
+          address: formatAddress(salon.address),
+          phone: salon.phone || "",
+          workingHours: "Seg à Sáb: 8h às 18h",
+          coverImage: salon.images?.[0] || defaultSalonBranding.coverImage,
+          timezone: salon.timezone || 'America/Sao_Paulo',
+          openingHours: displayHours,
+        });
+
+        // Load services from booking API
+        const servicesResponse = await bookingService.getServices(salonSlug);
+
+        // Convert categories/services to flat BookingService array and extract unique professionals
+        const bookingServices: BookingService[] = [];
+        const uniqueProfessionalsMap = new Map<string, BookingProfessional>();
+
+        if (servicesResponse.categories) {
+          servicesResponse.categories.forEach((category) => {
+            if (category.services && Array.isArray(category.services)) {
+              category.services.forEach((service) => {
+                // Add service to the list
+                bookingServices.push({
+                  id: service.id,
+                  name: service.name,
+                  category: category.categoryName || "Geral",
+                  categoryId: category.categoryId || undefined,
+                  duration: service.duration,
+                  price: service.price,
+                  priceType: service.priceType || "Fixo",
+                  maxValue: service.maxValue || null,
+                  isActive: true, // Services returned are already filtered for online booking
+                  isRequestOnly: category.requestOnly || false,
+                  professionals: service.professionals || [],
+                });
+
+                // Extract unique professionals from services
+                if (
+                  service.professionals &&
+                  Array.isArray(service.professionals)
+                ) {
+                  service.professionals.forEach((prof: ProfessionalData) => {
+                    if (prof.id && !uniqueProfessionalsMap.has(prof.id)) {
+                      uniqueProfessionalsMap.set(prof.id, {
+                        id: prof.id,
+                        name: prof.name || "Profissional",
+                        avatar: prof.profileImage || undefined,
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        setServices(bookingServices);
+
+        // Set professionals from the unique map (extracted from services)
+        const bookingProfessionals = Array.from(
+          uniqueProfessionalsMap.values()
+        );
+        setProfessionals(bookingProfessionals);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erro ao carregar dados do salão";
+      toast.error(errorMessage);
+
+      // Fall back to empty data
+      setServices([]);
+      setProfessionals([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSalonData(salonSlug);
+  }, [loadSalonData, salonSlug]);
+
+  const handleCustomerDataChange = (data: CustomerData): void => {
+    updateBookingData(data);
+  };
+
+  const renderCurrentStep = (): JSX.Element | null => {
+    switch (currentStep) {
+      case 0:
+        return <BookingWelcome salon={salonBranding} onStart={nextStep} />;
+
+      case 1:
+        return (
+          <NewServiceSelection
+            services={services}
+            selectedServices={bookingData.services}
+            primaryColor={salonBranding.primaryColor}
+            salonSlug={salonSlug || ""}
+            onAddService={addService}
+            onRemoveService={removeService}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        );
+
+      case 2:
+        return (
+          <ServiceConfiguration
+            serviceConfigs={bookingData.serviceConfigs}
+            professionals={professionals}
+            timeSlots={defaultTimeSlots}
+            primaryColor={salonBranding.primaryColor}
+            salonSlug={salonSlug || ""}
+            services={bookingData.services}
+            onConfigUpdate={updateServiceConfig}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        );
+
+      case 3:
+        return (
+          <CustomerForm
+            customerName={bookingData.customerName}
+            customerLastName={bookingData.customerLastName}
+            customerEmail={bookingData.customerEmail}
+            customerPhone={bookingData.customerPhone}
+            customerCpf={bookingData.customerCpf}
+            customerBirthDate={bookingData.customerBirthDate}
+            customerGender={bookingData.customerGender}
+            termsAccepted={bookingData.termsAccepted}
+            primaryColor={salonBranding.primaryColor}
+            onCustomerDataChange={handleCustomerDataChange}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        );
+
+      case 4:
+        return (
+          <NewBookingConfirmation
+            bookingData={bookingData}
+            salon={salonBranding}
+            salonSlug={salonSlug || ""}
+            sessionId={sessionId}
+            primaryColor={salonBranding.primaryColor}
+            onConfirmBooking={(confs): void => {
+              setConfirmations(confs || []);
+              const totalPrice = bookingData.services.reduce((sum, s) => sum + (s.price || 0), 0);
+              const totalDuration = bookingData.services.reduce((sum, s) => sum + (s.duration || 0), 0);
+              analytics.trackEvent('booking_confirmed', {
+                salon_slug: salonSlug || '',
+                services_count: bookingData.services.length,
+                total_price: totalPrice,
+                total_duration: totalDuration,
+                booking_source: 'online',
+              });
+
+              trackSeverinoEvent('agendamento_realizado', {
+                description: "Agendamento realizado via link externo",
+                salon_slug: salonSlug,
+                total_price: totalPrice,
+                services_count: bookingData.services.length
+              });
+
+              nextStep();
+            }}
+            onBack={prevStep}
+          />
+        );
+
+      case 5:
+        return (
+          <BookingReceipt
+            bookingData={bookingData}
+            salon={salonBranding}
+            salonSlug={salonSlug || ""}
+            confirmations={confirmations}
+            primaryColor={salonBranding.primaryColor}
+            onNewBooking={resetBooking}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      releaseAllLocks();
+    };
+  }, [releaseAllLocks]); // Release locks on unmount or when releaseAllLocks changes
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            Carregando informações do salão...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!salonInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Salão não encontrado
+          </h2>
+          <p className="text-gray-600">Verifique o link e tente novamente.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BookingErrorBoundary onReset={resetBooking}>
+      <Toaster />
+      <div className="min-h-screen bg-gray-50">
+        <NewBookingProgressIndicator
+          currentStep={currentStep}
+          primaryColor={salonBranding.primaryColor}
+        />
+
+        {renderCurrentStep()}
+      </div>
+    </BookingErrorBoundary>
+  );
+}

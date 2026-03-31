@@ -1,0 +1,1014 @@
+import { useState, useEffect } from "react";
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TimezoneCombobox } from "@/components/forms/TimezoneCombobox";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { Upload as Upload, Palette as Palette, Info as Info } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+import { salonService } from "@/services/salonService";
+import { cepService } from "@/services/cepService";
+import { Salon, UpdateSalonDto } from "@/types/salon";
+import { formatPhone } from "@/utils/formatters";
+
+interface SalonInfo {
+  nomeFantasia: string;
+  razaoSocial: string;
+  cnpj: string;
+  telefoneComercial: string;
+  emailContato: string;
+  nomeLinkUtil: string;
+  urlLinkUtil: string;
+  timezone: string;
+}
+
+interface AddressInfo {
+  cep: string;
+  rua: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+}
+
+interface VisualIdentity {
+  corPrincipal: string;
+  logo: string | null;
+}
+
+interface ErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+const estados: string[] = [
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+];
+
+export default function SalonDataPage() {
+  const { selectedSalon, updateSelectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSearchingCEP, setIsSearchingCEP] = useState(false);
+  const [salonData, setSalonData] = useState<Salon | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  // Verifica se é modo de criação baseado na URL ou ausência de salão selecionado
+  const isCreateMode =
+    window.location.pathname.includes("/admin/") || !selectedSalon;
+  const isEditMode = !isCreateMode;
+
+  const [currentTab, setCurrentTab] = useState("informacoes");
+
+  const [salonInfo, setSalonInfo] = useState<SalonInfo>({
+    nomeFantasia: "",
+    razaoSocial: "",
+    cnpj: "",
+    telefoneComercial: "",
+    emailContato: "",
+    nomeLinkUtil: "",
+    urlLinkUtil: "",
+    timezone: "America/Sao_Paulo",
+  });
+
+  const [addressInfo, setAddressInfo] = useState<AddressInfo>({
+    cep: "",
+    rua: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+  });
+
+  const [visualIdentity, setVisualIdentity] = useState<VisualIdentity>({
+    corPrincipal: "#ce4836",
+    logo: null,
+  });
+
+  // Fetch salon data on component mount
+  useEffect(() => {
+    const loadSalonData = async (): Promise<void> => {
+      if (isEditMode && selectedSalon?.id) {
+        await fetchSalonData();
+      }
+    };
+    loadSalonData();
+  }, [selectedSalon?.id, isEditMode]);
+
+  const fetchSalonData = async (): Promise<void> => {
+    if (!selectedSalon?.id) return;
+
+    setIsLoading(true);
+    try {
+      const data = await salonService.getById(selectedSalon.id);
+      setSalonData(data);
+
+      // Populate form fields with fetched data
+      setSalonInfo({
+        nomeFantasia: data.name || "",
+        razaoSocial: data.responsible || "",
+        cnpj: data.cnpj || "",
+        telefoneComercial: data.phone || "",
+        emailContato: data.email || "",
+        nomeLinkUtil: data.websiteName || "",
+        urlLinkUtil: data.websiteUrl || "",
+        timezone: data.timezone || "America/Sao_Paulo",
+      });
+
+      if (data.address) {
+        setAddressInfo({
+          cep: data.address.zipCode || "",
+          rua: data.address.street || "",
+          numero: data.address.number || "",
+          complemento: data.address.complement || "",
+          bairro: data.address.neighborhood || "",
+          cidade: data.address.city || "",
+          estado: data.address.state || "",
+        });
+      }
+
+      if (data.logo) {
+        setVisualIdentity((prev) => ({ ...prev, logo: data.logo || null }));
+      }
+
+      // Carregar cor primária do salão ou usar padrão
+      if (data.primaryColor) {
+        setVisualIdentity((prev) => ({
+          ...prev,
+          corPrincipal: data.primaryColor,
+        }));
+      } else {
+        // Usar cor padrão se não houver cor salva
+        setVisualIdentity((prev) => ({ ...prev, corPrincipal: "#ce4836" }));
+      }
+    } catch (error: unknown) {
+      const err = error as ErrorResponse;
+      toast.error("Algo deu errado. Tente novamente.");
+      setRetryCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSalonInfoChange = (
+    field: keyof SalonInfo,
+    value: string
+  ): void => {
+    setSalonInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddressChange = (
+    field: keyof AddressInfo,
+    value: string
+  ): void => {
+    setAddressInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCEPChange = async (cep: string): Promise<void> => {
+    // Formatar CEP enquanto digita
+    const formattedCEP = cepService.formatCEP(cep);
+    handleAddressChange("cep", formattedCEP);
+
+    // Buscar endereço se CEP estiver completo (8 dígitos)
+    const cleanCEP = cep.replace(/\D/g, "");
+    if (cleanCEP.length === 8) {
+      setIsSearchingCEP(true);
+      try {
+        const addressData = await cepService.searchByCEP(cleanCEP);
+        if (addressData) {
+          setAddressInfo((prev) => ({
+            ...prev,
+            cep: formattedCEP,
+            rua: addressData.logradouro || prev.rua,
+            bairro: addressData.bairro || prev.bairro,
+            cidade: addressData.localidade || prev.cidade,
+            estado: addressData.uf || prev.estado,
+            complemento: addressData.complemento || prev.complemento,
+          }));
+          toast.success("Endereço encontrado e preenchido automaticamente!");
+        }
+      } catch (error: unknown) {
+        const err = error as ErrorResponse;
+        if (err.message === "CEP não encontrado") {
+          toast.error("CEP não encontrado. Verifique o número digitado.");
+        } else {
+          toast.error("Erro ao buscar endereço. Preencha manualmente.");
+        }
+      } finally {
+        setIsSearchingCEP(false);
+      }
+    }
+  };
+
+  const handleColorChange = (color: string): void => {
+    setVisualIdentity((prev) => ({ ...prev, corPrincipal: color }));
+  };
+
+  const handleLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. O tamanho máximo é 5MB");
+      event.target.value = ""; // Reset input
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Formato inválido. Use JPEG, PNG ou WebP");
+      event.target.value = ""; // Reset input
+      return;
+    }
+
+    if (!selectedSalon?.id) {
+      toast.error("Nenhum salão selecionado");
+      return;
+    }
+
+    // Store original logo for rollback
+    const originalLogo = visualIdentity.logo;
+
+    // Preview the image locally first
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setVisualIdentity((prev) => ({
+        ...prev,
+        logo: e.target?.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    try {
+      const response = await salonService.uploadLogo(selectedSalon.id, file);
+      toast.success("Logo enviada com sucesso!");
+      // Refresh data to get the updated logo URL from backend
+      await fetchSalonData();
+    } catch (error: unknown) {
+      const err = error as ErrorResponse;
+      toast.error("Algo deu errado. Tente novamente.");
+
+      // Rollback to original logo on error
+      setVisualIdentity((prev) => ({ ...prev, logo: originalLogo }));
+    } finally {
+      // Reset file input
+      event.target.value = "";
+    }
+  };
+
+  const validateForm = (): boolean => {
+    // Validate required fields
+    if (!salonInfo.nomeFantasia.trim()) {
+      toast.error("Nome fantasia é obrigatório");
+      setCurrentTab("informacoes");
+      return false;
+    }
+
+    if (!salonInfo.telefoneComercial.trim()) {
+      toast.error("WhatsApp é obrigatório");
+      setCurrentTab("informacoes");
+      return false;
+    }
+
+    // Validate email format if provided
+    if (salonInfo.emailContato) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(salonInfo.emailContato)) {
+        toast.error("E-mail inválido");
+        setCurrentTab("informacoes");
+        return false;
+      }
+    }
+
+    // Validate CNPJ if provided
+    if (salonInfo.cnpj) {
+      const cnpjClean = salonInfo.cnpj.replace(/[^\d]+/g, "");
+      if (cnpjClean.length > 0 && !salonService.validateCNPJ(cnpjClean)) {
+        toast.error("CNPJ inválido");
+        setCurrentTab("informacoes");
+        return false;
+      }
+    }
+
+    // Validate phone format
+    const phoneClean = salonInfo.telefoneComercial.replace(/[^\d]+/g, "");
+    if (phoneClean.length < 10 || phoneClean.length > 11) {
+      toast.error(
+        "Telefone inválido. Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX"
+      );
+      setCurrentTab("informacoes");
+      return false;
+    }
+
+    // Validate address fields if any address field is filled
+    const hasAnyAddressField =
+      addressInfo.cep ||
+      addressInfo.rua ||
+      addressInfo.numero ||
+      addressInfo.bairro ||
+      addressInfo.cidade ||
+      addressInfo.estado;
+
+    if (hasAnyAddressField) {
+      if (!addressInfo.rua.trim()) {
+        toast.error("Rua é obrigatória no endereço");
+        setCurrentTab("endereco");
+        return false;
+      }
+      if (!addressInfo.numero.trim()) {
+        toast.error("Número é obrigatório no endereço");
+        setCurrentTab("endereco");
+        return false;
+      }
+      if (!addressInfo.bairro.trim()) {
+        toast.error("Bairro é obrigatório no endereço");
+        setCurrentTab("endereco");
+        return false;
+      }
+      if (!addressInfo.cidade.trim()) {
+        toast.error("Cidade é obrigatória no endereço");
+        setCurrentTab("endereco");
+        return false;
+      }
+      if (!addressInfo.estado.trim()) {
+        toast.error("Estado é obrigatório no endereço");
+        setCurrentTab("endereco");
+        return false;
+      }
+
+      // Validate CEP format
+      const cepClean = addressInfo.cep.replace(/[^\d]+/g, "");
+      if (cepClean.length > 0 && cepClean.length !== 8) {
+        toast.error("CEP inválido. Use o formato XXXXX-XXX");
+        setCurrentTab("endereco");
+        return false;
+      }
+    }
+
+    // Validate URL if provided
+    if (salonInfo.urlLinkUtil) {
+      try {
+        new URL(salonInfo.urlLinkUtil);
+      } catch {
+        toast.error("URL inválida. Use o formato https://exemplo.com");
+        setCurrentTab("informacoes");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSave = async (): Promise<void> => {
+    // Run validation first
+    if (!validateForm()) {
+      return;
+    }
+
+    if (isCreateMode) {
+      // TODO: Implement creation logic when needed
+      toast.success("Salão criado com sucesso!");
+    } else {
+      if (!selectedSalon?.id) {
+        toast.error("Nenhum salão selecionado");
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        const updateData: UpdateSalonDto = {
+          name: salonInfo.nomeFantasia.trim(),
+          responsible: salonInfo.razaoSocial.trim() || undefined,
+          cnpj: salonInfo.cnpj.trim() || undefined,
+          phone: salonInfo.telefoneComercial.trim(),
+          email: salonInfo.emailContato.trim() || undefined,
+          primaryColor: visualIdentity.corPrincipal,
+          websiteName: salonInfo.nomeLinkUtil.trim() || undefined,
+          websiteUrl: salonInfo.urlLinkUtil.trim() || undefined,
+          timezone: salonInfo.timezone,
+          // Explicitly handle logo - set to null if removed, otherwise keep current
+          logo:
+            visualIdentity.logo === null
+              ? null
+              : visualIdentity.logo || undefined,
+        };
+
+        // Only add address if at least one field is filled
+        const hasAnyAddressField =
+          addressInfo.cep ||
+          addressInfo.rua ||
+          addressInfo.numero ||
+          addressInfo.bairro ||
+          addressInfo.cidade ||
+          addressInfo.estado;
+
+        if (hasAnyAddressField) {
+          updateData.address = {
+            zipCode: addressInfo.cep.trim(),
+            street: addressInfo.rua.trim(),
+            number: addressInfo.numero.trim(),
+            complement: addressInfo.complemento.trim() || undefined,
+            neighborhood: addressInfo.bairro.trim(),
+            city: addressInfo.cidade.trim(),
+            state: addressInfo.estado.trim(),
+            country: "Brasil",
+          };
+        }
+
+        const updatedSalon = await salonService.update(
+          selectedSalon.id,
+          updateData
+        );
+
+        toast.success("Alterações salvas com sucesso!");
+
+        trackSeverinoEvent('alteracao_dados_do_salao', {
+          description: `Dados do salão alterados: ${salonInfo.nomeFantasia}`,
+          salonId: selectedSalon.id
+        });
+
+        // Update the selected salon in the hook to refresh the UI
+        if (updateSelectedSalon) {
+          updateSelectedSalon(updatedSalon);
+        }
+
+        // Refresh the data after saving
+        await fetchSalonData();
+      } catch (error: unknown) {
+        const err = error as ErrorResponse;
+
+        if (err.response?.data?.message) {
+          toast.error(err.response.data.message);
+        } else if (err.message) {
+          toast.error(err.message);
+        } else {
+          toast.error("Erro ao salvar alterações. Tente novamente.");
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleNext = (): void => {
+    // Validate current tab before moving to next
+    if (currentTab === "informacoes") {
+      if (!salonInfo.nomeFantasia.trim()) {
+        toast.error("Preencha o nome fantasia antes de continuar");
+        return;
+      }
+      if (!salonInfo.telefoneComercial.trim()) {
+        toast.error("Preencha o WhatsApp antes de continuar");
+        return;
+      }
+      setCurrentTab("endereco");
+    } else if (currentTab === "endereco") {
+      setCurrentTab("identidade");
+    }
+  };
+
+  const isLastTab = currentTab === "identidade";
+
+  const getContrastColor = (hexColor: string): string => {
+    const hex = hexColor.replace("#", "");
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? "#000000" : "#ffffff";
+  };
+
+  const formatUrlSlug = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/[^a-z0-9\s-]/g, "") // Remove caracteres especiais
+      .trim()
+      .replace(/\s+/g, "-"); // Substitui espaços por hífens
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <PageHeader
+        title={isCreateMode ? "Cadastrar Novo Salão" : "Editar Dados do Salão"}
+        subtitle="Gerencie as informações do seu salão"
+        disabledActions={!selectedSalon?.active}
+      />
+
+      {isLoading && retryCount === 0 ? (
+        <div className="bg-card border border-border rounded-lg">
+          <div className="p-6">
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="md" text="Carregando dados do salão..." />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-lg">
+          <div className="p-6">
+            <Tabs
+              value={currentTab}
+              onValueChange={setCurrentTab}
+              className="w-full"
+            >
+              <TabsList className="w-full mb-6">
+                <TabsTrigger value="informacoes">Informações do Salão</TabsTrigger>
+                <TabsTrigger value="endereco">Endereço Comercial</TabsTrigger>
+                <TabsTrigger value="identidade">Identidade Visual</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="informacoes" className="space-y-6">
+                <TooltipProvider>
+                  <div className="space-y-2">
+                    <Input
+                      id="nomeFantasia"
+                      label="Nome Fantasia (como seus clientes o conhecem)"
+                      required
+                      value={salonInfo.nomeFantasia}
+                      onChange={(e) =>
+                        handleSalonInfoChange("nomeFantasia", e.target.value)
+                      }
+                      placeholder="Nome do seu salão"
+                      className="salon-input"
+                    />
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Esse nome será usado na URL pública do salão</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>A URL pública para agendamento online será:</p>
+                          <p className="font-mono">
+                            https://app.easysalon.com.br/agenda/
+                            {formatUrlSlug(salonInfo.nomeFantasia) ||
+                              "slug-do-salao"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </TooltipProvider>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    id="cnpj"
+                    label="CNPJ"
+                    value={salonInfo.cnpj}
+                    onChange={(e) => {
+                      const formatted = e.target.value.replace(/[^\d.\-/]/g, "");
+                      handleSalonInfoChange("cnpj", formatted);
+                    }}
+                    placeholder="XX.XXX.XXX/XXXX-XX"
+                    maxLength={18}
+                    className="salon-input"
+                  />
+                  <Input
+                    id="razaoSocial"
+                    label="Razão Social"
+                    value={salonInfo.razaoSocial}
+                    onChange={(e) =>
+                      handleSalonInfoChange("razaoSocial", e.target.value)
+                    }
+                    placeholder="Razão social da empresa"
+                    className="salon-input"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    id="telefoneComercial"
+                    label="WhatsApp"
+                    required
+                    value={salonInfo.telefoneComercial}
+                    onChange={(e) =>
+                      handleSalonInfoChange("telefoneComercial", formatPhone(e.target.value))
+                    }
+                    placeholder="(XX) XXXXX-XXXX"
+                    maxLength={15}
+                    className="salon-input"
+                  />
+                  <Input
+                    id="emailContato"
+                    type="email"
+                    label="E-mail de Contato"
+                    value={salonInfo.emailContato}
+                    onChange={(e) =>
+                      handleSalonInfoChange("emailContato", e.target.value)
+                    }
+                    placeholder="contato@seusalao.com"
+                    className="salon-input"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="timezone">Localidade</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">
+                              Selecione a localidade do seu salão. Isso garante
+                              que os horários de agendamento sejam exibidos
+                              corretamente para clientes em qualquer parte do
+                              mundo.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <TimezoneCombobox
+                      value={salonInfo.timezone}
+                      onValueChange={(value) =>
+                        handleSalonInfoChange("timezone", value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-[13px] font-semibold">Link útil (Ex: Site)</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      id="nomeLinkUtil"
+                      label="Nome do link"
+                      value={salonInfo.nomeLinkUtil}
+                      onChange={(e) =>
+                        handleSalonInfoChange("nomeLinkUtil", e.target.value)
+                      }
+                      placeholder="Site, Instagram, Facebook..."
+                      className="salon-input"
+                    />
+                    <Input
+                      id="urlLinkUtil"
+                      label="URL"
+                      value={salonInfo.urlLinkUtil}
+                      onChange={(e) =>
+                        handleSalonInfoChange("urlLinkUtil", e.target.value)
+                      }
+                      placeholder="https://seusite.com"
+                      className="salon-input"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="endereco" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1 relative">
+                    <Input
+                      id="cep"
+                      label="CEP"
+                      value={addressInfo.cep}
+                      onChange={(e) => handleCEPChange(e.target.value)}
+                      placeholder="XXXXX-XXX"
+                      maxLength={9}
+                      disabled={isSearchingCEP}
+                      className="salon-input"
+                    />
+                    {isSearchingCEP && (
+                      <div className="absolute right-3 bottom-2">
+                        <LoadingSpinner size="sm" inline />
+                      </div>
+                    )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <Input
+                      id="rua"
+                      label="Rua / Logradouro"
+                      value={addressInfo.rua}
+                      onChange={(e) => handleAddressChange("rua", e.target.value)}
+                      placeholder="Nome da rua"
+                      className="salon-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    id="numero"
+                    label="Número"
+                    value={addressInfo.numero}
+                    onChange={(e) => handleAddressChange("numero", e.target.value)}
+                    placeholder="123"
+                    className="salon-input"
+                  />
+                  <div className="md:col-span-2">
+                    <Input
+                      id="complemento"
+                      label="Complemento (Ex: Sala 10, Bloco B)"
+                      value={addressInfo.complemento}
+                      onChange={(e) => handleAddressChange("complemento", e.target.value)}
+                      placeholder="Complemento"
+                      className="salon-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    id="bairro"
+                    label="Bairro"
+                    value={addressInfo.bairro}
+                    onChange={(e) => handleAddressChange("bairro", e.target.value)}
+                    placeholder="Nome do bairro"
+                    className="salon-input"
+                  />
+                  <Input
+                    id="cidade"
+                    label="Cidade"
+                    value={addressInfo.cidade}
+                    onChange={(e) => handleAddressChange("cidade", e.target.value)}
+                    placeholder="Nome da cidade"
+                    className="salon-input"
+                  />
+                  <div className="flex flex-col gap-[4px]">
+                    <Label htmlFor="estado">Estado</Label>
+                    <Select
+                      value={addressInfo.estado}
+                      onValueChange={(value) => handleAddressChange("estado", value)}
+                    >
+                      <SelectTrigger className="salon-input">
+                        <SelectValue placeholder="Selecione o estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {estados.map((estado) => (
+                          <SelectItem key={estado} value={estado}>
+                            {estado}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="identidade" className="space-y-8">
+                {/* Seção de Cor */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-semibold">
+                      Selecione a cor principal da sua empresa
+                    </Label>
+                    <p className="text-body text-muted-foreground">
+                      Essa cor será usada para dar identidade ao seu
+                      estabelecimento na plataforma, aplicada em pequenos
+                      detalhes que fazem a diferença.
+                    </p>
+                  </div>
+                  <div className="flex justify-end">
+                    <div
+                      className="w-40 h-16 rounded-lg border-2 border-border cursor-pointer flex items-center justify-center"
+                      style={{ backgroundColor: visualIdentity.corPrincipal }}
+                      onClick={() =>
+                        document.getElementById("colorPicker")?.click()
+                      }
+                    >
+                      <span
+                        className="text-body font-mono font-semibold"
+                        style={{
+                          color: getContrastColor(visualIdentity.corPrincipal),
+                        }}
+                      >
+                        {visualIdentity.corPrincipal.toUpperCase()}
+                      </span>
+                    </div>
+                    <input
+                      id="colorPicker"
+                      type="color"
+                      value={visualIdentity.corPrincipal}
+                      onChange={(e) => handleColorChange(e.target.value)}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Seção de Logo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-semibold">
+                      Selecione a logo
+                    </Label>
+                    <div className="space-y-1 text-body text-muted-foreground">
+                      <p className="font-medium">
+                        Recomendações para inserir a logo:
+                      </p>
+                      <p>1. Use PNG ou JPG com boa resolução.</p>
+                      <p>2. Prefira fundo transparente.</p>
+                      <p>
+                        3. Garanta contraste com a cor escolhida para
+                        visibilidade.
+                      </p>
+                      <p>4. Evite detalhes excessivos.</p>
+                    </div>
+                  </div>
+
+                  <div className="border-2 border-dashed border-border rounded-lg p-6">
+                    {visualIdentity.logo ? (
+                      <div className="space-y-4 text-center">
+                        <img
+                          src={visualIdentity.logo}
+                          alt="Logo do salão"
+                          className="max-w-24 max-h-24 mx-auto object-contain"
+                        />
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              document.getElementById("logoUpload")?.click()
+                            }
+                          >
+                            Alterar Logo
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setVisualIdentity((prev) => ({
+                                ...prev,
+                                logo: null,
+                              }));
+                              // Mark that logo should be removed on save
+                              setSalonData((prev) =>
+                                prev ? { ...prev, logo: null } : null
+                              );
+                            }}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center space-y-3">
+                        <Upload className="w-6 h-6 mx-auto text-muted-foreground" />
+                        <div className="space-y-1">
+                          <p className="text-body text-muted-foreground">
+                            Selecione um arquivo clicando aqui...
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            JPG, PNG ou WebP, o arquivo não deve exceder 5 MB
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            disabled={!selectedSalon?.active}
+                            onClick={() =>
+                              document.getElementById("logoUpload")?.click()
+                            }
+                          >
+                            Upload
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    <input
+                      id="logoUpload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Pré-visualização</Label>
+                  <div
+                    className="rounded-lg p-6 flex items-center gap-4"
+                    style={{ backgroundColor: visualIdentity.corPrincipal }}
+                  >
+                    {visualIdentity.logo && (
+                      <img
+                        src={visualIdentity.logo}
+                        alt="Logo"
+                        className="w-16 h-16 object-contain"
+                      />
+                    )}
+                    <h2
+                      className="text-2xl font-bold"
+                      style={{
+                        color: getContrastColor(visualIdentity.corPrincipal),
+                      }}
+                    >
+                      {salonInfo.nomeFantasia || "Nome do Salão"}
+                    </h2>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end mt-8 pt-6 border-t">
+              {isCreateMode ? (
+                <Button
+                  onClick={isLastTab ? handleSave : handleNext}
+                  className="px-8"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <LoadingSpinner size="sm" inline className="mr-2" />
+                      Criando...
+                    </>
+                  ) : isLastTab ? (
+                    "Criar Salão"
+                  ) : (
+                    "Avançar"
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSave}
+                  className="px-8"
+                  disabled={isSaving || !selectedSalon?.active}
+                >
+                  {isSaving ? (
+                    <>
+                      <LoadingSpinner size="sm" inline className="mr-2" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar Alterações"
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </EasySalonLayout>
+  );
+}

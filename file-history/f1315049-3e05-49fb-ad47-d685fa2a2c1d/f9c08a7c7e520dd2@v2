@@ -1,0 +1,434 @@
+import jsPDF from 'jspdf'
+import type { ProposalSection } from './proposal-types'
+
+// Logo da Wa Project em base64 (placeholder - substituir pela imagem real)
+const WA_PROJECT_LOGO_BASE64 = `data:image/png;base64,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`
+
+// Cores da Wa Project conforme especificado no markdown
+const WA_COLORS = {
+  blue: '#003B71', // Azul corporativo principal
+  darkGray: '#2e2e2e',
+  mediumGray: '#6b7280',
+  lightGray: '#9ca3af',
+}
+
+// Interface para os dados da proposta
+interface WaProjectProposalData {
+  projeto: {
+    nome: string
+  }
+  data_emissao: string
+  validade_dias: string
+  cliente: {
+    nome: string
+  }
+  tipo_escopo: string
+  sections: ProposalSection[]
+  numeracao_pagina: string
+}
+
+// Classe principal para geração de PDF
+export class WaProjectPDFGenerator {
+  private doc: jsPDF
+  private currentY: number
+  private pageNumber: number
+
+  // Configurações de página (A4)
+  private readonly pageWidth = 210
+  private readonly pageHeight = 297
+  private readonly margin = {
+    top: 20,
+    right: 20,
+    bottom: 20,
+    left: 20,
+  }
+
+  constructor() {
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+    this.currentY = this.margin.top
+    this.pageNumber = 1
+
+    // Configurar fonte padrão
+    this.doc.setFont('helvetica')
+  }
+
+  private get contentWidth() {
+    return this.pageWidth - this.margin.left - this.margin.right
+  }
+
+  private get contentStartX() {
+    return this.margin.left
+  }
+
+  private addLogo() {
+    try {
+      this.doc.addImage(
+        WA_PROJECT_LOGO_BASE64,
+        'PNG',
+        this.contentStartX,
+        this.currentY,
+        20, // largura
+        20, // altura
+        undefined,
+        'FAST'
+      )
+    } catch (error) {
+      // Fallback: logo textual
+      this.doc.setFillColor(WA_COLORS.blue)
+      this.doc.roundedRect(this.contentStartX, this.currentY, 20, 8, 2, 2, 'F')
+
+      this.doc.setTextColor('#ffffff')
+      this.doc.setFontSize(8)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text('Wa Project', this.contentStartX + 2, this.currentY + 6)
+    }
+
+    this.currentY += 25
+  }
+
+  private addTitle(title: string, subtitle?: string) {
+    // Título principal
+    this.doc.setTextColor(WA_COLORS.blue)
+    this.doc.setFontSize(24)
+    this.doc.setFont('helvetica', 'bold')
+
+    const titleWidth = this.doc.getTextWidth(title)
+    const centerX = (this.pageWidth - titleWidth) / 2
+    this.doc.text(title, centerX, this.currentY)
+    this.currentY += 12
+
+    // Subtítulo do projeto
+    if (subtitle) {
+      this.doc.setFontSize(18)
+      this.doc.setFont('helvetica', 'bold')
+      const subtitleWidth = this.doc.getTextWidth(subtitle)
+      const subtitleCenterX = (this.pageWidth - subtitleWidth) / 2
+      this.doc.text(subtitle, subtitleCenterX, this.currentY)
+      this.currentY += 10
+    }
+
+    this.currentY += 8
+  }
+
+  private addCoverInfo(data: WaProjectProposalData) {
+    // Centralizar informações
+    this.doc.setTextColor(WA_COLORS.darkGray)
+    this.doc.setFontSize(11)
+    this.doc.setFont('helvetica', 'normal')
+
+    const infoLines = [
+      `${data.data_emissao} | Válido por ${data.validade_dias} dias`,
+      `Para: ${data.cliente.nome}`,
+      `Tipo: ${data.tipo_escopo}`
+    ]
+
+    infoLines.forEach(line => {
+      const lineWidth = this.doc.getTextWidth(line)
+      const centerX = (this.pageWidth - lineWidth) / 2
+      this.doc.text(line, centerX, this.currentY)
+      this.currentY += 6
+    })
+
+    this.currentY += 15
+  }
+
+  private checkPageBreak(neededHeight: number): boolean {
+    if (this.currentY + neededHeight > this.pageHeight - this.margin.bottom - 15) {
+      this.addPageNumber()
+      this.newPage()
+      return true
+    }
+    return false
+  }
+
+  private newPage() {
+    this.doc.addPage()
+    this.pageNumber++
+    this.currentY = this.margin.top + 5
+    this.addHeaderLogo()
+  }
+
+  private addHeaderLogo() {
+    // Logo menor no cabeçalho das páginas internas
+    try {
+      this.doc.addImage(
+        WA_PROJECT_LOGO_BASE64,
+        'PNG',
+        this.contentStartX,
+        this.margin.top,
+        12,
+        12,
+        undefined,
+        'FAST'
+      )
+    } catch (error) {
+      // Fallback textual
+      this.doc.setTextColor(WA_COLORS.blue)
+      this.doc.setFontSize(8)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text('Wa Project', this.contentStartX, this.margin.top + 6)
+    }
+  }
+
+  private addPageNumber() {
+    this.doc.setFontSize(9)
+    this.doc.setTextColor(WA_COLORS.mediumGray)
+    this.doc.text(
+      this.pageNumber.toString(),
+      this.pageWidth / 2,
+      this.pageHeight - 10,
+      { align: 'center' }
+    )
+  }
+
+  private addSectionTitle(title: string) {
+    this.checkPageBreak(15)
+
+    this.doc.setTextColor(WA_COLORS.blue)
+    this.doc.setFontSize(14)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(title, this.contentStartX, this.currentY)
+    this.currentY += 10
+  }
+
+  private addParagraph(text: string) {
+    this.doc.setTextColor(WA_COLORS.darkGray)
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'normal')
+
+    const lines = this.doc.splitTextToSize(text, this.contentWidth)
+
+    lines.forEach((line: string) => {
+      this.checkPageBreak(6)
+      this.doc.text(line, this.contentStartX, this.currentY)
+      this.currentY += 5
+    })
+
+    this.currentY += 3
+  }
+
+  private addBulletList(items: string[]) {
+    items.forEach(item => {
+      this.checkPageBreak(8)
+
+      // Bullet point
+      this.doc.setTextColor(WA_COLORS.blue)
+      this.doc.text('•', this.contentStartX, this.currentY)
+
+      // Texto do item
+      this.doc.setTextColor(WA_COLORS.darkGray)
+      this.doc.setFontSize(10)
+      this.doc.setFont('helvetica', 'normal')
+
+      const lines = this.doc.splitTextToSize(item, this.contentWidth - 8)
+      lines.forEach((line: string, index: number) => {
+        if (index > 0) this.checkPageBreak(5)
+        this.doc.text(line, this.contentStartX + 6, this.currentY)
+        if (index < lines.length - 1) this.currentY += 5
+      })
+
+      this.currentY += 6
+    })
+  }
+
+  private parseMarkdownContent(content: string): void {
+    const lines = content.split('\n')
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+
+      if (!trimmed) {
+        this.currentY += 3
+        continue
+      }
+
+      // Títulos
+      if (trimmed.startsWith('### ') || trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+        const titleText = trimmed.replace(/^#+\s+/, '')
+        this.doc.setTextColor(WA_COLORS.blue)
+        this.doc.setFontSize(12)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(titleText, this.contentStartX, this.currentY)
+        this.currentY += 8
+        continue
+      }
+
+      // Listas com bullets
+      if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const itemText = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
+        this.addBulletList([itemText])
+        continue
+      }
+
+      // Listas numeradas
+      const numberedMatch = trimmed.match(/^(\d+)\.\s+(.+)$/)
+      if (numberedMatch) {
+        const itemText = numberedMatch[2].replace(/\*\*(.*?)\*\*/g, '$1')
+
+        this.checkPageBreak(8)
+        this.doc.setTextColor(WA_COLORS.blue)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(`${numberedMatch[1]}.`, this.contentStartX, this.currentY)
+
+        this.doc.setTextColor(WA_COLORS.darkGray)
+        this.doc.setFont('helvetica', 'normal')
+        this.doc.text(itemText, this.contentStartX + 8, this.currentY)
+        this.currentY += 6
+        continue
+      }
+
+      // Parágrafos regulares
+      const plainText = trimmed.replace(/\*\*(.*?)\*\*/g, '$1')
+      this.addParagraph(plainText)
+    }
+  }
+
+  public generate(data: WaProjectProposalData): void {
+    // PÁGINA 1: CAPA
+    this.addLogo()
+    this.addTitle('Proposta Comercial', data.projeto.nome)
+    this.addCoverInfo(data)
+
+    // Seções de conteúdo
+    if (data.sections && data.sections.length > 0) {
+      // Sobre a Wa Project (primeira seção ou seção padrão)
+      this.addSectionTitle('Sobre a Wa Project')
+      this.addParagraph('A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.')
+
+      // Nossos serviços
+      this.addParagraph('Nossos serviços:')
+      this.addBulletList([
+        'Desenvolvimento de Software.',
+        'Desenvolvimento de Aplicativos.',
+        'Soluções de Inteligência Artificial.',
+        'Alocação de Profissionais.'
+      ])
+
+      // Nossos Clientes
+      this.addSectionTitle('Nossos Clientes')
+      this.addBulletList([
+        'PepsiCo',
+        'Vtex',
+        'Santillana',
+        'Dasa',
+        'WideLabs',
+        'Confederação Brasileira de Hipismo',
+        'Forbes',
+        'Easy Salon',
+        'InstaCarro',
+        'Antilhas',
+        'Fundação Carlos Chagas',
+        'Funarbe'
+      ])
+      this.addParagraph('Cases completos: waproject.com.br/cases')
+
+      // Nova página para conteúdo específico do projeto
+      this.newPage()
+
+      // Processar seções da proposta
+      data.sections.forEach(section => {
+        this.addSectionTitle(section.title)
+        this.parseMarkdownContent(section.content)
+        this.currentY += 5
+      })
+    }
+
+    // PÁGINA FINAL: Fechamento
+    this.newPage()
+
+    // Próximos Passos
+    this.addSectionTitle('Próximos Passos')
+    this.addBulletList([
+      'Aprovação desta proposta comercial',
+      'Assinatura do contrato de prestação de serviços',
+      'Kick-off do projeto',
+      'Início do desenvolvimento'
+    ])
+
+    this.addParagraph('Estamos à disposição para esclarecer dúvidas e ansiosos para iniciar esta parceria!')
+
+    // Encerramento
+    this.currentY += 15
+
+    // Citação
+    this.doc.setTextColor(WA_COLORS.blue)
+    this.doc.setFontSize(14)
+    this.doc.setFont('helvetica', 'bold')
+    const quote = 'Não é sobre desenvolvimento, é sobre envolvimento.'
+    const quoteWidth = this.doc.getTextWidth(quote)
+    const quoteCenterX = (this.pageWidth - quoteWidth) / 2
+    this.doc.text(quote, quoteCenterX, this.currentY)
+    this.currentY += 10
+
+    this.doc.setFontSize(12)
+    const thanks = 'Obrigado por confiar na Wa Project!'
+    const thanksWidth = this.doc.getTextWidth(thanks)
+    const thanksCenterX = (this.pageWidth - thanksWidth) / 2
+    this.doc.text(thanks, thanksCenterX, this.currentY)
+    this.currentY += 15
+
+    // Informações da empresa
+    this.doc.setTextColor(WA_COLORS.darkGray)
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'bold')
+    const companyInfo = 'Wa Project Soluções Tecnológicas LTDA.'
+    const companyWidth = this.doc.getTextWidth(companyInfo)
+    const companyCenterX = (this.pageWidth - companyWidth) / 2
+    this.doc.text(companyInfo, companyCenterX, this.currentY)
+    this.currentY += 6
+
+    this.doc.setFont('helvetica', 'normal')
+    const infoLines = [
+      'CNPJ: 19.317.018/0001-40',
+      'Website: waproject.com.br',
+      'Email: comercial@waproject.com.br',
+      'Telefone/WhatsApp: (11) 5028-2010'
+    ]
+
+    infoLines.forEach(line => {
+      const lineWidth = this.doc.getTextWidth(line)
+      const lineCenterX = (this.pageWidth - lineWidth) / 2
+      this.doc.text(line, lineCenterX, this.currentY)
+      this.currentY += 5
+    })
+
+    this.currentY += 10
+
+    // Validade
+    this.doc.setTextColor(WA_COLORS.mediumGray)
+    this.doc.setFontSize(9)
+    const validity = `Proposta válida por ${data.validade_dias} dias a partir da data de emissão`
+    const validityWidth = this.doc.getTextWidth(validity)
+    const validityCenterX = (this.pageWidth - validityWidth) / 2
+    this.doc.text(validity, validityCenterX, this.currentY)
+
+    // Adicionar número da página final
+    this.addPageNumber()
+  }
+
+  public save(filename: string): void {
+    this.doc.save(filename)
+  }
+}
+
+// Função principal para gerar o PDF da proposta Wa Project
+export function generateWaProjectProposalPDF(data: WaProjectProposalData): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      const generator = new WaProjectPDFGenerator()
+      generator.generate(data)
+
+      const filename = `Proposta_${data.projeto.nome.replace(/[^a-zA-Z0-9]/g, '_')}_${data.data_emissao.replace(/\//g, '-')}.pdf`
+      generator.save(filename)
+
+      resolve()
+    } catch (error) {
+      console.error('Erro ao gerar PDF da Wa Project:', error)
+      reject(error)
+    }
+  })
+}

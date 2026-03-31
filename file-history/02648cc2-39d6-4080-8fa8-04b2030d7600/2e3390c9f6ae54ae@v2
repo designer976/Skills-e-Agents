@@ -1,0 +1,134 @@
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsDateString,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+  Matches,
+  IsNotEmpty,
+  IsUUID,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+  OTHER = 'other',
+  PREFER_NOT_TO_SAY = 'prefer_not_to_say',
+}
+
+export class ClientAddressDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  street?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  number?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  complement?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  neighborhood?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
+}
+
+export class CreateClientDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/, { message: 'Invalid CPF format' })
+  cpf?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
+
+  @ApiPropertyOptional({
+    enum: ['male', 'female', 'other', 'prefer_not_to_say'],
+    enumName: 'Gender'
+  })
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ClientAddressDto)
+  address?: ClientAddressDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  preferredProfessionalId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  instagram?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Salon ID (required for admin users without salonId in token)',
+  })
+  @IsOptional()
+  @IsUUID()
+  salonId?: string;
+}

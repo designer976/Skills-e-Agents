@@ -1,0 +1,347 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { IconArrowLeft as ArrowLeft } from "@tabler/icons-react";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTable } from "@/components/ui/data-table";
+import { ServiceEditForm } from "@/components/forms/ServiceEditForm";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { serviceService } from "@/services/serviceService";
+import { Service, UpdateServiceDto } from "@/types/service";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trackSeverinoEvent } from "@/services/severinoService";
+
+interface ServiceData {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  basePrice: string;
+  baseDuration: string;
+  baseCommissionPercent: string;
+  baseCommissionFixed: string;
+  administrativeCostPercentage?: string;
+  fixedCost?: string;
+  supplies?: string;
+  netValue?: string;
+}
+
+interface Professional {
+  id: string;
+  name: string;
+  duration: string;
+  price: string;
+  commission: string;
+}
+
+export default function ServiceEditPage() {
+  const [activeTab, setActiveTab] = useState("dados-basicos");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [service, setService] = useState<Service | null>(null);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const { serviceId } = useParams();
+  const navigate = useNavigate();
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const isNewService = serviceId === 'new';
+
+  const navItems = getSalonNavItems(user?.role || 'Profissional');
+
+  const [serviceData, setServiceData] = useState<ServiceData>({
+    id: "",
+    name: "",
+    category: "",
+    description: "",
+    basePrice: "0,00",
+    baseDuration: "30",
+    baseCommissionPercent: "0",
+    baseCommissionFixed: "0,00",
+    administrativeCostPercentage: "0",
+    fixedCost: "0,00",
+    supplies: "0,00",
+    netValue: "0,00"
+  });
+
+  // Load service data from backend
+  useEffect(() => {
+    const loadService = async () => {
+      if (isNewService) {
+        setLoading(false);
+        return;
+      }
+
+      if (!serviceId) {
+        navigate("/salon/services");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await serviceService.getById(serviceId);
+        setService(data);
+
+        // Convert service data to form format - handle both string and number types
+        // Check for salon-specific configuration values first (with salon prefix)
+        const hasCustomConfiguration = data.hasCustomConfiguration ||
+          (data.salonPrice !== undefined || data.salonDuration !== undefined ||
+            data.salonCommission !== undefined || data.salonAdministrativeCostPercentage !== undefined ||
+            data.salonFixedCost !== undefined);
+
+        // Use salon-specific values if they exist, otherwise use standard values
+        const price = hasCustomConfiguration ?
+          (typeof data.salonPrice === 'string' ? parseFloat(data.salonPrice) : (data.salonPrice || data.price)) :
+          (typeof data.price === 'string' ? parseFloat(data.price) : data.price);
+
+        const duration = hasCustomConfiguration ?
+          (data.salonDuration || data.duration) :
+          data.duration;
+
+        const commission = hasCustomConfiguration ?
+          (typeof data.salonCommission === 'string' ? parseFloat(data.salonCommission) : (data.salonCommission || 0)) :
+          (typeof data.commission === 'string' ? parseFloat(data.commission) : (data.commission || 0));
+
+        const adminCost = hasCustomConfiguration ?
+          (typeof data.salonAdministrativeCostPercentage === 'string' ?
+            parseFloat(data.salonAdministrativeCostPercentage) :
+            (data.salonAdministrativeCostPercentage || 0)) :
+          (typeof data.administrativeCostPercentage === 'string' ?
+            parseFloat(data.administrativeCostPercentage) :
+            (data.administrativeCostPercentage || 0));
+
+        const fixedCostValue = hasCustomConfiguration ?
+          (typeof data.salonFixedCost === 'string' ? parseFloat(data.salonFixedCost) : (data.salonFixedCost || 0)) :
+          (typeof data.fixedCost === 'string' ? parseFloat(data.fixedCost) : (data.fixedCost || 0));
+
+        const suppliesValue = typeof data.supplies === 'string' ? parseFloat(data.supplies) : (data.supplies || 0);
+
+        // Calculate net value for commission
+        const netValue = price - fixedCostValue - suppliesValue;
+
+        setServiceData({
+          id: data.id,
+          name: data.name,
+          category: data.categoryId || "",
+          description: data.description || "",
+          basePrice: price.toFixed(2).replace('.', ','),
+          baseDuration: duration.toString(),
+          baseCommissionPercent: commission.toString(),
+          baseCommissionFixed: ((netValue * commission / 100)).toFixed(2).replace('.', ','),
+          administrativeCostPercentage: adminCost.toString(),
+          fixedCost: fixedCostValue.toFixed(2).replace('.', ','),
+          supplies: suppliesValue.toFixed(2).replace('.', ',')
+        });
+
+        // Load professionals if any
+        if (data.professionals && data.professionals.length > 0) {
+          const profData = data.professionals.map(prof => {
+            const profPrice = prof.customPrice || price;
+            const finalPrice = typeof profPrice === 'string' ? parseFloat(profPrice) : profPrice;
+            const profCommission = typeof data.commission === 'string' ? parseFloat(data.commission) : (data.commission || 0);
+
+            // Calculate professional's net value (assuming same cost proportions)
+            const profAdminCost = finalPrice * (adminCost / 100);
+            const profSupplies = finalPrice * (suppliesValue / price); // Proportional supplies
+            const profNetValue = finalPrice - profAdminCost - profSupplies;
+
+            return {
+              id: prof.professionalId,
+              name: prof.professional?.name || "Profissional",
+              duration: `${prof.customDuration || duration} min`,
+              price: `R$ ${finalPrice.toFixed(2).replace('.', ',')}`,
+              commission: `R$ ${(profNetValue * profCommission / 100).toFixed(2).replace('.', ',')} / ${profCommission}%`
+            };
+          });
+          setProfessionals(profData);
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao carregar serviço");
+        navigate("/salon/services");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadService();
+  }, [serviceId, isNewService, navigate]);
+
+  const handleGoBack = () => {
+    navigate("/salon/services");
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true);
+
+      // Convert form data to API format
+      const price = parseFloat(serviceData.basePrice.replace(/\./g, '').replace(',', '.'));
+      const duration = parseInt(serviceData.baseDuration);
+      const commission = parseFloat(serviceData.baseCommissionPercent);
+      const administrativeCostPercentage = parseFloat(serviceData.administrativeCostPercentage || "0");
+      const fixedCost = parseFloat((serviceData.fixedCost || "0").replace(/\./g, '').replace(',', '.'));
+      const supplies = parseFloat((serviceData.supplies || "0").replace(/\./g, '').replace(',', '.'));
+
+      if (isNewService) {
+        // Create new service
+        const createData = {
+          name: serviceData.name,
+          description: serviceData.description,
+          categoryId: serviceData.category || undefined,
+          duration,
+          price,
+          commission: commission || undefined,
+          administrativeCostPercentage: administrativeCostPercentage || undefined,
+          fixedCost: fixedCost || undefined,
+          active: true,
+          requiresProfessional: true,
+          allowOnlineBooking: false
+        };
+
+        const newService = await serviceService.create(createData);
+        toast.success("Serviço criado com sucesso!");
+
+        trackSeverinoEvent('cadastro_de_servico', {
+          description: `Novo serviço criado: ${serviceData.name}`,
+          serviceId: newService.id,
+          category: serviceData.category
+        });
+
+        navigate(`/salon/service/${newService.id}/edit`);
+      } else if (serviceId) {
+        // Update existing service
+        const updateData: UpdateServiceDto = {
+          name: serviceData.name,
+          price,
+          duration,
+          commission: commission || undefined,
+          administrativeCostPercentage: administrativeCostPercentage || undefined,
+          fixedCost: fixedCost || undefined,
+          description: serviceData.description || undefined,
+          categoryId: serviceData.category || undefined
+        };
+
+        await serviceService.update(serviceId, updateData);
+        toast.success("Alterações salvas com sucesso!");
+
+        // Redirect back to services list
+        setTimeout(() => {
+          navigate("/salon/services");
+        }, 1000);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar serviço");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const professionalsColumns = [
+    {
+      key: "name" as keyof Professional,
+      header: "Profissional",
+    },
+    {
+      key: "duration" as keyof Professional,
+      header: "Duração",
+    },
+    {
+      key: "price" as keyof Professional,
+      header: "Preço",
+    },
+    {
+      key: "commission" as keyof Professional,
+      header: "Comissão",
+    },
+  ];
+
+  if (loading) {
+    return (
+      <EasySalonLayout
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle={selectedSalon?.name || "Salão"}
+        sideNavItems={navItems}
+      >
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleGoBack}
+          className="h-8 w-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="page-title">
+          {isNewService ? "Novo Serviço" : "Precificação"}
+        </h1>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex-1 flex flex-col">
+        <Tabs defaultValue="dados-basicos" className="flex-1 flex flex-col" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="dados-basicos">Dados Básicos</TabsTrigger>
+            <TabsTrigger value="profissionais" disabled={isNewService}>
+              Profissionais
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex-1">
+            <TabsContent value="dados-basicos" className="mt-0 flex-1 flex flex-col">
+              <div className="flex-1">
+                <ServiceEditForm
+                  serviceData={serviceData}
+                  onDataChange={setServiceData}
+                  isNewService={isNewService}
+                />
+              </div>
+              <div className="mt-6 pt-4 border-t">
+                <Button
+                  onClick={handleSaveChanges}
+                  className="salon-button-primary"
+                  disabled={saving}
+                >
+                  {saving ? "Salvando..." : (isNewService ? "Criar Serviço" : "Salvar Alterações")}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="profissionais" className="mt-0">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Precificação por Profissional</h3>
+                {professionals.length > 0 ? (
+                  <DataTable
+                    data={professionals}
+                    columns={professionalsColumns}
+                  />
+                ) : (
+                  <p className="text-muted-foreground">
+                    Nenhum profissional atribuído a este serviço.
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
+    </EasySalonLayout>
+  );
+}

@@ -1,0 +1,139 @@
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ServicePricingForm } from "@/components/forms/ServicePricingForm";
+import { ServiceRecommendationsManager } from "@/components/services/ServiceRecommendationsManager";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+
+export interface ServicePricingData {
+  duration: string;
+  priceType: string;
+  grossValue: string;
+  maxValue?: string;
+  adminFeeFixed: string;
+  adminFeePercent: string;
+  supplies: string;
+  netValue: string;
+  commissionFixed: string;
+  commissionPercent: string;
+}
+
+export interface ServicePricingInput {
+  id: string;
+  specialty: string;
+  name?: string;
+  service: string;
+  duration?: string;
+  priceType?: string;
+  grossValue?: string;
+  maxValue?: string;
+  adminFeeFixed?: string;
+  adminFeePercent?: string;
+  supplies?: string;
+  netValue?: string;
+  commissionFixed?: string;
+  commissionPercent?: string;
+}
+
+interface ServicePricingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  service?: ServicePricingInput;
+  onSave: (data: ServicePricingData) => void;
+}
+
+export function ServicePricingModal({
+  isOpen,
+  onClose,
+  service,
+  onSave,
+}: ServicePricingModalProps) {
+  const [activeTab, setActiveTab] = useState("pricing");
+  const isEditing = !!service;
+  const { selectedSalon } = useSelectedSalon();
+
+  const handleSave = (data: ServicePricingData): void => {
+    onSave(data);
+    // Não fecha mais o modal automaticamente para permitir configurar recomendações
+  };
+
+  const handleCancel = (): void => {
+    onClose();
+    setActiveTab("pricing"); // Reset para primeira aba ao fechar
+  };
+
+  const initialData = service
+    ? {
+        ...service,
+        duration: service.duration || "00:30",
+        priceType: service.priceType || "Fixo",
+        grossValue: service.grossValue || "",
+        adminFeeFixed: service.adminFeeFixed || "",
+        adminFeePercent: service.adminFeePercent || "",
+        supplies: service.supplies || "",
+        netValue: service.netValue || "",
+        commissionFixed: service.commissionFixed || "",
+        commissionPercent: service.commissionPercent || "",
+      }
+    : undefined;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        handleCancel();
+      }
+    }}>
+      <DialogContent className="w-[95vw] md:max-w-[900px] max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-xl md:rounded-lg border-none shadow-2xl overflow-hidden flex flex-col"> {/* RESP: Dimensões e arredondamento padrão */}
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 pt-4 pb-3 border-b shrink-0"> {/* RESP: Header fixo no topo */}
+          <DialogTitle className="text-base md:text-lg font-semibold">
+            Configurações do Serviço
+          </DialogTitle>
+          <div id="pricing-modal-description" className="sr-only">
+            Configurações de precificação e recomendações do serviço
+          </div>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <div className="px-4 pt-4 border-b bg-muted/30"> {/* RESP: Padding ajustado para 4 */}
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="pricing" className="h-10">Precificação</TabsTrigger>
+              <TabsTrigger value="recommendations" className="h-10">Recomendações</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar"> {/* RESP: Área de conteúdo com scroll e flex-1 */}
+            <TabsContent value="pricing" className="mt-0 p-0 h-full">
+              <ServicePricingForm
+                initialData={initialData}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                isEditing={isEditing}
+                selectedSalon={selectedSalon}
+                serviceName={service?.service || service?.name || ""}
+                specialtyName={service?.specialty || ""}
+              />
+            </TabsContent>
+
+            <TabsContent value="recommendations" className="mt-0 p-4 md:p-6"> {/* RESP: Padding responsivo */}
+              {service?.id ? (
+                <ServiceRecommendationsManager
+                  serviceId={service.id}
+                  serviceName={service?.service || service?.name || ""}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Salve o serviço primeiro para configurar recomendações</p>
+                </div>
+              )}
+            </TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}

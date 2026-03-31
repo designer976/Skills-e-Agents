@@ -1,0 +1,72 @@
+import { ReactNode, useState } from "react"; // RESP: Adicionado useState
+import { EasySalonSidebar } from "./EasySalonSidebar";
+import { Header } from "./Header";
+import { NavItem, NavSection } from "@/types/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSalonNavItems } from "@/config/navigation";
+import { useSolicitacoes } from "@/contexts/SolicitacoesContext";
+import { Sheet, SheetContent } from "@/components/ui/sheet"; // RESP: Importado Sheet para mobile
+
+interface EasySalonLayoutProps {
+  children: ReactNode;
+  sideNavItems?: NavItem[] | NavSection[];
+  sideNavTitle: string;
+  sideNavSubtitle?: string;
+}
+
+export function EasySalonLayout({
+  children,
+  sideNavItems,
+  sideNavTitle,
+  sideNavSubtitle,
+}: EasySalonLayoutProps) {
+  const { user } = useAuth();
+  const { hasPendingSolicitacoes } = useSolicitacoes();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // RESP: Estado do menu mobile
+
+  // Se não foram fornecidos items específicos, usar os baseados no perfil do usuário
+  const navItems =
+    sideNavItems ||
+    getSalonNavItems(
+      user?.role || "Easy Salon",
+      hasPendingSolicitacoes ? 1 : undefined
+    );
+
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-background w-full max-w-full">
+      {/* Header de ponta a ponta */}
+      <Header onMenuClick={() => setIsMobileMenuOpen(true)} /> {/* RESP: Passando callback de abertura */}
+
+      <div className="flex w-full max-w-full">
+        {/* Sidebar Desktop: oculto em mobile (< md) */}
+        <EasySalonSidebar
+          title={sideNavTitle}
+          subtitle={sideNavSubtitle}
+          items={navItems}
+          variant="sidebar"
+        />
+
+        {/* Sidebar Mobile: Drawer */}
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="p-0 w-64"> {/* RESP: Sidebar no drawer sem padding e com largura fixa */}
+            <EasySalonSidebar
+              title={sideNavTitle}
+              subtitle={sideNavSubtitle}
+              items={navItems}
+              variant="drawer"
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Main content area */}
+        <div className="flex-1 md:ml-64 pt-16 w-full max-w-full">
+          {/* ml-64 apenas em desktop (≥ md), sem margin em mobile */}
+          <main className="p-4 md:p-6 md:mt-3 w-full max-w-full"> {/* RESP: Padding minimalista no mobile conforme padrão p-4 */}
+            {/* Sem padding em mobile para aproveitar toda a tela */}
+            {children}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}

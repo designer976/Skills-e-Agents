@@ -1,0 +1,620 @@
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
+import * as Redis from 'ioredis';
+import * as fs from 'fs';
+import { JwtPayload } from '../common/enums/user-role.enum';
+import { EmailService } from '../email/email.service';
+import { RdStationLeadDto } from '../integrations/rd-station/dto/rd-station-lead.dto';
+import { RdStationService } from '../integrations/rd-station/rd-station.service';
+import { SeverinoLeadDto } from '../integrations/severino/dto';
+import { SeverinoService } from '../integrations/severino/severino.service';
+import { UsersService } from '../users/users.service';
+import { ForgotPasswordDto, ForgotPasswordResponseDto } from './dto/forgot-password.dto';
+import { LoginDto, LoginResponseDto } from './dto/login.dto';
+import { RefreshTokenDto, RefreshTokenResponseDto } from './dto/refresh-token.dto';
+import {
+  RegisterLeadDto,
+  RegisterLeadResponseDto,
+  SetPasswordDto,
+  SetPasswordResponseDto,
+} from './dto/register-lead.dto';
+import { RegisterDto, RegisterResponseDto } from './dto/register.dto';
+import { ResetPasswordDto, ResetPasswordResponseDto } from './dto/reset-password.dto';
+
+@Injectable()
+export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private redisClient: Redis.Redis;
+
+  // Helper para operações Redis opcionais
+  private async safeRedisOperation(operation: () => Promise<any>): Promise<any> {
+    if (!this.redisClient) {
+      this.logger.warn('Redis not available - skipping operation');
+      return null;
+    }
+    try {
+      return await operation();
+    } catch (error) {
+      this.logger.warn('Redis operation failed:', error.message);
+      return null;
+    }
+  }
+
+  constructor(
+    private jwtService: JwtService,
+    private configService: ConfigService,
+    private usersService: UsersService,
+    private emailService: EmailService,
+    private rdStationService: RdStationService,
+    private severinoService: SeverinoService,
+  ) {
+    // Verificar se estamos em desenvolvimento local (sem Docker)
+    const isLocalDev = fs.existsSync(__dirname + '/../.env.local');
+
+    if (!isLocalDev) {
+      this.redisClient = new Redis.Redis({
+        host: this.configService.get('REDIS_HOST', 'localhost'),
+        port: this.configService.get('REDIS_PORT', 6379),
+        username: this.configService.get('REDIS_USERNAME'),
+        password: this.configService.get('REDIS_PASSWORD'),
+        retryStrategy: (times) => {
+          if (times > 3) {
+            this.logger.error('Redis connection failed after 3 attempts');
+            return null; // stop retrying
+          }
+          return Math.min(times * 200, 1000); // exponential backoff
+        },
+        enableOfflineQueue: true, // Queue commands when offline
+        connectTimeout: 5000, // 5 seconds timeout
+        maxRetriesPerRequest: 3,
+        lazyConnect: true, // Don't connect immediately
+      });
+
+      // Connect to Redis with error handling
+      this.redisClient.connect().catch((err) => {
+        this.logger.error('Redis connection error:', err);
+      });
+    } else {
+      this.logger.warn('🚀 Running in LOCAL DEV mode - Redis disabled');
+    }
+  }
+
+  async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
+    const { name, email, password, confirmPassword, tenantData, whatsapp, cpf } = registerDto;
+
+    // Debug log - Force deployment
+    this.logger.log(`Register DTO received:`, registerDto);
+
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+      throw new UnauthorizedException('As senhas não coincidem');
+    }
+
+    // Enforce tenantData for public registration
+    if (!tenantData) {
+      throw new HttpException(
+        'Dados da empresa (tenantData) são obrigatórios para registro público',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Check if user already exists
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException('Já existe um usuário com este email');
+    }
+
+    // Registration with new Tenant (Self-service)
+    // This creates a Tenant and a User (Tenant Admin)
+    const userData = {
+      name,
+      email,
+      password: password,
+      active: true,
+      whatsapp,
+      cpf,
+      //role: UserRole.TenantAdmin, // Default role for self-registered users
+    };
+
+    const newUser = await this.usersService.createTenantAdmin(userData, tenantData);
+
+    this.logger.log(`User created with role:`, newUser.role);
+
+    // Generate tokens
+    const { accessToken, refreshToken } = await this.generateTokens(newUser);
+
+    // Update refresh token in database
+    await this.usersService.updateRefreshToken(newUser.id, refreshToken);
+
+    // Send welcome email, RD Station and Severino leads in parallel
+    const [, , severinoResult] = await Promise.all([
+      this.emailService.sendWelcomeEmail(newUser.email, newUser.name),
+      this.rdStationService.sendLead(
+        new RdStationLeadDto({
+          conversion_identifier: 'cadastro_sistema_realizado',
+          email: newUser.email,
+          name: newUser.name,
+          mobile_phone: newUser.whatsapp || newUser.phone,
+          company_name: tenantData?.name,
+          client_id: newUser.id,
+          job_title: newUser.role,
+          tags: ['origem_sistema_cadastro'],
+        }),
+      ),
+      this.severinoService.sendLead(
+        new SeverinoLeadDto({
+          nome: newUser.name,
+          telefone: newUser.whatsapp || newUser.phone || '',
+          email: newUser.email,
+          empresaContato: tenantData?.name,
+        }),
+      ),
+    ]);
+
+    // Store Severino leadId in tenant if available
+    if (severinoResult?.leadId && newUser.tenantId) {
+      this.usersService
+        .updateTenantLeadId(newUser.tenantId, severinoResult.leadId)
+        .catch((err) => this.logger.warn(`Failed to store Severino leadId: ${err.message}`));
+    }
+
+    return new RegisterResponseDto(accessToken, refreshToken, newUser);
+  }
+
+  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+    const { email, password } = loginDto;
+    this.logger.log(`Login attempt for email: ${email}`);
+
+    // Find user by email
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      this.logger.warn(`User not found: ${email}`);
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+    this.logger.log(`User found: ${user.email}, active: ${user.active}`);
+
+    // Validate password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    this.logger.log(`Password validation result: ${isPasswordValid}`);
+    if (!isPasswordValid) {
+      this.logger.warn(`Invalid password for user: ${email}`);
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    // Check if user is active
+    if (!user.active) {
+      throw new UnauthorizedException('Usuário inativo. Entre em contato com o administrador.');
+    }
+
+    this.logger.log('Starting token generation...');
+    // Generate tokens
+    const { accessToken, refreshToken } = await this.generateTokens(user);
+    this.logger.log('Tokens generated successfully');
+
+    this.logger.log('Updating refresh token in database...');
+    // Update refresh token in database
+    await this.usersService.updateRefreshToken(user.id, refreshToken);
+    this.logger.log('Refresh token updated in database');
+
+    this.logger.log('Updating last login...');
+    // Update last login
+    await this.usersService.updateLastLogin(user.id);
+    this.logger.log('Last login updated');
+
+    const response = new LoginResponseDto(accessToken, refreshToken, user);
+    this.logger.log('Login response created, user data size:', JSON.stringify(response).length);
+    this.logger.log('Login successful, returning response');
+    return response;
+  }
+
+  async generateTokens(user: any): Promise<{ accessToken: string; refreshToken: string }> {
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      tenantId: user.tenantId,
+      salonId: user.salonId,
+      salonSlug: user.salonSlug,
+      role: user.role,
+    };
+
+    this.logger.log('Signing access token...');
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: this.configService.get('JWT_EXPIRES_IN', '15m'),
+    });
+
+    this.logger.log('Signing refresh token...');
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+    });
+
+    // Store refresh token in Redis with expiration (optional - don't fail if Redis is down)
+    if (this.redisClient) {
+      try {
+        this.logger.log('Attempting to store refresh token in Redis...');
+        const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days in seconds
+
+        // Add timeout to Redis operation
+        const redisPromise = this.redisClient.setex(
+          `refresh_token:${user.id}`,
+          refreshTokenExpiry,
+          refreshToken,
+        );
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis timeout')), 2000),
+      );
+
+        await Promise.race([redisPromise, timeoutPromise]);
+        this.logger.log('Refresh token stored in Redis successfully');
+      } catch (redisError) {
+        this.logger.warn('Failed to store refresh token in Redis:', redisError.message);
+        // Continue without Redis - tokens will still work via database
+      }
+    } else {
+      this.logger.log('Redis disabled - refresh token stored in memory/session only');
+    }
+
+    return { accessToken, refreshToken };
+  }
+
+  // Method for generating tokens for test user
+  async generateTokensForUser(user: any): Promise<LoginResponseDto> {
+    const { accessToken, refreshToken } = await this.generateTokens(user);
+    return new LoginResponseDto(accessToken, refreshToken, user);
+  }
+
+  async refresh(refreshTokenDto: RefreshTokenDto): Promise<RefreshTokenResponseDto> {
+    const { refreshToken } = refreshTokenDto;
+
+    try {
+      this.logger.log('Starting refresh token flow...');
+
+      // Verify refresh token
+      this.logger.log('Verifying JWT token...');
+      const refreshSecret = this.configService.get('JWT_REFRESH_SECRET');
+      this.logger.log(
+        `Using JWT_REFRESH_SECRET: ${refreshSecret ? 'SET' : 'NOT SET'} (length: ${refreshSecret?.length})`,
+      );
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: refreshSecret,
+      });
+      this.logger.log(`JWT verified successfully for user: ${payload.sub}`);
+
+      // Check if refresh token exists in Redis (optional)
+      try {
+        this.logger.log('Checking refresh token in Redis...');
+        const storedToken = await this.redisClient.get(`refresh_token:${payload.sub}`);
+        if (storedToken && storedToken !== refreshToken) {
+          this.logger.warn('Refresh token mismatch in Redis');
+          throw new UnauthorizedException('Token de atualização inválido');
+        }
+        this.logger.log('Redis check passed');
+      } catch (redisError) {
+        this.logger.warn('Failed to check refresh token in Redis:', redisError.message);
+        // Continue without Redis check - rely on database validation
+      }
+
+      // Get user data
+      this.logger.log(`Finding user with ID: ${payload.sub}`);
+      const user = await this.usersService.findOne(payload.sub);
+      if (!user || !user.active) {
+        this.logger.warn('User not found or inactive');
+        throw new UnauthorizedException('Usuário não encontrado ou inativo');
+      }
+      this.logger.log('User found and active');
+
+      // Validate refresh token in database
+      this.logger.log('Validating refresh token in database...');
+      const isRefreshTokenValid = await this.usersService.validateRefreshToken(
+        user.id,
+        refreshToken,
+      );
+      this.logger.log(`Refresh token validation result: ${isRefreshTokenValid}`);
+      if (!isRefreshTokenValid) {
+        throw new UnauthorizedException('Token de atualização inválido');
+      }
+
+      // Generate new tokens
+      this.logger.log('Generating new tokens...');
+      const tokens = await this.generateTokens(user);
+
+      // Update refresh token in database
+      this.logger.log('Updating refresh token in database...');
+      await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
+
+      this.logger.log('Refresh token flow completed successfully');
+      return new RefreshTokenResponseDto(tokens.accessToken, tokens.refreshToken, user);
+    } catch (error) {
+      this.logger.error('Refresh token error:', error.message, error.stack);
+      throw new UnauthorizedException('Token de atualização inválido');
+    }
+  }
+
+  async logout(userId: string, accessToken: string): Promise<void> {
+    // Get token expiration time
+    const decoded = this.jwtService.decode(accessToken);
+    const expirationTime = decoded?.exp;
+
+    if (expirationTime) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      const ttl = expirationTime - currentTime;
+
+      if (ttl > 0) {
+        // Add access token to blacklist (optional)
+        try {
+          await this.redisClient.setex(`blacklist:${accessToken}`, ttl, 'true');
+        } catch (redisError) {
+          this.logger.warn('Failed to blacklist token in Redis:', redisError.message);
+        }
+      }
+    }
+
+    // Remove refresh token from Redis (optional)
+    try {
+      await this.redisClient.del(`refresh_token:${userId}`);
+    } catch (redisError) {
+      this.logger.warn('Failed to remove refresh token from Redis:', redisError.message);
+    }
+
+    // Clear refresh token in database
+    await this.usersService.updateRefreshToken(userId, null);
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
+    try {
+      const { email } = forgotPasswordDto;
+
+      const user = await this.usersService.findByEmail(email);
+
+      // Always return success response to prevent email enumeration
+      const response = new ForgotPasswordResponseDto();
+
+      if (user) {
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+        // Store reset token in database
+        await this.usersService.updateResetToken(user.id, resetToken, resetTokenExpiry);
+
+        // Send email with reset link - wrap in try-catch with timeout to prevent hanging
+        try {
+          // Create a timeout promise that rejects after 10 seconds
+          const emailTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email sending timeout')), 10000),
+          );
+
+          // Race between sending email and timeout
+          await Promise.race([
+            this.emailService.sendPasswordResetEmail(user.email, resetToken),
+            emailTimeout,
+          ]);
+
+          this.logger.log(`Password reset email sent successfully to ${email}`);
+        } catch (emailError) {
+          this.logger.error(`Failed to send password reset email to ${email}:`, emailError);
+          // Still return success to prevent enumeration, but log the error
+        }
+
+        // Log only in development mode
+        if (this.configService.get('NODE_ENV') === 'development') {
+          this.logger.debug(`Password reset token for ${email}: ${resetToken}`);
+        }
+      }
+
+      return response;
+    } catch (error) {
+      this.logger.error('Error in forgotPassword:', error);
+      // Return generic error to prevent information leakage
+      throw new HttpException(
+        'Erro ao processar solicitação de recuperação de senha',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<ResetPasswordResponseDto> {
+    const { token, password, confirmPassword } = resetPasswordDto;
+
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+      throw new UnauthorizedException('As senhas não coincidem');
+    }
+
+    const user = await this.usersService.findByResetToken(token);
+    if (!user) {
+      throw new UnauthorizedException('Token de redefinição inválido ou expirado');
+    }
+
+    // Validate reset token in database
+    if (!user.resetToken || user.resetToken !== token) {
+      throw new UnauthorizedException('Token de redefinição inválido');
+    }
+
+    // Check if token is expired
+    if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      throw new UnauthorizedException('Token de redefinição expirado');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Update user password and clear reset token
+    await this.usersService.update(user.id, {
+      password: hashedPassword,
+      resetToken: undefined,
+      resetTokenExpiry: undefined,
+    });
+
+    // Clear reset token from Redis (optional)
+    try {
+      await this.redisClient.del(`reset_token:${token}`);
+    } catch (redisError) {
+      this.logger.warn('Failed to clear reset token from Redis:', redisError.message);
+    }
+
+    // Clear all refresh tokens for this user (force re-login)
+    try {
+      await this.redisClient.del(`refresh_token:${user.id}`);
+    } catch (redisError) {
+      this.logger.warn('Failed to clear refresh tokens from Redis:', redisError.message);
+    }
+    await this.usersService.updateRefreshToken(user.id, null);
+
+    return new ResetPasswordResponseDto();
+  }
+
+  async validateResetToken(token: string): Promise<boolean> {
+    try {
+      const user = await this.usersService.findByResetToken(token);
+
+      if (!user) {
+        return false;
+      }
+
+      // Check if token is expired
+      if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error('Error validating reset token:', error);
+      return false;
+    }
+  }
+
+  async registerLead(dto: RegisterLeadDto): Promise<RegisterLeadResponseDto> {
+    this.logger.log(`Landing page lead registration for email: ${dto.email}`);
+
+    // Anti-enumeration: check silently, response is always generic
+    const existingUser = await this.usersService.findByEmail(dto.email.toLowerCase().trim());
+    if (existingUser) {
+      // Return same response to avoid email enumeration
+      return new RegisterLeadResponseDto();
+    }
+
+    const userData = {
+      name: dto.name.trim(),
+      email: dto.email.toLowerCase().trim(),
+      whatsapp: dto.whatsapp,
+      cpf: dto.cpf,
+      active: true,
+      // No password: createTenantAdmin generates temp hash + resetToken automatically
+    };
+
+    const tenantData = { name: dto.tenantName.trim() };
+
+    // createTenantAdmin without password creates resetToken (24h) and sends email via setImmediate
+    // We override to send a custom set-password email instead
+    const newUser = await this.usersService.createTenantAdminWithoutEmail(userData, tenantData);
+
+    // Build set-password link (reuses reset-password infrastructure)
+    const setPasswordUrl = `${this.getFrontendUrl()}/set-password?token=${newUser.resetToken}`;
+
+    // Send welcome + set-password email in background
+    setImmediate(() => {
+      Promise.all([
+        this.emailService.sendSetPasswordEmail(newUser.email, newUser.name, setPasswordUrl),
+        this.rdStationService.sendLead(
+          new RdStationLeadDto({
+            conversion_identifier: 'cadastro_landing_page',
+            email: newUser.email,
+            name: newUser.name,
+            mobile_phone: newUser.whatsapp || newUser.phone,
+            company_name: dto.tenantName,
+            client_id: newUser.id,
+            job_title: newUser.role,
+            tags: ['origem_landing_page'],
+          }),
+        ),
+      ]).catch((error) => {
+        this.logger.error(`Failed to send lead email/RD Station for ${newUser.email}:`, error);
+      });
+    });
+
+    return new RegisterLeadResponseDto();
+  }
+
+  async setPassword(dto: SetPasswordDto): Promise<SetPasswordResponseDto> {
+    const { token, password, confirmPassword } = dto;
+
+    if (password !== confirmPassword) {
+      throw new UnauthorizedException('As senhas não coincidem');
+    }
+
+    const user = await this.usersService.findByResetToken(token);
+    if (!user) {
+      throw new UnauthorizedException('Link inválido ou expirado');
+    }
+
+    if (!user.resetToken || user.resetToken !== token) {
+      throw new UnauthorizedException('Link inválido');
+    }
+
+    if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      throw new UnauthorizedException('Link de configuração de senha expirado');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await this.usersService.update(user.id, {
+      password: hashedPassword,
+      resetToken: undefined,
+      resetTokenExpiry: undefined,
+    });
+
+    // Activate user explicitly (may have been inactive until password set)
+    await this.usersService.update(user.id, { active: true });
+
+    // Clean Redis reset token
+    try {
+      await this.redisClient.del(`reset_token:${token}`);
+    } catch (redisError) {
+      this.logger.warn('Failed to clear reset token from Redis:', redisError.message);
+    }
+
+    // Fetch updated user and generate tokens for auto-login
+    const updatedUser = await this.usersService.findByEmail(user.email);
+    const { accessToken, refreshToken } = await this.generateTokens(updatedUser);
+    await this.usersService.updateRefreshToken(updatedUser.id, refreshToken);
+    await this.usersService.updateLastLogin(updatedUser.id);
+
+    return new SetPasswordResponseDto(accessToken, refreshToken, updatedUser);
+  }
+
+  private getFrontendUrl(): string {
+    return this.configService.get('NODE_ENV') === 'production'
+      ? this.configService.get('FRONTEND_URL', 'https://easy-salon.backoffice-dev.codefica.dev')
+      : this.configService.get('FRONTEND_URL', 'http://localhost:8080');
+  }
+
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async updateTenantLeadId(tenantId: string, leadId: string): Promise<void> {
+    await this.usersService.updateTenantLeadId(tenantId, leadId);
+  }
+
+  async getTenantLeadId(tenantId: string): Promise<string | null> {
+    return this.usersService.getTenantLeadId(tenantId);
+  }
+}

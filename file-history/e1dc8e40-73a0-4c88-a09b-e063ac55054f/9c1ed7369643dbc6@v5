@@ -1,0 +1,317 @@
+/**
+ * AdminTable — Componente de tabela global do painel administrativo
+ *
+ * REUSO OBRIGATÓRIO: Este componente JÁ EXISTE e deve ser usado em TODAS as
+ * tabelas do painel admin. NÃO construa tabelas manuais com grid/flex.
+ * Baseado em @tanstack/react-table + shadcn/ui table.
+ *
+ * Props:
+ *   data: TData[]                   — array de dados a exibir
+ *   columns: ColumnDef<TData>[]     — definição de colunas (TanStack format)
+ *   filterValue?: string            — valor externo de filtro global (busca)
+ *   onFilterChange?: (v: string)    — callback ao alterar busca interna
+ *   searchPlaceholder?: string      — placeholder do campo de busca
+ *   showSearch?: boolean            — exibe campo de busca (padrão: true)
+ *   pageSize?: number               — linhas por página (padrão: 10)
+ *   emptyMessage?: string           — mensagem quando não há dados
+ *   emptyIcon?: React.ReactNode     — ícone do estado vazio
+ *   loading?: boolean               — exibe skeleton de carregamento
+ *   className?: string              — classe extra no container
+ *
+ * Uso básico:
+ *   import { AdminTable } from "@/components/admin/admin-table"
+ *   import { ColumnDef } from "@tanstack/react-table"
+ *
+ *   const columns: ColumnDef<Meu Tipo>[] = [
+ *     { accessorKey: "nome",   header: "Nome"   },
+ *     { accessorKey: "status", header: "Status" },
+ *     {
+ *       id: "acoes",
+ *       header: "",
+ *       cell: ({ row }) => <BotaoAcao row={row.original} />,
+ *     },
+ *   ]
+ *
+ *   <AdminTable data={dados} columns={columns} searchPlaceholder="Buscar..." />
+ *
+ * Coluna com ordenação:
+ *   { accessorKey: "nome", header: ({ column }) => (
+ *     <AdminTableSortHeader column={column} label="Nome" />
+ *   )}
+ *
+ * Passando filtro externo (busca controlada fora do componente):
+ *   <AdminTable data={dados} columns={columns} filterValue={busca} />
+ */
+
+"use client"
+
+import * as React from "react"
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  Column,
+} from "@tanstack/react-table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminInput } from "@/components/admin/admin-input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ArrowUpDown, ArrowUp, ArrowDown, Search, TableIcon } from "lucide-react"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import { cn } from "@/lib/utils"
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getColClassName(meta: unknown): string | undefined {
+  return (meta as { className?: string } | undefined)?.className
+}
+
+// ─── AdminTableSortHeader ─────────────────────────────────────────────────────
+interface AdminTableSortHeaderProps<TData> {
+  column: Column<TData, unknown>
+  label: string
+}
+
+export function AdminTableSortHeader<TData>({ column, label }: AdminTableSortHeaderProps<TData>) {
+  const sorted = column.getIsSorted()
+  return (
+    <button
+      className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700 transition-colors"
+      onClick={() => column.toggleSorting(sorted === "asc")}
+    >
+      {label}
+      {sorted === "asc"  ? <ArrowUp size={13} />   :
+       sorted === "desc" ? <ArrowDown size={13} />  :
+       <ArrowUpDown size={13} className="opacity-40" />}
+    </button>
+  )
+}
+
+// ─── AdminTable ───────────────────────────────────────────────────────────────
+interface AdminTableProps<TData> {
+  data: TData[]
+  columns: ColumnDef<TData, unknown>[]
+  filterValue?: string
+  onFilterChange?: (value: string) => void
+  searchPlaceholder?: string
+  showSearch?: boolean
+  pageSize?: number
+  emptyMessage?: string
+  emptyIcon?: React.ReactNode
+  loading?: boolean
+  className?: string
+}
+
+export function AdminTable<TData>({
+  data,
+  columns,
+  filterValue,
+  onFilterChange,
+  searchPlaceholder = "Buscar…",
+  showSearch = true,
+  pageSize = 10,
+  emptyMessage = "Nenhum resultado encontrado.",
+  emptyIcon,
+  loading = false,
+  className,
+}: AdminTableProps<TData>) {
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = React.useState(filterValue ?? "")
+
+  // Sincroniza filtro externo → interno
+  React.useEffect(() => {
+    if (filterValue !== undefined) setGlobalFilter(filterValue)
+  }, [filterValue])
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, columnFilters, globalFilter },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize } },
+  })
+
+  const totalPages = table.getPageCount()
+  const currentPage = table.getState().pagination.pageIndex + 1
+
+  if (loading) {
+    return (
+      <div className={cn("space-y-4", className)}>
+        {showSearch && <Skeleton className="h-10 w-full rounded-lg" />}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="border-b border-gray-100 bg-gray-50 px-4 py-3 flex gap-6">
+            {columns.map((_, i) => <Skeleton key={i} className="h-4 w-24 rounded" />)}
+          </div>
+          {Array.from({ length: pageSize > 5 ? 5 : pageSize }).map((_, i) => (
+            <div key={i} className="flex gap-6 px-4 py-4 border-b border-gray-50">
+              {columns.map((_, j) => <Skeleton key={j} className="h-4 rounded" style={{ width: `${60 + j * 20}px` }} />)}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn("space-y-4", className)}>
+      {/* Busca interna */}
+      {showSearch && filterValue === undefined && (
+        <AdminInput
+          variant="form"
+          placeholder={searchPlaceholder}
+          value={globalFilter}
+          onChange={(e) => {
+            setGlobalFilter(e.target.value)
+            onFilterChange?.(e.target.value)
+          }}
+          icon={<Search size={15} />}
+        />
+      )}
+
+      {/* Tabela */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <Table className="table-fixed">
+          <TableHeader>
+            {table.getHeaderGroups().map((hg) => (
+              <TableRow key={hg.id} className="bg-gray-50 hover:bg-gray-50 border-b border-gray-100">
+                {hg.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      "px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide h-auto",
+                      getColClassName(header.column.columnDef.meta)
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length} className="py-16">
+                  <div className="flex flex-col items-center gap-2 text-gray-400">
+                    {emptyIcon ?? <TableIcon size={32} className="opacity-30" />}
+                    <p className="text-sm">{emptyMessage}</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        "px-4 py-3 align-middle",
+                        getColClassName(cell.column.columnDef.meta)
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Paginação */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-600">Itens por página</span>
+          <Select
+            value={String(table.getState().pagination.pageSize)}
+            onValueChange={(v) => {
+              table.setPageSize(Number(v))
+              table.setPageIndex(0)
+            }}
+          >
+            <SelectTrigger className="h-8 w-16 px-2 text-xs">
+              <SelectValue placeholder={String(table.getState().pagination.pageSize)} />
+            </SelectTrigger>
+            <SelectContent position="popper" side="bottom" sideOffset={4}>
+              {[5, 10, 20, 50].map((size) => (
+                <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Pagination className="w-auto mx-0">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className={!table.getCanPreviousPage() ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <PaginationItem key={i + 1}>
+                <PaginationLink
+                  onClick={() => table.setPageIndex(i)}
+                  isActive={currentPage === i + 1}
+                  size="sm"
+                  className={cn(
+                    "h-8 w-8 text-xs cursor-pointer rounded-lg",
+                    currentPage === i + 1 && "bg-[#0B7A8F] text-white border-[#0B7A8F] hover:bg-[#0B7A8F] hover:text-white"
+                  )}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className={!table.getCanNextPage() ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    </div>
+  )
+}

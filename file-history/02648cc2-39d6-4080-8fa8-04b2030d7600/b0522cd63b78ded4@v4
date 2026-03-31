@@ -1,0 +1,119 @@
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { DataSource } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import * as Redis from 'ioredis';
+import * as fs from 'fs';
+
+export interface HealthStatus {
+  status: 'healthy' | 'unhealthy';
+  timestamp: Date;
+  services: {
+    api: {
+      status: 'up' | 'down';
+    };
+    database: {
+      status: 'up' | 'down';
+      message?: string;
+    };
+    redis: {
+      status: 'up' | 'down';
+      message?: string;
+    };
+  };
+  version: string;
+  environment: string;
+}
+
+@Injectable()
+export class HealthService implements OnModuleDestroy {
+  private readonly logger = new Logger(HealthService.name);
+  private redisClient: Redis.Redis;
+
+  constructor(
+    @InjectDataSource() private dataSource: DataSource,
+    private configService: ConfigService,
+  ) {
+    // Só inicializar Redis se não estivermos em modo local
+    const isLocalDev = fs.existsSync(__dirname + '/../.env.local');
+
+    if (!isLocalDev) {
+      this.redisClient = new Redis.Redis({
+        host: this.configService.get('REDIS_HOST', 'localhost'),
+        port: this.configService.get('REDIS_PORT', 6379),
+        username: this.configService.get('REDIS_USERNAME'),
+        password: this.configService.get('REDIS_PASSWORD'),
+        maxRetriesPerRequest: 1,
+        retryStrategy: () => null,
+        connectTimeout: 2000, // 2 second timeout for health checks
+        commandTimeout: 2000,
+        lazyConnect: true,
+      });
+    }
+  }
+
+  async check(): Promise<HealthStatus> {
+    const databaseStatus = await this.checkDatabase();
+    const redisStatus = await this.checkRedis();
+
+    // Em desenvolvimento local, Redis é opcional
+    const isLocalDev = fs.existsSync(__dirname + '/../.env.local');
+    const overallStatus =
+      databaseStatus.status === 'up' && (isLocalDev || redisStatus.status === 'up')
+        ? 'healthy'
+        : 'unhealthy';
+
+    return {
+      status: overallStatus,
+      timestamp: new Date(),
+      services: {
+        api: {
+          status: 'up',
+        },
+        database: databaseStatus,
+        redis: redisStatus,
+      },
+      version: process.env.npm_package_version || '0.0.1',
+      environment: this.configService.get('NODE_ENV', 'development'),
+    };
+  }
+
+  private async checkDatabase(): Promise<{ status: 'up' | 'down'; message?: string }> {
+    try {
+      await this.dataSource.query('SELECT 1');
+      return { status: 'up' };
+    } catch (error) {
+      this.logger.error('Database health check failed', error);
+      return {
+        status: 'down',
+        message: 'Unable to connect to database',
+      };
+    }
+  }
+
+  private async checkRedis(): Promise<{ status: 'up' | 'down'; message?: string }> {
+    if (!this.redisClient) {
+      return {
+        status: 'down',
+        message: 'Redis disabled in local development',
+      };
+    }
+
+    try {
+      await this.redisClient.ping();
+      return { status: 'up' };
+    } catch (error) {
+      this.logger.error('Redis health check failed', error);
+      return {
+        status: 'down',
+        message: 'Unable to connect to Redis',
+      };
+    }
+  }
+
+  async onModuleDestroy() {
+    if (this.redisClient) {
+      await this.redisClient.quit();
+    }
+  }
+}

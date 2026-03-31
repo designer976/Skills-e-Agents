@@ -1,0 +1,140 @@
+/**
+ * AdminSelect — Select padrão do painel administrativo
+ *
+ * REUSO OBRIGATÓRIO: Este componente JÁ EXISTE e deve ser usado em todos os
+ * formulários e filtros do painel admin. NÃO use SelectTrigger diretamente.
+ *
+ * Props:
+ *   placeholder?: string       — texto exibido quando sem seleção
+ *   label?:       ReactNode     — label acima do campo (aceita JSX para asterisco, ex: <>Horário <span>*</span></>)
+ *   error?:       string       — mensagem de erro exibida abaixo
+ *   variant?:     "default" | "form"
+ *                 default: foco ring #0B7A8F  — filtros / uso geral
+ *                 form:    foco ring #002533  — formulários internos
+ *   triggerClassName?: string  — classes extras para o SelectTrigger
+ *   Todos os outros props do Select primitivo (value, onValueChange, disabled…)
+ *
+ * Os filhos devem ser <AdminSelectContent> com <AdminSelectItem> dentro.
+ *
+ * Uso:
+ *   import {
+ *     AdminSelect,
+ *     AdminSelectContent,
+ *     AdminSelectItem,
+ *   } from "@/components/admin/admin-select"
+ *
+ *   // Com label (formulário):
+ *   <AdminSelect
+ *     label="Horário"
+ *     placeholder="Selecione"
+ *     value={hora}
+ *     onValueChange={setHora}
+ *   >
+ *     <AdminSelectContent>
+ *       <AdminSelectItem value="08:00">08:00</AdminSelectItem>
+ *     </AdminSelectContent>
+ *   </AdminSelect>
+ *
+ *   // Sem label (filtro inline):
+ *   <AdminSelect
+ *     placeholder="Todos"
+ *     value={filtro}
+ *     onValueChange={setFiltro}
+ *     triggerClassName="w-40"
+ *   >
+ *     <AdminSelectContent>
+ *       <AdminSelectItem value="all">Todos</AdminSelectItem>
+ *     </AdminSelectContent>
+ *   </AdminSelect>
+ */
+
+"use client"
+
+import * as React from "react"
+import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+type AdminSelectVariant = "default" | "form"
+
+interface AdminSelectProps extends React.ComponentProps<typeof Select> {
+  placeholder?: string
+  label?: React.ReactNode
+  error?: string
+  variant?: AdminSelectVariant
+  /** Classes extras aplicadas ao SelectTrigger (ex: "w-40") */
+  triggerClassName?: string
+  children: React.ReactNode
+}
+
+// ─── Estilos (espelham AdminInput) ────────────────────────────────────────────
+
+const triggerBase =
+  "w-full h-10 px-3 rounded-lg border text-sm transition-all outline-none " +
+  "bg-[#F4F7F9] border-gray-200 text-gray-800 " +
+  "data-placeholder:text-gray-400 " +
+  "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-100 " +
+  "[&]:h-10 data-[size=default]:h-10 data-[size=sm]:h-10"
+
+const variantFocus: Record<AdminSelectVariant, string> = {
+  default: "focus-visible:ring-2 focus-visible:ring-[#0B7A8F]/30 focus-visible:border-[#0B7A8F]",
+  form:    "focus-visible:ring-2 focus-visible:ring-[#002533]/20 focus-visible:border-[#002533]",
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
+
+function AdminSelect({
+  placeholder,
+  label,
+  error,
+  variant = "default",
+  triggerClassName,
+  children,
+  ...selectProps
+}: AdminSelectProps) {
+  return (
+    <div className="w-full">
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          {label}
+        </label>
+      )}
+      <Select {...selectProps}>
+        <SelectTrigger
+          className={cn(
+            triggerBase,
+            variantFocus[variant],
+            error
+              ? "border-red-400 focus-visible:ring-red-200 focus-visible:border-red-400"
+              : "",
+            triggerClassName
+          )}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        {children}
+      </Select>
+      {error && (
+        <p className="mt-1 text-xs text-red-500" role="alert">{error}</p>
+      )}
+    </div>
+  )
+}
+
+// ─── Re-exports com nomes Admin* ──────────────────────────────────────────────
+
+const AdminSelectContent = SelectContent
+const AdminSelectItem    = SelectItem
+
+export {
+  AdminSelect,
+  AdminSelectContent,
+  AdminSelectItem,
+}

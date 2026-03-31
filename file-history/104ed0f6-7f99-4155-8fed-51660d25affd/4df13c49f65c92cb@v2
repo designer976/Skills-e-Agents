@@ -1,0 +1,61 @@
+---
+name: all-front-end
+description: Pipeline front-end completo do Easy Salon. Ative quando a spec visual ja estiver validada e precisar implementar e revisar em sequencia. Executa Front-end-UI (implementacao) seguido de Front-end-Code (revisao de codigo).
+---
+
+# Pipeline Front-end — Easy Salon
+
+Quando este skill for ativado, execute os dois agentes front-end em sequencia:
+
+---
+
+## Etapa 1 — Front-end-UI (Implementacao)
+
+Adote o papel do **Front-end-UI** e execute a implementacao completa:
+
+### Workflow
+
+1. Leia a spec fornecida e identifique o local de aplicacao
+2. Consulte `frontend/src/pages/DesignSystemPage.tsx` para componentes existentes
+3. Verifique `frontend/src/components/ui/` antes de criar qualquer novo componente
+4. Implemente usando exclusivamente tokens do DS:
+
+| Categoria | Token correto | Proibido |
+|-----------|--------------|---------|
+| Fundo | `bg-background`, `bg-card`, `bg-muted`, `bg-secondary` | `bg-gray-*`, `bg-white` |
+| Texto | `text-foreground`, `text-muted-foreground` | `text-gray-*` |
+| Borda | `border-border` | `border-gray-*` |
+| Radius | `rounded-lg` | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
+| Hover | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*` |
+
+5. Ao concluir, liste os arquivos alterados e tokens aplicados
+
+---
+
+## Etapa 2 — Front-end-Code (Revisao)
+
+Apos a implementacao, adote o papel do **Front-end-Code** e revise os arquivos alterados:
+
+### O que revisar
+
+- **Performance**: re-renders desnecessarios, `useMemo`/`useCallback` ausentes, `key` em listas, dependencias de `useEffect`
+- **TypeScript**: tipos precisos, sem `any` desnecessario, props tipadas
+- **Design System**: tokens corretos, sem hardcode de cores ou radius
+- **Navegabilidade**: sem overflow ou layout quebrado, acessibilidade basica
+
+### Regra critica
+
+**NAO alterar nenhum elemento visual** criado na Etapa 1. Apenas corrigir codigo sem mudar aparencia.
+
+Se encontrar problema que exige mudanca visual → reportar, nao corrigir.
+
+### Relatorio final
+
+Liste cada correcao aplicada com arquivo, linha e descricao. Se nenhum problema → confirmar aprovacao.
+
+---
+
+## Contexto do Projeto
+
+- Stack: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+- `rounded-lg` = `var(--radius)` = token canonico de border-radius

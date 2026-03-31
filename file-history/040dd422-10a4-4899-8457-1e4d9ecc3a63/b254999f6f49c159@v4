@@ -1,0 +1,398 @@
+import type { ProposalSection, ProposalModelo } from "@/lib/proposal-types"
+import { formatDateShort } from "@/lib/proposal-types"
+
+export function clean(text: string): string {
+  return text.replace(/\*\*/g, "").replace(/\*/g, "").trim()
+}
+
+export function findSection(sections: ProposalSection[], ...keywords: string[]): ProposalSection | undefined {
+  // Primeira passagem: busca exata no key e title (prioridade alta)
+  let found = sections.find((s) =>
+    keywords.some((k) =>
+      s.key.toLowerCase().includes(k.toLowerCase()) ||
+      s.title.toLowerCase().includes(k.toLowerCase())
+    )
+  )
+
+  // Segunda passagem: busca no conteúdo (prioridade baixa)
+  if (!found) {
+    found = sections.find((s) =>
+      keywords.some((k) =>
+        s.content.toLowerCase().includes(k.toLowerCase())
+      )
+    )
+  }
+
+  return found
+}
+
+// ── GERAÇÃO DE HTML ESTRUTURADO ──
+
+export function gerarFuncionalidadesHTML(content: string): string {
+  const lines = content.split("\n")
+  const items: string[] = []
+
+  for (const line of lines) {
+    const t = line.trim()
+    // Formato: "1. **Nome** — Descrição"
+    const m1 = t.match(/^(\d+)\.\s+\*\*(.+?)\*\*\s*[—–:\-]\s*(.+)$/)
+    if (m1) {
+      items.push(`<div class="func-item"><p><strong>${m1[1]}. ${m1[2]}</strong> - ${clean(m1[3])}</p></div>`)
+      continue
+    }
+
+    // Formato: "1. Nome — Descrição"
+    const m2 = t.match(/^(\d+)\.\s+(.+?)\s*[—–]\s*(.+)$/)
+    if (m2) {
+      items.push(`<div class="func-item"><p><strong>${m2[1]}. ${m2[2]}</strong> - ${clean(m2[3])}</p></div>`)
+      continue
+    }
+
+    // Formato: "- **Nome**: Descrição"
+    const m3 = t.match(/^[-*•]\s+\*\*(.+?)\*\*[:\s]+(.+)$/)
+    if (m3) {
+      items.push(`<div class="func-item"><p><strong>${items.length + 1}. ${m3[1]}</strong> - ${clean(m3[2])}</p></div>`)
+      continue
+    }
+  }
+
+  // Fallback: itens simples com bullet points
+  if (!items.length) {
+    content.split("\n")
+      .filter((l) => /^[-*•]\s/.test(l.trim()))
+      .slice(0, 8)
+      .forEach((l, i) => {
+        items.push(`<div class="func-item"><p><strong>${i + 1}. ${clean(l.replace(/^[-*•]\s+/, ""))}</strong></p></div>`)
+      })
+  }
+
+  return items.join("\n\n")
+}
+
+export function gerarFasesHTML(content: string): string {
+  const lines = content.split("\n")
+  const phases: string[] = []
+  let counter = 0
+
+  for (const line of lines) {
+    const t = line.trim()
+    if (!t) continue
+
+    // Formato: "Fase 1 - Nome | Prazo"
+    const m1 = t.match(/^(?:Fase\s*)?(\d+)\s*[-:]\s*(.+?)\s*\|\s*(.+)$/)
+    if (m1) {
+      phases.push(`<div class="phase"><strong>Fase ${m1[1]}:</strong> ${clean(m1[2])} – ${clean(m1[3])}</div>`)
+      continue
+    }
+
+    // Formato: "Fase 1 - Nome"
+    const m2 = t.match(/^Fase\s*(\d+)\s*[-:]\s*(.+)$/)
+    if (m2) {
+      phases.push(`<div class="phase"><strong>Fase ${m2[1]}:</strong> ${clean(m2[2])}</div>`)
+      continue
+    }
+
+    // Bullets com prazo
+    if (/^[-*•]\s/.test(t) && /semana|mês|mes|dias?/i.test(t)) {
+      counter++
+      phases.push(`<div class="phase"><strong>Fase ${counter}:</strong> ${clean(t.replace(/^[-*•]\s+/, ""))}</div>`)
+    }
+  }
+
+  return phases.join("\n") || `<div class="phase"><strong>Fase 1:</strong> A definir</div>`
+}
+
+export function gerarEntregaveisHTML(content: string): string {
+  if (content.trim()) {
+    // Se há conteúdo, processar línhas que parecem ser entregáveis
+    const lines = content.split("\n")
+    const items: string[] = []
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      // Buscar por linhas com entregáveis específicos
+      if (/^[-*•]\s/.test(trimmed) || /^(protótipo|documentação|código|sistema|arquivo|suporte)/i.test(trimmed)) {
+        const item = clean(trimmed.replace(/^[-*•]\s+/, ""))
+        if (item.length > 5) { // Evitar itens muito curtos
+          items.push(`<li>${item}</li>`)
+        }
+      }
+    }
+
+    if (items.length > 0) {
+      return `<ul>\n${items.join("\n")}\n</ul>`
+    }
+  }
+
+  // Lista padrão de entregáveis
+  return `<ul>
+<li>Protótipos de Alta Fidelidade (Figma)</li>
+<li>Documentação Funcional</li>
+<li>Documentação Técnica</li>
+<li>Código Fonte Completo (repositório Git)</li>
+<li>Sistema em Produção</li>
+</ul>`
+}
+
+export function gerarServicosHTML(): string {
+  return `<h3>Nossos serviços:</h3>
+<ul>
+<li>Desenvolvimento de Software.</li>
+<li>Desenvolvimento de Aplicativos.</li>
+<li>Soluções de Inteligência Artificial.</li>
+<li>Alocação de Profissionais.</li>
+</ul>`
+}
+
+export function gerarListaClientesHTML(): string {
+  return `<ul>
+<li>PepsiCo</li>
+<li>Vtex</li>
+<li>Santillana</li>
+<li>Dasa</li>
+<li>WideLabs</li>
+<li>Confederação Brasileira de Hipismo</li>
+<li>Forbes</li>
+<li>Easy Salon</li>
+<li>InstaCarro</li>
+<li>Antilhas</li>
+<li>Fundação Carlos Chagas</li>
+<li>Funarbe</li>
+</ul>
+<p>Cases completos: <strong>waproject.com.br/cases</strong></p>`
+}
+
+export function gerarCondicoesPagamentoHTML(content: string): string {
+  const vals = content.match(/R\$\s*[\d.,]+/g) ?? []
+  const pct = content.match(/(\d+)%/g) ?? []
+
+  const p1 = content.match(/(?:1[aª°]?\s*parcela|assinatura)[^R\n]*R\$\s*([\d.,]+)/i)
+  const p2 = content.match(/(?:2[aª°]?\s*parcela)[^R\n]*R\$\s*([\d.,]+)/i)
+  const p3 = content.match(/(?:3[aª°]?\s*parcela)[^R\n]*R\$\s*([\d.,]+)/i)
+
+  const cond2m = content.match(/(\d+\s*dias?(?:\s*após[^,\n]+)?)/i)
+  const cond3m = content.match(/(?:pós.homolog|entrega final|conclusão|go.live)/i)
+
+  const parcela1 = p1 ? `R$ ${p1[1]}` : vals[0] ?? "A definir"
+  const condicao2 = cond2m ? cond2m[1] : pct[1] ? `${pct[1]} na entrega parcial` : "30 dias após a assinatura"
+  const parcela2 = p2 ? `R$ ${p2[1]}` : vals[1] ?? "A definir"
+  const condicao3 = cond3m ? cond3m[0] : pct[2] ? `${pct[2]} na entrega final` : "Pós-homologação"
+  const parcela3 = p3 ? `R$ ${p3[1]}` : vals[2] ?? "A definir"
+
+  return `<div class="payment-condition"><strong>1ª parcela:</strong> ${parcela1} na assinatura do contrato</div>
+<div class="payment-condition"><strong>2ª parcela:</strong> ${parcela2} - ${condicao2}</div>
+<div class="payment-condition"><strong>3ª parcela:</strong> ${parcela3} - ${condicao3}</div>`
+}
+
+// ── FUNÇÕES DE EXTRAÇÃO (adaptadas para novo template) ──
+
+export function extractValorTotal(content: string): string {
+  const totalLine = content.split("\n").find((l) => /total/i.test(l) && /R\$/i.test(l))
+  if (totalLine) {
+    const m = totalLine.match(/R\$\s*[\d.,]+/)
+    if (m) return `<p class="investment-total">Investimento total: ${m[0]}</p>`
+  }
+  const m = content.match(/R\$\s*[\d.,]+/)
+  return m ? `<p class="investment-total">Investimento total: ${m[0]}</p>` : `<p class="investment-total">Investimento total: A definir</p>`
+}
+
+export function extractSubtitulo(content: string, projeto: string): string {
+  if (projeto && projeto.trim() !== "") return projeto
+
+  if (!content || content.trim() === "") return ""
+
+  // Tentar extrair título de cabeçalho h3 (### Título)
+  const h3 = content.match(/^###\s+(.+)$/m)
+  if (h3) return clean(h3[1])
+
+  // Tentar extrair texto em negrito no início
+  const bold = content.match(/^\*\*(.+?)\*\*/m)
+  if (bold) return clean(bold[1])
+
+  // Tentar extrair primeira linha não vazia que parece um título
+  const lines = content.split("\n")
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed &&
+        !trimmed.startsWith("#") &&
+        !trimmed.startsWith("-") &&
+        !trimmed.startsWith("*") &&
+        !/^\d+\./.test(trimmed) &&
+        trimmed.length < 100) { // Títulos geralmente são menores que 100 chars
+      return clean(trimmed)
+    }
+  }
+
+  return ""
+}
+
+export function extractDescricao(content: string): string {
+  if (!content || content.trim() === "") return ""
+
+  const lines = content.split("\n")
+  const paragrafos = lines.filter((l) => {
+    const t = l.trim()
+    return t && !t.startsWith("#") && !t.startsWith("-") && !t.startsWith("*") && !/^\d+\./.test(t)
+  }).map(l => clean(l)).filter(p => p.length > 0)
+
+  if (paragrafos.length === 0) return ""
+
+  // Retornar primeiro parágrafo real ou juntar múltiplos se existirem
+  return paragrafos.length === 1
+    ? paragrafos[0]
+    : paragrafos.slice(0, 3).join(" ") // Limitar a 3 primeiros parágrafos
+}
+
+export function extractPrazoTotal(content: string): string {
+  const m1 = content.match(/(?:prazo|total|estimado)[:\s]+(\d+(?:[,.]\d+)?\s*(?:semanas?|meses?|dias?))/i)
+  if (m1) return `<p><strong>Prazo total:</strong> ${m1[1]}</p>`
+  const m2 = content.match(/(\d+(?:[,.]\d+)?\s*(?:semanas?|meses?))/i)
+  if (m2) return `<p><strong>Prazo total:</strong> ${m2[1]}</p>`
+  return "<p><strong>Prazo total:</strong> A definir</p>"
+}
+
+// ── FUNÇÕES DE APOIO PARA TOKENS ──
+
+function buildDescricaoEmpresa(sobreContent: string, funcionalidadesContent: string, modeloContent: string): string {
+  const desc = extractDescricao(sobreContent) ||
+    extractDescricao(funcionalidadesContent) ||
+    extractDescricao(modeloContent)
+  return desc || "A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas."
+}
+
+function buildDescricaoProjeto(sobreContent: string, funcionalidadesContent: string, modeloContent: string): string {
+  const desc = extractDescricao(sobreContent) ||
+    extractDescricao(funcionalidadesContent) ||
+    extractDescricao(modeloContent)
+  return desc ? `<p>${desc}</p>` : "<p>Projeto desenvolvido sob medida para atender às necessidades específicas do cliente.</p>"
+}
+
+// ── FUNÇÃO PRINCIPAL DE MAPEAMENTO ──
+
+export function buildProposalTokens(params: {
+  empresa: string
+  para: string | undefined
+  projeto: string | undefined
+  modeloTrabalho: ProposalModelo | undefined
+  dataCriacao: number
+  sections: ProposalSection[]
+}): Record<string, string> {
+  const { empresa, para, projeto, modeloTrabalho, dataCriacao, sections } = params
+
+  // Buscar seções relevantes com mais flexibilidade
+  const sobreSection     = findSection(sections, "sobre", "projeto", "objetivo", "descrição")
+  const funcionalidadesSection = findSection(sections, "funcionalidade", "funcionalidades", "features", "requisito")
+  const integracoesSection = findSection(sections, "integra", "integrações", "previstas")
+  const modeloSection    = findSection(sections, "modelo", "trabalho", "escopo", "metodologia")
+  const equipeSection    = findSection(sections, "equipe", "team", "especialistas", "multidisciplinar")
+  const cronoSection     = findSection(sections, "cronograma", "prazo", "timeline", "semanas", "fases")
+  const investSection    = findSection(sections, "investimento", "valor", "preço", "total", "precificação")
+  const condicoesSection = findSection(sections, "condições", "pagamento", "parcela", "financeiro")
+  const entregaSection   = findSection(sections, "entregáveis", "entrega", "deliverable", "protótipos")
+
+  const sobreContent         = sobreSection?.content ?? ""
+  const funcionalidadesContent = funcionalidadesSection?.content ?? ""
+  const integracoesContent   = integracoesSection?.content ?? ""
+  const modeloContent        = modeloSection?.content ?? ""
+  const equipeContent        = equipeSection?.content ?? ""
+  const cronoContent         = cronoSection?.content ?? ""
+  const investContent        = investSection?.content ?? ""
+  const condicoesContent     = condicoesSection?.content ?? investContent
+  const entregaContent       = entregaSection?.content ?? ""
+
+  // Mapear para as novas variáveis do template dinâmico
+  return {
+    // ── INFORMAÇÕES DA CAPA ──
+    "NOME_CLIENTE": empresa || "—",
+    "NOME_EMPRESA": "Wa Project",
+    "TITULO_PROPOSTA": projeto ? `Proposta Comercial - ${projeto}` : "Proposta Comercial",
+    "DATA_PROPOSTA": formatDateShort(dataCriacao),
+    "DIAS_VALIDADE": "30",
+    "CLIENTE_EMPRESA": para || empresa || "—",
+    "TIPO_ESCOPO": modeloTrabalho && modeloTrabalho !== "Vazio" ? modeloTrabalho : "Escopo Fechado",
+    "INFORMACOES_ADICIONAIS_CAPA": "",
+    "CONTEUDO_INICIAL_CAPA": "",
+
+    // ── CONTEÚDO PRINCIPAL ──
+    "TITULO_SOBRE_EMPRESA": "Sobre a Wa Project",
+    "DESCRICAO_EMPRESA": buildDescricaoEmpresa(sobreContent, funcionalidadesContent, modeloContent),
+    "SECAO_SERVICOS": gerarServicosHTML(),
+    "TITULO_CLIENTES": "Nossos Clientes",
+    "LISTA_CLIENTES": gerarListaClientesHTML(),
+    "INFORMACOES_ADICIONAIS_EMPRESA": "",
+
+    // ── PROJETO E FUNCIONALIDADES ──
+    "TITULO_PROJETO": "Sobre o Projeto",
+    "SUBTITULO_PROJETO": extractSubtitulo(sobreContent, projeto ?? "") ||
+      (projeto ? projeto : "Projeto Personalizado"),
+    "DESCRICAO_PROJETO": buildDescricaoProjeto(sobreContent, funcionalidadesContent, modeloContent),
+    "TITULO_FUNCIONALIDADES": "Funcionalidades",
+    "LISTA_FUNCIONALIDADES": gerarFuncionalidadesHTML(funcionalidadesContent || sobreContent),
+    "FUNCIONALIDADES_ADICIONAIS": "",
+
+    // ── INTEGRAÇÕES ──
+    "TITULO_INTEGRACOES": "Integrações",
+    "DESCRICAO_INTEGRACOES": extractDescricao(integracoesContent) || "<p>As integrações necessárias serão implementadas conforme especificações técnicas do projeto.</p>",
+
+    // ── MODELO DE TRABALHO ──
+    "TITULO_MODELO_TRABALHO": "Modelo de Trabalho",
+    "DESCRICAO_MODELO": extractDescricao(modeloContent) || `<p>Utilizamos metodologia ágil com entregas incrementais, garantindo transparência e qualidade em cada etapa do desenvolvimento.</p>`,
+    "TITULO_FASES": "Fases do Projeto",
+    "LISTA_FASES": gerarFasesHTML(modeloContent || cronoContent),
+
+    // ── EQUIPE ──
+    "TITULO_EQUIPE": "Equipe",
+    "DESCRICAO_EQUIPE": extractDescricao(equipeContent) || `<p>O projeto contará com uma equipe multidisciplinar de especialistas:</p>`,
+    "LISTA_MEMBROS_EQUIPE": equipeContent ? extractDescricao(equipeContent) : `<div class="team-role">
+<h4>UX e UI Designer</h4>
+<p>Responsável pelo design de interfaces, prototipagem navegável e validação de usabilidade. Cria o design system e acompanha a implementação para garantir fidelidade ao design aprovado.</p>
+</div>
+<div class="team-role">
+<h4>Desenvolvedor(es)</h4>
+<p>Realiza a implementação técnica completa (frontend e backend), integrações com APIs e sistemas externos. Garante qualidade através de testes, code review e boas práticas de desenvolvimento.</p>
+</div>
+<div class="team-role">
+<h4>Product Owner</h4>
+<p>Atua como ponte entre cliente e equipe técnica, gerenciando backlog e priorização. Garante alinhamento estratégico, planeja sprints e acompanha prazos e entregas do projeto.</p>
+</div>
+<div class="team-role">
+<h4>Tester (QA)</h4>
+<p>Executa testes funcionais e de regressão para validar qualidade de cada funcionalidade. Documenta bugs, realiza homologação com o cliente e garante critérios de aceite.</p>
+</div>`,
+
+    // ── CRONOGRAMA ──
+    "TITULO_CRONOGRAMA": "Cronograma",
+    "PRAZO_TOTAL": extractPrazoTotal(cronoContent),
+    "CRONOGRAMA_DETALHADO": "",
+    "OBSERVACOES_CRONOGRAMA": "",
+
+    // ── INVESTIMENTO ──
+    "TITULO_INVESTIMENTO": "Investimento",
+    "VALOR_TOTAL": extractValorTotal(investContent),
+    "TITULO_CONDICOES_PAGAMENTO": "Condições de Pagamento",
+    "CONDICOES_PAGAMENTO": gerarCondicoesPagamentoHTML(condicoesContent),
+
+    // ── ENTREGÁVEIS ──
+    "TITULO_ENTREGAVEIS": "Entregáveis",
+    "LISTA_ENTREGAVEIS": gerarEntregaveisHTML(entregaContent || funcionalidadesContent),
+
+    // ── PRÓXIMOS PASSOS ──
+    "TITULO_PROXIMOS_PASSOS": "Próximos Passos",
+    "LISTA_PROXIMOS_PASSOS": `<ul>
+<li>Aprovação da proposta comercial</li>
+<li>Assinatura do contrato</li>
+<li>Kick-off do projeto</li>
+<li>Início do desenvolvimento</li>
+</ul>`,
+    "MENSAGEM_FINAL_PASSOS": "",
+
+    // ── ENCERRAMENTO ──
+    "CITACAO_ENCERRAMENTO": `<p class="closing-quote">Não é sobre desenvolvimento, é sobre envolvimento.</p>
+<p>Obrigado por confiar na Wa Project!</p>`,
+    "INFORMACOES_EMPRESA_COMPLETA": `<p><strong>SAKAMOTO TECNOLOGIA LTDA (Wa Project)</strong></p>
+<p>CNPJ: 63.201.595/0001-63</p>
+<p>Endereço: Al. Rio Negro, 503, Sala 2020, Alphaville, Barueri/SP</p>
+<p>Site: https://www.severino.ninja</p>`,
+    "TEXTO_VALIDADE": `<p>Esta proposta tem validade de 30 dias a partir da data de emissão.</p>`
+  }
+}

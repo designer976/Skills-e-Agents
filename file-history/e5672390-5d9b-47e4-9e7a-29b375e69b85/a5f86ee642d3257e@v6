@@ -1,0 +1,355 @@
+import { useState, useEffect, useCallback } from "react";
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { Pencil as Edit, Search as Search, Loader2 as Loader2, Users as Users } from "lucide-react";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { DataTable } from "@/components/ui/data-table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ClientModal } from "@/components/modals/ClientModal";
+import { ResponsivePagination } from "@/components/ui/responsive-pagination";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { clientService } from "@/services/clientService";
+import { Client, CreateClientDto, UpdateClientDto } from "@/types/client";
+import { formatCPF, formatPhone } from "@/utils/clientHelpers";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { dashboardService } from "@/services/dashboardService";
+import { analytics } from "@/lib/analytics";
+
+export default function ClientsPage() {
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  useEffect(() => {
+    analytics.trackEvent("clients_page_viewed", {});
+  }, []);
+
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [totalClients, setTotalClients] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(16);
+  const [statsTotal, setStatsTotal] = useState<number | null>(null);
+
+  const fetchClients = async (
+    page: number = 1,
+    search?: string,
+    limit: number = pageSize
+  ): Promise<void> => {
+    if (!selectedSalon?.id) {
+      setLoading(false);
+      setClients([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const searchParam = search && search.trim() ? search.trim() : undefined;
+      const response = await clientService.list({
+        search: searchParam,
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy: "name",
+        sortOrder: "ASC",
+      });
+
+      setClients(response.data);
+      setTotalClients(response.total);
+      setTotalPages(Math.ceil(response.total / limit));
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Falha ao carregar clientes";
+      toast.error(errorMessage);
+      setClients([]);
+      setTotalClients(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch total clients from dashboard stats
+  const fetchStats = useCallback(async (): Promise<void> => {
+    if (!selectedSalon?.id) {
+      setStatsTotal(null);
+      return;
+    }
+
+    try {
+      const stats = await dashboardService.getStats();
+      setStatsTotal(stats.clients.total);
+    } catch {
+      setStatsTotal(null);
+    }
+  }, [selectedSalon?.id]);
+
+  // Load clients when parameters change
+  useEffect(() => {
+    if (selectedSalon?.id) {
+      fetchClients(currentPage, debouncedSearchTerm, pageSize);
+    }
+  }, [selectedSalon?.id, currentPage, debouncedSearchTerm, pageSize]);
+
+  // Load stats on mount and when salon changes
+  useEffect(() => {
+    if (selectedSalon?.id) {
+      fetchStats();
+    }
+  }, [selectedSalon?.id, fetchStats]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  const handlePageSizeChange = (value: string): void => {
+    const newPageSize = Number(value);
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
+  const handleNewClient = (): void => {
+    setSelectedClient(null);
+    setModalOpen(true);
+  };
+
+  const handleEditClient = async (client: Client): Promise<void> => {
+    try {
+      const fullClient = await clientService.getById(client.id);
+      setSelectedClient(fullClient);
+      setModalOpen(true);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Falha ao carregar dados do cliente";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleSaveClient = async (
+    clientData: CreateClientDto | UpdateClientDto
+  ): Promise<void> => {
+    try {
+      if (selectedClient) {
+        const updateData: UpdateClientDto = {
+          name: clientData.name,
+          email: clientData.email,
+          phone: clientData.phone,
+          cpf: clientData.cpf,
+          birthDate: clientData.birthDate,
+          gender: clientData.gender,
+          address: clientData.address,
+          notes: clientData.notes,
+          tags: clientData.tags,
+          preferredProfessionalId: clientData.preferredProfessionalId,
+          instagram: clientData.instagram,
+          active: clientData.active !== false,
+        };
+
+        await clientService.update(selectedClient.id, updateData);
+        toast.success("Cliente editado com sucesso!");
+      } else {
+        const createData: CreateClientDto = {
+          name: clientData.name,
+          email: clientData.email,
+          phone: clientData.phone,
+          cpf: clientData.cpf,
+          birthDate: clientData.birthDate,
+          gender: clientData.gender,
+          address: clientData.address,
+          notes: clientData.notes,
+          tags: clientData.tags,
+          preferredProfessionalId: clientData.preferredProfessionalId,
+          instagram: clientData.instagram,
+          active: clientData.active !== false,
+          salonId: selectedSalon?.id,
+        };
+
+        await clientService.create(createData);
+        toast.success("Cliente criado com sucesso!");
+
+        trackSeverinoEvent('cliente_cadastrado', { description: `Cliente: ${clientData.name}` });
+      }
+
+      if (selectedClient) {
+        fetchClients(currentPage, debouncedSearchTerm, pageSize);
+      } else {
+        setSearchTerm("");
+        setCurrentPage(1);
+        fetchClients(1, "", pageSize);
+      }
+
+      fetchStats();
+      setModalOpen(false);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Falha ao salvar cliente";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteClient = async (clientId: string): Promise<void> => {
+    try {
+      await clientService.delete(clientId);
+      toast.success("Cliente excluído com sucesso!");
+      fetchClients(currentPage, debouncedSearchTerm, pageSize);
+      fetchStats();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Falha ao excluir cliente";
+      toast.error(errorMessage);
+    }
+  };
+
+  const columns = [
+    {
+      key: "name" as keyof Client,
+      header: "Nome",
+    },
+    {
+      key: "email" as keyof Client,
+      header: "E-mail",
+      render: (value: any) => value || "N/A",
+    },
+    {
+      key: "phone" as keyof Client,
+      header: "Telefone",
+      render: (value: any) => formatPhone(value),
+    },
+    {
+      key: "cpf" as keyof Client,
+      header: "CPF",
+      render: (value: any) => (value ? formatCPF(value) : "N/A"),
+    },
+    {
+      key: "lastVisit" as keyof Client,
+      header: "Última Visita",
+      render: (value: any) => {
+        if (!value) return "Nunca";
+        try {
+          return format(new Date(value), "dd/MM/yyyy", { locale: ptBR });
+        } catch {
+          return "N/A";
+        }
+      },
+    },
+    {
+      key: "id" as keyof Client,
+      header: "Ações",
+      className: "text-right",
+      render: (value: any, row: Client) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleEditClient(row)}
+          className="h-8 w-8"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <PageHeader
+        title="Clientes"
+        disabledActions={!selectedSalon?.active}
+        action={{
+          label: "Novo Cliente",
+          onClick: handleNewClient,
+        }}
+      />
+
+      {/* RESP: Barra de busca e total de clientes - Empilhados no mobile */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Buscar por nome ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 salon-input w-full"
+          />
+        </div>
+
+        {statsTotal !== null && (
+          <div className="flex items-center gap-2 text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg md:bg-transparent md:p-0"> {/* RESP: Estilo de card leve no mobile */}
+            <Users className="h-5 w-5" />
+            <span className="text-sm font-medium">
+              Total de clientes: {statsTotal}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : clients.length === 0 ? (
+        <div className="text-center py-12 salon-card">
+          <p className="text-muted-foreground mb-4">
+            {searchTerm
+              ? "Nenhum cliente encontrado com a busca aplicada."
+              : "Nenhum cliente cadastrado ainda."}
+          </p>
+          {!searchTerm && (
+            <Button onClick={handleNewClient}>
+              Cadastrar Primeiro Cliente
+            </Button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* RESP: DataTable com Opt-in de Card View e configuração */}
+          <DataTable 
+            data={clients} 
+            columns={columns} 
+            mobileView="cards"
+            mobileCardConfig={{
+              title: "name",
+              subtitle: "phone",
+            }}
+          />
+
+          <ResponsivePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalClients}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => handlePageSizeChange(String(size))}
+            itemLabel="clientes"
+          />
+        </>
+      )}
+
+      {/* Modal de Cliente */}
+      <ClientModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        client={selectedClient}
+        selectedSalon={selectedSalon}
+        onSave={handleSaveClient}
+        onDelete={handleDeleteClient}
+      />
+    </EasySalonLayout>
+  );
+}

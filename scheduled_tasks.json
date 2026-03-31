@@ -1,0 +1,11 @@
+{
+  "tasks": [
+    {
+      "id": "32cb07dd",
+      "cron": "7 9 * * 1",
+      "prompt": "Verificar atualizações dos skills no repositório Skills-e-Agents e sugerir melhorias baseadas em novos plugins disponíveis.",
+      "createdAt": 1774878017992,
+      "recurring": true
+    }
+  ]
+}

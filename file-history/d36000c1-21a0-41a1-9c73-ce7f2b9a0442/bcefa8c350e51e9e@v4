@@ -1,0 +1,483 @@
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  validateCPF,
+  formatCPF,
+  formatPhoneNumber,
+  validateEmail,
+  validatePhone,
+} from "@/utils/bookingHelpers";
+import { useDebouncedCallback } from "use-debounce";
+import { publicHttpClient } from "@/services/publicHttpClient";
+
+interface CustomerFormProps {
+  customerName: string;
+  customerLastName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerCpf: string;
+  customerBirthDate: Date | null;
+  customerGender: string;
+  termsAccepted: boolean;
+  primaryColor: string;
+  onCustomerDataChange: (data: {
+    customerName: string;
+    customerLastName: string;
+    customerEmail: string;
+    customerPhone: string;
+    customerCpf: string;
+    customerBirthDate: Date | null;
+    customerGender: string;
+    termsAccepted?: boolean;
+  }) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+export function CustomerForm({
+  customerName,
+  customerLastName,
+  customerEmail,
+  customerPhone,
+  customerCpf,
+  customerBirthDate,
+  customerGender,
+  termsAccepted,
+  primaryColor,
+  onCustomerDataChange,
+  onNext,
+  onBack,
+}: CustomerFormProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
+
+  // Get salon slug from URL
+  const salonSlug = window.location.pathname.split("/")[2];
+
+  // Search client by phone or CPF
+  const searchClient = useCallback(
+    async (phone?: string, cpf?: string) => {
+      try {
+        // Only search if we have a valid phone or CPF
+        const cleanPhone = phone?.replace(/\D/g, "");
+        const cleanCpf = cpf?.replace(/\D/g, "");
+
+        if (
+          (!cleanPhone || cleanPhone.length < 10) &&
+          (!cleanCpf || cleanCpf.length !== 11)
+        ) {
+          return;
+        }
+
+        // const params = new URLSearchParams();
+        // if (cleanPhone && cleanPhone.length >= 10) {
+        //   params.append("phone", cleanPhone);
+        // } else if (cleanCpf && cleanCpf.length === 11) {
+        //   params.append("cpf", cleanCpf);
+        // }
+
+        const { data: clientData } = await publicHttpClient.post(
+          `/booking/${salonSlug}/client/search`,
+          {
+            cpf: cleanCpf,
+            phone: cleanPhone,
+          }
+        );
+
+        if (clientData && clientData.name) {
+          // Split name into first and last name
+          const nameParts = clientData.name.split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
+
+          // Update form with client data
+          onCustomerDataChange({
+            customerName: firstName,
+            customerLastName: lastName,
+            customerEmail: clientData.email || customerEmail,
+            customerPhone: clientData.phone
+              ? formatPhoneNumber(clientData.phone)
+              : customerPhone,
+            customerCpf: clientData.cpf
+              ? formatCPF(clientData.cpf)
+              : customerCpf,
+            customerBirthDate,
+            customerGender,
+          });
+        }
+      } catch (error) {
+        // Silently fail - no alerts or messages
+      }
+    },
+    [
+      customerEmail,
+      customerPhone,
+      customerCpf,
+      customerBirthDate,
+      customerGender,
+      onCustomerDataChange,
+      salonSlug,
+    ]
+  );
+
+  // Debounced search functions
+  const debouncedPhoneSearch = useDebouncedCallback((phone: string) => {
+    searchClient(phone, undefined);
+  }, 500);
+
+  const debouncedCpfSearch = useDebouncedCallback((cpf: string) => {
+    searchClient(undefined, cpf);
+  }, 500);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!customerName.trim()) {
+      newErrors.customerName = "Nome é obrigatório";
+    }
+
+    if (!customerLastName.trim()) {
+      newErrors.customerLastName = "Sobrenome é obrigatório";
+    }
+
+    if (!customerPhone.trim()) {
+      newErrors.customerPhone = "WhatsApp é obrigatório";
+    } else if (!validatePhone(customerPhone)) {
+      newErrors.customerPhone = "Telefone inválido. Digite um número válido com DDD";
+    }
+
+    if (!customerCpf.trim()) {
+      newErrors.customerCpf = "CPF é obrigatório";
+    } else {
+      const cleanCpf = customerCpf.replace(/\D/g, "");
+      if (!validateCPF(cleanCpf)) {
+        newErrors.customerCpf = "CPF inválido";
+      }
+    }
+
+    // Validações opcionais só se preenchidas
+    if (customerEmail && !validateEmail(customerEmail)) {
+      newErrors.customerEmail = "E-mail inválido";
+    }
+
+    // Validação dos termos
+    if (!termsAccepted) {
+      newErrors.terms =
+        "É necessário aceitar os termos de compartilhamento de dados";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onNext();
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value);
+    updateData({ customerPhone: formatted });
+
+    // Validação em tempo real
+    const cleanPhone = value.replace(/\D/g, "");
+    
+    // Mostrar erro somente se o usuário já digitou o suficiente
+    if (cleanPhone.length >= 10) {
+      if (validatePhone(formatted)) {
+        // Limpar erro se o telefone for válido
+        setErrors((prev) => ({ ...prev, customerPhone: "" }));
+        // Trigger client search apenas se válido
+        debouncedPhoneSearch(formatted);
+      } else {
+        // Mostrar erro se o telefone for inválido
+        setErrors((prev) => ({
+          ...prev,
+          customerPhone: "Telefone inválido. Digite um número válido com DDD",
+        }));
+      }
+    } else {
+      // Limpar erro se ainda não digitou o suficiente
+      setErrors((prev) => ({ ...prev, customerPhone: "" }));
+    }
+  };
+
+  const handleCpfChange = (value: string) => {
+    const formatted = formatCPF(value);
+    updateData({ customerCpf: formatted });
+
+    // Trigger client search
+    debouncedCpfSearch(formatted);
+
+    // Clear error if valid
+    if (errors.customerCpf) {
+      const cleanCpf = value.replace(/\D/g, "");
+      if (validateCPF(cleanCpf)) {
+        setErrors((prev) => ({ ...prev, customerCpf: "" }));
+      }
+    }
+  };
+
+  const handleEmailChange = (value: string) => {
+    updateData({ customerEmail: value });
+
+    // Clear error if valid
+    if (errors.customerEmail && validateEmail(value)) {
+      setErrors((prev) => ({ ...prev, customerEmail: "" }));
+    }
+  };
+
+  const updateData = (
+    updates: Partial<{
+      customerName: string;
+      customerLastName: string;
+      customerEmail: string;
+      customerPhone: string;
+      customerCpf: string;
+      customerBirthDate: Date | null;
+      customerGender: string;
+      termsAccepted: boolean;
+    }>
+  ) => {
+    onCustomerDataChange({
+      customerName,
+      customerLastName,
+      customerEmail,
+      customerPhone,
+      customerCpf,
+      customerBirthDate,
+      customerGender,
+      ...updates,
+    });
+  };
+
+  return (
+    <div className="max-w-md mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Seus dados</h2>
+        <p className="text-gray-600">
+          Preencha seus dados para finalizar o agendamento
+        </p>
+      </div>
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          {/* Campos obrigatórios */}
+          <div>
+            <Input
+              id="name"
+              label="Nome *"
+              value={customerName}
+              onChange={(e) => updateData({ customerName: e.target.value })}
+              className={errors.customerName ? "border-red-500" : ""}
+            />
+            {errors.customerName && (
+              <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>
+            )}
+          </div>
+
+          <div>
+            <Input
+              id="lastName"
+              label="Sobrenome *"
+              value={customerLastName}
+              onChange={(e) => updateData({ customerLastName: e.target.value })}
+              className={errors.customerLastName ? "border-red-500" : ""}
+            />
+            {errors.customerLastName && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.customerLastName}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Input
+              id="phone"
+              label="WhatsApp *"
+              value={customerPhone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="(11) 99999-9999"
+              maxLength={15}
+              className={errors.customerPhone ? "border-red-500" : ""}
+            />
+            {errors.customerPhone && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.customerPhone}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Input
+              id="cpf"
+              label="CPF *"
+              value={customerCpf}
+              onChange={(e) => handleCpfChange(e.target.value)}
+              placeholder="000.000.000-00"
+              maxLength={14}
+              className={errors.customerCpf ? "border-red-500" : ""}
+            />
+            {errors.customerCpf && (
+              <p className="text-red-500 text-sm mt-1">{errors.customerCpf}</p>
+            )}
+          </div>
+
+          {/* Botão para mostrar campos opcionais */}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setShowOptionalFields(!showOptionalFields)}
+            className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            Informações adicionais
+            {showOptionalFields ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+
+          {/* Campos opcionais */}
+          {showOptionalFields && (
+            <div className="space-y-4 pt-4 border-t border-gray-200">
+              <div>
+                <Input
+                  id="email"
+                  label="E-mail"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  className={errors.customerEmail ? "border-red-500" : ""}
+                />
+                {errors.customerEmail && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.customerEmail}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="birthDate">Data de Nascimento</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !customerBirthDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customerBirthDate
+                        ? format(customerBirthDate, "dd/MM/yyyy")
+                        : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customerBirthDate || undefined}
+                      onSelect={(date) =>
+                        updateData({ customerBirthDate: date || null })
+                      }
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label htmlFor="gender">Gênero</Label>
+                <Select
+                  value={customerGender}
+                  onValueChange={(value) =>
+                    updateData({ customerGender: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar gênero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="feminino">Feminino</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
+                    <SelectItem value="nao-informar">
+                      Prefiro não informar
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Checkbox de termos */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="terms"
+                checked={termsAccepted}
+                onCheckedChange={(checked) =>
+                  updateData({ termsAccepted: checked === true })
+                }
+                className="mt-1"
+              />
+              <label
+                htmlFor="terms"
+                className="text-sm text-gray-700 leading-relaxed cursor-pointer"
+              >
+                Concordo em compartilhar meus dados pessoais com o salão para
+                fins de agendamento e atendimento. Estou ciente de que essas
+                informações serão utilizadas exclusivamente para comunicação
+                sobre os serviços contratados.
+              </label>
+            </div>
+            {errors.terms && (
+              <p className="text-red-500 text-sm mt-2">{errors.terms}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8">
+        <Button variant="default" onClick={onBack}>
+          Voltar
+        </Button>
+
+        <Button
+          style={{ backgroundColor: primaryColor }}
+          className="text-white"
+          onClick={handleSubmit}
+        >
+          Finalizar Agendamento
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,52 @@
+import { Link } from "react-router-dom";
+
+export default function Index() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+      <div className="text-center space-y-8 p-8">
+        <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          Easy Salon
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Sistema de agendamentos sem complicação e uma gestão que funciona.
+        </p>
+        <div className="flex flex-col gap-4 justify-center">
+          {/* Autenticação */}
+          <div className="flex gap-4 justify-center">
+            <Link 
+              to="/login"
+              className="salon-button-primary"
+            >
+              Fazer Login
+            </Link>
+            <Link 
+              to="/register"
+              className="salon-button-secondary"
+            >
+              Cadastrar-se
+            </Link>
+          </div>
+          
+          {/* Demo dos Layouts */}
+          <div className="flex flex-col gap-2 mt-6 pt-6 border-t border-border">
+            <p className="text-sm text-muted-foreground">Demonstração dos Layouts:</p>
+            <div className="flex gap-4 justify-center">
+              <Link 
+                to="/admin/salons"
+                className="salon-button-secondary"
+              >
+                Área Admin
+              </Link>
+              <Link 
+                to="/salon/agenda"
+                className="salon-button-secondary"
+              >
+                Área do Salão
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

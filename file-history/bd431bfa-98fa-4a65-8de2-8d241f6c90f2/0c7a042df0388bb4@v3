@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposta Comercial — Sistema de Gestão Veterinária</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0047ba;
+            --text: #2e2e2e;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+            --page-padding: 56px;
+            --footer-height: 120px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        /* ── DYNAMIC DOCUMENT CONTAINER ── */
+        .document {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 24px 0;
+            position: relative;
+        }
+
+        /* ── DYNAMIC CONTENT FLOW ── */
+        .content-flow {
+            width: 210mm;
+            background: #fcfcfc;
+            margin: 0 auto;
+            position: relative;
+            overflow: visible;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+
+        /* ── BACKGROUND FOR ALL PAGES ── */
+        .content-flow::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 210mm;
+            height: 100vh;
+            background: url('fundo-center.png') center center no-repeat;
+            background-size: 602px auto;
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── PAGE STRUCTURE ── */
+        .page-content {
+            position: relative;
+            z-index: 1;
+            padding: 46px var(--page-padding) var(--footer-height);
+            min-height: auto;
+        }
+
+        /* ── CONTINUOUS PAGES (2nd+) PADDING ── */
+        .flow-page .page-content {
+            padding-top: 32px;
+        }
+
+        /* ── COVER PAGE SPECIFIC ── */
+        .cover-page {
+            position: relative;
+        }
+
+        .cover-page .page-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        /* ── CONTINUOUS CONTENT PAGES ── */
+        .flow-page {
+            page-break-inside: auto;
+        }
+
+        /* ── HEADER (COVER PAGE) ── */
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            display: inline-block;
+            margin-bottom: 64px;
+        }
+        .logo img {
+            width: 100px;
+            height: 37px;
+            display: block;
+        }
+
+        .cover-title {
+            margin-bottom: 40px;
+        }
+        .cover-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            line-height: 1.2;
+            margin-bottom: 0;
+        }
+        .cover-title h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-top: 0;
+            margin-bottom: 40px;
+        }
+
+        .cover-info {
+            margin-bottom: 40px;
+        }
+        .cover-info .cover-date {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .cover-info p {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .cover-info strong {
+            font-weight: 600;
+        }
+
+        /* ── TYPOGRAPHY ── */
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--blue);
+            margin: 32px 0 16px 0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        h2:first-of-type,
+        .flow-page h2:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 24px 0 8px 0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 16px 0 8px 0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* ── BODY TEXT WITH FLOW CONTROL ── */
+        p {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            orphans: 2;
+            widows: 2;
+        }
+
+        strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* ── LISTS WITH FLOW CONTROL ── */
+        ul, ol {
+            margin-bottom: 16px;
+        }
+
+        ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+
+        ol {
+            list-style: decimal;
+            padding-left: 20px;
+        }
+
+        ul li, ol li {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            break-inside: avoid;
+        }
+
+        /* ── FUNCTIONAL SECTIONS WITH FLOW CONTROL ── */
+        .func-item {
+            margin-bottom: 16px;
+        }
+        .func-item strong {
+            color: var(--text);
+        }
+
+        .phase {
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+        }
+        .phase strong {
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        .team-role {
+            margin-bottom: 20px;
+        }
+        .team-role h4 {
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+
+        .investment-total {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 20px 0 16px 0;
+        }
+
+        .payment-condition {
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+        }
+
+        /* ── SECTIONS FOR BETTER FLOW CONTROL ── */
+        .content-section {
+            margin-bottom: 24px;
+        }
+
+        /* ── CLOSING SECTION ── */
+        .closing {
+            margin-top: 40px;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+        .closing-quote {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        .company-info {
+            margin-top: 24px;
+        }
+        .company-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .validity {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── FOOTER WITH AUTO PAGE NUMBERING ── */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px var(--page-padding) 32px;
+            z-index: 10;
+            background: rgba(252, 252, 252, 0.95);
+            backdrop-filter: blur(2px);
+            counter-increment: page;
+        }
+        .footer-line {
+            height: 2px;
+            background: #e5e7eb80;
+            margin-bottom: 24px;
+        }
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-logo {
+            display: inline-block;
+        }
+        .footer-logo img {
+            width: 74px;
+            height: 27px;
+            display: block;
+        }
+        .pg-num::after {
+            content: counter(page);
+            font-size: 12.5px;
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        /* ── PRINT STYLES ── */
+        @media print {
+            body {
+                background: #fcfcfc;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                counter-reset: page;
+            }
+
+            .document {
+                padding: 0;
+            }
+
+            .content-flow {
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .page-content {
+                padding-bottom: var(--footer-height);
+            }
+
+            .footer {
+                position: fixed;
+                bottom: 0;
+                background: #fcfcfc;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Enhanced page break controls */
+            h2, h3, h4 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            .closing {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .closing {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            ul, ol {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            p {
+                orphans: 2;
+                widows: 2;
+            }
+
+            /* Background for print */
+            .content-flow::before {
+                position: fixed;
+                background-attachment: fixed;
+            }
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+            counter-increment: page;
+        }
+
+        /* ── JAVASCRIPT FALLBACK STYLES ── */
+        .js-page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+
+        /* ── PREFERS REDUCED MOTION ── */
+        @media (prefers-reduced-motion: reduce) {
+            .content-flow::before {
+                background-attachment: scroll;
+            }
+        }
+
+        /* ── RESPONSIVE ADAPTATIONS ── */
+        @media screen and (max-width: 220mm) {
+            .document {
+                padding: 12px;
+            }
+
+            .content-flow {
+                width: 100%;
+                max-width: 210mm;
+            }
+
+            :root {
+                --page-padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document">
+    <div class="content-flow">
+
+        <!-- COVER PAGE -->
+        <div class="cover-page">
+            <div class="page-content">
+                <div class="header">
+                    <div class="logo">
+                        <img src="Logo completa.png" alt="Wa Project">
+                    </div>
+
+                    <div class="cover-title">
+                        <h1>Proposta Comercial</h1>
+                        <h2>Sistema de Gestão Veterinária</h2>
+                    </div>
+
+                    <div class="cover-info">
+                        <div class="cover-date">30/03/2026 | Válido por 45 dias</div>
+                        <p><strong>Para:</strong> Clínica VetCare</p>
+                        <p><strong>Tipo:</strong> Desenvolvimento Completo</p>
+                        <p><strong>Modalidade:</strong> Time & Material</p>
+                    </div>
+                </div>
+
+                <!-- CONTEÚDO INICIAL DA CAPA (se houver) -->
+                <div class="content-section">
+                    <p>Sistema completo para gestão de clínicas veterinárias com agendamento online, prontuário eletrônico e controle financeiro integrado.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO CONTÍNUO -->
+        <div class="flow-page">
+            <div class="page-content">
+
+                <!-- SOBRE A EMPRESA -->
+                <div class="content-section">
+                    <h2>Sobre a Wa Project</h2>
+                    <p>A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas, especializada em sistemas de gestão para área da saúde.</p>
+
+                    <h3>Nossos serviços:</h3>
+                    <ul>
+                        <li>Desenvolvimento de Software.</li>
+                        <li>Desenvolvimento de Aplicativos.</li>
+                        <li>Soluções de Inteligência Artificial.</li>
+                        <li>Alocação de Profissionais.</li>
+                        <li>Sistemas de Gestão para Saúde.</li>
+                        <li>Integração com Equipamentos Médicos.</li>
+                    </ul>
+
+                    <h2>Nossos Clientes</h2>
+                    <ul>
+                        <li>PepsiCo</li>
+                        <li>Vtex</li>
+                        <li>Santillana</li>
+                        <li>Dasa</li>
+                        <li>WideLabs</li>
+                        <li>Confederação Brasileira de Hipismo</li>
+                        <li>Forbes</li>
+                        <li>Easy Salon</li>
+                        <li>InstaCarro</li>
+                        <li>Antilhas</li>
+                        <li>Fundação Carlos Chagas</li>
+                        <li>Funarbe</li>
+                        <li>Clínica VetCare</li>
+                        <li>Hospital Veterinário São Francisco</li>
+                        <li>PetSaúde Network</li>
+                    </ul>
+
+                    <p>Cases completos: waproject.com.br/cases</p>
+                </div>
+
+                <!-- SOBRE O PROJETO -->
+                <div class="content-section">
+                    <h2>Sobre o Projeto</h2>
+                    <h3>Sistema de Gestão Veterinária — Solução Completa para Clínicas</h3>
+
+                    <p>A Clínica VetCare busca modernizar seus processos administrativos e clínicos através de um sistema integrado que otimize o atendimento aos pets e seus tutores.</p>
+
+                    <p>Será desenvolvida uma plataforma web completa com módulos de agendamento online, prontuário eletrônico, controle de estoque, gestão financeira e relatórios gerenciais. O sistema incluirá aplicativo móvel para tutores acompanharem o histórico de seus pets.</p>
+
+                    <p>A solução visa eliminar processos manuais, reduzir tempo de espera, aumentar satisfação dos clientes e proporcionar controle total sobre as operações da clínica.</p>
+                </div>
+
+                <!-- FUNCIONALIDADES -->
+                <div class="content-section">
+                    <h2>Funcionalidades</h2>
+
+                    <div class="func-item">
+                        <p><strong>1. Portal do Tutor</strong> - Área exclusiva para tutores com agendamento online, histórico de consultas, lembretes de vacinas e medicamentos. Interface intuitiva que permite visualizar prontuário do pet, agendar retornos e receber notificações importantes. Melhora experiência do cliente e reduz ligações para agendamento.</p>
+                    </div>
+
+                    <div class="func-item">
+                        <p><strong>2. Prontuário Eletrônico</strong> - Sistema completo de registro médico com histórico de consultas, exames, cirurgias, vacinas e medicamentos. Inclui upload de imagens e documentos, assinatura digital e integração com equipamentos de diagnóstico. Garante segurança das informações e agiliza consultas.</p>
+                    </div>
+
+                    <div class="func-item">
+                        <p><strong>3. Agendamento Inteligente</strong> - Sistema de agendamento com blocos de horário configuráveis, controle de sala/veterinário, lista de espera automática e confirmação via WhatsApp. Otimiza agenda médica e reduz faltas através de lembretes automatizados.</p>
+                    </div>
+
+                    <div class="func-item">
+                        <p><strong>4. Controle de Estoque</strong> - Gestão completa de medicamentos, rações e produtos com controle de validade, alertas de estoque mínimo e integração com fornecedores. Inclui código de barras e histórico de movimentação para evitar rupturas e vencimentos.</p>
+                    </div>
+
+                    <div class="func-item">
+                        <p><strong>5. Gestão Financeira</strong> - Controle de receitas e despesas com emissão de notas fiscais, controle de contas a receber/pagar, relatórios de faturamento e integração bancária. Dashboard executivo com indicadores de performance e análise de lucratividade por serviço.</p>
+                    </div>
+
+                    <p><strong>Aplicativo Mobile</strong> - App nativo para Android e iOS permitindo que tutores agendem consultas, visualizem histórico do pet, recebam notificações e tenham acesso rápido aos dados da clínica. Sincronização em tempo real com o sistema web principal.</p>
+                </div>
+
+                <!-- INTEGRAÇÕES -->
+                <div class="content-section">
+                    <h2>Integrações Previstas</h2>
+                    <p><strong>WhatsApp Business API</strong> - Envio automatizado de confirmações de agendamento, lembretes de consulta e resultados de exames via WhatsApp oficial da clínica.</p>
+                    <p><strong>Gateways de Pagamento</strong> - Integração com Mercado Pago, PagSeguro e Stone para pagamentos online e presenciais via PIX, cartão e boleto.</p>
+                    <p><strong>Nota Fiscal Eletrônica</strong> - Emissão automática de NFe e NFCe integrada com sistemas de contabilidade e Receita Federal.</p>
+                    <p><strong>Backup em Nuvem</strong> - Sincronização automática com AWS S3 garantindo segurança e disponibilidade dos dados 24/7.</p>
+                </div>
+
+                <!-- MODELO DE TRABALHO -->
+                <div class="content-section">
+                    <h2>Modelo de Trabalho</h2>
+                    <p><strong>Desenvolvimento Ágil</strong> - Metodologia Scrum com entregas quinzenais.</p>
+                    <p>Processo iterativo com validações constantes, flexibilidade para ajustes e comunicação transparente durante todo o projeto.</p>
+
+                    <h3>Fases do Projeto:</h3>
+                    <div class="phase"><strong>Sprint 0:</strong> Discovery - Levantamento detalhado de requisitos e definição de arquitetura.</div>
+                    <div class="phase"><strong>Sprints 1-2:</strong> Módulo Base - Autenticação, cadastros básicos e estrutura do sistema.</div>
+                    <div class="phase"><strong>Sprints 3-4:</strong> Prontuário Eletrônico - Desenvolvimento do core clínico do sistema.</div>
+                    <div class="phase"><strong>Sprints 5-6:</strong> Agendamento - Sistema de marcação de consultas e gestão de agenda.</div>
+                    <div class="phase"><strong>Sprints 7-8:</strong> Portal do Tutor - Interface para clientes e agendamento online.</div>
+                    <div class="phase"><strong>Sprints 9-10:</strong> Controle de Estoque - Gestão de produtos e medicamentos.</div>
+                    <div class="phase"><strong>Sprints 11-12:</strong> Financeiro - Faturamento, contas a receber e relatórios.</div>
+                    <div class="phase"><strong>Sprints 13-14:</strong> App Mobile - Desenvolvimento do aplicativo nativo.</div>
+                    <div class="phase"><strong>Sprint 15:</strong> Integrações - WhatsApp, pagamentos e nota fiscal.</div>
+                    <div class="phase"><strong>Sprint 16:</strong> Homologação - Testes finais e preparação para produção.</div>
+                </div>
+
+                <!-- EQUIPE -->
+                <div class="content-section">
+                    <h2>Equipe</h2>
+                    <p>O projeto contará com uma equipe especializada em sistemas de saúde:</p>
+
+                    <div class="team-role">
+                        <h4>Tech Lead</h4>
+                        <p>Responsável pela arquitetura do sistema, definição de padrões técnicos e coordenação da equipe de desenvolvimento. Garante qualidade do código e performance da aplicação.</p>
+                    </div>
+
+                    <div class="team-role">
+                        <h4>UX/UI Designer</h4>
+                        <p>Especialista em design de sistemas de saúde, responsável pela criação de interfaces intuitivas e acessíveis. Conduz pesquisas com usuários e valida protótipos navegáveis.</p>
+                    </div>
+
+                    <div class="team-role">
+                        <h4>Desenvolvedor Full Stack (2)</h4>
+                        <p>Implementação completa do sistema web, APIs REST, banco de dados e integrações externas. Experiência em sistemas de gestão médica e conformidade com LGPD.</p>
+                    </div>
+
+                    <div class="team-role">
+                        <h4>Desenvolvedor Mobile</h4>
+                        <p>Desenvolvimento do aplicativo nativo usando React Native, com foco em performance e experiência do usuário. Responsável pela sincronização offline e push notifications.</p>
+                    </div>
+
+                    <div class="team-role">
+                        <h4>QA Specialist</h4>
+                        <p>Testes manuais e automatizados, validação de regras de negócio médicas e homologação com stakeholders. Garante conformidade com normas de sistemas de saúde.</p>
+                    </div>
+
+                    <div class="team-role">
+                        <h4>Product Owner</h4>
+                        <p>Gestão de backlog, priorização de funcionalidades e comunicação com stakeholders. Especialista em processos de clínicas veterinárias e transformação digital.</p>
+                    </div>
+                </div>
+
+                <!-- CRONOGRAMA -->
+                <div class="content-section">
+                    <h2>Cronograma</h2>
+                    <p class="investment-total">Prazo total estimado: 8 meses</p>
+
+                    <div class="phase"><strong>Fase 1:</strong> Discovery e Planejamento: Mês 1</div>
+                    <div class="phase"><strong>Fase 2:</strong> Desenvolvimento Core: Meses 2-4</div>
+                    <div class="phase"><strong>Fase 3:</strong> Módulos Avançados: Meses 5-6</div>
+                    <div class="phase"><strong>Fase 4:</strong> Mobile e Integrações: Meses 7-8</div>
+                    <div class="phase"><strong>Fase 5:</strong> Homologação e Go-Live: Final do Mês 8</div>
+
+                    <p>Cronograma detalhado será refinado após a fase de Discovery, com marcos quinzenais e validações constantes com a equipe da clínica.</p>
+                </div>
+
+                <!-- INVESTIMENTO -->
+                <div class="content-section">
+                    <h2>Investimento</h2>
+                    <p class="investment-total">Investimento total: R$ 180.000</p>
+
+                    <h3>Condições de Pagamento:</h3>
+                    <div class="payment-condition"><strong>Entrada:</strong> Na assinatura do contrato: R$ 36.000 (20%)</div>
+                    <div class="payment-condition"><strong>2ª Parcela:</strong> 30 dias após início: R$ 36.000</div>
+                    <div class="payment-condition"><strong>3ª Parcela:</strong> Entrega do core system (mês 4): R$ 36.000</div>
+                    <div class="payment-condition"><strong>4ª Parcela:</strong> Entrega módulos avançados (mês 6): R$ 36.000</div>
+                    <div class="payment-condition"><strong>Final:</strong> Go-Live completo: R$ 36.000</div>
+
+                    <p><strong>Mensalidade de Suporte:</strong> R$ 2.500/mês após 90 dias de garantia gratuita (incluindo hosting, backup, atualizações e suporte técnico).</p>
+                </div>
+
+                <!-- ENTREGÁVEIS -->
+                <div class="content-section">
+                    <h2>Entregáveis</h2>
+                    <ul>
+                        <li>Protótipos Navegáveis (Figma).</li>
+                        <li>Sistema Web Completo (Produção).</li>
+                        <li>Aplicativo Mobile (Android + iOS).</li>
+                        <li>Documentação Técnica e de Usuário.</li>
+                        <li>Manual de Processos Clínicos.</li>
+                        <li>Código Fonte Completo (repositório Git).</li>
+                        <li>Infraestrutura Cloud Configurada (AWS).</li>
+                        <li>Treinamento da Equipe (32h).</li>
+                        <li>Certificados SSL e Conformidade LGPD.</li>
+                    </ul>
+                </div>
+
+                <!-- PRÓXIMOS PASSOS -->
+                <div class="content-section">
+                    <h2>Próximos Passos</h2>
+                    <ol>
+                        <li>Apresentação da Proposta para Stakeholders.</li>
+                        <li>Sessão de Dúvidas e Refinamentos.</li>
+                        <li>Aprovação Final e Assinatura do Contrato.</li>
+                        <li>Workshop de Discovery (3 dias).</li>
+                        <li>Kickoff Oficial do Projeto.</li>
+                        <li>Início da Sprint 0 (Planejamento Detalhado).</li>
+                    </ol>
+
+                    <p>Estamos entusiasmados com a oportunidade de transformar digitalmente a Clínica VetCare e contribuir para o melhor atendimento aos pets e seus tutores.</p>
+                </div>
+
+                <!-- ENCERRAMENTO -->
+                <div class="closing">
+                    <p class="closing-quote">Não é sobre desenvolvimento, é sobre envolvimento.</p>
+                    <p class="closing-quote">Obrigado por confiar na Wa Project!</p>
+
+                    <div class="company-info">
+                        <p><strong>Wa Project Soluções Tecnológicas LTDA.</strong></p>
+                        <p><strong>CNPJ:</strong> 19.317.018/0001-40</p>
+                        <p><strong>Website:</strong> waproject.com.br</p>
+                        <p><strong>Email:</strong> comercial@waproject.com.br</p>
+                        <p><strong>Telefone/WhatsApp:</strong> (11) 5028-2010</p>
+                    </div>
+
+                    <div class="validity">
+                        <p>Proposta válida por 45 dias a partir da data de emissão</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- FOOTER UNIVERSAL -->
+<div class="footer">
+    <div class="footer-line"></div>
+    <div class="footer-row">
+        <div class="footer-logo">
+            <img src="Logo completa.png" alt="Wa Project">
+        </div>
+        <span class="pg-num"></span>
+    </div>
+</div>
+
+<script>
+// Sistema para fluxo contínuo de conteúdo com padding especial para páginas 2+
+document.addEventListener('DOMContentLoaded', function() {
+    // Função para permitir fluxo natural do conteúdo
+    function enableContinuousFlow() {
+        const sections = document.querySelectorAll('.content-section');
+        const pageContent = document.querySelector('.page-content');
+        const flowPages = document.querySelectorAll('.flow-page');
+
+        // Remove qualquer quebra forçada de seções anteriores
+        sections.forEach(function(section) {
+            section.classList.remove('js-page-break');
+            section.style.pageBreakBefore = 'auto';
+            section.style.breakBefore = 'auto';
+            section.style.pageBreakInside = 'auto';
+            section.style.breakInside = 'auto';
+        });
+
+        // Permite que o conteúdo flua naturalmente
+        if (pageContent) {
+            pageContent.style.pageBreakAfter = 'auto';
+            pageContent.style.breakAfter = 'auto';
+        }
+
+        // Garante padding-top nas páginas de fluxo (2+)
+        flowPages.forEach(function(page) {
+            const content = page.querySelector('.page-content');
+            if (content) {
+                content.style.paddingTop = '32px';
+            }
+        });
+
+        // Remove quebras forçadas de elementos funcionais
+        const functionalItems = document.querySelectorAll('.func-item, .team-role, .phase');
+        functionalItems.forEach(function(item) {
+            item.style.pageBreakInside = 'auto';
+            item.style.breakInside = 'auto';
+        });
+
+        // Permite que listas fluam naturalmente
+        const lists = document.querySelectorAll('ul, ol');
+        lists.forEach(function(list) {
+            list.style.pageBreakInside = 'auto';
+            list.style.breakInside = 'auto';
+        });
+    }
+
+    // Aplicar fluxo contínuo automaticamente
+    setTimeout(enableContinuousFlow, 100);
+
+    // Reforçar ao imprimir
+    window.addEventListener('beforeprint', enableContinuousFlow);
+});
+</script>
+
+</body>
+</html>

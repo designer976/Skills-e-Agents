@@ -1,0 +1,662 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DatePickerWithSelects } from "@/components/ui/date-picker-with-selects";
+import { ConfirmationModal } from "./ConfirmationModal";
+import { Trash2 as Trash2, Loader2 as Loader2, History as History } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  Client,
+  Gender,
+  reverseGenderMapping,
+  genderMapping,
+  ClientHistory,
+} from "@/types/client";
+import {
+  formatCPF,
+  formatPhone,
+  validateCPF,
+  cleanCPF,
+} from "@/utils/clientHelpers";
+import { clientService } from "@/services/clientService";
+import { debounce } from "lodash";
+import { Salon } from "@/types/salon";
+
+interface ClientModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  client?: Client | null;
+  onSave: (client: any) => void;
+  onDelete?: (clientId: string) => void;
+  selectedSalon?: Salon;
+}
+
+export function ClientModal({
+  isOpen,
+  onClose,
+  client,
+  onSave,
+  onDelete,
+  selectedSalon,
+}: ClientModalProps) {
+  const isEditing = !!client?.id;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Estados do formulário
+  const [formData, setFormData] = useState<any>({
+    fullName: "",
+    cpf: "",
+    birthDate: undefined,
+    gender: "",
+    phone: "",
+    email: "",
+    instagram: "",
+    observations: "",
+    address: {
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+      zipCode: "",
+    },
+    tags: [],
+    preferredProfessionalId: "",
+  });
+
+  // Estados de validação
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [checkingCpf, setCheckingCpf] = useState(false);
+  const [cpfExists, setCpfExists] = useState(false);
+
+  // Estados para histórico
+  const [clientHistory, setClientHistory] = useState<ClientHistory | null>(
+    null
+  );
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [activeTab, setActiveTab] = useState<"info" | "history">("info");
+
+  // Preencher dados quando em modo edição
+  useEffect(() => {
+    if (client && isEditing) {
+      const genderValue = client.gender
+        ? genderMapping[client.gender] || client.gender
+        : "";
+      setFormData({
+        fullName: client.name || "",
+        cpf: client.cpf || "",
+        birthDate: client.birthDate
+          ? new Date(client.birthDate + "T12:00:00")
+          : undefined,
+        gender: genderValue,
+        phone: client.phone || "",
+        email: client.email || "",
+        instagram: client.instagram || "",
+        observations: client.notes || "",
+        address: client.address || {
+          street: "",
+          number: "",
+          complement: "",
+          neighborhood: "",
+          city: "",
+          state: "",
+          zipCode: "",
+        },
+        tags: client.tags || [],
+        preferredProfessionalId: client.preferredProfessionalId || "",
+      });
+    } else {
+      // Limpar formulário em modo criação
+      setFormData({
+        fullName: "",
+        cpf: "",
+        birthDate: undefined,
+        gender: "",
+        phone: "",
+        email: "",
+        instagram: "",
+        observations: "",
+        address: {
+          street: "",
+          number: "",
+          complement: "",
+          neighborhood: "",
+          city: "",
+          state: "",
+          zipCode: "",
+        },
+        tags: [],
+        preferredProfessionalId: "",
+      });
+    }
+    setErrors({});
+    setCpfExists(false);
+    setClientHistory(null);
+    setActiveTab("info");
+  }, [client, isEditing, isOpen]);
+
+  // Fetch client history when tab changes to history
+  useEffect(() => {
+    const fetchHistory = async (): Promise<void> => {
+      if (activeTab === "history" && client?.id && !clientHistory) {
+        setLoadingHistory(true);
+        try {
+          const history = await clientService.getHistory(client.id);
+          setClientHistory(history);
+        } catch {
+          toast.error("Erro ao carregar histórico do cliente");
+        } finally {
+          setLoadingHistory(false);
+        }
+      }
+    };
+
+    fetchHistory();
+  }, [activeTab, client?.id, clientHistory]);
+
+  // Debounced CPF check
+  const checkCpfAvailability = useCallback(
+    debounce(async (cpf: string) => {
+      if (!cpf || cpf.length < 14) return;
+
+      const cleanedCpf = cleanCPF(cpf);
+      if (!validateCPF(cleanedCpf)) return;
+
+      // Don't check if editing and CPF hasn't changed
+      if (isEditing && client?.cpf === cleanedCpf) return;
+
+      try {
+        setCheckingCpf(true);
+        const response = await clientService.checkCpf(cleanedCpf);
+
+        if (response.exists) {
+          if (!isEditing || response.clientId !== client?.id) {
+            setCpfExists(true);
+            setErrors((prev) => ({
+              ...prev,
+              cpf: `O cpf já está em uso.`,
+            }));
+          }
+        } else {
+          setCpfExists(false);
+          setErrors((prev) => ({ ...prev, cpf: "" }));
+        }
+      } catch {
+        setCpfExists(false);
+      } finally {
+        setCheckingCpf(false);
+      }
+    }, 800),
+    [isEditing, client]
+  );
+
+  // Função para validar email
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Handle CPF change
+  const handleCpfChange = (value: string): void => {
+    const formatted = formatCPF(value);
+    handleFieldChange("cpf", formatted);
+
+    if (formatted.length === 14) {
+      checkCpfAvailability(formatted);
+    }
+  };
+
+  // Função para validar formulário
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Nome completo é obrigatório";
+    }
+
+    if (formData.cpf) {
+      const cleanedCpf = cleanCPF(formData.cpf);
+      if (!validateCPF(cleanedCpf)) {
+        newErrors.cpf = "CPF inválido";
+      } else if (cpfExists) {
+        newErrors.cpf = "CPF já cadastrado";
+      }
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Telefone é obrigatório";
+    }
+
+    if (formData.email && !validateEmail(formData.email)) {
+      newErrors.email = "Formato de email inválido";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handler para mudanças nos campos
+  const handleFieldChange = (
+    field: string,
+    value: string | Date | undefined
+  ): void => {
+    setFormData((prev: typeof formData) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Limpar erro do campo quando o usuário começar a digitar
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }));
+    }
+  };
+
+  // Handler para salvar
+  const handleSave = (): void => {
+    if (!validateForm()) {
+      toast.error("Por favor, corrija os erros no formulário");
+      return;
+    }
+
+    // Transform gender back to enum value
+    const saveData = {
+      name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      cpf: formData.cpf ? cleanCPF(formData.cpf) : undefined,
+      birthDate: formData.birthDate,
+      gender: formData.gender
+        ? reverseGenderMapping[formData.gender] || formData.gender
+        : undefined,
+      address: formData.address,
+      notes: formData.observations,
+      tags: formData.tags,
+      preferredProfessionalId: formData.preferredProfessionalId,
+      instagram: formData.instagram,
+      active: true,
+    };
+
+    onSave(saveData);
+  };
+
+  // Handler para exclusão
+  const handleDelete = (): void => {
+    if (client?.id && onDelete) {
+      onDelete(client.id);
+      setShowDeleteConfirm(false);
+      onClose();
+    }
+  };
+
+  const title = isEditing
+    ? "Editar Dados do Cliente"
+    : "Cadastrar Novo Cliente";
+  const saveButtonText = isEditing ? "Salvar Alterações" : "Salvar Cliente";
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-[95vw] md:max-w-2xl max-h-[90vh] md:max-h-[85vh] flex flex-col p-0 gap-0 rounded-xl md:rounded-lg border-none shadow-2xl overflow-hidden"> {/* RESP: Dimensões dinâmicas e arredondamento ampliado no mobile */}
+          <DialogHeader className="sticky top-0 z-10 bg-background px-4 pt-4 pb-3 border-b shrink-0"> {/* RESP: Header fixo no topo com borda */}
+            <DialogTitle className="text-base md:text-lg font-semibold">{title}</DialogTitle> {/* RESP: Ajuste de tamanho de fonte responsivo */}
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar"> {/* RESP: Área de conteúdo com scroll interno e padding reduzido */}
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "info" | "history")}
+              className="w-full"
+            >
+              {isEditing && (
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="info" className="h-10">Informações</TabsTrigger>
+                  <TabsTrigger value="history" className="h-10">
+                    <History className="w-4 h-4 mr-2" />
+                    Histórico
+                  </TabsTrigger>
+                </TabsList>
+              )}
+
+              <TabsContent value="info" className="space-y-6 mt-0">
+                {/* Nome Completo */}
+                <div className="flex flex-col gap-1"> {/* RESP: Label acima do input conforme padrão */}
+                  <Label htmlFor="fullName" className="text-sm font-medium">
+                    Nome Completo <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="fullName"
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      handleFieldChange("fullName", e.target.value)
+                    }
+                    placeholder="Digite o nome completo"
+                    className={cn("salon-input w-full", errors.fullName && "border-red-500")}
+                  />
+                  {errors.fullName && (
+                    <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+                  )}
+                </div>
+
+                {/* Grid Responsivo - CPF e Nascimento */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* RESP: Grid 1 col no mobile, 2 no desktop */}
+                  {/* CPF */}
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="cpf" className="text-sm font-medium">CPF</Label>
+                    <div className="relative">
+                      <Input
+                        id="cpf"
+                        value={formData.cpf}
+                        onChange={(e) => handleCpfChange(e.target.value)}
+                        placeholder="000.000.000-00"
+                        maxLength={14}
+                        className={cn("salon-input w-full", errors.cpf && "border-red-500")}
+                      />
+                      {checkingCpf && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    {errors.cpf && (
+                      <p className="text-red-500 text-xs mt-1">{errors.cpf}</p>
+                    )}
+                  </div>
+
+                  {/* Data de Nascimento */}
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-sm font-medium">Data de Nascimento</Label>
+                    <DatePickerWithSelects
+                      date={formData.birthDate}
+                      onSelect={(date) => handleFieldChange("birthDate", date)}
+                      placeholder="Selecione a data"
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      // Note: DatePickerWithSelects internal classes should ideally handle w-full
+                    />
+                  </div>
+                </div>
+
+                {/* Grid Responsivo - Gênero e Telefone */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Gênero */}
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-sm font-medium">Gênero</Label>
+                    <Select
+                      value={formData.gender}
+                      onValueChange={(value) =>
+                        handleFieldChange("gender", value)
+                      }
+                    >
+                      <SelectTrigger className="salon-input w-full">
+                        <SelectValue placeholder="Selecione o gênero" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                        <SelectItem value="nao_informar">
+                          Prefiro não informar
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Telefone */}
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="phone" className="text-sm font-medium">
+                      Celular com DDD <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        handleFieldChange("phone", formatPhone(e.target.value))
+                      }
+                      placeholder="(00) 00000-0000"
+                      maxLength={15}
+                      className={cn("salon-input w-full", errors.phone && "border-red-500")}
+                    />
+                    {errors.phone && (
+                      <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Grid Responsivo - E-mail e Instagram */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* E-mail */}
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleFieldChange("email", e.target.value)}
+                      placeholder="cliente@email.com"
+                      className={cn("salon-input w-full", errors.email && "border-red-500")}
+                    />
+                    {errors.email && (
+                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  {/* Instagram */}
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="instagram" className="text-sm font-medium">Instagram</Label>
+                    <Input
+                      id="instagram"
+                      value={formData.instagram}
+                      onChange={(e) =>
+                        handleFieldChange("instagram", e.target.value)
+                      }
+                      placeholder="@usuario"
+                      className="salon-input w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Observações - Sempre Full Width */}
+                <div className="flex flex-col gap-1"> {/* RESP: Observações ocupam linha inteira */}
+                  <Label htmlFor="observations" className="text-sm font-medium">
+                    Observações internas
+                  </Label>
+                  <Textarea
+                    id="observations"
+                    value={formData.observations}
+                    onChange={(e) =>
+                      handleFieldChange(
+                        "observations",
+                        e.target.value.slice(0, 200)
+                      )
+                    }
+                    placeholder="Digite observações relevantes sobre o cliente..."
+                    maxLength={200}
+                    rows={4}
+                    className="salon-input min-h-[100px] resize-none w-full"
+                  />
+                </div>
+              </TabsContent>
+
+              {isEditing && (
+                <TabsContent value="history" className="space-y-6 mt-0">
+                  {loadingHistory ? (
+                    <div className="flex justify-center items-center h-64">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : clientHistory ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                        <div className="bg-muted/40 p-4 rounded-xl border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Visitas</p>
+                          <p className="text-2xl font-black text-primary">
+                            {clientHistory.statistics?.totalVisits || 0}
+                          </p>
+                        </div>
+                        <div className="bg-muted/40 p-4 rounded-xl border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Gasto</p>
+                          <p className="text-2xl font-black text-primary">
+                            R$ {(clientHistory.statistics?.totalSpent || 0).toFixed(0)}
+                          </p>
+                        </div>
+                        <div className="bg-muted/40 p-4 rounded-xl border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Ticket</p>
+                          <p className="text-2xl font-black text-primary">
+                            R$ {(clientHistory.statistics?.averageTicket || 0).toFixed(0)}
+                          </p>
+                        </div>
+                        <div className="bg-muted/40 p-4 rounded-xl border border-border/50">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Última</p>
+                          <p className="text-lg font-black text-primary leading-tight mt-1">
+                            {clientHistory.statistics?.lastVisit
+                              ? format(
+                                  new Date(clientHistory.statistics.lastVisit),
+                                  "dd/MM/yy",
+                                  { locale: ptBR }
+                                )
+                              : "Nunca"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="text-base font-semibold">Histórico recente</h3>
+                        {clientHistory.appointments &&
+                        clientHistory.appointments.length > 0 ? (
+                          <div className="space-y-3">
+                            {clientHistory.appointments.map((appointment) => (
+                              <div
+                                key={appointment.id}
+                                className="salon-card p-4 border-border/60"
+                              >
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="space-y-1">
+                                    <p className="font-bold text-foreground">
+                                      {appointment.date
+                                        ? format(
+                                            new Date(appointment.date),
+                                            "dd/MM/yyyy 'às' HH:mm",
+                                            { locale: ptBR }
+                                          )
+                                        : "N/A"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Profissional: <span className="text-foreground font-medium">{appointment.professional?.name || "N/A"}</span>
+                                    </p>
+                                    <div className="text-xs text-muted-foreground pt-1 flex flex-wrap gap-1">
+                                      {appointment.services?.map((s, idx) => (
+                                        <span key={idx} className="bg-secondary/50 px-2 py-0.5 rounded text-primary font-medium">
+                                          {s?.name}
+                                        </span>
+                                      )) || "Nenhum serviço"}
+                                    </div>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <p className="font-black text-primary">
+                                      R$ {(appointment.totalAmount || 0).toFixed(2)}
+                                    </p>
+                                    <span className={cn(
+                                      "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ml-auto",
+                                      appointment.status === 'concluido' ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                                    )}>
+                                      {appointment.status || "Pendente"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
+                            Nenhum atendimento registrado
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">Erro ao carregar histórico</div>
+                  )}
+                </TabsContent>
+              )}
+            </Tabs>
+          </div>
+
+          <div className="sticky bottom-0 z-10 bg-background px-4 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3"> {/* RESP: Footer fixo com botões empilhados no mobile */}
+            {isEditing && onDelete ? (
+              <div className="flex flex-col sm:flex-row justify-between w-full gap-3">
+                <Button
+                  variant="ghost"
+                  disabled={!selectedSalon?.active}
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 h-11 w-full sm:w-auto order-3 sm:order-1"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir Cliente
+                </Button>
+                
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto sm:ml-auto order-1 sm:order-2">
+                  <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+                    Cancelar
+                  </Button>
+                  <Button
+                    disabled={!selectedSalon?.active}
+                    onClick={handleSave}
+                    className="w-full sm:w-auto"
+                  >
+                    {saveButtonText}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+                  Cancelar
+                </Button>
+                <Button
+                  disabled={!selectedSalon?.active}
+                  onClick={handleSave}
+                  className="w-full sm:w-auto"
+                >
+                  {saveButtonText}
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Excluir Cliente"
+        description="Você tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+        confirmText="Excluir"
+        variant="destructive"
+      />
+    </>
+  );
+}

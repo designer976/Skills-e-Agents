@@ -1,0 +1,604 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus as Plus, Trash2 as Trash2, AlertCircle as AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface TimeInterval {
+  id: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface ScheduleValue {
+  selectedDays?: string[];
+  dayIntervals?: Record<string, TimeInterval[]>;
+  acceptsOnlineBooking?: boolean;
+}
+
+interface UserScheduleFormProps {
+  value?: ScheduleValue;
+  onChange?: (value: ScheduleValue) => void;
+  salonSchedule?: Record<
+    string,
+    { isOpen: boolean; openTime: string; closeTime: string }
+  >;
+}
+
+const daysOfWeek = [
+  { key: "sunday", label: "Dom", fullName: "Domingo" },
+  { key: "monday", label: "Seg", fullName: "Segunda-Feira" },
+  { key: "tuesday", label: "Ter", fullName: "Terça-Feira" },
+  { key: "wednesday", label: "Qua", fullName: "Quarta-Feira" },
+  { key: "thursday", label: "Qui", fullName: "Quinta-Feira" },
+  { key: "friday", label: "Sex", fullName: "Sexta-Feira" },
+  { key: "saturday", label: "Sáb", fullName: "Sábado" },
+];
+
+export function UserScheduleForm({
+  value = {},
+  onChange,
+  salonSchedule,
+}: UserScheduleFormProps) {
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [dayIntervals, setDayIntervals] = useState<
+    Record<string, TimeInterval[]>
+  >({});
+  const [acceptsOnlineBooking, setAcceptsOnlineBooking] =
+    useState<boolean>(true);
+
+  // Sincronizar estado quando value mudar
+  useEffect(() => {
+    // Atualizar sempre, mesmo se for undefined/null (usar valores padrão)
+    setSelectedDays(value.selectedDays || []);
+    setDayIntervals(value.dayIntervals || {});
+    setAcceptsOnlineBooking(
+      value.acceptsOnlineBooking !== undefined
+        ? value.acceptsOnlineBooking
+        : true
+    );
+  }, [value]);
+
+  // Função para gerar lista de horários disponíveis considerando turnos já configurados
+  const generateTimeOptions = (
+    dayKey: string,
+    intervalId: string,
+    field: "startTime" | "endTime"
+  ) => {
+    const options: string[] = [];
+    const salonDay = salonSchedule?.[dayKey];
+
+    if (!salonDay || !salonDay.isOpen) {
+      // Se o salão não abre neste dia, retorna horários padrão
+      for (let hour = 6; hour <= 22; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+          const time = `${hour.toString().padStart(2, "0")}:${minute
+            .toString()
+            .padStart(2, "0")}`;
+          options.push(time);
+        }
+      }
+      return options;
+    }
+
+    // Parse dos horários do salão
+    const [openHour, openMinute] = salonDay.openTime.split(":").map(Number);
+    const [closeHour, closeMinute] = salonDay.closeTime.split(":").map(Number);
+
+    let startMinutes = openHour * 60 + openMinute;
+    let endMinutes = closeHour * 60 + closeMinute;
+
+    // Buscar todos os intervalos do dia ordenados
+    const intervals = dayIntervals[dayKey] || [];
+    const currentIntervalIndex = intervals.findIndex(
+      (i) => i.id === intervalId
+    );
+
+    // Se é o segundo turno (ou posterior), ajustar horário inicial
+    if (currentIntervalIndex > 0) {
+      const previousInterval = intervals[currentIntervalIndex - 1];
+      if (previousInterval.endTime) {
+        const [prevEndHour, prevEndMinute] = previousInterval.endTime
+          .split(":")
+          .map(Number);
+        const prevEndMinutes = prevEndHour * 60 + prevEndMinute;
+        // Começar 30 minutos após o fim do turno anterior (intervalo mínimo)
+        startMinutes = prevEndMinutes + 30;
+      }
+    }
+
+    // Se está editando o endTime do turno atual, limitar pelo startTime
+    if (field === "endTime") {
+      const currentInterval = intervals[currentIntervalIndex];
+      if (currentInterval && currentInterval.startTime) {
+        const [startHour, startMinute] = currentInterval.startTime
+          .split(":")
+          .map(Number);
+        const currentStartMinutes = startHour * 60 + startMinute;
+        // endTime deve ser depois do startTime
+        startMinutes = Math.max(startMinutes, currentStartMinutes + 30); // Pelo menos 30min depois
+      }
+    }
+
+    // Se existe um próximo turno, limitar pelo seu startTime
+    if (
+      currentIntervalIndex >= 0 &&
+      currentIntervalIndex < intervals.length - 1
+    ) {
+      const nextInterval = intervals[currentIntervalIndex + 1];
+      if (nextInterval.startTime) {
+        const [nextStartHour, nextStartMinute] = nextInterval.startTime
+          .split(":")
+          .map(Number);
+        const nextStartMinutes = nextStartHour * 60 + nextStartMinute;
+        // Não pode ultrapassar o início do próximo turno
+        endMinutes = Math.min(endMinutes, nextStartMinutes);
+      }
+    }
+
+    // Gerar opções de 15 em 15 minutos dentro do horário válido
+    for (let minutes = startMinutes; minutes <= endMinutes; minutes += 15) {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const time = `${hour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`;
+      options.push(time);
+    }
+
+    return options;
+  };
+
+  // Função para validar se o horário está dentro do funcionamento do salão
+  const isTimeWithinSalonHours = (dayKey: string, time: string) => {
+    const salonDay = salonSchedule?.[dayKey];
+    if (!salonDay || !salonDay.isOpen) return true; // Se não há restrição, permite
+
+    const [inputHour, inputMinute] = time.split(":").map(Number);
+    const [openHour, openMinute] = salonDay.openTime.split(":").map(Number);
+    const [closeHour, closeMinute] = salonDay.closeTime.split(":").map(Number);
+
+    const inputMinutes = inputHour * 60 + inputMinute;
+    const openMinutes = openHour * 60 + openMinute;
+    const closeMinutes = closeHour * 60 + closeMinute;
+
+    return inputMinutes >= openMinutes && inputMinutes <= closeMinutes;
+  };
+
+  // Botões de dias são apenas visuais - não clicáveis
+  // A lista de dias é definida automaticamente pelo salão
+
+  // Verifica se há espaço disponível para adicionar um novo turno
+  const canAddInterval = (dayKey: string): boolean => {
+    const existingIntervals = dayIntervals[dayKey] || [];
+
+    // Limite de 2 turnos por dia
+    if (existingIntervals.length >= 2) {
+      return false;
+    }
+
+    // Se já existe 1 turno, verificar se há espaço após ele
+    if (existingIntervals.length === 1) {
+      const firstInterval = existingIntervals[0];
+      const salonDay = salonSchedule?.[dayKey];
+
+      // Se não há horários configurados ou salão não abre, não pode adicionar
+      if (!salonDay || !salonDay.isOpen || !firstInterval.endTime) {
+        return false;
+      }
+
+      // Parse do horário de fechamento do salão
+      const [closeHour, closeMinute] = salonDay.closeTime
+        .split(":")
+        .map(Number);
+      const salonCloseMinutes = closeHour * 60 + closeMinute;
+
+      // Parse do fim do primeiro turno
+      const [endHour, endMinute] = firstInterval.endTime.split(":").map(Number);
+      const firstEndMinutes = endHour * 60 + endMinute;
+
+      // Precisa ter espaço para:
+      // - 30 minutos de intervalo entre turnos
+      // - 30 minutos de turno (mínimo)
+      // Total: 60 minutos
+      const hasSpace = salonCloseMinutes - firstEndMinutes >= 60;
+
+      return hasSpace;
+    }
+
+    // Se não há turnos, sempre pode adicionar o primeiro
+    return true;
+  };
+
+  const addInterval = (dayKey: string) => {
+    const existingIntervals = dayIntervals[dayKey] || [];
+
+    // Limit to 2 shifts per day (morning and afternoon)
+    if (existingIntervals.length >= 2) {
+      return;
+    }
+
+    const salonDay = salonSchedule?.[dayKey];
+    let startTime = "";
+    let endTime = "";
+
+    // Se já existe um turno, configurar horários para o segundo turno
+    if (existingIntervals.length === 1 && existingIntervals[0].endTime) {
+      // Começar 30 minutos após o fim do primeiro turno (intervalo mínimo)
+      const [endHour, endMinute] = existingIntervals[0].endTime
+        .split(":")
+        .map(Number);
+      const endMinutes = endHour * 60 + endMinute + 30; // +30 minutos
+      const newStartHour = Math.floor(endMinutes / 60);
+      const newStartMinute = endMinutes % 60;
+      startTime = `${newStartHour.toString().padStart(2, "0")}:${newStartMinute
+        .toString()
+        .padStart(2, "0")}`;
+
+      // endTime é o horário de fechamento do salão
+      if (salonDay && salonDay.isOpen) {
+        endTime = salonDay.closeTime;
+      }
+    } else if (salonDay && salonDay.isOpen) {
+      // Se é o primeiro turno, usar horários do salão
+      startTime = salonDay.openTime;
+      endTime = salonDay.closeTime;
+    }
+
+    const newIntervals = [
+      ...existingIntervals,
+      { id: `${dayKey}-${Date.now()}`, startTime: startTime, endTime: endTime },
+    ];
+    const newDayIntervals = { ...dayIntervals, [dayKey]: newIntervals };
+    setDayIntervals(newDayIntervals);
+    onChange?.({
+      selectedDays,
+      dayIntervals: newDayIntervals,
+      acceptsOnlineBooking,
+    });
+  };
+
+  const removeInterval = (dayKey: string, intervalId: string) => {
+    const newIntervals =
+      dayIntervals[dayKey]?.filter((interval) => interval.id !== intervalId) ||
+      [];
+    const newDayIntervals = { ...dayIntervals, [dayKey]: newIntervals };
+    setDayIntervals(newDayIntervals);
+    onChange?.({
+      selectedDays,
+      dayIntervals: newDayIntervals,
+      acceptsOnlineBooking,
+    });
+  };
+
+  const updateInterval = (
+    dayKey: string,
+    intervalId: string,
+    field: "startTime" | "endTime",
+    value: string
+  ) => {
+    const intervals = dayIntervals[dayKey] || [];
+    const currentIntervalIndex = intervals.findIndex(
+      (i) => i.id === intervalId
+    );
+
+    // Validação: Se está atualizando o endTime do primeiro turno e existe um segundo turno
+    if (
+      currentIntervalIndex === 0 &&
+      field === "endTime" &&
+      intervals.length === 2
+    ) {
+      const secondInterval = intervals[1];
+
+      // O segundo turno deve começar pelo menos 30 minutos após o fim do primeiro
+      const [endHour, endMinute] = value.split(":").map(Number);
+      const endMinutes = endHour * 60 + endMinute;
+      const minStartMinutes = endMinutes + 30; // +30 minutos
+
+      const [secondStartHour, secondStartMinute] = secondInterval.startTime
+        .split(":")
+        .map(Number);
+      const secondStartMinutes = secondStartHour * 60 + secondStartMinute;
+
+      // Se o segundo turno vai ficar muito próximo (< 30min), ajustar automaticamente
+      if (secondStartMinutes < minStartMinutes) {
+        const newStartHour = Math.floor(minStartMinutes / 60);
+        const newStartMinute = minStartMinutes % 60;
+        const newStartTime = `${newStartHour
+          .toString()
+          .padStart(2, "0")}:${newStartMinute.toString().padStart(2, "0")}`;
+
+        // Atualizar ambos os turnos
+        const newIntervals = intervals.map((interval, idx) => {
+          if (idx === 0) {
+            return { ...interval, [field]: value };
+          } else if (idx === 1) {
+            return { ...interval, startTime: newStartTime };
+          }
+          return interval;
+        });
+
+        const newDayIntervals = { ...dayIntervals, [dayKey]: newIntervals };
+        setDayIntervals(newDayIntervals);
+        onChange?.({
+          selectedDays,
+          dayIntervals: newDayIntervals,
+          acceptsOnlineBooking,
+        });
+        return;
+      }
+    }
+
+    // Atualização normal
+    const newIntervals = intervals.map((interval) =>
+      interval.id === intervalId ? { ...interval, [field]: value } : interval
+    );
+    const newDayIntervals = { ...dayIntervals, [dayKey]: newIntervals };
+    setDayIntervals(newDayIntervals);
+    onChange?.({
+      selectedDays,
+      dayIntervals: newDayIntervals,
+      acceptsOnlineBooking,
+    });
+  };
+
+  const handleOnlineBookingToggle = (checked: boolean) => {
+    setAcceptsOnlineBooking(checked);
+    onChange?.({ selectedDays, dayIntervals, acceptsOnlineBooking: checked });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h3 className="text-lg font-medium">Configuração de agenda</h3>
+        <p className="text-body text-muted-foreground">
+          Dias baseados no horário de funcionamento do salão - ajuste os
+          horários conforme necessário
+        </p>
+      </div>
+
+      {/* Opção de aceitar agendamentos online */}
+      <div className="flex items-center justify-between p-4 border rounded-lg bg-background">
+        <div className="space-y-1">
+          <Label className="font-medium text-[13px] sm:text-[13px]">Aceitar agendamentos online</Label>
+          <p className="text-body text-muted-foreground">
+            Quando ativo, este profissional aparecerá na lista de profissionais
+            disponíveis para agendamento online
+          </p>
+        </div>
+        <Switch
+          checked={acceptsOnlineBooking}
+          onCheckedChange={handleOnlineBookingToggle}
+        />
+      </div>
+
+      {/* Dias da semana - APENAS VISUAL (NÃO CLICÁVEL) */}
+      <div className="flex flex-wrap gap-2 justify-center">
+        {daysOfWeek.map((day) => {
+          const salonDay = salonSchedule?.[day.key];
+          const isSalonOpen = salonDay?.isOpen === true;
+          const isDaySelected = selectedDays.includes(day.key);
+
+          return (
+            <Button
+              key={day.key}
+              type="button"
+              variant={isSalonOpen ? "default" : "outline"}
+              disabled={!isSalonOpen}
+              size="sm"
+              className={cn(
+                "w-12 h-10 cursor-default",
+                isSalonOpen && "bg-primary text-primary-foreground",
+                !isSalonOpen && "opacity-40 bg-muted text-muted-foreground"
+              )}
+              title={
+                !isSalonOpen
+                  ? `Salão fechado ${
+                      day.fullName === "Sábado" || day.fullName === "Domingo"
+                        ? "no"
+                        : "na"
+                    } ${day.fullName}${
+                      day.fullName !== "Sábado" && day.fullName !== "Domingo"
+                        ? "-feira"
+                        : ""
+                    }`
+                  : `${day.fullName} - ${salonDay?.openTime} às ${salonDay?.closeTime}`
+              }
+            >
+              {day.label}
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Intervalos de horário para cada dia selecionado */}
+      {selectedDays.length > 0 && (
+        <div className="space-y-4">
+          {selectedDays.map((dayKey) => {
+            const intervals = dayIntervals[dayKey] || [];
+            const canAdd = canAddInterval(dayKey);
+
+            // Gerar mensagem de tooltip para o botão de adicionar turno
+            let addButtonTitle = "Adicionar turno";
+            if (intervals.length >= 2) {
+              addButtonTitle = "Máximo de 2 turnos por dia";
+            } else if (!canAdd && intervals.length === 1) {
+              addButtonTitle =
+                "Não há espaço suficiente para outro turno (necessário: 30min intervalo + 30min turno)";
+            }
+
+            return (
+              <div key={dayKey} className="space-y-3 p-4 border rounded-md bg-background">
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium text-[13px] sm:text-[13px]">{daysOfWeek.find((d) => d.key === dayKey)?.fullName}</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => addInterval(dayKey)}
+                    disabled={!canAdd}
+                    title={addButtonTitle}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Turno
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {intervals.map((interval, index) => {
+                    const startTimeOptions = generateTimeOptions(
+                      dayKey,
+                      interval.id,
+                      "startTime"
+                    );
+                    const endTimeOptions = generateTimeOptions(
+                      dayKey,
+                      interval.id,
+                      "endTime"
+                    );
+                    const salonDay = salonSchedule?.[dayKey];
+                    const showWarning = salonDay && !salonDay.isOpen;
+                    const isOutOfBounds =
+                      (interval.startTime &&
+                        !isTimeWithinSalonHours(dayKey, interval.startTime)) ||
+                      (interval.endTime &&
+                        !isTimeWithinSalonHours(dayKey, interval.endTime));
+
+                    return (
+                      <div key={interval.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-14">
+                            {intervals.length > 1
+                              ? index === 0
+                                ? "Manhã"
+                                : "Tarde"
+                              : "Turno"}
+                          </span>
+                          <div className="flex-1">
+                            <Select
+                              value={interval.startTime}
+                              onValueChange={(value) =>
+                                updateInterval(
+                                  dayKey,
+                                  interval.id,
+                                  "startTime",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger
+                                className={cn(
+                                  isOutOfBounds && "border-amber-500"
+                                )}
+                              >
+                                <SelectValue placeholder="Início" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {startTimeOptions.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <span className="text-body text-muted-foreground">
+                            até
+                          </span>
+                          <div className="flex-1">
+                            <Select
+                              value={interval.endTime}
+                              onValueChange={(value) =>
+                                updateInterval(
+                                  dayKey,
+                                  interval.id,
+                                  "endTime",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger
+                                className={cn(
+                                  isOutOfBounds && "border-amber-500"
+                                )}
+                              >
+                                <SelectValue placeholder="Fim" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {endTimeOptions.map((time) => (
+                                  <SelectItem key={time} value={time}>
+                                    {time}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {intervals.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                removeInterval(dayKey, interval.id)
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {/* Show warning if salon is closed or time is out of bounds */}
+                        {(showWarning || isOutOfBounds) && (
+                          <div className="ml-14 mt-1 flex items-center gap-1 text-xs text-amber-600">
+                            <AlertCircle className="h-3 w-3" />
+                            {(() => {
+                              const dayInfo = daysOfWeek.find(
+                                (d) => d.key === dayKey
+                              );
+                              const dayName = dayInfo?.fullName || dayKey;
+
+                              if (showWarning) {
+                                return dayName === "Sábado" ||
+                                  dayName === "Domingo"
+                                  ? `O salão está fechado no ${dayName}`
+                                  : `O salão está fechado na ${dayName}-feira`;
+                              } else {
+                                const message =
+                                  dayName === "Sábado" || dayName === "Domingo"
+                                    ? `Horário do ${dayName}`
+                                    : `Horário da ${dayName}-feira`;
+                                return `${message} está fora do funcionamento do salão (${salonDay?.openTime} - ${salonDay?.closeTime})`;
+                              }
+                            })()}
+                          </div>
+                        )}
+                        {/* Show implicit break between shifts */}
+                        {intervals.length > 1 &&
+                          index === 0 &&
+                          intervals[1].startTime &&
+                          interval.endTime && (
+                            <div className="ml-14 mt-1 text-xs text-muted-foreground">
+                              Intervalo: {interval.endTime} -{" "}
+                              {intervals[1].startTime}
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

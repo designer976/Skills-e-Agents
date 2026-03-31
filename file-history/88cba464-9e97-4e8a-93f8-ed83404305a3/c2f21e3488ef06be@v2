@@ -1,0 +1,175 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import { Clock, MapPin, User, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react"
+import { AdminButton } from "@/components/admin/admin-button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+type AgendaStatus = "confirmada" | "pendente" | "reagendar"
+
+interface AgendaItem {
+  id: string
+  horario: string
+  endereco: string
+  cliente: string
+  tipo: "Entrada" | "Saída" | "Conferência" | "Rescisão"
+  vistoriador: string
+  status: AgendaStatus
+}
+
+const STATUS_CONFIG: Record<AgendaStatus, { label: string; color: string; icon: React.ElementType }> = {
+  confirmada:  { label: "Confirmada",          color: "text-green-700 bg-green-50 border-green-100",    icon: CheckCircle2 },
+  pendente:    { label: "Pend. confirmação",    color: "text-yellow-700 bg-yellow-50 border-yellow-100", icon: AlertCircle },
+  reagendar:   { label: "Reagendar",            color: "text-red-600 bg-red-50 border-red-100",           icon: RefreshCw },
+}
+
+const AGENDA: AgendaItem[] = [
+  { id: "V-2025-0401", horario: "08:00", endereco: "Rua das Flores, 123 – Moema, SP",        cliente: "Carlos Mendes",  tipo: "Entrada",     vistoriador: "Ricardo Souza",  status: "confirmada" },
+  { id: "V-2025-0402", horario: "09:30", endereco: "Av. Paulista, 1000 – Bela Vista, SP",    cliente: "Ana Imóveis",    tipo: "Saída",       vistoriador: "Juliana Costa",  status: "pendente" },
+  { id: "V-2025-0403", horario: "11:00", endereco: "Alameda Santos, 800 – Jardins, SP",      cliente: "Roberto Silva",  tipo: "Conferência", vistoriador: "Ricardo Souza",  status: "confirmada" },
+  { id: "V-2025-0404", horario: "13:30", endereco: "Rua Augusta, 45 – Consolação, SP",       cliente: "Fernanda Lima",  tipo: "Rescisão",    vistoriador: "Paulo Rocha",    status: "reagendar" },
+  { id: "V-2025-0405", horario: "15:00", endereco: "Rua Vergueiro, 200 – Vila Mariana, SP",  cliente: "Carlos Mendes",  tipo: "Saída",       vistoriador: "Juliana Costa",  status: "confirmada" },
+  { id: "V-2025-0406", horario: "16:30", endereco: "Av. Brasil, 250 – Santo André, SP",      cliente: "Imob. Verde",    tipo: "Entrada",     vistoriador: "Paulo Rocha",    status: "pendente" },
+  { id: "V-2025-0407", horario: "17:00", endereco: "Rua Haddock Lobo, 60 – Cerqueira César, SP", cliente: "Ana Imóveis", tipo: "Conferência", vistoriador: "Ricardo Souza", status: "pendente" },
+  { id: "V-2025-0408", horario: "17:45", endereco: "Av. Rebouças, 300 – Pinheiros, SP",      cliente: "Fernanda Lima",  tipo: "Saída",       vistoriador: "Paulo Rocha",    status: "confirmada" },
+]
+
+const PREVIEW_COUNT = 5
+
+const TIPO_COLOR: Record<string, string> = {
+  Entrada:     "text-blue-700 bg-blue-50",
+  Saída:       "text-purple-700 bg-purple-50",
+  Conferência: "text-cyan-700 bg-cyan-50",
+  Rescisão:    "text-orange-700 bg-orange-50",
+}
+
+function AgendaRow({ item }: { item: AgendaItem }) {
+  const StatusIcon = STATUS_CONFIG[item.status].icon
+  return (
+    <div className="flex items-start gap-4 px-6 py-3.5 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center gap-1.5 min-w-[52px] pt-0.5">
+        <Clock size={13} className="text-gray-400 shrink-0" />
+        <span className="text-xs font-bold text-gray-700">{item.horario}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="text-xs font-mono text-gray-400">{item.id}</span>
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${TIPO_COLOR[item.tipo]}`}>
+            {item.tipo}
+          </span>
+        </div>
+        <p className="text-sm font-medium text-gray-800 truncate flex items-center gap-1">
+          <MapPin size={12} className="text-gray-400 shrink-0" />
+          {item.endereco}
+        </p>
+        <div className="flex items-center gap-3 mt-1">
+          <span className="text-xs text-gray-500">{item.cliente}</span>
+          <span className="text-gray-200">|</span>
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <User size={11} className="text-gray-400" />
+            {item.vistoriador}
+          </span>
+        </div>
+      </div>
+      <div className={`flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-semibold shrink-0 ${STATUS_CONFIG[item.status].color}`}>
+        <StatusIcon size={11} />
+        {STATUS_CONFIG[item.status].label}
+      </div>
+    </div>
+  )
+}
+
+export function AgendaDoDia() {
+  const [open, setOpen] = useState(false)
+  const [filtroCliente, setFiltroCliente] = useState("todos")
+
+  const clientes = useMemo(
+    () => Array.from(new Set(AGENDA.map((i) => i.cliente))).sort(),
+    []
+  )
+
+  const agendaFiltrada = useMemo(
+    () => filtroCliente === "todos" ? AGENDA : AGENDA.filter((i) => i.cliente === filtroCliente),
+    [filtroCliente]
+  )
+
+  const preview = agendaFiltrada.slice(0, PREVIEW_COUNT)
+  const remaining = agendaFiltrada.length - PREVIEW_COUNT
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Agenda do Dia</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{agendaFiltrada.length} vistorias marcadas</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+              <SelectTrigger className="h-8 text-xs w-44 border-gray-200 bg-gray-50 text-gray-600 rounded-lg">
+                <SelectValue placeholder="Todos os clientes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos" className="text-xs">Todos os clientes</SelectItem>
+                {clientes.map((c) => (
+                  <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+              Hoje
+            </span>
+          </div>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {preview.length > 0 ? (
+            preview.map((item) => <AgendaRow key={item.id} item={item} />)
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-8">
+              Nenhuma vistoria encontrada para este cliente.
+            </p>
+          )}
+        </div>
+
+        {remaining > 0 && (
+          <div className="flex items-center justify-center px-6 py-3 border-t border-gray-100">
+            <AdminButton variant="ghost" size="sm" onClick={() => setOpen(true)}>
+              Ver mais {remaining} {remaining === 1 ? "item" : "itens"}
+            </AdminButton>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
+            <DialogTitle className="text-sm font-bold text-gray-900">
+              Agenda do Dia
+              <span className="ml-2 text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                {agendaFiltrada.length} vistorias
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto divide-y divide-gray-100">
+            {agendaFiltrada.map((item) => (
+              <AgendaRow key={item.id} item={item} />
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}

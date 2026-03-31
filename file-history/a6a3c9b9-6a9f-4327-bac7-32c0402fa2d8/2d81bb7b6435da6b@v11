@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposta Comercial — {{NOME_CLIENTE}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #2563EB;
+            --text: #1F2937;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ── PAGES ── */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            margin: 0 auto 24px;
+            padding: 46px 56px 90px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+        .page-cover {
+            background: #FAFBFC;
+            padding-bottom: 0;
+        }
+
+        /* ── LOGO ── */
+        .logo { display: inline-flex; align-items: center; }
+
+        /* ── PAGE BACKGROUND SVG ── */
+        .page-bg {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 635px;
+            opacity: 0.01;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .page-cover .page-bg {
+            opacity: 0.06;
+        }
+
+        /* ── COVER ── */
+        .cover-logo { position: relative; z-index: 1; }
+        .cover-title {
+            position: relative;
+            z-index: 1;
+            margin-top: 64px;
+        }
+        .cover-title h1 {
+            font-size: 38px;
+            font-weight: 800;
+            color: var(--blue);
+            line-height: 1.15;
+            margin-bottom: 20px;
+        }
+        .cover-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .cover-bottom {
+            position: absolute;
+            bottom: 56px;
+            left: 56px;
+            z-index: 1;
+        }
+        .cover-bottom p {
+            font-size: 13.5px;
+            color: var(--text);
+            line-height: 1.7;
+            margin-bottom: 2px;
+        }
+
+        /* ── HEADINGS ── */
+        h2 {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 18px;
+        }
+        h2.spaced { margin-top: 34px; }
+        h3 {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+            margin-top: 20px;
+        }
+        h3.first { margin-top: 0; }
+        h3.section { margin-top: 26px; margin-bottom: 4px; }
+
+        /* ── BODY TEXT ── */
+        p {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        p.highlight {
+            color: var(--blue);
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        /* ── LISTS ── */
+        ul { list-style: disc; padding-left: 22px; margin-bottom: 16px; }
+        ul li {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        /* Numbered list (funcionalidades / próximos passos) */
+        .num-list { list-style: none; padding: 0; margin-bottom: 16px; }
+        .num-list li {
+            display: flex;
+            gap: 10px;
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            align-items: flex-start;
+        }
+        .num-list li .n {
+            color: var(--blue);
+            font-weight: 700;
+            min-width: 22px;
+            flex-shrink: 0;
+            padding-top: 1px;
+        }
+
+        /* ── PHASES ── */
+        .phase {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+        .phase .lbl { color: var(--blue); font-weight: 700; }
+
+        /* ── INVESTMENT ── */
+        .invest-total { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 22px; }
+        .payment-heading { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 12px; }
+        .payment-row { font-size: 13.5px; line-height: 1.75; color: var(--text-muted); margin-bottom: 4px; }
+        .payment-row strong { color: var(--text); font-weight: 700; }
+
+        /* ── CLOSING ── */
+        .closing-section { margin-top: 52px; }
+        .closing-quote { font-size: 15px; font-weight: 700; color: var(--blue); line-height: 1.6; margin-bottom: 2px; }
+        .company-info { margin-top: 24px; font-size: 12.5px; color: var(--text-muted); line-height: 1.75; }
+        .validity { margin-top: 14px; font-size: 12.5px; color: var(--text-muted); }
+
+        /* ── FOOTER ── */
+        .footer {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 0 56px 22px;
+            z-index: 2;
+        }
+        .footer-line { height: 1px; background: var(--border); margin-bottom: 13px; }
+        .footer-row { display: flex; justify-content: space-between; align-items: center; }
+        .pg-num { font-size: 12.5px; color: var(--gray); }
+
+        /* ── PRINT ── */
+        @media print {
+            body { background: #fff; }
+            .page { margin: 0; box-shadow: none; page-break-after: always; }
+            .page:last-child { page-break-after: auto; }
+        }
+        @page { size: A4; margin: 0; }
+    </style>
+</head>
+<body>
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              TEMPLATE — PROPOSTA COMERCIAL WA PROJECT                       ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Substitua os tokens {{...}} com os dados do cliente e do projeto.          ║
+║                                                                              ║
+║  VARIÁVEIS:                                                                  ║
+║  {{NOME_CLIENTE}}        → Nome do projeto/cliente (ex: "Easy Salon")       ║
+║  {{DESTINATARIO}}        → Empresa destinatária (ex: "Agência XPTO")        ║
+║  {{DATA}}                → Data no formato DD/MM/YYYY (ex: "27/03/2026")    ║
+║  {{TIPO_PROJETO}}        → "Escopo fechado" | "Time & Materials" | outro    ║
+║  {{SUBTITULO_PROJETO}}   → Título bold da seção Sobre o Projeto             ║
+║  {{DESCRICAO_PROJETO}}   → Parágrafo com contexto e problema do cliente     ║
+║  {{DESTAQUE_1}}          → Frase azul/bold descrevendo a solução            ║
+║  {{DESTAQUE_2}}          → Frase azul/bold descrevendo a entrega final      ║
+║  {{FUNCIONALIDADES}}     → Bloco <li> das funcionalidades (ver formato ▼)   ║
+║  {{INTEGRACOES_TEXTO}}   → Parágrafo descrevendo integrações previstas      ║
+║  {{PRAZO_TOTAL}}         → Ex: "4,5 semanas" | "3 meses"                   ║
+║  {{CRONOGRAMA_FASES}}    → Bloco de fases (ver formato ▼)                  ║
+║  {{VALOR_TOTAL}}         → Ex: "R$ 20.000"                                 ║
+║  {{PARCELA_1_VALOR}}     → Ex: "R$ 6.667"                                  ║
+║  {{PARCELA_2_CONDICAO}}  → Ex: "30 dias após a assinatura"                 ║
+║  {{PARCELA_2_VALOR}}     → Ex: "R$ 6.667"                                  ║
+║  {{PARCELA_3_CONDICAO}}  → Ex: "Pós-homologação"                           ║
+║  {{PARCELA_3_VALOR}}     → Ex: "R$ 6.666"                                  ║
+║  {{ENTREGAVEIS}}         → Bloco <li> dos entregáveis (ver formato ▼)      ║
+║                                                                              ║
+║  FORMATO {{FUNCIONALIDADES}}:                                               ║
+║  <li>                                                                        ║
+║    <span class="n">1.</span>                                                 ║
+║    <div><strong>Título</strong> – Descrição detalhada.</div>                 ║
+║  </li>                                                                       ║
+║                                                                              ║
+║  FORMATO {{CRONOGRAMA_FASES}}:                                              ║
+║  <div class="phase">                                                         ║
+║    <span class="lbl">Fase 1:</span> Descrição: Semanas 1–2                  ║
+║  </div>                                                                      ║
+║                                                                              ║
+║  FORMATO {{ENTREGAVEIS}}:                                                   ║
+║  <li>Protótipos de Alta Fidelidade (Figma).</li>                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<!-- ══ SVG SYMBOLS (reusáveis em todas as páginas) ══ -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <symbol id="logo-sym" viewBox="0 0 100 35">
+            <path d="M8.79918 2.5122C9.8577 0.378801 12.4181 -0.570229 14.6263 0.351825L29.0783 6.38651C30.5821 7.01452 31.6211 8.39831 31.7941 10.0035L33.0943 22.0729C33.2805 23.8023 32.4301 25.485 30.917 26.3831L17.4773 34.3602C15.788 35.3626 13.6409 35.1729 12.1691 33.891L1.5199 24.6131C-8.24471e-05 23.2888 -0.433035 21.1212 0.462353 19.3164L8.79918 2.5122Z" fill="#0047BA"/>
+            <path d="M10.1361 21.2207L12.4962 11.9561H15.3581L17.7172 21.2207L19.9548 11.9561H22.9598L19.4716 24.9561H16.252L13.9272 16.2295L11.6024 24.9561H8.38272L4.89453 11.9561H7.89953L10.1361 21.2207ZM27.1065 14.9561C27.9459 14.9561 28.6885 15.1021 29.3333 15.3945C29.978 15.6869 30.4762 16.0968 30.8289 16.623C31.1939 17.1377 31.3768 17.7397 31.3768 18.4297V24.7451H28.8217V23.8369C28.709 23.9483 28.5954 24.0542 28.4757 24.1494C28.1231 24.4183 27.7275 24.6165 27.2898 24.7451C26.8518 24.8855 26.3647 24.9561 25.8294 24.9561C25.1118 24.956 24.4913 24.8452 23.9682 24.623C23.4452 24.4009 23.0435 24.085 22.7637 23.6758C22.4839 23.2548 22.3443 22.7575 22.3442 22.1846C22.3442 21.6466 22.4719 21.1721 22.7274 20.7627C22.9829 20.3418 23.3727 19.9906 23.8957 19.71C24.4309 19.4294 25.0938 19.2312 25.8843 19.1143L28.6394 18.6855V18.4297C28.6394 18.0672 28.4876 17.7632 28.1836 17.5176C27.8917 17.272 27.49 17.1494 26.9791 17.1494C26.4925 17.1494 26.0605 17.2778 25.6834 17.5352C25.3185 17.7925 25.051 18.1317 24.8807 18.5527L22.6911 17.5527C22.8857 17.0149 23.1957 16.5529 23.6213 16.167C24.047 15.781 24.5581 15.482 25.1541 15.2715C25.7501 15.061 26.4011 14.9561 27.1065 14.9561ZM26.3773 21.0088C25.988 21.079 25.6893 21.2015 25.4825 21.377C25.2757 21.5407 25.1728 21.781 25.1728 22.0967C25.1728 22.3889 25.2887 22.6166 25.5197 22.7803C25.7508 22.944 26.0367 23.0264 26.3773 23.0264C26.8273 23.0263 27.2227 22.9322 27.5632 22.7451C27.9036 22.558 28.1649 22.3068 28.3473 21.9912C28.542 21.6637 28.6394 21.3069 28.6394 20.9209V20.6201L26.3773 21.0088Z" fill="#F5F5F5"/>
+            <rect x="97.9961" y="22.802" width="2.00362" height="2.00362" fill="#0047BA"/>
+            <path d="M67.3079 25.4141C67.3078 26.1654 67.1471 26.8053 66.8256 27.3336C66.5164 27.8736 66.0588 28.2787 65.453 28.5487C64.8593 28.8305 64.1417 28.9713 63.3006 28.9713C63.1151 28.9713 62.9357 28.9596 62.7626 28.9361C62.5771 28.9244 62.4225 28.9068 62.2988 28.8833V26.6292C62.5091 26.6644 62.7196 26.682 62.9299 26.682C63.4613 26.682 63.8569 26.5762 64.1166 26.3651C64.3886 26.1538 64.5254 25.8366 64.5255 25.4141V15.4449H67.3079V25.4141ZM41.4557 11.9406C42.3906 11.9406 43.2165 12.0975 43.9328 12.4121C44.6614 12.7268 45.2321 13.1934 45.6449 13.8111C46.0578 14.4288 46.2642 15.1924 46.2642 16.1014C46.2642 16.987 46.0513 17.7388 45.6263 18.3564C45.2135 18.9739 44.6427 19.4458 43.9143 19.7721C43.1979 20.0867 42.3784 20.2446 41.4557 20.2446H39.0696V24.9641H36.2461V11.9406H41.4557ZM53.2769 17.3057H52.3944C51.7058 17.3057 51.1482 17.5109 50.7225 17.9221C50.2967 18.3213 50.0836 18.8903 50.0836 19.6283V24.9641H47.266V15.0546H49.8958V16.5328C50.1196 15.9981 50.4264 15.6205 50.8164 15.3999C51.3423 15.0975 51.9624 14.946 52.6762 14.946H53.2769V17.3057ZM58.2947 14.946C59.2194 14.946 60.0586 15.1631 60.812 15.5966C61.5654 16.0301 62.165 16.6215 62.6102 17.3713C63.0668 18.1212 63.295 18.9825 63.295 19.955C63.295 20.9158 63.0668 21.7772 62.6102 22.5388C62.165 23.2886 61.5654 23.88 60.812 24.3135C60.0586 24.747 59.2194 24.9641 58.2947 24.9641C57.37 24.9641 56.5248 24.747 55.7599 24.3135C55.0066 23.88 54.4017 23.2885 53.9451 22.5388C53.4998 21.7772 53.2769 20.9158 53.2769 19.955C53.2769 18.9825 53.4998 18.1212 53.9451 17.3713C54.4017 16.6216 55.0066 16.03 55.7599 15.5966C56.5248 15.163 57.37 14.946 58.2947 14.946ZM73.3647 14.946C74.1613 14.946 74.8662 15.0688 75.4789 15.3148C76.0915 15.5491 76.6061 15.8832 77.0227 16.3166C77.4516 16.7501 77.7765 17.2541 77.9971 17.8281C78.2177 18.3906 78.3278 19.0064 78.3278 19.6743C78.3278 19.8615 78.3151 20.0486 78.2906 20.2358C78.2784 20.4116 78.2477 20.5648 78.1987 20.6937H71.1703C71.2032 20.939 71.2665 21.1673 71.3611 21.3785C71.5449 21.7885 71.8266 22.1108 72.2064 22.3451C72.5862 22.5677 73.0458 22.6796 73.5849 22.6797C74.075 22.6797 74.492 22.5854 74.8352 22.3979C75.1905 22.2105 75.4668 21.9531 75.6628 21.625L77.868 22.6269C77.6719 23.0954 77.3595 23.5052 76.9307 23.8566C76.5141 24.2081 76.0177 24.4841 75.4417 24.6833C74.8659 24.8707 74.2348 24.9641 73.5487 24.9641C72.4825 24.9641 71.5574 24.7411 70.7731 24.2959C69.9889 23.839 69.3823 23.2299 68.9534 22.4684C68.5245 21.7068 68.3097 20.8631 68.3097 19.9374C68.3097 18.9767 68.5299 18.1211 68.971 17.3713C69.4245 16.6214 70.0319 16.0301 70.7917 15.5966C71.5514 15.1631 72.409 14.946 73.3647 14.946ZM84.6645 14.946C85.4119 14.946 86.1043 15.0688 86.7415 15.3148C87.3786 15.5608 87.9238 15.9067 88.3772 16.3518C88.8306 16.7854 89.1556 17.3011 89.3516 17.8986L86.9616 18.8828C86.79 18.4025 86.4966 18.0213 86.0801 17.7401C85.6757 17.4589 85.2036 17.3185 84.6645 17.3184C84.1866 17.3184 83.7578 17.4305 83.3779 17.653C83.0103 17.8757 82.7161 18.186 82.4955 18.5844C82.2872 18.9828 82.1824 19.4395 82.1824 19.955C82.1824 20.4706 82.2872 20.9273 82.4955 21.3257C82.7161 21.7241 83.0103 22.0344 83.3779 22.2571C83.7578 22.4796 84.1866 22.5916 84.6645 22.5916C85.2156 22.5916 85.6934 22.451 86.0977 22.17C86.502 21.8888 86.79 21.5076 86.9616 21.0273L89.3516 22.0291C89.1678 22.5915 88.8492 23.0954 88.3958 23.5406C87.9424 23.9858 87.3972 24.3375 86.76 24.5953C86.1229 24.8413 85.4242 24.9641 84.6645 24.9641C83.6596 24.9641 82.7525 24.747 81.9437 24.3135C81.1473 23.8683 80.5099 23.2651 80.0321 22.5036C79.5664 21.742 79.3335 20.8865 79.3335 19.9374C79.3335 18.9884 79.5664 18.1388 80.0321 17.3889C80.4977 16.6274 81.135 16.0301 81.9437 15.5966C82.7525 15.163 83.6596 14.946 84.6645 14.946ZM94.5642 15.1475H96.9904V17.4593H94.5642V21.176C94.5642 21.508 94.6276 21.7872 94.754 22.0125C94.8803 22.2256 95.076 22.3852 95.341 22.4919C95.6063 22.5986 95.9354 22.6523 96.3271 22.6523C96.4155 22.6523 96.5168 22.6465 96.6304 22.6347C96.744 22.6228 96.8642 22.6103 96.9904 22.5985V24.8575C96.8009 24.8812 96.5858 24.9052 96.3457 24.9289C96.1058 24.9526 95.8785 24.9641 95.6638 24.9641C94.413 24.9641 93.4394 24.6503 92.7445 24.022C92.0622 23.3818 91.7212 22.4922 91.7212 21.3541V17.4593H89.9778V15.1475H90.0727C90.6031 15.1475 91.0069 15.0226 91.2848 14.7738C91.5754 14.5248 91.7212 14.1516 91.7212 13.6536V12.9424H94.5642V15.1475ZM58.2947 17.3184C57.8267 17.3184 57.415 17.4363 57.0611 17.6706C56.7074 17.8932 56.428 18.2038 56.2226 18.602C56.0286 18.9886 55.9311 19.4395 55.9311 19.955C55.9311 20.4705 56.0286 20.9273 56.2226 21.3257C56.428 21.7239 56.7074 22.0344 57.0611 22.2571C57.415 22.4797 57.8267 22.5916 58.2947 22.5916C58.7627 22.5916 59.1684 22.4796 59.5108 22.2571C59.8645 22.0344 60.1386 21.7239 60.3326 21.3257C60.538 20.9274 60.6408 20.4705 60.6408 19.955C60.6408 19.4396 60.538 18.9886 60.3326 18.602C60.1386 18.2038 59.8645 17.8932 59.5108 17.6706C59.1684 17.4363 58.7627 17.3185 58.2947 17.3184ZM73.3647 17.0553C72.8868 17.0553 72.4761 17.1663 72.133 17.3889C71.7899 17.6115 71.5327 17.9396 71.3611 18.3731C71.3131 18.4945 71.2735 18.6234 71.2418 18.7595H75.4055C75.3897 18.6121 75.3601 18.4713 75.3136 18.3379C75.1788 17.9395 74.9395 17.6291 74.5965 17.4065C74.2656 17.1721 73.8549 17.0553 73.3647 17.0553ZM39.0696 17.8839H41.4733C41.874 17.8839 42.2209 17.8084 42.5123 17.6569C42.8036 17.5054 43.0286 17.2958 43.1864 17.0279C43.3563 16.7599 43.4407 16.4509 43.4407 16.1014C43.4407 15.7403 43.3562 15.4253 43.1864 15.1573C43.0286 14.8894 42.8035 14.6797 42.5123 14.5282C42.2209 14.3767 41.874 14.3003 41.4733 14.3003H39.0696V17.8839ZM67.3079 14.582H64.5255V11.9406H67.3079V14.582Z" fill="#2E2E2E"/>
+        </symbol>
+        <symbol id="bg-sym" viewBox="0 0 1200 1269">
+            <path d="M318.818 91.1069C357.171 13.757 449.939 -20.6792 529.95 12.7514L1053.55 231.566C1108.04 254.336 1145.68 304.516 1151.95 362.713L1199.08 800.307C1205.82 863.006 1175 923.997 1120.18 956.558L633.234 1245.8C572.028 1282.14 494.217 1275.28 440.89 1228.8L55.0715 892.401C-0.00108413 844.385 -15.6906 765.791 16.7514 700.354L318.818 91.1069ZM177.321 433.492L303.709 904.828H420.368L504.616 588.432L588.828 904.828H705.486L831.875 433.492H723.001L641.938 769.397L556.452 433.492H452.744L367.258 769.397L286.195 433.492H177.321ZM982.112 542.262C956.557 542.264 932.972 546.068 911.381 553.698C889.786 561.331 871.255 572.174 855.83 586.166C840.414 600.156 829.194 616.912 822.145 636.409L901.474 672.665C907.644 657.403 917.34 645.1 930.559 635.771C944.223 626.442 959.882 621.786 977.513 621.786C996.018 621.786 1010.56 626.235 1021.14 635.134C1032.15 644.037 1037.66 655.064 1037.66 668.204V677.481L937.848 693.024C909.207 697.263 885.163 704.451 865.772 714.623C846.829 724.796 832.708 737.533 823.454 752.791C814.198 767.632 809.584 784.839 809.584 804.344C809.586 825.112 814.631 843.15 824.763 858.41C834.901 873.249 849.476 884.699 868.426 892.755C887.377 900.809 909.866 904.828 935.866 904.828C955.255 904.827 972.9 902.268 988.764 897.181C1004.62 892.517 1018.94 885.329 1031.72 875.582C1036.06 872.13 1040.2 868.29 1044.28 864.252V897.181H1136.84V668.204C1136.84 643.188 1130.22 621.358 1116.99 602.701C1104.21 583.626 1086.17 568.759 1062.82 558.159C1039.46 547.558 1012.53 542.262 982.112 542.262ZM1037.66 758.527C1037.66 772.519 1034.14 785.461 1027.08 797.333C1020.48 808.775 1011 817.885 998.672 824.667C986.336 831.449 972.015 834.861 955.716 834.864C943.382 834.864 933.022 831.872 924.65 825.942C916.278 820.007 912.056 811.754 912.054 801.157C912.054 789.715 915.785 780.998 923.27 775.062C930.763 768.701 941.612 764.258 955.716 761.714L1037.66 747.622V758.527Z" fill="#2E2E2E"/>
+        </symbol>
+    </defs>
+</svg>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 1 — CAPA
+     ════════════════════════════════════════════════════════ -->
+<section class="page page-cover">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <div class="cover-logo">
+        <div class="logo">
+            <svg width="100" height="35" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg>
+        </div>
+    </div>
+
+    <div class="cover-title">
+        <h1>Proposta Comercial<br>{{NOME_CLIENTE}}</h1>
+        <p class="cover-date">{{DATA}} | Válido por 30 dias</p>
+    </div>
+
+    <div class="cover-bottom">
+        <p><strong>Para:</strong> {{DESTINATARIO}}</p>
+        <p><strong>Tipo:</strong> {{TIPO_PROJETO}}</p>
+    </div>
+
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 2 — SOBRE A WA PROJECT + NOSSOS CLIENTES
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <h2>Sobre a Wa Project</h2>
+
+    <p>A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.</p>
+
+    <h3 class="first">Nossos serviços:</h3>
+
+    <ul>
+        <li>Desenvolvimento de Software.</li>
+        <li>Desenvolvimento de Aplicativos.</li>
+        <li>Soluções de Inteligência Artificial.</li>
+        <li>Alocação de Profissionais.</li>
+    </ul>
+
+    <h2 class="spaced">Nossos Clientes</h2>
+
+    <ul>
+        <li>PepsiCo</li>
+        <li>Vtex</li>
+        <li>Santillana</li>
+        <li>Dasa</li>
+        <li>WideLabs</li>
+        <li>Confederação Brasileira de Hipismo</li>
+        <li>Forbes</li>
+        <li>Easy Salon</li>
+        <li>InstaCarro</li>
+        <li>Antilhas</li>
+        <li>Fundação Carlos Chagas</li>
+        <li>Funarbe</li>
+    </ul>
+
+    <p>Cases completos: <a href="https://waproject.com.br/cases" style="color:var(--blue);">waproject.com.br/cases</a></p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo"><svg width="74" height="26" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg></div>
+            <span class="pg-num">2</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 3 — SOBRE O PROJETO  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <h2>Sobre o Projeto</h2>
+
+    <h3 class="first">{{SUBTITULO_PROJETO}}</h3>
+
+    <p>{{DESCRICAO_PROJETO}}</p>
+
+    <p class="highlight">{{DESTAQUE_1}}</p>
+
+    <p class="highlight">{{DESTAQUE_2}}</p>
+
+    <h3>Funcionalidades</h3>
+
+    <ol class="num-list">
+        {{FUNCIONALIDADES}}
+    </ol>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo"><svg width="74" height="26" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg></div>
+            <span class="pg-num">3</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 4 — INTEGRAÇÕES + MODELO DE TRABALHO  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <h3 class="first">Integrações Previstas</h3>
+
+    <p>{{INTEGRACOES_TEXTO}}</p>
+
+    <h2 class="spaced">Modelo de Trabalho</h2>
+
+    <p><strong>Escopo Fechado – Prazo e valor definidos previamente.</strong><br>
+    Processo orientado a entregas contínuas, previsibilidade e colaboração.</p>
+
+    <h3>Fases do Projeto:</h3>
+
+    <div class="phase"><span class="lbl">Fase 1:</span> Planejamento – Priorização de demandas e alinhamento de objetivos e escopo.</div>
+    <div class="phase"><span class="lbl">Fase 2:</span> Levantamento de Requisitos – Detalhamento funcional e técnico validado com stakeholders.</div>
+    <div class="phase"><span class="lbl">Fase 3:</span> Protótipo – Criação de protótipos navegáveis de alta fidelidade validados antes do desenvolvimento.</div>
+    <div class="phase"><span class="lbl">Fase 4:</span> Desenvolvimento – Implementação técnica com boas práticas, testes e code review.</div>
+    <div class="phase"><span class="lbl">Fase 5:</span> Homologação – Testes completos e validação do cliente em ambiente de homologação.</div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo"><svg width="74" height="26" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg></div>
+            <span class="pg-num">4</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 5 — FASES 6-7 + EQUIPE  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <div class="phase" style="margin-top:0;"><span class="lbl">Fase 6:</span> Go-Live – Publicação em produção com monitoramento e acompanhamento inicial.</div>
+    <div class="phase"><span class="lbl">Fase 7:</span> Garantia – 90 dias de suporte técnico gratuito após o go-live.</div>
+
+    <h2 class="spaced">Equipe</h2>
+
+    <p>O projeto contará com uma equipe multidisciplinar de especialistas:</p>
+
+    <h3 class="section">UX e UI Designer</h3>
+    <p>Responsável pelo design de interfaces, prototipagem navegável e validação de usabilidade. Cria o design system e acompanha a implementação para garantir fidelidade ao design aprovado.</p>
+
+    <h3 class="section">Desenvolvedor(es)</h3>
+    <p>Realiza a implementação técnica completa (frontend e backend), integrações com APIs e sistemas externos. Garante qualidade através de testes, code review e boas práticas de desenvolvimento.</p>
+
+    <h3 class="section">Product Owner</h3>
+    <p>Atua como ponte entre cliente e equipe técnica, gerenciando backlog e priorização. Garante alinhamento estratégico, planeja sprints e acompanha prazos e entregas do projeto.</p>
+
+    <h3 class="section">Tester (QA)</h3>
+    <p>Executa testes funcionais e de regressão para validar qualidade de cada funcionalidade. Documenta bugs, realiza homologação com o cliente e garante critérios de aceite.</p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo"><svg width="74" height="26" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg></div>
+            <span class="pg-num">5</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 6 — CRONOGRAMA + INVESTIMENTO + ENTREGÁVEIS  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <h2>Cronograma</h2>
+
+    <p class="invest-total">Prazo total estimado: {{PRAZO_TOTAL}}</p>
+
+    {{CRONOGRAMA_FASES}}
+
+    <p>O cronograma acima é uma estimativa inicial e poderá ser ajustado após o planejamento detalhado, conforme validações e fornecimento de informações pelo cliente.</p>
+
+    <h2 class="spaced">Investimento</h2>
+
+    <p class="invest-total">Investimento total: {{VALOR_TOTAL}}</p>
+
+    <p class="payment-heading">Condições de Pagamento:</p>
+
+    <div class="payment-row"><strong>1ª Parcela:</strong> Na assinatura do contrato: {{PARCELA_1_VALOR}}</div>
+    <div class="payment-row"><strong>2ª Parcela:</strong> {{PARCELA_2_CONDICAO}}: {{PARCELA_2_VALOR}}</div>
+    <div class="payment-row"><strong>3ª Parcela:</strong> {{PARCELA_3_CONDICAO}}: {{PARCELA_3_VALOR}}</div>
+
+    <h2 class="spaced">Entregáveis</h2>
+
+    <ul>
+        {{ENTREGAVEIS}}
+    </ul>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo"><svg width="74" height="26" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg></div>
+            <span class="pg-num">6</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 7 — PRÓXIMOS PASSOS + ENCERRAMENTO  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <svg class="page-bg" xmlns="http://www.w3.org/2000/svg"><use href="#bg-sym"/></svg>
+
+    <h2>Próximos Passos</h2>
+
+    <ol class="num-list">
+        <li><span class="n">1.</span><div>Alinhamento Final.</div></li>
+        <li><span class="n">2.</span><div>Aprovação da Proposta.</div></li>
+        <li><span class="n">3.</span><div>Assinatura do Contrato.</div></li>
+        <li><span class="n">4.</span><div>Kickoff do Projeto.</div></li>
+        <li><span class="n">5.</span><div>Início do desenvolvimento.</div></li>
+    </ol>
+
+    <p>Estamos à disposição para qualquer esclarecimento e ansiosos para iniciar esta parceria.</p>
+
+    <div class="closing-section">
+        <p class="closing-quote">Não é sobre desenvolvimento, é sobre envolvimento.</p>
+        <p class="closing-quote">Obrigado por confiar na Wa Project!</p>
+        <div class="company-info">
+            <p>Wa Project Soluções Tecnológicas LTDA.</p>
+            <p>CNPJ: 19.317.018/0001-40 &nbsp;|&nbsp; Website: waproject.com.br &nbsp;|&nbsp; Email: comercial@waproject.com.br</p>
+            <p>Telefone/WhatsApp: (11) 5028-2010</p>
+        </div>
+        <p class="validity">Proposta válida por 30 dias a partir da data de emissão</p>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo"><svg width="74" height="26" xmlns="http://www.w3.org/2000/svg"><use href="#logo-sym"/></svg></div>
+            <span class="pg-num">7</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,448 @@
+import { useState, useEffect, useRef, type RefObject } from "react";
+import { Label } from "@/components/ui/label";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { PercentageInput } from "@/components/ui/percentage-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+
+interface ServicePricingData {
+  duration: string;
+  priceType: string;
+  grossValue: string;
+  maxValue?: string;
+  adminFeeFixed: string;
+  adminFeePercent: string;
+  supplies: string;
+  netValue: string;
+  commissionFixed: string;
+  commissionPercent: string;
+}
+
+type TimeOption = { value: string; label: string };
+
+const TIME_OPTIONS: TimeOption[] = (() => {
+  const options: TimeOption[] = [];
+  for (let hours = 0; hours < 7; hours++) {
+    for (let minutes = 0; minutes < 60; minutes += 15) {
+      if (hours === 0 && minutes === 0) continue;
+      const timeStr = `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`;
+      options.push({ value: timeStr, label: timeStr });
+    }
+  }
+  options.push({ value: "07:00", label: "07:00" });
+  return options;
+})();
+
+const parseValue = (value: string): number => {
+  if (!value || value === "") return 0;
+  return parseFloat(value.replace(/\./g, "").replace(",", ".")) || 0;
+};
+
+const formatValue = (value: number): string => {
+  return value
+    .toFixed(2)
+    .replace(".", ",")
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+interface ServicePricingFormProps {
+  initialData?: ServicePricingData;
+  onSave: (data: ServicePricingData) => void;
+  formRef?: RefObject<HTMLFormElement>;
+}
+
+export function ServicePricingForm({
+  initialData,
+  onSave,
+  formRef,
+}: ServicePricingFormProps) {
+  // Initialize with zeros if no initial data
+  const [duration, setDuration] = useState(initialData?.duration || "00:30");
+  const [priceType, setPriceType] = useState(initialData?.priceType || "Fixo");
+  const [grossValue, setGrossValue] = useState(
+    initialData?.grossValue || "0,00"
+  );
+  const [maxValue, setMaxValue] = useState(initialData?.maxValue || "0,00");
+  const [adminFeeFixed, setAdminFeeFixed] = useState(
+    initialData?.adminFeeFixed || "0,00"
+  );
+  const [adminFeePercent, setAdminFeePercent] = useState(
+    initialData?.adminFeePercent || "0,00"
+  );
+  const [supplies, setSupplies] = useState(initialData?.supplies || "0,00");
+  const [netValue, setNetValue] = useState(initialData?.netValue || "0,00");
+  const [commissionFixed, setCommissionFixed] = useState(
+    initialData?.commissionFixed || "0,00"
+  );
+  const [commissionPercent, setCommissionPercent] = useState(
+    initialData?.commissionPercent || "0,00"
+  );
+
+  // Use refs to track which field is being updated to prevent loops
+  const updatingAdminFixed = useRef(false);
+  const updatingAdminPercent = useRef(false);
+  const updatingCommissionFixed = useRef(false);
+  const updatingCommissionPercent = useRef(false);
+
+  // Check if gross value is greater than zero
+  const isGrossValueValid = parseValue(grossValue) > 0;
+
+  // Recalculate all dependent values
+  const recalculateValues = () => {
+    const gross = parseValue(grossValue);
+    const adminFee = parseValue(adminFeeFixed);
+    const suppliesCost = parseValue(supplies);
+    const net = gross - adminFee - suppliesCost;
+    const netValueCalc = Math.max(0, net);
+    setNetValue(formatValue(netValueCalc));
+
+    // Note: Commission will be updated via useEffect when net value changes
+  };
+
+  // Handle gross value change
+  const handleGrossValueChange = (value: string) => {
+    setGrossValue(value);
+    // Admin fee will be recalculated via useEffect
+  };
+
+  // Handle admin fee fixed change
+  const handleAdminFeeFixedChange = (value: string) => {
+    if (updatingAdminPercent.current) return; // Prevent loop
+
+    updatingAdminFixed.current = true;
+    setAdminFeeFixed(value);
+
+    // Update percentage only if gross value exists
+    const gross = parseValue(grossValue);
+    const fixed = parseValue(value);
+    if (gross > 0) {
+      const percent = (fixed / gross) * 100;
+      // Format percentage with 1 decimal place
+      setAdminFeePercent(percent.toFixed(1).replace(".", ","));
+    } else {
+      setAdminFeePercent("0,0");
+    }
+
+    setTimeout(() => {
+      updatingAdminFixed.current = false;
+    }, 0);
+  };
+
+  // Handle admin fee percent change
+  const handleAdminFeePercentChange = (value: string) => {
+    if (updatingAdminFixed.current) return; // Prevent loop
+
+    updatingAdminPercent.current = true;
+    setAdminFeePercent(value);
+
+    // Update fixed value based on percentage
+    const gross = parseValue(grossValue);
+    const percent = parseValue(value);
+    if (gross > 0 && percent >= 0) {
+      const fixed = (gross * percent) / 100;
+      setAdminFeeFixed(formatValue(fixed));
+    } else {
+      setAdminFeeFixed("0,00");
+    }
+
+    setTimeout(() => {
+      updatingAdminPercent.current = false;
+    }, 0);
+  };
+
+  // Handle supplies change
+  const handleSuppliesChange = (value: string) => {
+    setSupplies(value);
+  };
+
+  // Handle commission fixed change
+  const handleCommissionFixedChange = (value: string) => {
+    if (updatingCommissionPercent.current) return; // Prevent loop
+
+    updatingCommissionFixed.current = true;
+    setCommissionFixed(value);
+
+    // Update percentage based on net value
+    const net = parseValue(netValue);
+    const fixed = parseValue(value);
+    if (net > 0) {
+      const percent = (fixed / net) * 100;
+      // Format percentage with 1 decimal place
+      setCommissionPercent(percent.toFixed(1).replace(".", ","));
+    } else {
+      setCommissionPercent("0,0");
+    }
+
+    setTimeout(() => {
+      updatingCommissionFixed.current = false;
+    }, 0);
+  };
+
+  // Handle commission percent change
+  const handleCommissionPercentChange = (value: string) => {
+    if (updatingCommissionFixed.current) return; // Prevent loop
+
+    updatingCommissionPercent.current = true;
+    setCommissionPercent(value);
+
+    // Update fixed value based on percentage
+    const net = parseValue(netValue);
+    const percent = parseValue(value);
+    if (net > 0 && percent >= 0) {
+      const fixed = (net * percent) / 100;
+      setCommissionFixed(formatValue(fixed));
+    } else {
+      setCommissionFixed("0,00");
+    }
+
+    setTimeout(() => {
+      updatingCommissionPercent.current = false;
+    }, 0);
+  };
+
+  // Recalculate values whenever gross value, admin fee, or supplies change
+  useEffect(() => {
+    recalculateValues();
+  }, [grossValue, adminFeeFixed, supplies]);
+
+  // Update admin fee when gross value changes
+  useEffect(() => {
+    if (!updatingAdminFixed.current && !updatingAdminPercent.current) {
+      const gross = parseValue(grossValue);
+      const percent = parseValue(adminFeePercent);
+      if (gross > 0 && percent > 0) {
+        const fixed = (gross * percent) / 100;
+        setAdminFeeFixed(formatValue(fixed));
+      }
+    }
+  }, [grossValue]);
+
+  // Update commission when net value changes
+  useEffect(() => {
+    if (
+      !updatingCommissionFixed.current &&
+      !updatingCommissionPercent.current
+    ) {
+      const net = parseValue(netValue);
+      const percent = parseValue(commissionPercent);
+      if (net > 0 && percent > 0) {
+        const fixed = (net * percent) / 100;
+        setCommissionFixed(formatValue(fixed));
+      }
+    }
+  }, [netValue]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event from bubbling up to parent form
+
+    // Validate commission rate
+    const commissionValue = parseValue(commissionPercent);
+    if (commissionValue < 0 || commissionValue > 100) {
+      toast.error("Taxa de comissão deve estar entre 0% e 100%");
+      return;
+    }
+
+    // Validate price
+    const priceValue = parseValue(grossValue);
+    if (priceValue <= 0) {
+      toast.error("Preço deve ser maior que zero");
+      return;
+    }
+
+    // Validate max value if price type is "A partir de"
+    if (priceType === "A partir de") {
+      const maxPriceValue = parseValue(maxValue);
+      if (maxPriceValue < 0) {
+        toast.error("Valor máximo não pode ser negativo");
+        return;
+      }
+      if (maxPriceValue < priceValue) {
+        toast.error("Valor máximo deve ser maior ou igual ao valor mínimo");
+        return;
+      }
+    }
+
+    onSave({
+      duration,
+      priceType,
+      grossValue,
+      maxValue: priceType === "A partir de" ? maxValue : undefined,
+      adminFeeFixed,
+      adminFeePercent,
+      supplies,
+      netValue,
+      commissionFixed,
+      commissionPercent,
+    });
+  };
+
+  return (
+    <form ref={formRef} onSubmit={handleSubmit}>
+      <div className="py-4 space-y-8">
+          {/* Duração e Preço */}
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold text-primary flex items-center border-b pb-2">
+              Duração e Preço
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-[4px]">
+                <Label htmlFor="duration">Tempo Médio</Label>
+                <Select value={duration} onValueChange={setDuration}>
+                  <SelectTrigger className="salon-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_OPTIONS.map((time) => (
+                      <SelectItem key={time.value} value={time.value}>
+                        {time.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-[4px]">
+                <Label htmlFor="priceType">Exibição de preço</Label>
+                <Select value={priceType} onValueChange={setPriceType}>
+                  <SelectTrigger className="salon-input">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Fixo">Fixo</SelectItem>
+                    <SelectItem value="A partir de">A partir de</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CurrencyInput
+                id="grossValue"
+                label={priceType === "A partir de" ? "Valor Mínimo" : "Valor Bruto"}
+                value={grossValue}
+                onChange={handleGrossValueChange}
+                className="salon-input"
+              />
+
+              {priceType === "A partir de" && (
+                <div className="flex flex-col gap-[4px]">
+                  <CurrencyInput
+                    id="maxValue"
+                    label="Valor Máximo"
+                    value={maxValue}
+                    onChange={(value) => {
+                      setMaxValue(value);
+                      const minPrice = parseValue(grossValue);
+                      const maxPrice = parseValue(value);
+                      const input = document.getElementById("maxValue");
+                      if (input) {
+                        if (maxPrice > 0 && maxPrice < minPrice) {
+                          input.classList.add("border-destructive");
+                        } else {
+                          input.classList.remove("border-destructive");
+                        }
+                      }
+                    }}
+                    className="salon-input"
+                  />
+                  {parseValue(maxValue) > 0 &&
+                    parseValue(maxValue) < parseValue(grossValue) && (
+                      <p className="text-[11px] text-destructive font-medium italic">
+                        Valor máximo deve ser maior ou igual ao valor mínimo
+                      </p>
+                    )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Custos administrativos */}
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold text-primary flex items-center border-b pb-2">
+              Custos administrativos
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PercentageInput
+                id="adminFeePercent"
+                label="Taxa administrativa (%)"
+                value={adminFeePercent}
+                onChange={handleAdminFeePercentChange}
+                max={100}
+                min={0}
+                disabled={!isGrossValueValid}
+                className="salon-input"
+              />
+              <CurrencyInput
+                id="adminFeeFixed"
+                label="Taxa administrativa (R$)"
+                value={adminFeeFixed}
+                onChange={handleAdminFeeFixedChange}
+                disabled={!isGrossValueValid}
+                className="salon-input"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CurrencyInput
+                id="supplies"
+                label="Insumo"
+                value={supplies}
+                onChange={handleSuppliesChange}
+                disabled={!isGrossValueValid}
+                className="salon-input"
+              />
+
+              <CurrencyInput
+                id="netValue"
+                label="Valor líquido"
+                value={netValue}
+                onChange={() => {}}
+                showPrefix={true}
+                disabled
+                className="salon-input bg-muted/50 font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* Comissão */}
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold text-primary flex items-center border-b pb-2">
+              Comissão
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PercentageInput
+                id="commissionPercent"
+                label="Comissão (%)"
+                value={commissionPercent}
+                onChange={handleCommissionPercentChange}
+                max={100}
+                min={0}
+                disabled={!isGrossValueValid}
+                className="salon-input"
+              />
+              <CurrencyInput
+                id="commissionFixed"
+                label="Comissão (R$)"
+                value={commissionFixed}
+                onChange={handleCommissionFixedChange}
+                disabled={!isGrossValueValid}
+                className="salon-input"
+              />
+            </div>
+          </div>
+      </div>
+    </form>
+  );
+}
+

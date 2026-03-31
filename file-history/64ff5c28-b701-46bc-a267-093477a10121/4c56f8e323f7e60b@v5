@@ -1,0 +1,289 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Easy Salon Design System - Paleta Oficial */
+
+    /* Main Background Colors */
+    --background: 0 0% 98.4%;
+    /* #FBFBFB - Primary Background (neutral near-white) */
+    --foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+
+    /* Cards and Sidebar Background */
+    --card: 0 0% 98.4%;
+    /* #FBFBFB - Secondary Background */
+    --card-foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 25.5%;
+
+    /* Primary Color - Easy Salon Red */
+    --primary: 7 61% 51%;
+    /* #CE4836 - Brand Red (Easy Salon) */
+    /* Primary Color - Easy Salon Coral (#D85A30) Old*/
+    /* --primary: 15 67% 52%; */
+    /* #D85A30 - Coral Primary */
+    --primary-foreground: 0 0% 98.4%;
+    /* #FBFBFB */
+
+    /* Secondary Colors */
+    --secondary: 28 25% 95.3%;
+    /* #f5f2ed - Secondary */
+    --secondary-foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+
+    /* Tertiary Color */
+    --tertiary: 34 25% 90.2%;
+    /* #ede7d9 - Tertiary */
+
+    /* Alternate Color */
+    --alternate: 9 60% 28.6%;
+    /* #732a1d - Alternate */
+
+    /* Text Colors */
+    --muted: 0 0% 95%;
+    /* #f3f3f3 - Muted background (neutral light gray) */
+    --muted-foreground: 0 0% 46%;
+    /* #757575 - Secondary Text (neutral medium gray) */
+
+    --accent: 28 25% 95.3%;
+    /* Secondary para backgrounds ativos */
+    --accent-foreground: 7 61% 51%;
+    /* Primary para texto ativo */
+
+    /* States */
+    --destructive: 0 84% 60%;
+    /* #EF4444 - Erro */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 64% 52%;
+    /* #10B981 - Sucesso */
+
+    /* Borders and Input */
+    --border: 0 0% 87.8%;
+    /* #e0e0e0 - Accent 5 */
+    --input: 0 0% 87.8%;
+    /* #e0e0e0 - Accent 5 */
+    --ring: 7 61% 51%;
+    /* Primary color for focus */
+
+    /* Border radius - 14px para botões e cards (alinhado com protótipo) */
+    --radius: 0.875rem;
+
+    /* Sidebar específico */
+    --sidebar-background: 0 0% 100%;
+    /* #ffffff - Secondary Background */
+    --sidebar-foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+    --sidebar-primary: 7 61% 51%;
+    /* #CE4836 - Primary */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 28 25% 95.3%;
+    /* #f5f2ed - Secondary para fundo ativo */
+    --sidebar-accent-foreground: 7 61% 51%;
+    /* #CE4836 - Primary para texto ativo */
+    --sidebar-border: 0 0% 87.8%;
+    /* #e0e0e0 - Accent 5 */
+    --sidebar-ring: 7 61% 51%;
+    /* #CE4836 - Primary */
+  }
+
+  .dark {
+    /* Neutral dark mode aligned with prototype (oklch neutral grays → HSL equivalents) */
+    --background: 0 0% 11%;
+    /* ~#1c1c1c — oklch(0.145 0 0) */
+    --foreground: 0 0% 97%;
+    /* ~#f8f8f8 — oklch(0.985 0 0) */
+
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 97%;
+
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 97%;
+
+    --primary: 0 0% 97%;
+    /* White primary in dark mode — oklch(0.985 0 0) */
+    --primary-foreground: 0 0% 18%;
+    /* ~#2e2e2e — oklch(0.205 0 0) */
+
+    --secondary: 0 0% 25%;
+    /* ~#404040 — oklch(0.269 0 0) */
+    --secondary-foreground: 0 0% 97%;
+
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 70%;
+    /* ~#b3b3b3 — oklch(0.708 0 0) */
+
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 97%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 97%;
+
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 0 0% 42%;
+    /* ~#6b6b6b — oklch(0.439 0 0) */
+
+    --sidebar-background: 0 0% 18%;
+    /* ~#2e2e2e — oklch(0.205 0 0) */
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    /* Blue accent for dark sidebar */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 0 0% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+
+  /* Typography Utilities */
+  .page-title {
+    @apply text-page-title text-foreground;
+  }
+
+  .section-title {
+    @apply text-section-title text-foreground;
+  }
+
+  .body-text {
+    @apply text-body text-foreground;
+  }
+
+  .button-text {
+    @apply text-button;
+  }
+
+  /* Easy Salon Component Styles - Seguindo Design Oficial */
+  .salon-button {
+    @apply h-11 px-6 py-2 rounded-lg button-text transition-colors;
+  }
+
+  .salon-button-primary {
+    @apply salon-button text-white;
+    background-color: #CE4836;
+  }
+  .salon-button-primary:hover {
+    background-color: #B53C2C;
+  }
+
+  .salon-button-secondary {
+    @apply salon-button border border-primary text-primary bg-card hover:bg-secondary;
+  }
+
+  .salon-input {
+    @apply flex h-[38px] sm:h-[35px] w-full rounded-[10px] border border-border bg-card px-3 py-2 text-[13px] sm:text-[12px] text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-[12px] file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .salon-card {
+    @apply bg-card text-card-foreground rounded-3xl border border-border shadow-none;
+  }
+
+  /* Tabela com cabeçalho oficial */
+  .salon-table-header {
+    background-color: #EDE7D9 !important;
+    @apply text-foreground font-medium;
+  }
+
+  .salon-table-row {
+    background-color: #FBFBFB;
+  }
+  .salon-table-row:hover {
+    background-color: #FAF8F4 !important;
+  }
+
+  /* Status Badges - Design System Oficial */
+  .salon-badge-active {
+    background-color: #EAF3DE !important;
+    color: #3B6D11 !important;
+    @apply border-none font-medium;
+  }
+
+  .salon-badge-inactive {
+    background-color: rgb(206 72 54 / 0.1) !important;
+    color: #CE4836 !important;
+    @apply border-none font-medium;
+  }
+}
+
+
+@layer utilities {
+
+  /**
+   * Modal max-height com fallback para browsers sem suporte a dvh (iOS < 15.4, Chrome < 108).
+   * Browsers antigos lêem apenas a primeira declaração (90vh).
+   * Browsers modernos sobrescrevem com 90dvh (desconta teclado virtual e barras do browser).
+   */
+  .modal-max-h {
+    max-height: 90vh;
+    /* fallback: browsers legados */
+    max-height: 90dvh;
+    /* modern: iOS 15.4+, Chrome 108+ */
+  }
+
+  /**
+   * Aplicar no <body> via JS quando um modal está aberto.
+   * overflow:hidden sozinho é ignorado pelo iOS Safari em fixed overlays.
+   * position:fixed é a única forma garantida — mas causa scroll jump,
+   * então o scroll position deve ser salvo/restaurado via JS (ver SuccessModal useEffect).
+   */
+  .body-scroll-locked {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    /* Preserva a largura para evitar layout shift ao remover a scrollbar no desktop */
+    padding-right: var(--scrollbar-width, 0px);
+  }
+
+  /**
+   * Aplicar no elemento scrollável interno do modal.
+   * Impede que o scroll "vaze" para o body no iOS (scroll chaining).
+   */
+  .modal-scroll-area {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /**
+   * iOS Safari auto-zoom prevention.
+   * iOS zooms into inputs with computed font-size < 16px on focus.
+   * This rule targets iOS only via @supports for -webkit-touch-callout (Safari-only property).
+   * Combined with maximum-scale=1 in the viewport meta tag for bulletproof coverage.
+   */
+  @supports (-webkit-touch-callout: none) {
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}

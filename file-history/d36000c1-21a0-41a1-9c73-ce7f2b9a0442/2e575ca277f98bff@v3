@@ -1,0 +1,376 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle, Calendar, Clock, User, Phone, Mail, MapPin, Loader2 } from "lucide-react";
+import { BookingData, SalonBranding } from "@/types/booking-new";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { bookingService } from "@/services/bookingService";
+import { createMultiServiceBookingRequests } from "@/utils/bookingHelpers";
+import { toast } from "sonner";
+import type { BookingConfirmationResponse } from "@/types/booking-api";
+import { analytics } from "@/lib/analytics";
+
+interface NewBookingConfirmationProps {
+  bookingData: BookingData;
+  salon: SalonBranding;
+  salonSlug: string;
+  sessionId: string | null;
+  primaryColor: string;
+  onConfirmBooking: (confirmations?: BookingConfirmationResponse[]) => void;
+  onBack: () => void;
+}
+
+export function NewBookingConfirmation({
+  bookingData,
+  salon,
+  salonSlug,
+  sessionId,
+  primaryColor,
+  onConfirmBooking,
+  onBack,
+}: NewBookingConfirmationProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmations, setConfirmations] = useState<
+    BookingConfirmationResponse[]
+  >([]);
+  const getTotalPrice = () => {
+    return bookingData.serviceConfigs.reduce(
+      (total, config) => total + (config.price || 0),
+      0
+    );
+  };
+
+  const getTotalDuration = () => {
+    return bookingData.services.reduce(
+      (total, service) => total + service.duration,
+      0
+    );
+  };
+
+  const handleConfirmBooking = async (retryCount = 0) => {
+    setIsSubmitting(true);
+    const createdConfirmations: BookingConfirmationResponse[] = [];
+    const maxRetries = 3;
+
+    try {
+      const bookingRequests = createMultiServiceBookingRequests(
+        bookingData,
+        salonSlug,
+        salon.timezone,
+        sessionId || undefined
+      );
+
+      for (const request of bookingRequests) {
+        let bookingCreated = false;
+        let lastError: Error | null = null;
+
+        // Retry logic for individual booking creation
+        for (
+          let attempt = 0;
+          attempt <= maxRetries && !bookingCreated;
+          attempt++
+        ) {
+          try {
+            if (attempt > 0) {
+              // Wait before retrying (exponential backoff)
+              await new Promise((resolve) =>
+                setTimeout(resolve, Math.pow(2, attempt) * 1000)
+              );
+            }
+
+            const confirmation = await bookingService.createBooking(
+              salonSlug,
+              request
+            );
+            createdConfirmations.push(confirmation);
+            bookingCreated = true;
+          } catch (error) {
+            lastError = error as Error;
+
+            // Don't retry on client errors (4xx)
+            if (error instanceof Error && error.message.includes("400")) {
+              throw error;
+            }
+
+            if (attempt === maxRetries) {
+              // Final attempt failed, rollback all bookings
+              if (createdConfirmations.length > 0) {
+                try {
+                  const confirmationCodes = createdConfirmations.map(
+                    (conf) => conf.confirmationCode
+                  );
+                  await bookingService.cancelBookingsBulk(
+                    salonSlug,
+                    confirmationCodes
+                  );
+                } catch (cancelError) {
+                  console.error(
+                    "Erro ao cancelar agendamentos em lote:",
+                    cancelError
+                  );
+                  // Fallback to individual cancellation if bulk fails
+                  for (const conf of createdConfirmations) {
+                    try {
+                      await bookingService.cancelBooking(
+                        salonSlug,
+                        conf.confirmationCode
+                      );
+                    } catch (individualCancelError) {
+                      console.error(
+                        "Erro ao cancelar agendamento individual:",
+                        individualCancelError
+                      );
+                    }
+                  }
+                }
+              }
+              throw lastError;
+            }
+          }
+        }
+      }
+
+      setConfirmations(createdConfirmations);
+      onConfirmBooking(createdConfirmations);
+    } catch (error) {
+      console.error("Erro ao confirmar agendamento:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erro ao confirmar agendamento";
+      analytics.trackEvent("booking_submission_failed", {
+        error_type: errorMessage,
+      });
+
+      // Show retry option for network errors
+      if (
+        errorMessage.includes("network") ||
+        errorMessage.includes("Network")
+      ) {
+        toast.error(errorMessage, {
+          action: {
+            label: "Tentar novamente",
+            onClick: () => handleConfirmBooking(retryCount + 1),
+          },
+        });
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const generateCalendarEvent = () => {
+    // Pegar a primeira data/hora como referência para o evento principal
+    const firstConfig = bookingData.serviceConfigs[0];
+    if (!firstConfig?.date || !firstConfig?.time) return "";
+
+    const startDate = new Date(
+      `${firstConfig.date.toISOString().split("T")[0]}T${firstConfig.time}`
+    );
+    const endDate = new Date(startDate.getTime() + getTotalDuration() * 60000);
+
+    const title = encodeURIComponent(`Agendamento - ${salon.name}`);
+    const details = encodeURIComponent(
+      `Serviços: ${bookingData.services.map((s) => s.name).join(", ")}\n` +
+        `Local: ${salon.address}`
+    );
+
+    const startTime =
+      startDate.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const endTime =
+      endDate.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}&location=${encodeURIComponent(
+      salon.address
+    )}`;
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{ backgroundColor: primaryColor }}
+        >
+          <CheckCircle className="w-8 h-8 text-white" />
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Confirmar Agendamento
+        </h2>
+        <p className="text-gray-600">
+          Revise os dados e confirme seu agendamento
+        </p>
+      </div>
+
+      {/* Resumo dos Agendamentos */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Detalhes dos Agendamentos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {bookingData.serviceConfigs.map((config) => (
+            <div
+              key={config.serviceId}
+              className="border rounded-lg p-4 bg-gray-50"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-gray-900">
+                  {config.serviceName}
+                </h4>
+                {config.isRequest && (
+                  <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                    Solicitação
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                {/* Data */}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <span>
+                    {config.date &&
+                      format(config.date, "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                </div>
+
+                {/* Horário */}
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-600" />
+                  <span>
+                    {config.time} ({config.duration} min)
+                  </span>
+                </div>
+
+                {/* Profissional */}
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-gray-600" />
+                  <span>{config.professionalName || 'Qualquer Profissional'}</span>
+                </div>
+              </div>
+
+              {/* Preço */}
+              {config.price !== undefined && config.price !== null && (
+                <div className="mt-2 pt-2 border-t flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Preço:</span>
+                  <span className="font-semibold text-gray-900">
+                    {config.priceType === 'A partir de' && config.maxValue
+                      ? `R$ ${config.price.toFixed(2)} - R$ ${config.maxValue.toFixed(2)}`
+                      : `R$ ${config.price.toFixed(2)}`
+                    }
+                  </span>
+                </div>
+              )}
+
+              {config.isRequest && (
+                <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                  Este é um agendamento por solicitação. O salão entrará em
+                  contato para confirmar o profissional e horário final.
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Total */}
+          <div className="border-t pt-4">
+            <div className="flex justify-between items-center font-semibold">
+              <span>Total Geral:</span>
+              <div className="text-right">
+                <div>
+                  {bookingData.serviceConfigs.some(c => c.priceType === 'A partir de')
+                    ? `A partir de R$ ${getTotalPrice().toFixed(2)}`
+                    : `R$ ${getTotalPrice().toFixed(2)}`
+                  }
+                </div>
+                <div className="text-sm text-gray-600 font-normal">
+                  {getTotalDuration()} minutos total
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dados do Cliente */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Seus Dados</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <User className="h-5 w-5 text-gray-600" />
+            <span>{bookingData.customerName}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Mail className="h-5 w-5 text-gray-600" />
+            <span>{bookingData.customerEmail || "Não informado"}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Phone className="h-5 w-5 text-gray-600" />
+            <span>{bookingData.customerPhone}</span>
+          </div>
+
+          {bookingData.observations && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+              <h5 className="font-medium text-gray-900 mb-1">Observações:</h5>
+              <p className="text-gray-600 text-sm">
+                {bookingData.observations}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Informações do Salão */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Local do Atendimento</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <MapPin className="h-5 w-5 text-gray-600" />
+            <div>
+              <div className="font-medium">{salon.name}</div>
+              <div className="text-gray-600">{salon.address}</div>
+              <div className="text-gray-600">{salon.phone}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ações */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button
+          variant="default"
+          className="flex-1"
+          onClick={onBack}
+          disabled={isSubmitting}
+        >
+          Voltar
+        </Button>
+
+        <Button
+          className="flex-1 text-white"
+          style={{ backgroundColor: primaryColor }}
+          onClick={handleConfirmBooking}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Confirmando...
+            </>
+          ) : (
+            "Confirmar Agendamento"
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}

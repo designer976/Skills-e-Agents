@@ -1,0 +1,56 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
+@Module({
+  imports: [
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DATABASE_HOST'),
+        port: configService.get('DATABASE_PORT'),
+        username: configService.get('DATABASE_USER'),
+        password: configService.get('DATABASE_PASSWORD'),
+        database: configService.get('DATABASE_NAME'),
+        schema: 'platform',
+        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+        synchronize: false,
+        logging: configService.get('NODE_ENV') !== 'production',
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrationsRun: false,
+        cache: false,
+        timezone: '-03:00',
+        ssl:
+          configService.get('NODE_ENV') === 'production'
+            ? {
+                rejectUnauthorized: false,
+              }
+            : false,
+        extra:
+          configService.get('NODE_ENV') === 'production'
+            ? {
+                ssl: {
+                  require: true,
+                  rejectUnauthorized: false,
+                },
+                // Configurações de pool otimizadas para reduzir timeouts
+                max: 10, // reduzido de 20 para 10 - menos conexões simultâneas
+                min: 2, // reduzido de 5 para 2 - menos conexões idle
+                idleTimeoutMillis: 10000, // reduzido de 30s para 10s
+                connectionTimeoutMillis: 5000, // reduzido de 10s para 5s
+                statement_timeout: '10s', // reduzido de 30s para 10s
+                query_timeout: 10000, // reduzido de 30s para 10s
+                keepAlive: true,
+                keepAliveInitialDelayMillis: 0,
+              }
+            : {},
+        keepConnectionAlive: true, // Mantém conexões vivas
+        retryAttempts: 3, // Número de tentativas de reconexão
+        retryDelay: 3000, // Delay entre tentativas (ms)
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+})
+export class DatabaseModule {}

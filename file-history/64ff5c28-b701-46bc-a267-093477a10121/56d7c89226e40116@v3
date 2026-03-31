@@ -1,0 +1,433 @@
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { CancelSubscriptionModal } from "@/components/modals/CancelSubscriptionModal";
+import { ChangePlanModal } from "@/components/modals/ChangePlanModal";
+import { ConfirmationModal } from "@/components/modals/ConfirmationModal";
+import { PaymentHistoryTable } from "@/components/salon/subscription/PaymentHistoryTable";
+import { PaymentMethodCard } from "@/components/salon/subscription/PaymentMethodCard";
+import { PlanActivationSuccessModal } from "@/components/salon/subscription/PlanActivationSuccessModal";
+import { PlanSelection } from "@/components/salon/subscription/PlanSelection";
+import { PurchaseSummary } from "@/components/salon/subscription/PurchaseSummary";
+import { SubscriptionConfirmationModal } from "@/components/salon/subscription/SubscriptionConfirmationModal";
+import { SubscriptionStatusCard } from "@/components/salon/subscription/SubscriptionStatusCard";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { planService } from "@/services/planService";
+import { subscriptionService } from "@/services/subscriptionService";
+import { subscriptionState } from "@/services/subscriptionState";
+import { CreateSubscriptionDto, CurrentSubscriptionResponse, Plan } from "@/types/subscription";
+import { differenceInDays, isAfter, parseISO } from "date-fns";
+import { AlertTriangle as AlertTriangle } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { trackSeverinoEvent } from "@/services/severinoService";
+
+export default function MyPlanPage() {
+    const { user } = useAuth();
+    const { selectedSalon } = useSelectedSalon();
+
+    const [loading, setLoading] = useState(true);
+    const [billingState, setBillingState] = useState<CurrentSubscriptionResponse | null>(null);
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>();
+    const [activating, setActivating] = useState(false);
+    const [isChangePlanModalOpen, setIsChangePlanModalOpen] = useState(false);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [isDeleteCardModalOpen, setIsDeleteCardModalOpen] = useState(false);
+    const [isDeletingCard, setIsDeletingCard] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [pendingPaymentMethod, setPendingPaymentMethod] = useState<any>(null);
+
+    // Get navigation items
+    const navItems = getSalonNavItems(user?.role || "Administrador", 0);
+
+    const fetchData = async (): Promise<CurrentSubscriptionResponse | null> => {
+        if (!selectedSalon) return null;
+        try {
+            setLoading(true);
+            // Fetch subscription and plans in parallel
+            const [state, plansData] = await Promise.all([
+                subscriptionService.getCurrentSubscription(selectedSalon.id),
+                planService.list()
+            ]);
+            setBillingState(state);
+            setPlans(plansData);
+
+            // Auto select current plan or default to first valid plan if none
+            if (state?.subscription?.planId) {
+                setSelectedPlanId(state.subscription.planId);
+            } else if (plansData.length > 0 && !selectedPlanId) {
+                // Only default if NOT already selected (user might have clicked a plan before adding card)
+                // Prefer "Plano IA" if available
+                const defaultPlan = plansData.find(p => p.slug === 'plano-ia') || plansData[0];
+                setSelectedPlanId(defaultPlan.id);
+            }
+            return state;
+
+        } catch (error) {
+            console.error("Failed to fetch subscription data", error);
+            toast.error("Erro ao carregar dados da assinatura");
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [selectedSalon]);
+
+    const handleUpdatePaymentMethod = async (cardData: any) => {
+        if (!selectedSalon) return;
+        try {
+            // Pass user data to improve payer information
+            await subscriptionService.updatePaymentMethod(
+                selectedSalon.id,
+                cardData,
+                user?.email,
+                user?.name
+            );
+            toast.success("Método de pagamento atualizado!");
+
+            // Refresh state to get the new card
+            const newState = await fetchData();
+
+            // AUTO-ACTIVATION FLOW -> CONFIRMATION MODAL
+            if (newState) {
+                const newStatus = newState.status || 'none';
+                const newValidUntil = newState.subscription?.validUntil ? parseISO(newState.subscription.validUntil.toString()) : null;
+                const newIsCanceling = !!(newState.subscription?.cancelAtPeriodEnd && newValidUntil && isAfter(newValidUntil, new Date()));
+
+                const newIsExpiredOrPastDue = (newStatus === 'past_due' || newStatus === 'canceled') && !newIsCanceling;
+                const newIsNone = newStatus === 'none';
+                const shouldTriggerFlow = newIsExpiredOrPastDue || newIsNone;
+
+                if (shouldTriggerFlow && selectedPlanId) {
+                    // Store the payment method to be used in activation
+                    setPendingPaymentMethod(newState.defaultPaymentMethod);
+                    // Open confirmation modal instead of activating directly
+                    setIsConfirmationModalOpen(true);
+                }
+            }
+
+        } catch (e: any) {
+            const errorMessage = e?.response?.data?.message || e?.message || "Erro ao atualizar cartão. Tente novamente.";
+            toast.error(errorMessage);
+        }
+    };
+
+    const handleCancelSubscription = () => {
+        if (billingState?.actions.canCancel) {
+            setIsCancelModalOpen(true);
+        }
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!selectedSalon) return;
+
+        try {
+            await subscriptionService.cancelSubscription(selectedSalon.id);
+            toast.success("Assinatura cancelada.");
+            await fetchData();
+        } catch (e) {
+            toast.error("Erro ao cancelar assinatura.");
+        }
+    };
+
+    const handleChangePlan = () => {
+        if (billingState?.actions.canChangePlan) {
+            setIsChangePlanModalOpen(true);
+        }
+    };
+
+    const handleConfirmPlanChange = async (planId: string) => {
+        if (isActiveNormal) {
+            toast.info("A troca automática de plano ativo está em desenvolvimento. Entre em contato com o suporte.");
+            return;
+        }
+        setSelectedPlanId(planId);
+    };
+
+    const handleActivatePlan = async (customPaymentMethod?: any) => {
+        if (!selectedPlanId || !selectedSalon) {
+            toast.error("Selecione um plano para continuar.");
+            return;
+        }
+        if (!user?.email) {
+            toast.error("Email do usuário não encontrado. Faça login novamente.");
+            return;
+        }
+
+        // Use custom method (from auto-activation) or fallback to state
+        // Safety: If it's a React event (from direct onClick), ignore it
+        const isEvent = customPaymentMethod && (customPaymentMethod.nativeEvent || customPaymentMethod._reactName);
+        const methodToUse = (customPaymentMethod && !isEvent) ? customPaymentMethod : displayPaymentMethod;
+
+        if (!methodToUse) {
+            toast.error("Adicione um cartão de crédito para continuar.");
+            return;
+        }
+
+        if (!methodToUse.payerDoc || !methodToUse.payerType) {
+            toast.error("Dados do pagador incompletos. Atualize o cartão de crédito.");
+            return;
+        }
+
+        try {
+            setActivating(true);
+            const payload: CreateSubscriptionDto = {
+                salonId: selectedSalon.id,
+                planId: selectedPlanId,
+                card: {
+                    cardId: methodToUse.id,
+                    holderName: methodToUse.holderName,
+                    expirationDate: methodToUse.expirationDate,
+                    brand: methodToUse.brand,
+                },
+                payer: {
+                    name: methodToUse.payerName || methodToUse.holderName,
+                    email: user.email,
+                    document: methodToUse.payerDoc,
+                    type: methodToUse.payerType,
+                    address: methodToUse.payerAddress ? {
+                        street: methodToUse.payerAddress.street,
+                        number: methodToUse.payerAddress.number,
+                        zipCode: methodToUse.payerAddress.zipCode,
+                        city: methodToUse.payerAddress.city,
+                        state: methodToUse.payerAddress.state,
+                        country: "BRA",
+                    } : undefined,
+                },
+            };
+
+            await subscriptionService.createSubscription(payload);
+            setShowSuccess(true);
+            subscriptionState.setExpired(false);
+
+            trackSeverinoEvent('pagamento_realizado', {
+                description: "Pagamento realizado / Plano ativado",
+                planId: selectedPlanId,
+                salonId: selectedSalon.id
+            });
+
+            fetchData();
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.message || err?.message || "Erro ao ativar plano. Tente novamente.";
+            toast.error(errorMessage);
+        } finally {
+            setActivating(false);
+        }
+    };
+
+    const handleDeletePaymentMethod = () => {
+        setIsDeleteCardModalOpen(true);
+    };
+
+    const handleConfirmDeleteCard = async () => {
+        if (!displayPaymentMethod) return;
+        try {
+            setIsDeletingCard(true);
+            await subscriptionService.removePaymentMethod(displayPaymentMethod.id);
+            toast.success("Cartão removido com sucesso!");
+            setIsDeleteCardModalOpen(false);
+            fetchData();
+        } catch (error) {
+            toast.error("Erro ao remover cartão.");
+        } finally {
+            setIsDeletingCard(false);
+        }
+    };
+
+    const handleConfirmActivation = async () => {
+        await handleActivatePlan(pendingPaymentMethod);
+        setIsConfirmationModalOpen(false);
+        setPendingPaymentMethod(null);
+    };
+
+    // --- LOGIC DETERMINATION ---
+    const now = new Date();
+    const validUntil = billingState?.subscription?.validUntil ? parseISO(billingState.subscription.validUntil.toString()) : null;
+    const isCanceling = !!(billingState?.subscription?.cancelAtPeriodEnd && validUntil && isAfter(validUntil, now));
+    const remainingDays = isCanceling && validUntil ? differenceInDays(validUntil, now) : 0;
+
+    const status = billingState?.status || 'none';
+    const selectedPlan = plans.find(p => p.id === selectedPlanId);
+    const displayPaymentMethod = billingState?.defaultPaymentMethod || billingState?.subscription?.paymentMethod || null;
+
+    // View Modes matching User Request
+    const isExpiredOrPastDue = (status === 'past_due' || status === 'canceled') && !isCanceling;
+    const isNone = status === 'none';
+
+    // Trial is treated similarly to Canceling for UI purposes (Status + Purchase Summary)
+    const isTrial = status === 'trialing' && !isCanceling;
+
+    // Active Normal is ONLY standard active (removed trialing)
+    const isActiveNormal = status === 'active' && !isCanceling;
+
+    // Group "Shop Mode" (Where we show Plan Selection)
+    const showShopMode = isExpiredOrPastDue || isNone;
+
+    // Hybrid View: Canceling OR Trial
+    const showHybridView = (isCanceling || isTrial) && !!billingState?.subscription;
+
+    if (!selectedSalon) {
+        return (
+            <EasySalonLayout sideNavItems={navItems} sideNavTitle="Easy Salon" sideNavSubtitle="Meu Plano">
+                <div className="flex justify-center py-10">Selecione um salão para ver o plano.</div>
+            </EasySalonLayout>
+        );
+    }
+
+    return (
+        <EasySalonLayout
+            sideNavItems={navItems}
+            sideNavTitle="Easy Salon"
+            sideNavSubtitle="Meu Plano"
+        >
+            <div className="max-w-5xl mx-auto space-y-8 p-8">
+                <div>
+                    <h1 className="text-2xl font-semibold text-foreground">Meu Plano</h1>
+                    <p className="text-body text-muted-foreground mt-1">Gerencie sua assinatura e forma de pagamento</p>
+                </div>
+
+                {loading ? (
+                    <div className="flex justify-center py-12">
+                        <LoadingSpinner size="md" />
+                    </div>
+                ) : (
+                    <>
+                        {/* 1. WARNING BANNER (Only for PastDue or Canceled/Expired) */}
+                        {isExpiredOrPastDue && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 flex items-start gap-4 mb-4">
+                                <div className="p-2 bg-yellow-100 rounded-full">
+                                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-yellow-800 font-bold text-lg">
+                                        {status === 'canceled' ? 'Assinatura cancelada' : 'Assinatura pendente'}
+                                    </h3>
+                                    <p className="text-yellow-700">
+                                        {status === 'canceled'
+                                            ? 'Sua assinatura foi cancelada. Escolha um plano para voltar a usar o sistema.'
+                                            : 'Identificamos uma pendência no seu pagamento. Atualize seu cartão para continuar.'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. PAYMENT METHOD (Shown in all states) */}
+                        <div className="space-y-4">
+                            <PaymentMethodCard
+                                paymentMethod={displayPaymentMethod}
+                                onSave={handleUpdatePaymentMethod}
+                                onDelete={handleDeletePaymentMethod}
+                            />
+                        </div>
+
+                        {/* 3. LAYOUT RENDERING BASED ON STATE */}
+
+                        {/* A. PAST_DUE / CANCELED(Expired) / NONE */}
+                        {showShopMode && (
+                            <>
+                                <PlanSelection
+                                    plans={plans}
+                                    selectedPlanId={selectedPlanId}
+                                    onSelect={setSelectedPlanId}
+                                />
+                                <PurchaseSummary
+                                    selectedPlan={selectedPlan}
+                                    onActivate={() => handleActivatePlan()}
+                                    loading={activating}
+                                    disabled={!displayPaymentMethod}
+                                />
+                            </>
+                        )}
+
+                        {/* B. ACTIVE + CANCELING OR TRIAL (The Hybrid View) */}
+                        {showHybridView && billingState?.subscription && (
+                            <>
+                                {/* Status Card (User requirement) */}
+                                <SubscriptionStatusCard
+                                    subscription={billingState.subscription}
+                                    actions={billingState.actions}
+                                    onCancel={handleCancelSubscription}
+                                    onChangePlan={handleChangePlan}
+                                    isCanceling={isCanceling}
+                                    remainingDays={remainingDays}
+                                />
+                                {/* Purchase Summary (User requirement) */}
+                                {selectedPlan && !isTrial && (
+                                    <div className="pt-4">
+                                        <PurchaseSummary
+                                            selectedPlan={selectedPlan}
+                                            onActivate={() => handleActivatePlan()}
+                                            loading={activating}
+                                            disabled={!displayPaymentMethod}
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {isActiveNormal && billingState?.subscription && (
+                            <SubscriptionStatusCard
+                                subscription={billingState.subscription}
+                                actions={billingState.actions}
+                                onCancel={handleCancelSubscription}
+                                onChangePlan={handleChangePlan}
+                                isCanceling={isCanceling}
+                                remainingDays={remainingDays}
+                            />
+                        )}
+
+                        {/* 4. PAYMENT HISTORY (Shown whenever there are invoices) */}
+                        {(billingState?.invoices?.length || 0) > 0 && (
+                            <PaymentHistoryTable history={billingState?.invoices || []} />
+                        )}
+                    </>
+                )}
+
+                <ChangePlanModal
+                    isOpen={isChangePlanModalOpen}
+                    onClose={() => setIsChangePlanModalOpen(false)}
+                    onConfirm={handleConfirmPlanChange}
+                    currentPlanId={billingState?.subscription?.planId}
+                    plans={plans}
+                />
+
+                <CancelSubscriptionModal
+                    isOpen={isCancelModalOpen}
+                    onClose={() => setIsCancelModalOpen(false)}
+                    onConfirm={handleConfirmCancel}
+                />
+
+                <ConfirmationModal
+                    isOpen={isDeleteCardModalOpen}
+                    onClose={() => setIsDeleteCardModalOpen(false)}
+                    onConfirm={handleConfirmDeleteCard}
+                    title="Remover cartão de crédito"
+                    description={`Deseja realmente remover o cartão ${displayPaymentMethod?.brand} final ${displayPaymentMethod?.last4}?`}
+                    confirmText="Sim, remover"
+                    cancelText="Cancelar"
+                    isLoading={isDeletingCard}
+                />
+            </div>
+
+            <SubscriptionConfirmationModal
+                isOpen={isConfirmationModalOpen}
+                onClose={() => setIsConfirmationModalOpen(false)}
+                onConfirm={handleConfirmActivation}
+                plan={selectedPlan}
+                isLoading={activating}
+            />
+
+            <PlanActivationSuccessModal
+                isOpen={showSuccess}
+                onClose={() => setShowSuccess(false)}
+                planName={selectedPlan?.name || ""}
+            />
+        </EasySalonLayout>
+    );
+}

@@ -1,0 +1,191 @@
+import type { ProposalSection, ProposalModelo } from "@/lib/proposal-types"
+import { formatDateShort } from "@/lib/proposal-types"
+
+export function clean(text: string): string {
+  return text.replace(/\*\*/g, "").replace(/\*/g, "").trim()
+}
+
+export function findSection(sections: ProposalSection[], ...keywords: string[]): ProposalSection | undefined {
+  return sections.find((s) =>
+    keywords.some((k) => s.key.toLowerCase().includes(k) || s.title.toLowerCase().includes(k))
+  )
+}
+
+export function extractSubtitulo(content: string, projeto: string): string {
+  if (projeto) return projeto
+  const h3 = content.match(/^###\s+(.+)$/m)
+  if (h3) return clean(h3[1])
+  const bold = content.match(/\*\*(.+?)\*\*/)
+  if (bold) return bold[1]
+  return clean(content.split("\n").find((l) => l.trim()) ?? "Projeto")
+}
+
+export function extractDescricao(content: string): string {
+  const lines = content.split("\n")
+  const para = lines.find((l) => {
+    const t = l.trim()
+    return t && !t.startsWith("#") && !t.startsWith("-") && !t.startsWith("*") && !/^\d+\./.test(t)
+  })
+  return clean(para ?? "")
+}
+
+export function extractDestaques(content: string): [string, string] {
+  const boldLines = content
+    .split("\n")
+    .filter((l) => l.trim().startsWith("**") && l.trim().endsWith("**"))
+    .map((l) => clean(l))
+  return [boldLines[0] ?? "", boldLines[1] ?? ""]
+}
+
+export function extractFuncionalidades(content: string): string {
+  const lines = content.split("\n")
+  const items: string[] = []
+
+  for (const line of lines) {
+    const t = line.trim()
+    const m1 = t.match(/^(\d+)\.\s+\*\*(.+?)\*\*\s*[—–:\-]\s*(.+)$/)
+    if (m1) { items.push(`<li><span class="n">${m1[1]}.</span><div><strong>${m1[2]}</strong> – ${clean(m1[3])}</div></li>`); continue }
+    const m2 = t.match(/^(\d+)\.\s+(.+?)\s*[—–]\s*(.+)$/)
+    if (m2) { items.push(`<li><span class="n">${m2[1]}.</span><div><strong>${m2[2]}</strong> – ${clean(m2[3])}</div></li>`); continue }
+    const m3 = t.match(/^[-*•]\s+\*\*(.+?)\*\*[:\s]+(.+)$/)
+    if (m3) { items.push(`<li><span class="n">${items.length + 1}.</span><div><strong>${m3[1]}</strong> – ${clean(m3[2])}</div></li>`); continue }
+  }
+
+  if (!items.length) {
+    content.split("\n")
+      .filter((l) => /^[-*•]\s/.test(l.trim()))
+      .slice(0, 6)
+      .forEach((l, i) => {
+        items.push(`<li><span class="n">${i + 1}.</span><div>${clean(l.replace(/^[-*•]\s+/, ""))}</div></li>`)
+      })
+  }
+  return items.join("\n")
+}
+
+export function extractIntegracoes(content: string): string {
+  const line = content.split("\n").find((l) =>
+    /integr|AWS|cloud|API\s|plataforma|sistema externo/i.test(l)
+  )
+  if (line) return clean(line.replace(/^[-*•\d.]+\s+/, ""))
+  return "Este projeto não prevê integrações com sistemas externos."
+}
+
+export function extractPrazoTotal(content: string): string {
+  const m1 = content.match(/(?:prazo|total|estimado)[:\s]+(\d+(?:[,.]\d+)?\s*(?:semanas?|meses?|dias?))/i)
+  if (m1) return m1[1]
+  const m2 = content.match(/(\d+(?:[,.]\d+)?\s*(?:semanas?|meses?))/i)
+  if (m2) return m2[1]
+  return "A definir"
+}
+
+export function extractCronogramaFases(content: string): string {
+  const lines = content.split("\n")
+  const phases: string[] = []
+  let counter = 0
+
+  for (const line of lines) {
+    const t = line.trim()
+    if (!t) continue
+    const m1 = t.match(/^(?:Fase\s*)?(\d+)\s*[-:]\s*(.+?)\s*\|\s*(.+)$/)
+    if (m1) { phases.push(`<div class="phase"><span class="lbl">Fase ${m1[1]}:</span> ${clean(m1[2])} – ${clean(m1[3])}</div>`); continue }
+    const m2 = t.match(/^Fase\s*(\d+)\s*[-:]\s*(.+)$/)
+    if (m2) { phases.push(`<div class="phase"><span class="lbl">Fase ${m2[1]}:</span> ${clean(m2[2])}</div>`); continue }
+    if (/^[-*•]\s/.test(t) && /semana|mês|mes|dias?/i.test(t)) {
+      counter++
+      phases.push(`<div class="phase"><span class="lbl">Fase ${counter}:</span> ${clean(t.replace(/^[-*•]\s+/, ""))}</div>`)
+    }
+  }
+  return phases.join("\n") || `<div class="phase"><span class="lbl">Fase 1:</span> A definir</div>`
+}
+
+export function extractValorTotal(content: string): string {
+  const totalLine = content.split("\n").find((l) => /total/i.test(l) && /R\$/i.test(l))
+  if (totalLine) {
+    const m = totalLine.match(/R\$\s*[\d.,]+/)
+    if (m) return m[0]
+  }
+  const m = content.match(/R\$\s*[\d.,]+/)
+  return m ? m[0] : "A definir"
+}
+
+export function extractParcelas(content: string): { v1: string; cond2: string; v2: string; cond3: string; v3: string } {
+  const vals = content.match(/R\$\s*[\d.,]+/g) ?? []
+  const pct = content.match(/(\d+)%/g) ?? []
+
+  const p1 = content.match(/(?:1[aª°]?\s*parcela|assinatura)[^R\n]*R\$\s*([\d.,]+)/i)
+  const p2 = content.match(/(?:2[aª°]?\s*parcela)[^R\n]*R\$\s*([\d.,]+)/i)
+  const p3 = content.match(/(?:3[aª°]?\s*parcela)[^R\n]*R\$\s*([\d.,]+)/i)
+
+  const cond2m = content.match(/(\d+\s*dias?(?:\s*após[^,\n]+)?)/i)
+  const cond3m = content.match(/(?:pós.homolog|entrega final|conclusão|go.live)/i)
+
+  return {
+    v1: p1 ? `R$ ${p1[1]}` : vals[0] ?? "A definir",
+    cond2: cond2m ? cond2m[1] : pct[1] ? `${pct[1]} na entrega parcial` : "30 dias após a assinatura",
+    v2: p2 ? `R$ ${p2[1]}` : vals[1] ?? "A definir",
+    cond3: cond3m ? cond3m[0] : pct[2] ? `${pct[2]} na entrega final` : "Pós-homologação",
+    v3: p3 ? `R$ ${p3[1]}` : vals[2] ?? "A definir",
+  }
+}
+
+export function extractEntregaveis(content: string): string {
+  const deliverableKeywords = /protótipo|figma|documentação|código|repositório|sistema|produção|api\s|deploy|fonte/i
+  const items = content
+    .split("\n")
+    .filter((l) => /^[-*•]\s/.test(l.trim()) && deliverableKeywords.test(l))
+    .map((l) => `<li>${clean(l.replace(/^[-*•]\s+/, ""))}</li>`)
+
+  if (items.length) return items.join("\n")
+  return [
+    "<li>Protótipos de Alta Fidelidade (Figma).</li>",
+    "<li>Documentação Funcional.</li>",
+    "<li>Documentação Técnica.</li>",
+    "<li>Código Fonte Completo (repositório Git).</li>",
+    "<li>Sistema em Produção.</li>",
+  ].join("\n")
+}
+
+export function buildProposalTokens(params: {
+  empresa: string
+  para: string | undefined
+  projeto: string | undefined
+  modeloTrabalho: ProposalModelo | undefined
+  dataCriacao: number
+  sections: ProposalSection[]
+}): Record<string, string> {
+  const { empresa, para, projeto, modeloTrabalho, dataCriacao, sections } = params
+
+  const sobreSection     = findSection(sections, "sobre", "objetivo", "projeto", "descricao")
+  const escopoSection    = findSection(sections, "escopo", "funcionalidade", "requisito", "solucao")
+  const cronoSection     = findSection(sections, "cronograma", "timeline", "prazo", "fase")
+  const investSection    = findSection(sections, "investimento", "valor", "preco", "precificacao")
+  const condicoesSection = findSection(sections, "condicao", "pagamento", "comercial", "financeiro")
+  const entregaSection   = findSection(sections, "entregavel", "entrega", "deliverable")
+
+  const sobreContent  = sobreSection?.content ?? ""
+  const escopoContent = escopoSection?.content ?? sobreContent
+  const parcelas      = extractParcelas(condicoesSection?.content ?? investSection?.content ?? "")
+  const [destaque1, destaque2] = extractDestaques(sobreContent + "\n" + escopoContent)
+
+  return {
+    NOME_CLIENTE:       empresa || "—",
+    DESTINATARIO:       para || empresa || "—",
+    DATA:               formatDateShort(dataCriacao),
+    TIPO_PROJETO:       modeloTrabalho && modeloTrabalho !== "Vazio" ? modeloTrabalho : "Escopo Fechado",
+    SUBTITULO_PROJETO:  extractSubtitulo(sobreContent, projeto ?? ""),
+    DESCRICAO_PROJETO:  extractDescricao(sobreContent),
+    DESTAQUE_1:         destaque1 || extractDescricao(escopoContent),
+    DESTAQUE_2:         destaque2 || "Solução desenvolvida com as melhores práticas de engenharia de software.",
+    FUNCIONALIDADES:    extractFuncionalidades(escopoContent || sobreContent),
+    INTEGRACOES_TEXTO:  extractIntegracoes(escopoContent),
+    PRAZO_TOTAL:        extractPrazoTotal(cronoSection?.content ?? ""),
+    CRONOGRAMA_FASES:   extractCronogramaFases(cronoSection?.content ?? ""),
+    VALOR_TOTAL:        extractValorTotal(investSection?.content ?? ""),
+    PARCELA_1_VALOR:    parcelas.v1,
+    PARCELA_2_CONDICAO: parcelas.cond2,
+    PARCELA_2_VALOR:    parcelas.v2,
+    PARCELA_3_CONDICAO: parcelas.cond3,
+    PARCELA_3_VALOR:    parcelas.v3,
+    ENTREGAVEIS:        extractEntregaveis(entregaSection?.content ?? escopoContent),
+  }
+}

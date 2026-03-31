@@ -1,0 +1,178 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft as ArrowLeft, Loader2 as Loader2 } from "lucide-react";
+import { AuthLayout } from "@/components/AuthLayout";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import authService from "@/services/authService";
+import { validatePassword } from "@/utils/validation";
+import { toast } from "sonner";
+
+export default function SetPassword() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { loginWithTokens } = useAuth();
+  const token = searchParams.get("token");
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const validate = async () => {
+      if (!token) {
+        setIsValidToken(false);
+        return;
+      }
+      try {
+        const valid = await authService.validateResetToken(token);
+        setIsValidToken(valid);
+      } catch {
+        setIsValidToken(false);
+      }
+    };
+    validate();
+  }, [token]);
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+
+    if (!token) {
+      toast.error("Token inválido");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    const { isValid } = validatePassword(password);
+    if (!isValid) {
+      toast.error("A senha não atende aos requisitos de segurança");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await authService.setPassword(token, password, confirmPassword);
+      const authUser = loginWithTokens(response.accessToken, response.refreshToken, response.user);
+
+      toast.success("Senha criada com sucesso! Bem-vindo ao Easy Salon.");
+      // New users from LP always go to onboarding
+      navigate("/onboarding");
+    } catch {
+      toast.error("Link inválido ou expirado. Solicite um novo cadastro.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isValidToken === null) {
+    return (
+      <AuthLayout>
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="text-muted-foreground">Validando link...</div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  if (isValidToken === false) {
+    return (
+      <AuthLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Link to="/login">
+              <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+            </Link>
+            <h1 className="text-2xl font-bold text-foreground">Link Inválido</h1>
+          </div>
+
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <p className="text-destructive">
+              O link para criação de senha é inválido ou expirou (válido por 24 horas).
+            </p>
+          </div>
+
+          <Link to="/login" className="block text-center text-primary hover:underline">
+            Voltar ao login
+          </Link>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Criar sua senha</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Defina uma senha segura para acessar o Easy Salon.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="password" className="text-muted-foreground">
+              Nova Senha <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Crie sua senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-11 bg-card border-border mt-1"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword" className="text-muted-foreground">
+              Confirmar Senha <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="Repita a senha"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="h-11 bg-card border-border mt-1"
+              required
+            />
+          </div>
+
+          <PasswordRequirements password={password} confirmPassword={confirmPassword} />
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading || !password || !confirmPassword}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Criando...
+              </>
+            ) : (
+              "Criar Senha e Entrar"
+            )}
+          </Button>
+        </form>
+
+        <div className="text-center">
+          <Link to="/login" className="text-sm text-primary hover:underline">
+            Já tem uma conta? Faça login
+          </Link>
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}

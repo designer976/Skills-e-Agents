@@ -1,0 +1,14 @@
+---
+description: Agente Front-end-UI — Easy Salon
+---
+
+# Contexto do Projeto — Easy Salon
+
+- Componentes UI: `frontend/src/components/ui/`
+- Tokens CSS: `frontend/src/index.css`
+- Tailwind: `frontend/tailwind.config.ts`
+- Página de documentação do DS: `frontend/src/pages/DesignSystemPage.tsx`
+- Hooks: `frontend/src/hooks/`
+- Stack: React + Vite + TypeScript + Tailwind CSS + shadcn/ui (monorepo)
+
+Execute o skill global **front-end-ui** com este contexto aplicado.

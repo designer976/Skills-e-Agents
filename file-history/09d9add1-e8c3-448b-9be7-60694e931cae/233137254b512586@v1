@@ -1,0 +1,133 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 as Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { CreateSpecialtyDto } from "@/types/specialty";
+
+interface AdminSpecialtyFormProps {
+  initialData?: Partial<CreateSpecialtyDto>;
+  onSave: (data: CreateSpecialtyDto) => void;
+  onCancel: () => void;
+  isEditing?: boolean;
+  isSaving?: boolean;
+}
+
+export function AdminSpecialtyForm({
+  initialData,
+  onSave,
+  onCancel,
+  isEditing = false,
+  isSaving = false
+}: AdminSpecialtyFormProps) {
+  const [specialtyData, setSpecialtyData] = useState<CreateSpecialtyDto>(() => ({
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    displayOrder: initialData?.displayOrder || 0,
+    isActive: initialData?.isActive ?? true,
+    requestOnly: false, // Always false for admin
+  }));
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateSpecialtyDto, string>>>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    setSpecialtyData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof CreateSpecialtyDto]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof CreateSpecialtyDto, string>> = {};
+
+    // Validate name: Required, min 2 characters, max 100 characters
+    if (!specialtyData.name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    } else if (specialtyData.name.trim().length < 2) {
+      newErrors.name = "Nome deve ter pelo menos 2 caracteres";
+    } else if (specialtyData.name.length > 100) {
+      newErrors.name = "Nome não pode ter mais de 100 caracteres";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    // Always send requestOnly as false for admin
+    const dataToSave = {
+      ...specialtyData,
+      requestOnly: false
+    };
+
+    onSave(dataToSave);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome da Especialidade *</Label>
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            value={specialtyData.name}
+            onChange={handleInputChange}
+            placeholder="Digite o nome da especialidade"
+            required
+            disabled={isSaving}
+            maxLength={100}
+            className={errors.name ? "border-red-500" : ""}
+          />
+          {errors.name && (
+            <p className="text-sm text-red-500">{errors.name}</p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Mínimo 2 caracteres, máximo 100 caracteres
+          </p>
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 z-10 bg-background px-6 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSaving}
+          className="w-full sm:w-auto min-h-[44px]"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          className="w-full sm:w-auto min-h-[44px] salon-button-primary"
+          disabled={isSaving}
+        >
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isEditing ? "Salvar Alterações" : "Criar Especialidade"}
+        </Button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,127 @@
+import { AuthLayout } from "@/components/AuthLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { useAuth } from "@/contexts/AuthContext";
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { getRedirectPathForRole } from "@/utils/navigation";
+import { validateEmail } from "@/utils/validation";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+
+    if (newEmail && !validateEmail(newEmail)) {
+      setEmailError("Formato de e-mail inválido");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    setError("");
+
+    // Validar email antes de submeter
+    if (!validateEmail(email)) {
+      setEmailError("Formato de e-mail inválido");
+      return;
+    }
+
+    try {
+      const user = await login(email, password);
+
+      trackSeverinoEvent('login', { description: `Login: ${email}` });
+
+      // Redirecionar baseado no role do usuário já mapeado
+      const redirectPath = getRedirectPathForRole(user.role);
+      navigate(redirectPath);
+    } catch (error: unknown) {
+      setError("Credenciais inválidas. Por favor, tente novamente.");
+    }
+  };
+
+  return (
+    <AuthLayout imagePosition="center top">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Bem-vindo ao Easy Salon
+          </h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="email" className="text-muted-foreground">
+              E-mail
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="seuemail@exemplo.com"
+              value={email}
+              onChange={handleEmailChange}
+              className={`h-11 bg-card border-border ${emailError ? "border-destructive" : ""
+                }`}
+              required
+            />
+            {emailError && (
+              <p className="text-sm text-destructive mt-1">{emailError}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="password" className="text-muted-foreground">
+              Senha
+            </Label>
+            <PasswordInput
+              id="password"
+              placeholder="Digite aqui a sua senha..."
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-11 bg-card border-border"
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full salon-button-primary"
+            disabled={isLoading || !!emailError}
+          >
+            {isLoading ? "Entrando..." : "Entrar"}
+          </Button>
+        </form>
+
+        <div className="text-center space-y-2">
+          <Link to="/forgot-password" className="text-primary hover:underline">
+            Esqueci minha senha
+          </Link>
+          <p className="text-muted-foreground">
+            Não tem cadastro?{" "}
+            <Link to="/register" className="text-primary hover:underline">
+              Clique aqui
+            </Link>
+          </p>
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}

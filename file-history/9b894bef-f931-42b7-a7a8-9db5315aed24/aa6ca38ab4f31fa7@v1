@@ -1,0 +1,482 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Form } from "@/components/ui/form";
+import { UserScheduleForm } from "@/components/forms/UserScheduleForm";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { userService } from "@/services/userService";
+import { salonService } from "@/services/salonService";
+import { User, UserSchedule } from "@/types/user";
+import { OpeningHours } from "@/types/salon";
+
+interface DayInterval {
+  id: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface ScheduleData {
+  selectedDays: string[];
+  dayIntervals: Record<string, DayInterval[]>;
+  acceptsOnlineBooking?: boolean;
+}
+
+const scheduleFormSchema = z.object({
+  schedule: z
+    .object({
+      selectedDays: z.array(z.string()),
+      dayIntervals: z.record(
+        z.array(
+          z.object({
+            id: z.string(),
+            startTime: z.string(),
+            endTime: z.string(),
+          })
+        )
+      ),
+      acceptsOnlineBooking: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
+
+export default function UserSchedulePage() {
+  const navigate = useNavigate();
+  const { userId } = useParams();
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [userData, setUserData] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [salonSchedule, setSalonSchedule] = useState<
+    Record<string, { isOpen: boolean; openTime: string; closeTime: string }>
+  >({});
+  const [isUsingSalonSchedule, setIsUsingSalonSchedule] = useState(false);
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  const form = useForm<ScheduleFormData>({
+    resolver: zodResolver(scheduleFormSchema),
+    defaultValues: {
+      schedule: {},
+    },
+  });
+
+  // Map day names to numeric keys for backend
+  const dayNameToNumber: Record<string, string> = {
+    monday: "1",
+    tuesday: "2",
+    wednesday: "3",
+    thursday: "4",
+    friday: "5",
+    saturday: "6",
+    sunday: "0",
+  };
+
+  const numberToDayName: Record<string, string> = {
+    "0": "sunday",
+    "1": "monday",
+    "2": "tuesday",
+    "3": "wednesday",
+    "4": "thursday",
+    "5": "friday",
+    "6": "saturday",
+  };
+
+  // Load salon schedule first
+  useEffect(() => {
+    if (selectedSalon?.id) {
+      loadSalonSchedule();
+    }
+  }, [selectedSalon?.id]);
+
+  // Load user data after salon schedule is loaded
+  useEffect(() => {
+    if (userId && Object.keys(salonSchedule).length > 0) {
+      loadUserData();
+    }
+  }, [userId, salonSchedule]);
+
+  // Load salon working hours
+  const loadSalonSchedule = async (): Promise<void> => {
+    if (!selectedSalon?.id) return;
+
+    try {
+      const data = await salonService.getWorkingHours(selectedSalon.id);
+
+      // Convert to format needed by UserScheduleForm
+      const schedule: Record<
+        string,
+        { isOpen: boolean; openTime: string; closeTime: string }
+      > = {
+        monday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        tuesday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        wednesday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        thursday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        friday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        saturday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
+        sunday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
+      };
+
+      const dayMap: Record<number, string> = {
+        0: "sunday",
+        1: "monday",
+        2: "tuesday",
+        3: "wednesday",
+        4: "thursday",
+        5: "friday",
+        6: "saturday",
+      };
+
+      data.forEach((hours: OpeningHours) => {
+        const dayKey = dayMap[hours.dayOfWeek];
+        if (dayKey) {
+          schedule[dayKey] = {
+            isOpen: hours.isOpen,
+            openTime: hours.open || "09:00",
+            closeTime: hours.close || "18:00",
+          };
+        }
+      });
+
+      setSalonSchedule(schedule);
+    } catch (error) {
+      // Continue without salon hours if error occurs
+    }
+  };
+
+  const loadUserData = async (): Promise<void> => {
+    if (!userId) return;
+
+    try {
+      setLoadingUser(true);
+      const data = await userService.getById(userId);
+      setUserData(data);
+
+      // Verificar se o profissional tem horários customizados (isWorking = true em algum dia)
+      const hasCustomSchedule =
+        data.schedule &&
+        Object.keys(data.schedule).length > 0 &&
+        Object.values(data.schedule).some(
+          (s: { isWorking?: boolean }) => s.isWorking === true
+        );
+
+      setIsUsingSalonSchedule(!hasCustomSchedule);
+
+      const selectedDays: string[] = [];
+      const dayIntervals: Record<
+        string,
+        Array<{ id: string; startTime: string; endTime: string }>
+      > = {};
+
+      // SEMPRE ITERAR POR TODOS OS DIAS DO SALÃO
+      if (salonSchedule && Object.keys(salonSchedule).length > 0) {
+        Object.entries(salonSchedule).forEach(([dayName, salonDaySchedule]) => {
+          // Se o salão está aberto neste dia
+          if (salonDaySchedule.isOpen) {
+            // Converter dayName para número para buscar no schedule do profissional
+            const dayNum = dayNameToNumber[dayName];
+            const professionalSchedule = data.schedule?.[dayNum];
+            const isProfessionalWorking =
+              professionalSchedule?.isWorking === true;
+
+            // Caso 1: Profissional TEM horário customizado E trabalha neste dia
+            if (isProfessionalWorking) {
+              selectedDays.push(dayName);
+              const intervals: Array<{
+                id: string;
+                startTime: string;
+                endTime: string;
+              }> = [];
+
+              // Usar horários do profissional
+              const startTime =
+                professionalSchedule.startTime || salonDaySchedule.openTime;
+              const endTime =
+                professionalSchedule.endTime || salonDaySchedule.closeTime;
+
+              // Verificar se há intervalos (breaks) configurados com dados válidos
+              const hasValidBreaks =
+                professionalSchedule.breaks &&
+                professionalSchedule.breaks.length > 0 &&
+                professionalSchedule.breaks[0].start &&
+                professionalSchedule.breaks[0].end;
+
+              if (hasValidBreaks) {
+                const firstBreak = professionalSchedule.breaks[0];
+                // Turno da manhã (antes do intervalo)
+                intervals.push({
+                  id: `${dayName}-1`,
+                  startTime: startTime,
+                  endTime: firstBreak.start,
+                });
+                // Turno da tarde (depois do intervalo)
+                intervals.push({
+                  id: `${dayName}-2`,
+                  startTime: firstBreak.end,
+                  endTime: endTime,
+                });
+              } else if (
+                professionalSchedule.breakStart &&
+                professionalSchedule.breakEnd
+              ) {
+                // Formato antigo com breakStart/breakEnd
+                intervals.push({
+                  id: `${dayName}-1`,
+                  startTime: startTime,
+                  endTime: professionalSchedule.breakStart,
+                });
+                intervals.push({
+                  id: `${dayName}-2`,
+                  startTime: professionalSchedule.breakEnd,
+                  endTime: endTime,
+                });
+              } else {
+                // Turno único (sem intervalo)
+                intervals.push({
+                  id: `${dayName}-1`,
+                  startTime: startTime,
+                  endTime: endTime,
+                });
+              }
+
+              dayIntervals[dayName] = intervals;
+            }
+            // Caso 2: Profissional NÃO tem horário customizado OU não trabalha neste dia
+            // Usar horários do SALÃO como padrão
+            else if (!isProfessionalWorking) {
+              selectedDays.push(dayName);
+              dayIntervals[dayName] = [
+                {
+                  id: `${dayName}-1`,
+                  startTime: salonDaySchedule.openTime,
+                  endTime: salonDaySchedule.closeTime,
+                },
+              ];
+            }
+          }
+        });
+      }
+
+      form.reset({
+        schedule: {
+          selectedDays,
+          dayIntervals,
+          acceptsOnlineBooking: data.acceptsOnlineBooking !== false,
+        },
+      });
+    } catch (error) {
+      toast.error("Erro ao carregar dados do usuário.");
+      navigate("/salon/users");
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  const onSubmit = async (data: ScheduleFormData): Promise<void> => {
+    if (!userId) return;
+
+    // Prevent multiple submissions
+    if (loading) return;
+
+    try {
+      setLoading(true);
+
+      // Convert form format to backend format with numeric keys
+      const schedule: Record<
+        string,
+        {
+          isWorking: boolean;
+          startTime?: string;
+          endTime?: string;
+          breakStart?: string;
+          breakEnd?: string;
+        }
+      > = {};
+
+      // Initialize all days as not working
+      for (let i = 0; i <= 6; i++) {
+        schedule[i.toString()] = { isWorking: false };
+      }
+
+      if (data.schedule) {
+        const { selectedDays, dayIntervals } = data.schedule;
+
+        // Check if user is clearing all schedule
+        const isClearing = !selectedDays || selectedDays.length === 0;
+
+        if (!isClearing) {
+          selectedDays?.forEach((dayName: string) => {
+            const dayNum = dayNameToNumber[dayName];
+            if (dayNum !== undefined) {
+              const intervals = dayIntervals?.[dayName];
+              if (intervals && intervals.length > 0) {
+                // Sort intervals by start time
+                const sortedIntervals = [...intervals].sort((a, b) => {
+                  const timeA = a.startTime
+                    ? parseInt(a.startTime.replace(":", ""))
+                    : 0;
+                  const timeB = b.startTime
+                    ? parseInt(b.startTime.replace(":", ""))
+                    : 0;
+                  return timeA - timeB;
+                });
+
+                if (sortedIntervals.length === 1) {
+                  // Single shift - no break
+                  schedule[dayNum] = {
+                    isWorking: true,
+                    startTime: sortedIntervals[0].startTime,
+                    endTime: sortedIntervals[0].endTime,
+                  };
+                } else if (sortedIntervals.length === 2) {
+                  // Two shifts - implicit break between them
+                  const breakStart = sortedIntervals[0].endTime;
+                  const breakEnd = sortedIntervals[1].startTime;
+
+                  // Só adicionar break se houver intervalo real (diferença > 0)
+                  if (breakStart !== breakEnd) {
+                    schedule[dayNum] = {
+                      isWorking: true,
+                      startTime: sortedIntervals[0].startTime,
+                      endTime: sortedIntervals[1].endTime,
+                      breakStart: breakStart,
+                      breakEnd: breakEnd,
+                    };
+                  } else {
+                    // Se não há break (turnos consecutivos), tratar como turno único
+                    schedule[dayNum] = {
+                      isWorking: true,
+                      startTime: sortedIntervals[0].startTime,
+                      endTime: sortedIntervals[1].endTime,
+                    };
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // First update the schedule
+      await userService.updateSchedule(userId, schedule);
+
+      // Then update the acceptsOnlineBooking flag if it's set
+      if (data.schedule?.acceptsOnlineBooking !== undefined) {
+        await userService.update(userId, {
+          acceptsOnlineBooking: data.schedule.acceptsOnlineBooking,
+        });
+      }
+      toast.success("Horários salvos com sucesso!");
+      navigate("/salon/users");
+    } catch (error) {
+      const errorObj = error as { response?: { data?: { message?: string } } };
+      if (errorObj.response?.data?.message) {
+        toast.error(errorObj.response.data.message);
+      } else {
+        toast.error("Erro ao salvar horários.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoBack = (): void => {
+    navigate("/salon/users");
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleGoBack}
+            className="h-10 w-10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="page-title">Gerenciar Horários</h1>
+        </div>
+
+        {loadingUser ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            {userData && (
+              <div className="mb-4 space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Configurando horários para: <strong>{userData.nickname || userData.name}</strong>
+                </div>
+                {isUsingSalonSchedule && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-700">
+                      <strong>ℹ️ Usando horários do salão:</strong> Este
+                      profissional está seguindo os horários padrão do salão. Ao
+                      personalizar os horários abaixo, ele terá uma configuração
+                      específica.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                <Card>
+                  <CardContent className="p-6">
+                    <UserScheduleForm
+                      value={form.watch("schedule")}
+                      onChange={(value) => form.setValue("schedule", value)}
+                      salonSchedule={salonSchedule}
+                    />
+
+                    {/* Botão de salvar */}
+                    <div className="flex justify-end pt-6 border-t">
+                      <Button
+                        type="submit"
+                        className="min-w-[200px]"
+                        disabled={loading || !selectedSalon?.active}
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Salvando...
+                          </>
+                        ) : (
+                          "Salvar Horários"
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </form>
+            </Form>
+          </>
+        )}
+      </div>
+    </EasySalonLayout>
+  );
+}

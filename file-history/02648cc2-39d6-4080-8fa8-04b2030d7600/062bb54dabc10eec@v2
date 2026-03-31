@@ -1,0 +1,51 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+
+@Injectable()
+export class RedisConfigService {
+  constructor(private configService: ConfigService) {}
+
+  getRedisOptions() {
+    // Se existir .env.local, Redis é opcional (desenvolvimento local)
+    const isLocalDev = fs.existsSync(__dirname + '/../../.env.local');
+
+    if (isLocalDev) {
+      return null; // Sem Redis em desenvolvimento local
+    }
+
+    // Configuração Redis normal para produção
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+
+    return {
+      host: this.configService.get('REDIS_HOST', 'localhost'),
+      port: parseInt(this.configService.get('REDIS_PORT', '6379')),
+      password: this.configService.get('REDIS_PASSWORD'),
+      username: this.configService.get('REDIS_USERNAME'),
+      db: parseInt(this.configService.get('REDIS_DB', '0')),
+
+      // Configurações de timeout otimizadas para produção
+      connectTimeout: isProduction ? 3000 : 5000, // 3s em prod, 5s em dev
+      commandTimeout: isProduction ? 2000 : 5000, // 2s em prod, 5s em dev
+
+      // Configuração de retry com backoff exponencial
+      retryStrategy: (times) => {
+        if (times > 3) {
+          // Após 3 tentativas, desiste
+          return null;
+        }
+        // Backoff exponencial: 100ms, 200ms, 400ms
+        return Math.min(times * 100, 400);
+      },
+
+      // Configurações de reconexão
+      maxRetriesPerRequest: 2, // Máximo de 2 tentativas por request
+      enableOfflineQueue: true, // Mantém fila de comandos quando offline
+      lazyConnect: true, // Conecta apenas quando necessário
+
+      // Configurações de keep-alive
+      keepAlive: 10000, // Keep-alive a cada 10s
+      noDelay: true, // Desabilita Nagle's algorithm para menor latência
+    };
+  }
+}

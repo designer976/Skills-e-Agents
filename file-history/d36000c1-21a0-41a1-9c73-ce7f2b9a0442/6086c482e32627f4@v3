@@ -1,0 +1,95 @@
+import * as React from "react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+
+export interface CurrencyInputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+  value: string;
+  onChange: (value: string) => void;
+  showPrefix?: boolean;
+  label?: string;
+}
+
+const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
+  ({ className, value, onChange, showPrefix = true, label, id, ...props }, ref) => {
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
+    const [displayValue, setDisplayValue] = React.useState(value || "0,00");
+
+    React.useEffect(() => {
+      setDisplayValue(value || "0,00");
+    }, [value]);
+
+    const formatCurrency = (rawValue: string): string => {
+      // Remove tudo que não é dígito
+      const numericValue = rawValue.replace(/\D/g, '');
+      
+      if (numericValue === '') return '0,00';
+      
+      // Converte para número e divide por 100 para ter os centavos
+      const numberValue = parseInt(numericValue) / 100;
+      
+      // Formata com 2 casas decimais e substitui ponto por vírgula
+      return numberValue.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const inputValue = e.target.value;
+      const formatted = formatCurrency(inputValue);
+      
+      setDisplayValue(formatted);
+      onChange(formatted);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Permite apenas números, backspace, delete, tab, escape, enter e arrow keys
+      if (
+        ![8, 9, 27, 13, 37, 38, 39, 40, 46].includes(e.keyCode) && // Control keys
+        !(e.keyCode >= 48 && e.keyCode <= 57) && // Numbers 0-9
+        !(e.keyCode >= 96 && e.keyCode <= 105) // Numpad 0-9
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    const inner = (
+      <div className="relative">
+        {showPrefix && (
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+            R$
+          </span>
+        )}
+        <Input
+          {...props}
+          id={inputId}
+          ref={ref}
+          type="text"
+          value={displayValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            showPrefix ? "pl-10" : "",
+            className
+          )}
+          maxLength={15}
+        />
+      </div>
+    );
+
+    if (label) {
+      return (
+        <div className="flex flex-col gap-[4px]">
+          <Label htmlFor={inputId}>{label}</Label>
+          {inner}
+        </div>
+      );
+    }
+
+    return inner;
+  }
+);
+
+CurrencyInput.displayName = "CurrencyInput";
+
+export { CurrencyInput };

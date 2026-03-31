@@ -1,0 +1,41 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
+interface ConfirmCancelModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title?: string;
+  description?: string;
+  itemName?: string;
+}
+
+export function ConfirmCancelModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Confirmar Cancelamento",
+  description,
+  itemName,
+}: ConfirmCancelModalProps) {
+  const defaultDescription = itemName
+    ? `Tem certeza que deseja cancelar "${itemName}"? Esta ação não pode ser desfeita.`
+    : "Tem certeza que deseja cancelar esta solicitação? Esta ação não pode ser desfeita.";
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-md flex flex-col gap-0" showCloseButton={false}>
+        <DialogHeader className="shrink-0">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description || defaultDescription}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="shrink-0">
+          <Button variant="outline" onClick={onClose}>Voltar</Button>
+          <Button variant="destructive" onClick={() => { onConfirm(); onClose(); }}>
+            Confirmar Cancelamento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,1054 @@
+import { useMemo, useState, useEffect } from "react";
+import { format } from "date-fns";
+import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { cn } from "@/lib/utils";
+import {
+  extractTimeComponents,
+  convertLocalToUTC,
+} from "@/utils/dateTimeHelpers";
+import {
+  CalendarEvent,
+  EventPosition,
+  EventLayout,
+  ProfessionalColumn as ProfessionalColumnType,
+  TimeSlot,
+  AbsenceBlockData,
+} from "./types";
+import { EventBlock } from "./EventBlock";
+import { IconCalendar as Calendar, IconUserX as UserX, IconCoffee as Coffee } from "@tabler/icons-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+
+interface ProfessionalColumnProps {
+  professional: ProfessionalColumnType;
+  columnIndex: number;
+  events: CalendarEvent[];
+  timeSlots: TimeSlot[];
+  slotHeight: number;
+  primaryColor?: string;
+  onEventClick?: (event: CalendarEvent) => void;
+  onSlotClick?: (professionalId: string, startTime: string) => void;
+  onAbsenceClick?: (professionalId: string, startTime: string) => void;
+  onAbsenceBlockClick?: (absenceData: AbsenceBlockData) => void;
+  isPastDay?: boolean;
+  selectedDate?: Date;
+  highlightAppointmentId?: string | null;
+}
+
+interface ProfessionalBreakPeriod {
+  start: string;
+  end: string;
+}
+
+interface ProfessionalDaySchedule {
+  isWorking: boolean;
+  start?: string;
+  end?: string;
+  startTime?: string; // Backend compatibility
+  endTime?: string; // Backend compatibility
+  breaks?: ProfessionalBreakPeriod[];
+}
+
+interface ProfessionalSchedule {
+  sunday?: ProfessionalDaySchedule;
+  monday?: ProfessionalDaySchedule;
+  tuesday?: ProfessionalDaySchedule;
+  wednesday?: ProfessionalDaySchedule;
+  thursday?: ProfessionalDaySchedule;
+  friday?: ProfessionalDaySchedule;
+  saturday?: ProfessionalDaySchedule;
+}
+
+interface SlotClickPosition {
+  slot: TimeSlot;
+  x: number;
+  y: number;
+}
+
+// const calculateEventPosition = (
+//   event: CalendarEvent,
+//   timeSlots: TimeSlot[],
+//   slotHeight: number
+// ): EventPosition => {
+//   const startDate = new Date(event.start);
+//   const endDate = new Date(event.end);
+
+//   const startHour = startDate.getHours();
+//   const startMinute = startDate.getMinutes();
+//   const endHour = endDate.getHours();
+//   const endMinute = endDate.getMinutes();
+
+//   const firstSlot = timeSlots[0];
+//   const startMinutesFromFirst =
+//     startHour * 60 + startMinute - (firstSlot.hour * 60 + firstSlot.minute);
+//   const durationMinutes =
+//     endHour * 60 + endMinute - (startHour * 60 + startMinute);
+
+//   const slotMinutes =
+//     timeSlots.length > 1
+//       ? timeSlots[1].hour * 60 +
+//         timeSlots[1].minute -
+//         (firstSlot.hour * 60 + firstSlot.minute)
+//       : 30;
+
+//   const top = (startMinutesFromFirst / slotMinutes) * slotHeight;
+//   const height = (durationMinutes / slotMinutes) * slotHeight;
+
+//   return { top, height };
+// };
+
+const calculateEventPosition = (
+  event: CalendarEvent,
+  timeSlots: TimeSlot[],
+  slotHeight: number,
+  salonTimezone: string
+): EventPosition => {
+  // Converter UTC para timezone do salão
+  const startTime = extractTimeComponents(event.start, salonTimezone);
+  const endTime = extractTimeComponents(event.end, salonTimezone);
+
+  const startHour = startTime.hours;
+  const startMinute = startTime.minutes;
+  const endHour = endTime.hours;
+  const endMinute = endTime.minutes;
+
+  const firstSlot = timeSlots[0];
+  const lastSlot = timeSlots[timeSlots.length - 1];
+
+  const firstSlotMinutes = firstSlot.hour * 60 + firstSlot.minute;
+  const lastSlotMinutes = lastSlot.hour * 60 + lastSlot.minute;
+
+  const eventStartMinutes = startHour * 60 + startMinute;
+  const eventEndMinutes = endHour * 60 + endMinute;
+
+  // Calculate slot duration dynamically
+  const slotMinutes =
+    timeSlots.length > 1
+      ? timeSlots[1].hour * 60 + timeSlots[1].minute - firstSlotMinutes
+      : 15;
+
+  // Clamp event start to visible area
+  const clampedStartMinutes = Math.max(eventStartMinutes, firstSlotMinutes);
+  const clampedEndMinutes = Math.min(eventEndMinutes, lastSlotMinutes + slotMinutes);
+
+  const startMinutesFromFirst = clampedStartMinutes - firstSlotMinutes;
+  const durationMinutes = clampedEndMinutes - clampedStartMinutes;
+
+  const top = (startMinutesFromFirst / slotMinutes) * slotHeight;
+  const height = Math.max((durationMinutes / slotMinutes) * slotHeight, 25); // Minimum 25px height (half slot)
+
+  return { top, height };
+};
+
+/**
+ * Verifica se dois eventos se sobrepõem temporalmente
+ */
+const eventsOverlap = (event1: CalendarEvent, event2: CalendarEvent): boolean => {
+  const start1 = new Date(event1.start).getTime();
+  const end1 = new Date(event1.end).getTime();
+  const start2 = new Date(event2.start).getTime();
+  const end2 = new Date(event2.end).getTime();
+
+  return start1 < end2 && start2 < end1;
+};
+
+/**
+ * Detecta grupos de eventos que se sobrepõem
+ * Retorna array de grupos, onde cada grupo contém eventos sobrepostos
+ */
+const detectCollisionGroups = (events: CalendarEvent[]): CalendarEvent[][] => {
+  if (events.length === 0) return [];
+
+  // Ordena eventos por horário de início, depois por ID (ordem de criação)
+  const sortedEvents = [...events].sort((a, b) => {
+    const timeCompare = new Date(a.start).getTime() - new Date(b.start).getTime();
+    if (timeCompare !== 0) return timeCompare;
+    return a.id.localeCompare(b.id);
+  });
+
+  const groups: CalendarEvent[][] = [];
+  const processed = new Set<string>();
+
+  sortedEvents.forEach((event) => {
+    if (processed.has(event.id)) return;
+
+    // Inicia novo grupo com este evento
+    const group = [event];
+    processed.add(event.id);
+
+    // Encontra todos os eventos que se sobrepõem com algum evento do grupo
+    let foundOverlap = true;
+    while (foundOverlap) {
+      foundOverlap = false;
+      sortedEvents.forEach((candidate) => {
+        if (processed.has(candidate.id)) return;
+
+        // Verifica se candidate se sobrepõe com algum evento do grupo
+        const overlaps = group.some((groupEvent) =>
+          eventsOverlap(groupEvent, candidate)
+        );
+
+        if (overlaps) {
+          group.push(candidate);
+          processed.add(candidate.id);
+          foundOverlap = true;
+        }
+      });
+    }
+
+    groups.push(group);
+  });
+
+  return groups;
+};
+
+/**
+ * Calcula o layout (sub-coluna) para cada evento considerando colisões
+ */
+const calculateEventLayouts = (
+  events: CalendarEvent[],
+  timeSlots: TimeSlot[],
+  slotHeight: number,
+  salonTimezone: string
+): EventLayout[] => {
+  if (events.length === 0) return [];
+
+  const collisionGroups = detectCollisionGroups(events);
+  const layouts: EventLayout[] = [];
+
+  collisionGroups.forEach((group) => {
+    if (group.length === 1) {
+      // Sem colisão - ocupa largura total
+      const event = group[0];
+      layouts.push({
+        event,
+        position: calculateEventPosition(event, timeSlots, slotHeight, salonTimezone),
+        column: 0,
+        totalColumns: 1,
+      });
+    } else {
+      // Múltiplos eventos sobrepostos - calcula sub-colunas
+      // Ordena grupo por início e ID
+      const sortedGroup = [...group].sort((a, b) => {
+        const timeCompare = new Date(a.start).getTime() - new Date(b.start).getTime();
+        if (timeCompare !== 0) return timeCompare;
+        return a.id.localeCompare(b.id);
+      });
+
+      // Atribui cada evento a uma coluna
+      const columnAssignments = new Map<string, number>();
+      const maxColumnsNeeded = sortedGroup.length;
+
+      sortedGroup.forEach((event, index) => {
+        // Encontra a primeira coluna disponível
+        let column = 0;
+        const occupiedColumns = new Set<number>();
+
+        // Verifica quais colunas estão ocupadas por eventos que se sobrepõem
+        sortedGroup.forEach((other, otherIndex) => {
+          if (otherIndex >= index) return; // Só verifica eventos já processados
+
+          if (eventsOverlap(event, other)) {
+            const otherColumn = columnAssignments.get(other.id);
+            if (otherColumn !== undefined) {
+              occupiedColumns.add(otherColumn);
+            }
+          }
+        });
+
+        // Encontra primeira coluna livre
+        while (occupiedColumns.has(column)) {
+          column++;
+        }
+
+        columnAssignments.set(event.id, column);
+      });
+
+      // Calcula o número máximo de colunas necessárias
+      const maxColumn = Math.max(...Array.from(columnAssignments.values()));
+      const totalColumns = maxColumn + 1;
+
+      // Cria layouts para todos os eventos do grupo
+      sortedGroup.forEach((event) => {
+        layouts.push({
+          event,
+          position: calculateEventPosition(event, timeSlots, slotHeight, salonTimezone),
+          column: columnAssignments.get(event.id) || 0,
+          totalColumns,
+        });
+      });
+    }
+  });
+
+  return layouts;
+};
+
+type BlockReason =
+  | "salon-closed"
+  | "past"
+  | "not-working"
+  | "outside-professional-hours"
+  | "break"
+  | "ausencia"
+  | "indisponibilidade";
+
+interface BlockStatus {
+  blocked: boolean;
+  reason?: BlockReason;
+}
+
+const DAY_MAP: Record<number, keyof ProfessionalSchedule> = {
+  0: "sunday",
+  1: "monday",
+  2: "tuesday",
+  3: "wednesday",
+  4: "thursday",
+  5: "friday",
+  6: "saturday",
+} as const;
+
+const parseTimeToMinutes = (time: string): number => {
+  const parts = time.split(":");
+  const hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  return hours * 60 + minutes;
+};
+
+/**
+ * Default timezone for salons (Brazil/São Paulo)
+ * Used as fallback when salon timezone is not specified
+ */
+const DEFAULT_SALON_TIMEZONE = "America/Sao_Paulo";
+
+/**
+ * Gets current time in minutes in the salon's timezone
+ * @param salonTimezone - IANA timezone string (e.g., "America/Sao_Paulo", "Europe/Lisbon")
+ * @returns Current time in minutes since midnight in salon's timezone
+ */
+const getCurrentSalonTimeInMinutes = (salonTimezone?: string): number => {
+  const now = new Date();
+  const timezone = salonTimezone || DEFAULT_SALON_TIMEZONE;
+
+  // Format current time in salon's timezone as HH:mm
+  const timeString = formatInTimeZone(now, timezone, "HH:mm");
+  return parseTimeToMinutes(timeString);
+};
+
+const getUTCDateString = (date: Date): string => {
+  return date.toISOString().split("T")[0];
+};
+
+const getTodayUTCDateString = (): string => {
+  return new Date().toISOString().split("T")[0];
+};
+
+const isDateBeforeToday = (date: Date): boolean => {
+  const todayUTC = getTodayUTCDateString();
+  const dateUTC = getUTCDateString(date);
+  return dateUTC < todayUTC;
+};
+
+const isToday = (date: Date): boolean => {
+  const todayUTC = getTodayUTCDateString();
+  const dateUTC = getUTCDateString(date);
+  return dateUTC === todayUTC;
+};
+
+const isSlotInPast = (
+  slot: TimeSlot,
+  selectedDate: Date,
+  slotDurationMinutes: number,
+  salonTimezone?: string
+): boolean => {
+  // Rule 1: Block ALL slots if date is before today (in UTC)
+  if (isDateBeforeToday(selectedDate)) {
+    return true;
+  }
+
+  // Rule 2: For today (in UTC), block only slots where the next slot has started
+  // This gives users the full slot duration to book
+  // Example: If now is 11:08 and slot is 11:00-11:30, the slot should still be available
+  // Only block when current time >= 11:30 (next slot start)
+  if (isToday(selectedDate)) {
+    const slotStartMinutes = parseTimeToMinutes(slot.time);
+    const slotEndMinutes = slotStartMinutes + slotDurationMinutes;
+    const currentSalonMinutes = getCurrentSalonTimeInMinutes(salonTimezone);
+
+    // Block only if we're already in the next slot (current time >= slot end time)
+    return currentSalonMinutes >= slotEndMinutes;
+  }
+
+  return false;
+};
+
+const isSlotInBreak = (
+  slot: TimeSlot,
+  professionalSchedule: ProfessionalSchedule,
+  selectedDate: Date,
+  salonTimezone?: string
+): boolean => {
+  // Get day of week in salon timezone to ensure correct schedule lookup
+  const timezone = salonTimezone || DEFAULT_SALON_TIMEZONE;
+  const dayOfWeekInTimezone = parseInt(
+    formatInTimeZone(selectedDate, timezone, "e"),
+    10
+  );
+  // formatInTimeZone returns 1-7 (Mon-Sun), convert to 0-6 (Sun-Sat)
+  const dayOfWeek = dayOfWeekInTimezone === 7 ? 0 : dayOfWeekInTimezone;
+  const dayName = DAY_MAP[dayOfWeek];
+  const daySchedule = professionalSchedule[dayName];
+
+  if (!daySchedule?.breaks || daySchedule.breaks.length === 0) {
+    return false;
+  }
+
+  const slotMinutes = parseTimeToMinutes(slot.time);
+
+  // Rule 3: Check if slot falls within any break period
+  return daySchedule.breaks.some((breakPeriod) => {
+    const breakStartMinutes = parseTimeToMinutes(breakPeriod.start);
+    const breakEndMinutes = parseTimeToMinutes(breakPeriod.end);
+    return slotMinutes >= breakStartMinutes && slotMinutes < breakEndMinutes;
+  });
+};
+
+const isSlotBlocked = (
+  slot: TimeSlot,
+  breaks: ProfessionalColumnType["breaks"],
+  _isPastDay: boolean, // Deprecated - not used, kept for compatibility
+  professionalSchedule?: ProfessionalSchedule,
+  selectedDate?: Date,
+  salonIsOpen?: boolean,
+  salonTimezone?: string,
+  slotDurationMinutes: number = 15
+): BlockStatus => {
+  const result: BlockStatus = { blocked: false };
+
+  // Priority 1: Salon closed
+  if (salonIsOpen === false) {
+    result.blocked = true;
+    result.reason = "salon-closed";
+    return result;
+  }
+
+  if (!selectedDate) {
+    result.blocked = false;
+    return result;
+  }
+
+  // Priority 2: Past date or past time (Rules 1 & 2)
+  if (isSlotInPast(slot, selectedDate, slotDurationMinutes, salonTimezone)) {
+    result.blocked = true;
+    result.reason = "past";
+    return result;
+  }
+
+  // Priority 3: Check professional schedule restrictions
+  if (professionalSchedule) {
+    // Get day of week in salon timezone to ensure correct schedule lookup
+    const timezone = salonTimezone || DEFAULT_SALON_TIMEZONE;
+    const dayOfWeekInTimezone = parseInt(
+      formatInTimeZone(selectedDate, timezone, "e"),
+      10
+    );
+    // formatInTimeZone returns 1-7 (Mon-Sun), convert to 0-6 (Sun-Sat)
+    const dayOfWeek = dayOfWeekInTimezone === 7 ? 0 : dayOfWeekInTimezone;
+    const dayName = DAY_MAP[dayOfWeek];
+    const daySchedule = professionalSchedule[dayName];
+
+    if (daySchedule) {
+      // Professional not working this day
+      if (daySchedule.isWorking === false) {
+        result.blocked = true;
+        result.reason = "not-working";
+        return result;
+      }
+
+      // Check if outside professional working hours
+      const startTime = daySchedule.start || daySchedule.startTime;
+      const endTime = daySchedule.end || daySchedule.endTime;
+
+      if (startTime && endTime) {
+        const slotMinutes = parseTimeToMinutes(slot.time);
+        const professionalStartMinutes = parseTimeToMinutes(startTime);
+        const professionalEndMinutes = parseTimeToMinutes(endTime);
+
+        if (
+          slotMinutes < professionalStartMinutes ||
+          slotMinutes >= professionalEndMinutes
+        ) {
+          result.blocked = true;
+          result.reason = "outside-professional-hours";
+          return result;
+        }
+      }
+
+      // Priority 4: Check if slot is in break period (Rule 3)
+      if (
+        isSlotInBreak(slot, professionalSchedule, selectedDate, salonTimezone)
+      ) {
+        result.blocked = true;
+        result.reason = "break";
+        return result;
+      }
+    }
+  }
+
+  // Priority 5: Check for registered absences and breaks
+  if (breaks.length > 0 && selectedDate) {
+    for (const absence of breaks) {
+      const absenceStart = new Date(absence.start);
+      const absenceEnd = new Date(absence.end);
+
+      // Get UTC date parts to build date string
+      const year = selectedDate.getUTCFullYear();
+      const month = String(selectedDate.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getUTCDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
+
+      // Convert slot time from salon timezone to UTC for proper comparison
+      // slot.time is in the salon's local time (e.g., "14:00" in America/Sao_Paulo)
+      // absence.start/end are in UTC
+      // We need to convert slot.time to UTC to compare correctly
+      const timezone = salonTimezone || DEFAULT_SALON_TIMEZONE;
+      const slotDateTimeUTC = convertLocalToUTC(
+        dateString,
+        slot.time,
+        timezone
+      );
+
+      // Check if slot falls within break period
+      const isInBreak =
+        slotDateTimeUTC >= absenceStart && slotDateTimeUTC < absenceEnd;
+
+      if (isInBreak) {
+        result.blocked = true;
+        result.reason = absence.type;
+        break;
+      }
+    }
+  }
+
+  return result;
+};
+
+export function dateInTimeZone(
+  timeZone: string,
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0
+) {
+  // Monta uma data "local" no formato ISO
+  const localStr = `${year}-${String(month).padStart(2, "0")}-${String(
+    day
+  ).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(
+    minute
+  ).padStart(2, "0")}:00`;
+
+  // Cria a data como se fosse em UTC
+  const localDate = new Date(localStr);
+
+  // Usa Intl para descobrir o deslocamento do fuso
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  // Formata e reinterpreta como UTC
+  const parts = formatter.formatToParts(localDate);
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+
+  const zonedISO = `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}`;
+  return new Date(zonedISO);
+}
+
+export function parseDateInTimeZone(timeZone: string, date: Date | string) {
+  const finalDate = typeof date === "string" ? new Date(date) : date;
+  const year = finalDate.getFullYear();
+  const month = finalDate.getMonth() + 1;
+  const day = finalDate.getDate();
+  const hour = finalDate.getHours();
+  const minute = finalDate.getMinutes();
+
+  return dateInTimeZone(timeZone, year, month, day, hour, minute);
+}
+
+export const ProfessionalColumn: React.FC<ProfessionalColumnProps> = ({
+  professional,
+  columnIndex,
+  events,
+  timeSlots,
+  slotHeight,
+  primaryColor,
+  onEventClick,
+  onSlotClick,
+  onAbsenceClick,
+  onAbsenceBlockClick,
+  isPastDay = false,
+  selectedDate,
+  highlightAppointmentId,
+}) => {
+  const isEvenColumn = columnIndex % 2 === 0;
+  const [clickedSlot, setClickedSlot] = useState<SlotClickPosition | null>(
+    null
+  );
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Extract professional schedule if available from metadata
+  const professionalSchedule = useMemo(
+    () => (professional as any).schedule as ProfessionalSchedule | undefined,
+    [professional]
+  );
+
+  const salonIsOpen = useMemo(
+    () => (professional as any).salonDaySchedule?.isOpen as boolean | undefined,
+    [professional]
+  );
+
+  const salonTimezone = useMemo(
+    () => professional.salonTimezone,
+    [professional.salonTimezone]
+  );
+
+  // Calculate slot duration in minutes from timeSlots
+  const slotDurationMinutes =
+    timeSlots.length > 1
+      ? timeSlots[1].hour * 60 +
+      timeSlots[1].minute -
+      (timeSlots[0].hour * 60 + timeSlots[0].minute)
+      : 15;
+
+  // Check if selected date is today
+  const isTodayDate = useMemo(() => {
+    if (!selectedDate || !salonTimezone) return false;
+
+    const nowInSalonTz = toZonedTime(new Date(), salonTimezone);
+    const todayInSalonTz = formatInTimeZone(
+      nowInSalonTz,
+      salonTimezone,
+      "yyyy-MM-dd"
+    );
+    const selectedDateStr = formatInTimeZone(
+      selectedDate,
+      salonTimezone,
+      "yyyy-MM-dd"
+    );
+
+    return selectedDateStr === todayInSalonTz;
+  }, [selectedDate, salonTimezone]);
+
+  // Update current time every minute when viewing today
+  useEffect(() => {
+    if (!isTodayDate) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [isTodayDate]);
+
+  const handleSlotClick = (
+    slot: TimeSlot,
+    event: React.MouseEvent<HTMLDivElement>
+  ): void => {
+    const blockStatus = isSlotBlocked(
+      slot,
+      professional.breaks,
+      isPastDay,
+      professionalSchedule,
+      selectedDate,
+      salonIsOpen,
+      salonTimezone,
+      slotDurationMinutes
+    );
+
+    // Criterion 5: Disabled cells should not receive click events
+    if (blockStatus.blocked) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setClickedSlot({
+      slot,
+      x: rect.left,
+      y: rect.top + rect.height,
+    });
+  };
+
+  const handleCreateAppointment = (): void => {
+    if (clickedSlot && onSlotClick) {
+      onSlotClick(professional.id, clickedSlot.slot.time);
+    }
+    setClickedSlot(null);
+  };
+
+  const handleCreateAbsence = (): void => {
+    if (clickedSlot && onAbsenceClick) {
+      onAbsenceClick(professional.id, clickedSlot.slot.time);
+    }
+    setClickedSlot(null);
+  };
+
+  /**
+   * Verifica se um bloco de ausência já passou
+   * Um bloco é considerado "passado" se o horário de INÍCIO já passou
+   *
+   * As datas do backend vêm em UTC e são convertidas para o timezone do salão
+   * O startTimeStr já está convertido para o timezone do salão
+   *
+   * @param startTimeStr - Horário de início no formato "HH:mm" já convertido para timezone do salão
+   * @returns true se já passou (deve bloquear), false se ainda não passou (deve habilitar)
+   */
+  const isAbsenceBlockPassed = (startTimeStr: string): boolean => {
+    if (!selectedDate || !salonTimezone) {
+      return false;
+    }
+
+    // Extrair componentes da data em UTC (evita conversão para timezone local do browser)
+    const year = selectedDate.getUTCFullYear();
+    const month = selectedDate.getUTCMonth() + 1;
+    const day = selectedDate.getUTCDate();
+
+    // Criar uma data no timezone do salão usando os componentes UTC
+    const selectedDateInSalonTz = dateInTimeZone(
+      salonTimezone,
+      year,
+      month,
+      day,
+      0,
+      0
+    );
+
+    // Obter data e hora atual no timezone do salão
+    const nowInSalonTz = formatInTimeZone(
+      currentTime,
+      salonTimezone,
+      "yyyy-MM-dd HH:mm"
+    );
+    const [currentDateStr, currentTimeStr] = nowInSalonTz.split(" ");
+
+    // Obter data selecionada formatada no timezone do salão
+    const selectedDateStr = formatInTimeZone(
+      selectedDateInSalonTz,
+      salonTimezone,
+      "yyyy-MM-dd"
+    );
+
+    // Se a data selecionada é anterior a hoje, o bloco já passou
+    if (selectedDateStr < currentDateStr) {
+      return true;
+    }
+
+    // Se a data selecionada é posterior a hoje, o bloco não passou
+    if (selectedDateStr > currentDateStr) {
+      return false;
+    }
+
+    const [currentHour, currentMinute] = currentTimeStr.split(":").map(Number);
+    const currentMinutes = currentHour * 60 + currentMinute;
+
+    const startStr = formatInTimeZone(startTimeStr, salonTimezone, "HH:mm");
+    const [startHour, startMinute] = startStr.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMinute;
+
+    // O bloco já passou se o horário de início é menor ou igual ao horário atual
+    // Ex: São 13:12 (792 min), ausência começa às 12:00 (720 min) -> bloqueado (720 <= 792 = true)
+    // Ex: São 13:12 (792 min), ausência começa às 13:00 (780 min) -> bloqueado (780 <= 792 = true)
+    // Ex: São 13:12 (792 min), ausência começa às 13:12 (792 min) -> bloqueado (792 <= 792 = true)
+    // Ex: São 13:12 (792 min), ausência começa às 13:15 (795 min) -> habilitado (795 <= 792 = false)
+    // Ex: São 13:12 (792 min), ausência começa às 15:00 (900 min) -> habilitado (900 <= 792 = false)
+    return startMinutes <= currentMinutes;
+  };
+
+  // Calculate absence block positions
+  const absenceBlocks = useMemo(() => {
+    if (!selectedDate || !salonTimezone) return [];
+
+    const firstSlot = timeSlots[0];
+    const firstSlotMinutes = firstSlot.hour * 60 + firstSlot.minute;
+
+    const slotMinutes =
+      timeSlots.length > 1
+        ? timeSlots[1].hour * 60 + timeSlots[1].minute - firstSlotMinutes
+        : 15;
+
+    // Calculate total visible height of the agenda
+    const totalVisibleSlots = timeSlots.length;
+    const maxVisibleHeight = totalVisibleSlots * slotHeight;
+
+    const blocks = professional.breaks
+      .filter((breakItem) => breakItem.type === "ausencia")
+      .map((absence) => {
+        // Converter UTC para timezone do salão
+        const startTime = extractTimeComponents(absence.start, salonTimezone);
+        const endTime = extractTimeComponents(absence.end, salonTimezone);
+
+        const startHour = startTime.hours;
+        const startMinute = startTime.minutes;
+        const endHour = endTime.hours;
+        const endMinute = endTime.minutes;
+
+        const startMinutesTotal = startHour * 60 + startMinute;
+        const endMinutesTotal = endHour * 60 + endMinute;
+
+        // Calculate position from first slot
+        const startMinutesFromFirst = startMinutesTotal - firstSlotMinutes;
+        const durationMinutes = endMinutesTotal - startMinutesTotal;
+
+        // Calculate top and height ensuring pixel-perfect alignment
+        // Round to ensure alignment with slot boundaries
+        let top = Math.round(
+          (startMinutesFromFirst / slotMinutes) * slotHeight
+        );
+        let height = Math.round((durationMinutes / slotMinutes) * slotHeight);
+
+        // Clamp to visible area
+        if (top < 0) {
+          height += top;
+          top = 0;
+        }
+
+        if (top + height > maxVisibleHeight) {
+          height = maxVisibleHeight - top;
+        }
+
+        const startTimeStr = `${startHour
+          .toString()
+          .padStart(2, "0")}:${startMinute.toString().padStart(2, "0")}`;
+        const endTimeStr = `${endHour.toString().padStart(2, "0")}:${endMinute
+          .toString()
+          .padStart(2, "0")}`;
+
+        const isPassed = isAbsenceBlockPassed(absence.start);
+
+        return {
+          id: absence.id,
+          top,
+          height: Math.max(height, 0),
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          reason: absence.reason,
+          isPassed,
+        };
+      })
+      // Only show blocks that are at least partially visible and have positive height
+      .filter((block) => block.height > 0 && block.top < maxVisibleHeight);
+
+    return blocks;
+  }, [
+    professional.breaks,
+    timeSlots,
+    slotHeight,
+    selectedDate,
+    salonTimezone,
+    currentTime,
+  ]);
+
+  return (
+    <div
+      className="flex-1 min-w-[160px] md:min-w-[300px] border-r border-border last:border-r-0 relative group/column"
+      data-professional-id={professional.id}
+    >
+      <div className="relative">
+        {timeSlots.map((slot) => {
+          const blockStatus = isSlotBlocked(
+            slot,
+            professional.breaks,
+            isPastDay,
+            professionalSchedule,
+            selectedDate,
+            salonIsOpen,
+            salonTimezone,
+            slotDurationMinutes
+          );
+
+          return (
+            <div
+              key={`${slot.hour}-${slot.minute}`}
+              className={cn(
+                "border-b border-r border-border cursor-pointer transition-colors",
+                isEvenColumn ? "bg-[#f5f5f5]" : "bg-[#f8f8f8]",
+                blockStatus.blocked
+                  ? "cursor-not-allowed"
+                  : "hover:brightness-95"
+              )}
+              style={{ height: `${slotHeight}px` }}
+              onClick={(e) => handleSlotClick(slot, e)}
+            >
+              {blockStatus.blocked &&
+                blockStatus.reason === "indisponibilidade" && (
+                  <div className="flex items-center justify-center h-full">
+                    <Coffee className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+              {blockStatus.blocked && blockStatus.reason === "break" && (
+                <div className="flex items-center justify-center h-full">
+                  <Coffee className="w-4 h-4 text-orange-400" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {(() => {
+          // Calcula layouts considerando colisões
+          const eventLayouts = calculateEventLayouts(
+            events,
+            timeSlots,
+            slotHeight,
+            salonTimezone
+          );
+
+          // Verifica se há grupos com mais de 3 colunas (necessita scroll)
+          const hasOverflow = eventLayouts.some(layout => layout.totalColumns > 3);
+
+          if (hasOverflow) {
+            // Renderiza com scroll horizontal
+            return (
+              <div className="absolute left-0 right-0 top-0 bottom-0 overflow-x-auto overflow-y-hidden">
+                <div className="relative" style={{ minWidth: '100%' }}>
+                  {eventLayouts.map((layout) => (
+                    <EventBlock
+                      key={layout.event.id}
+                      event={layout.event}
+                      position={layout.position}
+                      layout={{ column: layout.column, totalColumns: layout.totalColumns }}
+                      primaryColor={primaryColor}
+                      salonTimezone={salonTimezone}
+                      isHighlighted={layout.event.id === highlightAppointmentId}
+                      onClick={onEventClick}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          // Renderiza normalmente sem scroll
+          return eventLayouts.map((layout) => (
+            <EventBlock
+              key={layout.event.id}
+              event={layout.event}
+              position={layout.position}
+              layout={layout}
+              primaryColor={primaryColor}
+              salonTimezone={salonTimezone}
+              onClick={onEventClick}
+              isHighlighted={layout.event.id === highlightAppointmentId}
+            />
+          ));
+        })()}
+
+        {/* Absence blocks */}
+        {absenceBlocks.map((absence) => (
+          <div
+            key={absence.id}
+            className={cn(
+              "absolute left-0 right-0 z-10 rounded-md px-2 py-1 flex flex-col items-center justify-center transition-all duration-200",
+              absence.isPassed
+                ? "cursor-not-allowed opacity-60"
+                : "cursor-pointer hover:shadow-lg"
+            )}
+            style={{
+              top: `${absence.top}px`,
+              height: `${absence.height}px`,
+              background: absence.isPassed
+                ? "linear-gradient(135deg, rgba(156, 163, 175, 0.3), rgba(107, 114, 128, 0.3))"
+                : "linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(244, 114, 182, 0.3))",
+              border: absence.isPassed
+                ? "1px solid rgb(156, 163, 175)"
+                : "1px solid rgb(236, 72, 153)",
+              backdropFilter: "blur(2px)",
+            }}
+            onClick={() => {
+              if (absence.isPassed) {
+                return;
+              }
+              if (onAbsenceBlockClick) {
+                onAbsenceBlockClick({
+                  id: absence.id,
+                  professionalId: professional.id,
+                  startTime: absence.startTime,
+                  endTime: absence.endTime,
+                  reason: absence.reason,
+                });
+              }
+            }}
+          >
+            <div className="text-center">
+              <div
+                className={cn(
+                  "text-xs font-bold mb-0.5",
+                  absence.isPassed ? "text-muted-foreground" : "text-pink-700"
+                )}
+              >
+                Ausência ({absence.startTime} - {absence.endTime})
+              </div>
+              <div
+                className={cn(
+                  "text-xs font-medium",
+                  absence.isPassed ? "text-muted-foreground/80" : "text-pink-600"
+                )}
+              >
+                <strong>Motivo: </strong>
+                {absence.reason}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {clickedSlot && (
+        <Popover
+          open={!!clickedSlot}
+          onOpenChange={(open) => !open && setClickedSlot(null)}
+        >
+          <PopoverTrigger asChild>
+            <div
+              className="fixed"
+              style={{
+                left: `${clickedSlot.x}px`,
+                top: `${clickedSlot.y}px`,
+                pointerEvents: "none",
+              }}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="space-y-1">
+              <p className="text-sm font-medium mb-2">O que deseja criar?</p>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={handleCreateAppointment}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Agendamento
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={handleCreateAbsence}
+              >
+                <UserX className="w-4 h-4 mr-2" />
+                Ausência
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+};

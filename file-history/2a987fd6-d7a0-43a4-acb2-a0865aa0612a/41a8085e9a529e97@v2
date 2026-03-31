@@ -1,0 +1,48 @@
+# 🖨️ Como Gerar PDF Perfeito
+
+## 📋 **PASSO A PASSO:**
+
+### 1️⃣ Abrir o template:
+- Duplo clique em: `demo-template-proposta.html`
+
+### 2️⃣ Pressionar Ctrl+P
+
+### 3️⃣ **CONFIGURAÇÕES IMPORTANTES:**
+```
+✅ Destino: "Salvar como PDF"
+✅ Páginas: Todas
+✅ Layout: Retrato
+✅ Papel: A4
+✅ Margens: Mínimas (ou Personalizar: 15mm)
+✅ Opções:
+   - ☑️ Gráficos de plano de fundo (IMPORTANTE!)
+   - ☑️ Cabeçalhos e rodapés (desmarcar)
+```
+
+### 4️⃣ **Se as margens ainda estão grandes:**
+- Clique em "Mais configurações"
+- Margens: **"Personalizar"**
+- Definir: `Top: 15mm, Bottom: 15mm, Left: 20mm, Right: 20mm`
+
+### 5️⃣ Salvar
+
+## 🎯 **O que você deve ver no preview:**
+
+✅ **Layout limpo** - sem espaços em branco excessivos
+✅ **Cores Wa Project** - azul (#003B71) nos títulos
+✅ **Watermark sutil** - logo Wa Project no fundo
+✅ **Texto bem distribuído** - sem cortes estranhos
+✅ **Quebras inteligentes** - seções não cortadas no meio
+
+## 🔧 **Se ainda está cortando/com margens:**
+
+**No Chrome:**
+- Ctrl+P → Mais configurações → Margens: **"Mínimas"**
+- Ou margens personalizadas: 15mm em todos os lados
+
+**No Edge:**
+- Ctrl+P → Layout → **"Retrato"**
+- Margens → **"Estreita"** ou personalizada
+
+## ✨ **Resultado esperado:**
+PDF profissional de 3-4 páginas, perfeitamente diagramado!

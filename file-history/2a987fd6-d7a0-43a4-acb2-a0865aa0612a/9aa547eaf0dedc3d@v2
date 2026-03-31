@@ -1,0 +1,257 @@
+/**
+ * Tipos para template de proposta comercial Wa Project
+ * Interface estruturada para melhor integração com IA
+ */
+
+export interface PropostaTemplateData {
+  // === DADOS DA CAPA ===
+  capa: {
+    titulo: string // "Proposta Comercial"
+    subtitulo: string // Nome do projeto/cliente
+    dataEmissao: string // formato: "27/03/2026"
+    validadeDias: number // padrão: 30
+    cliente: {
+      empresa: string // nome da empresa cliente
+      pessoa?: string // nome da pessoa de contato (opcional)
+    }
+    tipoEscopo: "Escopo fechado" | "Squad Gerenciado" | "Body Shop" | "Customizado"
+  }
+
+  // === SOBRE A EMPRESA ===
+  empresa: {
+    nome: string // "Wa Project"
+    descricao: string
+    servicos: string[]
+    clientes: string[]
+    websiteCases?: string // URL para cases (opcional)
+  }
+
+  // === PROJETO ===
+  projeto: {
+    titulo: string // "Sobre o Projeto"
+    nome: string // nome específico do projeto
+    descricao: string // descrição detalhada do que será desenvolvido
+    objetivo?: string // objetivo principal (opcional)
+  }
+
+  // === FUNCIONALIDADES ===
+  funcionalidades: {
+    titulo: string // "Funcionalidades"
+    itens: FuncionalidadeItem[]
+  }
+
+  // === INTEGRAÇÕES ===
+  integracoes?: {
+    titulo: string // "Integrações Previstas"
+    descricao: string
+    itens?: string[] // lista de integrações (opcional)
+  }
+
+  // === MODELO DE TRABALHO ===
+  modeloTrabalho: {
+    titulo: string // "Modelo de Trabalho"
+    tipo: string // "Escopo Fechado"
+    descricao: string
+    fases: FaseTrabalho[]
+  }
+
+  // === EQUIPE ===
+  equipe: {
+    titulo: string // "Equipe"
+    descricao: string
+    membros: MembroEquipe[]
+  }
+
+  // === CRONOGRAMA ===
+  cronograma: {
+    titulo: string // "Cronograma"
+    prazoTotal: string // "Prazo total estimado: 4,5 semanas"
+    fases?: CronogramaFase[] // fases específicas do cronograma (opcional)
+    observacoes?: string // observações sobre o cronograma (opcional)
+  }
+
+  // === INVESTIMENTO ===
+  investimento: {
+    titulo: string // "Investimento"
+    valorTotal: string // "R$ 20.000"
+    condicoesPagamento: CondicaoPagamento[]
+  }
+
+  // === ENTREGÁVEIS ===
+  entregaveis: {
+    titulo: string // "Entregáveis"
+    itens: string[]
+  }
+
+  // === PRÓXIMOS PASSOS ===
+  proximosPassos: {
+    titulo: string // "Próximos Passos"
+    passos: string[]
+    observacao?: string // observação final (opcional)
+  }
+
+  // === ENCERRAMENTO ===
+  encerramento: {
+    citacao1: string // "Não é sobre desenvolvimento, é sobre envolvimento."
+    citacao2: string // "Obrigado por confiar na Wa Project!"
+    informacoesEmpresa: InformacaoEmpresa
+    textoValidade: string
+  }
+}
+
+// === INTERFACES AUXILIARES ===
+
+export interface FuncionalidadeItem {
+  numero: number // 1, 2, 3...
+  titulo: string // nome da funcionalidade
+  descricao: string // descrição detalhada
+}
+
+export interface FaseTrabalho {
+  numero: number // 1, 2, 3...
+  nome: string // "Planejamento"
+  descricao: string // descrição da fase
+}
+
+export interface MembroEquipe {
+  cargo: string // "UX e UI Designer"
+  descricao: string // descrição das responsabilidades
+}
+
+export interface CronogramaFase {
+  fase: string // "Fase 1"
+  nome: string // "Concepção do produto"
+  periodo: string // "Semanas 1-2"
+}
+
+export interface CondicaoPagamento {
+  parcela: string // "1ª Parcela"
+  momento: string // "Na assinatura do contrato"
+  valor: string // "R$ 6.667"
+}
+
+export interface InformacaoEmpresa {
+  nomeCompleto: string // "Wa Project Soluções Tecnológicas LTDA."
+  cnpj: string
+  website: string
+  email: string
+  telefone: string
+}
+
+// === TEMPLATE PADRÃO (para referência da IA) ===
+export const TEMPLATE_PADRAO_WA_PROJECT: Partial<PropostaTemplateData> = {
+  empresa: {
+    nome: "Wa Project",
+    descricao: "A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.",
+    servicos: [
+      "Desenvolvimento de Software.",
+      "Desenvolvimento de Aplicativos.",
+      "Soluções de Inteligência Artificial.",
+      "Alocação de Profissionais."
+    ],
+    clientes: [
+      "PepsiCo", "Vtex", "Santillana", "Dasa", "WideLabs",
+      "Confederação Brasileira de Hipismo", "Forbes",
+      "Easy Salon", "InstaCarro", "Antilhas",
+      "Fundação Carlos Chagas", "Funarbe"
+    ],
+    websiteCases: "waproject.com.br/cases"
+  },
+  modeloTrabalho: {
+    titulo: "Modelo de Trabalho",
+    tipo: "Escopo Fechado",
+    descricao: "Processo orientado a entregas contínuas, previsibilidade e colaboração.",
+    fases: [
+      { numero: 1, nome: "Planejamento", descricao: "Priorização de demandas e alinhamento de objetivos e escopo." },
+      { numero: 2, nome: "Levantamento de Requisitos", descricao: "Detalhamento funcional e técnico validado com stakeholders." },
+      { numero: 3, nome: "Protótipo", descricao: "Criação de protótipos navegáveis de alta fidelidade validados antes do desenvolvimento." },
+      { numero: 4, nome: "Desenvolvimento", descricao: "Implementação técnica com boas práticas, testes e code review." },
+      { numero: 5, nome: "Homologação", descricao: "Testes completos e validação do cliente em ambiente de homologação." },
+      { numero: 6, nome: "Go-Live", descricao: "Publicação em produção com monitoramento e acompanhamento inicial." },
+      { numero: 7, nome: "Garantia", descricao: "90 dias de suporte técnico gratuito após o go-live." }
+    ]
+  },
+  entregaveis: {
+    titulo: "Entregáveis",
+    itens: [
+      "Protótipos de Alta Fidelidade (Figma).",
+      "Documentação Funcional.",
+      "Documentação Técnica.",
+      "Código Fonte Completo (repositório Git).",
+      "Sistema em Produção."
+    ]
+  },
+  proximosPassos: {
+    titulo: "Próximos Passos",
+    passos: [
+      "Alinhamento Final.",
+      "Aprovação da Proposta.",
+      "Assinatura do Contrato.",
+      "Kickoff do Projeto.",
+      "Início do desenvolvimento."
+    ],
+    observacao: "Estamos à disposição para qualquer esclarecimento e ansiosos para iniciar esta parceria."
+  },
+  encerramento: {
+    citacao1: "Não é sobre desenvolvimento, é sobre envolvimento.",
+    citacao2: "Obrigado por confiar na Wa Project!",
+    informacoesEmpresa: {
+      nomeCompleto: "Wa Project Soluções Tecnológicas LTDA.",
+      cnpj: "19.317.018/0001-40",
+      website: "waproject.com.br",
+      email: "comercial@waproject.com.br",
+      telefone: "(11) 5028-2010"
+    },
+    textoValidade: "Proposta válida por 30 dias a partir da data de emissão"
+  }
+}
+
+// === FUNÇÕES AUXILIARES ===
+
+/**
+ * Valida se todos os campos obrigatórios estão presentes
+ */
+export function validarPropostaTemplate(data: PropostaTemplateData): string[] {
+  const erros: string[] = []
+
+  // Validar capa
+  if (!data.capa?.titulo) erros.push("capa.titulo é obrigatório")
+  if (!data.capa?.subtitulo) erros.push("capa.subtitulo é obrigatório")
+  if (!data.capa?.dataEmissao) erros.push("capa.dataEmissao é obrigatório")
+  if (!data.capa?.cliente?.empresa) erros.push("capa.cliente.empresa é obrigatório")
+
+  // Validar projeto
+  if (!data.projeto?.nome) erros.push("projeto.nome é obrigatório")
+  if (!data.projeto?.descricao) erros.push("projeto.descricao é obrigatório")
+
+  // Validar funcionalidades
+  if (!data.funcionalidades?.itens?.length) erros.push("funcionalidades.itens deve ter pelo menos 1 item")
+
+  // Validar investimento
+  if (!data.investimento?.valorTotal) erros.push("investimento.valorTotal é obrigatório")
+  if (!data.investimento?.condicoesPagamento?.length) erros.push("investimento.condicoesPagamento deve ter pelo menos 1 condição")
+
+  return erros
+}
+
+/**
+ * Mescla dados fornecidos com template padrão
+ */
+export function criarPropostaComPadrao(dadosPersonalizados: Partial<PropostaTemplateData>): PropostaTemplateData {
+  return {
+    ...TEMPLATE_PADRAO_WA_PROJECT,
+    ...dadosPersonalizados,
+    empresa: { ...TEMPLATE_PADRAO_WA_PROJECT.empresa!, ...dadosPersonalizados.empresa },
+    modeloTrabalho: { ...TEMPLATE_PADRAO_WA_PROJECT.modeloTrabalho!, ...dadosPersonalizados.modeloTrabalho },
+    entregaveis: { ...TEMPLATE_PADRAO_WA_PROJECT.entregaveis!, ...dadosPersonalizados.entregaveis },
+    proximosPassos: { ...TEMPLATE_PADRAO_WA_PROJECT.proximosPassos!, ...dadosPersonalizados.proximosPassos },
+    encerramento: {
+      ...TEMPLATE_PADRAO_WA_PROJECT.encerramento!,
+      ...dadosPersonalizados.encerramento,
+      informacoesEmpresa: {
+        ...TEMPLATE_PADRAO_WA_PROJECT.encerramento!.informacoesEmpresa!,
+        ...dadosPersonalizados.encerramento?.informacoesEmpresa
+      }
+    }
+  } as PropostaTemplateData
+}

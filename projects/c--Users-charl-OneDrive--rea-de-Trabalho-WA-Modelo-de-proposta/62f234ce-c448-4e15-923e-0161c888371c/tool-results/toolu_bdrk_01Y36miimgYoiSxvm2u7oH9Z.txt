@@ -1,0 +1,252 @@
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:372:        @media print {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:373:            body {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:374:                background: #fcfcfc;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:375:                -webkit-print-color-adjust: exact;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:376:                print-color-adjust: exact;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:377:                counter-reset: page;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:378:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:379:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:380:            .document {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:381:                padding: 0;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:382:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:383:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:384:            .content-flow {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:385:                margin: 0;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:386:                box-shadow: none;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:387:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:388:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:389:            .page-content {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:390:                page-break-after: always;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:391:                padding-bottom: var(--footer-height);
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:392:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:393:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:394:            .flow-page:last-of-type .page-content {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:395:                page-break-after: auto;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:396:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:397:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:398:            .footer {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:399:                position: fixed;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:400:                bottom: 0;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:401:                background: #fcfcfc;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:402:                -webkit-print-color-adjust: exact;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:403:                print-color-adjust: exact;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:404:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:405:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:406:            /* Enhanced page break controls */
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:407:            h2, h3, h4 {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:408:                page-break-after: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:409:                break-after: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:410:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:411:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:412:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:413:            .func-item, .team-role, .phase, .content-section, .content-block {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:414:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:415:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:416:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:417:            .closing {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:418:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:419:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:420:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:421:            ul, ol {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:422:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:423:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:424:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:425:            li {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:426:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:427:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:428:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:429:            p {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:430:                orphans: 4;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:431:                widows: 4;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:432:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:433:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:434:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:435:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:436:            /* Prevent awkward breaks */
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:437:            .investment-total {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:438:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:439:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:440:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:441:            .payment-condition {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:442:                page-break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:443:                break-inside: avoid;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:444:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:445:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:446:            /* Background for print */
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:447:            .content-flow::before {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:448:                position: fixed;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:449:                background-attachment: fixed;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:450:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:451:        }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:452:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:453:        @page {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:454:            size: A4;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:455:            margin: 0;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:456:            counter-increment: page;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:457:        }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:458:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:459:        /* ── JAVASCRIPT FALLBACK STYLES ── */
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:460:        .js-page-break {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:461:            page-break-before: always;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:462:            break-before: page;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:463:        }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:464:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:465:        /* ── PREFERS REDUCED MOTION ── */
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:466:        @media (prefers-reduced-motion: reduce) {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:467:            .content-flow::before {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:468:                background-attachment: scroll;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:469:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:470:        }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:471:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:472:        /* ── RESPONSIVE ADAPTATIONS ── */
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:473:        @media screen and (max-width: 220mm) {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:474:            .document {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:475:                padding: 12px;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:476:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:477:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:478:            .content-flow {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:479:                width: 100%;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:480:                max-width: 210mm;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:481:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:482:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:483:            :root {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:484:                --page-padding: 24px;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:485:            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:486:        }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:487:    </style>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:488:</head>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:489:<body>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:490:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:491:<div class="document">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:492:    <div class="content-flow">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:493:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:494:        <!-- COVER PAGE -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:495:        <div class="cover-page">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:496:            <div class="page-content">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:497:                <div class="header">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:498:                    <div class="logo">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:499:                        <img src="Logo completa.png" alt="{{NOME_EMPRESA}}">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:500:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:501:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:502:                    <div class="cover-title">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:503:                        <h1>{{TITULO_PROPOSTA}}</h1>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:504:                        <h2>{{NOME_CLIENTE}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:505:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:506:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:507:                    <div class="cover-info">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:508:                        <div class="cover-date">{{DATA_PROPOSTA}} | Válido por {{DIAS_VALIDADE}} dias</div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:509:                        <p><strong>Para:</strong> {{CLIENTE_EMPRESA}}</p>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:510:                        <p><strong>Tipo:</strong> {{TIPO_ESCOPO}}</p>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:511:                        {{INFORMACOES_ADICIONAIS_CAPA}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:512:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:513:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:514:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:515:                <!-- CONTEÚDO INICIAL DA CAPA (se houver) -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:516:                <div class="content-section allow-break">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:517:                    {{CONTEUDO_INICIAL_CAPA}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:518:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:519:            </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:520:        </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:521:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:522:        <!-- CONTEÚDO CONTÍNUO -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:523:        <div class="flow-page">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:524:            <div class="page-content">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:525:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:526:                <!-- SOBRE A EMPRESA -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:527:                <div class="content-section">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:528:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:529:                        <h2>{{TITULO_SOBRE_EMPRESA}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:530:                        <p>{{DESCRICAO_EMPRESA}}</p>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:531:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:532:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:533:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:534:                        {{SECAO_SERVICOS}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:535:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:536:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:537:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:538:                        <h2>{{TITULO_CLIENTES}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:539:                        {{LISTA_CLIENTES}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:540:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:541:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:542:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:543:                        {{INFORMACOES_ADICIONAIS_EMPRESA}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:544:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:545:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:546:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:547:                <!-- SOBRE O PROJETO -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:548:                <div class="content-section allow-break">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:549:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:550:                        <h2>{{TITULO_PROJETO}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:551:                        <h3>{{SUBTITULO_PROJETO}}</h3>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:552:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:553:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:554:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:555:                        {{DESCRICAO_PROJETO}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:556:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:557:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:558:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:559:                <!-- FUNCIONALIDADES -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:560:                <div class="content-section allow-break">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:561:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:562:                        <h2>{{TITULO_FUNCIONALIDADES}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:563:                        {{LISTA_FUNCIONALIDADES}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:564:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:565:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:566:                        {{FUNCIONALIDADES_ADICIONAIS}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:567:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:568:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:569:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:570:                <!-- INTEGRAÇÕES -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:571:                <div class="content-section">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:572:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:573:                        <h2>{{TITULO_INTEGRACOES}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:574:                        {{DESCRICAO_INTEGRACOES}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:575:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:576:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:577:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:578:                <!-- MODELO DE TRABALHO -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:579:                <div class="content-section allow-break">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:580:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:581:                        <h2>{{TITULO_MODELO_TRABALHO}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:582:                        {{DESCRICAO_MODELO}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:583:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:584:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:585:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:586:                        <h3>{{TITULO_FASES}}</h3>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:587:                        {{LISTA_FASES}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:588:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:589:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:590:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:591:                <!-- EQUIPE -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:592:                <div class="content-section allow-break">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:593:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:594:                        <h2>{{TITULO_EQUIPE}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:595:                        {{DESCRICAO_EQUIPE}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:596:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:597:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:598:                        {{LISTA_MEMBROS_EQUIPE}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:599:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:600:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:601:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:602:                <!-- CRONOGRAMA -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:603:                <div class="content-section">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:604:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:605:                        <h2>{{TITULO_CRONOGRAMA}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:606:                        {{PRAZO_TOTAL}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:607:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:608:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:609:                        {{CRONOGRAMA_DETALHADO}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:610:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:611:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:612:                        {{OBSERVACOES_CRONOGRAMA}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:613:                    </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:614:                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:615:
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:616:                <!-- INVESTIMENTO -->
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:617:                <div class="content-section">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:618:                    <div class="content-block">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:619:                        <h2>{{TITULO_INVESTIMENTO}}</h2>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:620:                        {{VALOR_TOTAL}}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Modelo de proposta\proposta-template-dinamico.html:621:                    </div>
+
+[Showing results with pagination = limit: 250]

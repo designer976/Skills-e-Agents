@@ -1,0 +1,124 @@
+import * as React from "react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+
+export interface CurrencyInputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+  value: string;
+  onChange: (value: string) => void;
+  showPrefix?: boolean;
+  label?: string;
+}
+
+const ALLOWED_KEYS = [
+  'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+  'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+  'Home', 'End',
+];
+
+const formatCurrency = (rawValue: string): string => {
+  const numericValue = rawValue.replace(/\D/g, '');
+  if (numericValue === '') return '0,00';
+  const numberValue = parseInt(numericValue, 10) / 100;
+  return numberValue
+    .toFixed(2)
+    .replace('.', ',')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
+  ({ className, value, onChange, showPrefix = true, label, id, disabled, ...props }, ref) => {
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const [displayValue, setDisplayValue] = React.useState<string>(value || '0,00');
+
+    React.useEffect(() => {
+      setDisplayValue(value || '0,00');
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+      const formatted = formatCurrency(e.target.value);
+      setDisplayValue(formatted);
+      onChange(formatted);
+    };
+
+    const handleFocus = (): void => {
+      if (displayValue === '0,00') {
+        setDisplayValue('');
+      } else {
+        setTimeout(() => inputRef.current?.select(), 0);
+      }
+    };
+
+    const handleBlur = (): void => {
+      const finalValue = displayValue === '' ? '0,00' : formatCurrency(displayValue);
+      setDisplayValue(finalValue);
+      onChange(finalValue);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+      const isNumber = /^\d$/.test(e.key);
+      const isCtrlKey = e.ctrlKey || e.metaKey;
+      if (isCtrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+      if (!isNumber && !ALLOWED_KEYS.includes(e.key) && !isCtrlKey) {
+        e.preventDefault();
+      }
+    };
+
+    const setRefs = React.useCallback((el: HTMLInputElement | null): void => {
+      inputRef.current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
+      }
+    }, [ref]);
+
+    const inner = (
+      <div className="relative">
+        {showPrefix && (
+          <span
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none select-none"
+            aria-hidden="true"
+          >
+            R$
+          </span>
+        )}
+        <Input
+          {...props}
+          id={inputId}
+          ref={setRefs}
+          type="text"
+          inputMode="numeric"
+          value={displayValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          spellCheck={false}
+          placeholder="0,00"
+          maxLength={15}
+          className={cn(showPrefix ? 'pl-10' : '', className)}
+        />
+      </div>
+    );
+
+    if (label) {
+      return (
+        <div className="flex flex-col gap-[4px]">
+          <Label htmlFor={inputId}>{label}</Label>
+          {inner}
+        </div>
+      );
+    }
+
+    return inner;
+  }
+);
+
+CurrencyInput.displayName = "CurrencyInput";
+
+export { CurrencyInput };

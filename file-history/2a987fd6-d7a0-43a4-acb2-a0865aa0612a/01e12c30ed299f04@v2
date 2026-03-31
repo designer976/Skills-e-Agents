@@ -1,0 +1,406 @@
+# Guia da IA: Template de Proposta Comercial Wa Project
+
+## Visão Geral
+
+O sistema de proposta foi refatorado para facilitar a geração automática por IA. Agora usamos uma estrutura TypeScript bem definida em vez de placeholders de string.
+
+## Estrutura de Dados
+
+A interface principal é `PropostaTemplateData` em `/lib/proposta-template-types.ts`. Ela é dividida em seções bem definidas:
+
+### Campos Obrigatórios
+
+```typescript
+// SEMPRE obrigatórios para gerar PDF
+capa.titulo: string
+capa.subtitulo: string
+capa.dataEmissao: string // formato: "27/03/2026"
+capa.cliente.empresa: string
+projeto.nome: string
+projeto.descricao: string
+funcionalidades.itens: FuncionalidadeItem[] // pelo menos 1 item
+investimento.valorTotal: string // ex: "R$ 50.000"
+investimento.condicoesPagamento: CondicaoPagamento[] // pelo menos 1
+```
+
+### Campos Opcionais com Padrões
+
+Muitos campos têm valores padrão no `TEMPLATE_PADRAO_WA_PROJECT`:
+- `empresa.*` - dados da Wa Project já preenchidos
+- `encerramento.*` - citações e informações da empresa já definidas
+- `entregaveis.itens` - lista padrão de entregáveis
+- `proximosPassos.passos` - passos padrão já definidos
+
+## Como a IA Deve Usar
+
+### 1. Importar os tipos e funções
+
+```typescript
+import type { PropostaTemplateData } from '@/lib/proposta-template-types'
+import { criarPropostaComPadrao, validarPropostaTemplate } from '@/lib/proposta-template-types'
+import { gerarPDFProposta } from '@/lib/proposta-pdf-generator'
+```
+
+### 2. Criar dados da proposta
+
+```typescript
+// Exemplo simples - só preencher o que é específico do cliente
+const dadosCliente: Partial<PropostaTemplateData> = {
+  capa: {
+    titulo: "Proposta Comercial",
+    subtitulo: "Sistema de E-commerce",
+    dataEmissao: "30/03/2026",
+    validadeDias: 30,
+    cliente: {
+      empresa: "TechStore LTDA",
+      pessoa: "João Silva" // opcional
+    },
+    tipoEscopo: "Escopo fechado"
+  },
+  projeto: {
+    titulo: "Sobre o Projeto",
+    nome: "Plataforma de E-commerce",
+    descricao: "Desenvolvimento de plataforma completa de e-commerce com carrinho, pagamento e gestão de produtos.",
+    objetivo: "Digitalizar as vendas da empresa e aumentar o alcance de mercado."
+  },
+  funcionalidades: {
+    titulo: "Funcionalidades",
+    itens: [
+      {
+        numero: 1,
+        titulo: "Catálogo de Produtos",
+        descricao: "Sistema completo de gestão de produtos com categorias, fotos e descrições detalhadas."
+      },
+      {
+        numero: 2,
+        titulo: "Carrinho de Compras",
+        descricao: "Carrinho inteligente com cálculo de frete, cupons de desconto e múltiplas formas de pagamento."
+      }
+    ]
+  },
+  investimento: {
+    titulo: "Investimento",
+    valorTotal: "R$ 85.000",
+    condicoesPagamento: [
+      {
+        parcela: "1ª Parcela",
+        momento: "Na assinatura do contrato",
+        valor: "R$ 42.500"
+      },
+      {
+        parcela: "2ª Parcela",
+        momento: "Na entrega final",
+        valor: "R$ 42.500"
+      }
+    ]
+  },
+  cronograma: {
+    titulo: "Cronograma",
+    prazoTotal: "Prazo total estimado: 12 semanas"
+  }
+}
+
+// Mesclar com padrões da Wa Project
+const propostaCompleta = criarPropostaComPadrao(dadosCliente)
+```
+
+### 3. Validar dados
+
+```typescript
+const erros = validarPropostaTemplate(propostaCompleta)
+if (erros.length > 0) {
+  console.error('Dados inválidos:', erros)
+  return
+}
+```
+
+### 4. Gerar PDF
+
+```typescript
+try {
+  await gerarPDFProposta(propostaCompleta, {
+    filename: 'proposta_techstore_2026'
+  })
+  console.log('PDF gerado com sucesso!')
+} catch (error) {
+  console.error('Erro ao gerar PDF:', error)
+}
+```
+
+## Exemplos de Casos de Uso
+
+### Caso 1: E-commerce Simples
+
+```typescript
+const ecommerce = criarPropostaComPadrao({
+  capa: {
+    titulo: "Proposta Comercial",
+    subtitulo: "Loja Virtual",
+    dataEmissao: "30/03/2026",
+    validadeDias: 15,
+    cliente: { empresa: "Moda & Style" },
+    tipoEscopo: "Escopo fechado"
+  },
+  projeto: {
+    titulo: "Sobre o Projeto",
+    nome: "Loja Virtual de Roupas",
+    descricao: "E-commerce responsivo para venda de roupas femininas com integração de pagamento."
+  },
+  funcionalidades: {
+    titulo: "Funcionalidades",
+    itens: [
+      {
+        numero: 1,
+        titulo: "Vitrine Digital",
+        descricao: "Exibição de produtos com filtros por categoria, tamanho, cor e preço."
+      }
+    ]
+  },
+  investimento: {
+    titulo: "Investimento",
+    valorTotal: "R$ 35.000",
+    condicoesPagamento: [
+      { parcela: "À vista", momento: "Na assinatura", valor: "R$ 35.000" }
+    ]
+  },
+  cronograma: {
+    titulo: "Cronograma",
+    prazoTotal: "Prazo total estimado: 6 semanas"
+  }
+})
+```
+
+### Caso 2: Sistema Complexo
+
+```typescript
+const sistemaComplexo = criarPropostaComPadrao({
+  capa: {
+    titulo: "Proposta Comercial",
+    subtitulo: "ERP Empresarial",
+    dataEmissao: "30/03/2026",
+    validadeDias: 45,
+    cliente: { empresa: "Indústria ABC SA" },
+    tipoEscopo: "Squad Gerenciado"
+  },
+  projeto: {
+    titulo: "Sobre o Projeto",
+    nome: "Sistema ERP Completo",
+    descricao: "Desenvolvimento de ERP para gestão completa: financeiro, estoque, RH e produção."
+  },
+  funcionalidades: {
+    titulo: "Módulos do Sistema",
+    itens: [
+      {
+        numero: 1,
+        titulo: "Módulo Financeiro",
+        descricao: "Controle completo de contas a pagar, receber, fluxo de caixa e relatórios gerenciais."
+      },
+      {
+        numero: 2,
+        titulo: "Gestão de Estoque",
+        descricao: "Controle de entrada, saída, inventário e alertas de estoque mínimo com código de barras."
+      },
+      {
+        numero: 3,
+        titulo: "Recursos Humanos",
+        descricao: "Cadastro de funcionários, folha de pagamento, ponto eletrônico e relatórios trabalhistas."
+      }
+    ]
+  },
+  equipe: {
+    titulo: "Equipe Dedicada",
+    descricao: "Squad completo alocado exclusivamente para o projeto.",
+    membros: [
+      {
+        cargo: "Tech Lead",
+        descricao: "Arquitetura do sistema e liderança técnica da equipe."
+      },
+      {
+        cargo: "Desenvolvedor Backend Sênior",
+        descricao: "APIs, integrações e regras de negócio do ERP."
+      },
+      {
+        cargo: "Desenvolvedor Frontend Pleno",
+        descricao: "Interface web responsiva e experiência do usuário."
+      }
+    ]
+  },
+  investimento: {
+    titulo: "Investimento",
+    valorTotal: "R$ 280.000",
+    condicoesPagamento: [
+      { parcela: "1ª Parcela", momento: "Assinatura do contrato", valor: "R$ 84.000" },
+      { parcela: "2ª Parcela", momento: "Entrega do MVP (8 semanas)", valor: "R$ 98.000" },
+      { parcela: "3ª Parcela", momento: "Go-live completo", valor: "R$ 98.000" }
+    ]
+  },
+  cronograma: {
+    titulo: "Cronograma",
+    prazoTotal: "Prazo total estimado: 16 semanas",
+    fases: [
+      { fase: "Fase 1", nome: "Discovery e Arquitetura", periodo: "Semanas 1-2" },
+      { fase: "Fase 2", nome: "MVP - Módulos Essenciais", periodo: "Semanas 3-8" },
+      { fase: "Fase 3", nome: "Módulos Avançados", periodo: "Semanas 9-14" },
+      { fase: "Fase 4", nome: "Testes e Go-live", periodo: "Semanas 15-16" }
+    ]
+  }
+})
+```
+
+## Padrões de Valores
+
+### Tipos de Escopo
+- `"Escopo fechado"` - projeto com prazo/valor fixos
+- `"Squad Gerenciado"` - equipe dedicada
+- `"Body Shop"` - alocação de profissionais
+- `"Customizado"` - modelo específico
+
+### Prazos Típicos
+- Sites simples: 4-6 semanas
+- E-commerce: 8-12 semanas
+- Sistemas médios: 12-16 semanas
+- ERPs/grandes: 20+ semanas
+
+### Investimentos Típicos
+- Landing page: R$ 15.000 - R$ 30.000
+- E-commerce: R$ 40.000 - R$ 80.000
+- Sistema médio: R$ 80.000 - R$ 150.000
+- ERP/grande: R$ 200.000+
+
+### Condições de Pagamento Padrão
+- **2x**: 50% assinatura + 50% entrega
+- **3x**: 30% assinatura + 40% MVP + 30% final
+- **À vista**: desconto de 5-10%
+
+## Componentes React Disponíveis
+
+### ProposalTemplateManager
+Componente principal com preview e geração de PDF:
+
+```typescript
+import { ProposalTemplateManager } from '@/components/proposta/ProposalTemplateManager'
+
+// Uso básico
+<ProposalTemplateManager
+  data={propostaData}
+  onDataChange={setPropostaData}
+  showControls={true}
+  previewMode="full"
+/>
+
+// Modo compacto
+<ProposalTemplateManager
+  data={propostaData}
+  previewMode="compact"
+  showControls={false}
+/>
+```
+
+### ProposalTemplateRenderer
+Apenas renderização (sem controles):
+
+```typescript
+import { ProposalTemplateRenderer } from '@/components/proposta/ProposalTemplateRenderer'
+
+<ProposalTemplateRenderer data={propostaData} />
+```
+
+## Dicas para IA
+
+### ❌ NÃO fazer:
+```typescript
+// NÃO usar placeholders de string
+const html = template.replace('{{CLIENTE}}', cliente)
+
+// NÃO hardcodar valores da empresa
+empresa: {
+  nome: "Wa Project", // ✗ hardcoded
+  cnpj: "..." // ✗ pode mudar
+}
+
+// NÃO pular validação
+gerarPDFProposta(dados) // ✗ sem validar
+```
+
+### ✅ FAZER:
+```typescript
+// Usar interface tipada
+const dados: PropostaTemplateData = { ... }
+
+// Usar valores padrão
+const proposta = criarPropostaComPadrao(dadosEspecificos)
+
+// Sempre validar
+const erros = validarPropostaTemplate(proposta)
+if (erros.length === 0) {
+  await gerarPDFProposta(proposta)
+}
+```
+
+### Estrutura de Funcionalidades
+
+Sempre usar numeração sequencial:
+
+```typescript
+funcionalidades: {
+  titulo: "Funcionalidades",
+  itens: [
+    {
+      numero: 1, // sequencial
+      titulo: "Nome Curto da Funcionalidade",
+      descricao: "Descrição detalhada explicando o que faz e como beneficia o cliente."
+    },
+    {
+      numero: 2,
+      titulo: "Segunda Funcionalidade",
+      descricao: "Outra descrição detalhada."
+    }
+  ]
+}
+```
+
+### Equipe Padrão por Tipo de Projeto
+
+**Sites/Landing Pages:**
+- UX/UI Designer
+- Desenvolvedor Frontend
+
+**E-commerce:**
+- UX/UI Designer
+- Desenvolvedor Full Stack
+- Tester (QA)
+
+**Sistemas Médios:**
+- Product Owner
+- UX/UI Designer
+- Desenvolvedor Full Stack
+- Tester (QA)
+
+**ERPs/Sistemas Grandes:**
+- Product Owner
+- Tech Lead
+- UX/UI Designer
+- Desenvolvedor Backend Sênior
+- Desenvolvedor Frontend Pleno
+- Tester (QA)
+- DevOps (se necessário)
+
+## Troubleshooting
+
+### "Dados inválidos para PDF"
+- Verificar campos obrigatórios na interface `PropostaTemplateData`
+- Usar `validarPropostaTemplate()` para debug
+
+### "PDF não gerado"
+- Verificar se `jsPDF` está funcionando no browser
+- Testar com `criarPropostaExemplo()` primeiro
+- Verificar console para erros detalhados
+
+### "Preview não aparece"
+- Verificar se dados estão no formato correto
+- Testar componente `ProposalTemplateRenderer` isoladamente
+- Verificar se CSS/Tailwind está carregado
+
+---
+
+**Resumo:** Use sempre a interface `PropostaTemplateData`, valide com `validarPropostaTemplate()`, mescle com padrões usando `criarPropostaComPadrao()` e gere PDF com `gerarPDFProposta()`. Muito mais simples e seguro que o sistema anterior de placeholders!

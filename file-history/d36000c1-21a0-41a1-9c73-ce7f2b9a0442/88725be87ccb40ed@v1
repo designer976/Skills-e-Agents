@@ -1,0 +1,225 @@
+import { useEffect, useMemo } from "react";
+import { UseFormReturn, useController, useWatch } from "react-hook-form";
+import { StepProfessionalData } from "./schemas";
+import { useAuth } from "@/contexts/AuthContext";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { IconCheck as Check } from "@tabler/icons-react";
+import { userService } from "@/services/userService";
+import { formatPhone } from "@/utils/formatters";
+
+interface StepProfessionalProps {
+    form: UseFormReturn<StepProfessionalData>;
+    availableServices: Array<{ serviceId: string; name: string }>;
+}
+
+export function StepProfessional({ form, availableServices }: StepProfessionalProps) {
+    const { register, control, setValue } = form; // removed 'watch' to avoid root re-renders, using useWatch if needed
+    const { user } = useAuth();
+
+    // Watch 'isMe' state to toggle behavior
+    const isMe = useWatch({ control, name: "isMe" });
+
+    // Effect: When 'isMe' changes, update fields
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (isMe && user) {
+                setValue("name", user.name || "", { shouldValidate: true });
+
+                try {
+                    // Fetch full user profile to get phone/whatsapp
+                    const fullUser = await userService.getById(user.id);
+                    const userPhone = fullUser.whatsapp || fullUser.phone || "";
+                    if (userPhone) {
+                        setValue("phone", formatPhone(userPhone), { shouldValidate: true });
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch user details for onboarding", error);
+                    // Silently fail or maybe retry? For now keep empty if fail.
+                }
+            } else if (!isMe) {
+                // If switching off, clear values
+                setValue("name", "", { shouldValidate: true });
+                setValue("phone", "", { shouldValidate: true });
+            }
+        };
+
+        fetchUserData();
+    }, [isMe, user, setValue]);
+
+    // Initialize all available services as selected by default
+    useEffect(() => {
+        const currentServices = form.getValues("services");
+        if (!currentServices || currentServices.length === 0) {
+            setValue("services", availableServices.map(s => s.serviceId), { shouldValidate: true });
+        }
+    }, [availableServices, setValue, form]);
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <div className="text-center mb-8">
+                <h1 className="font-semibold text-foreground mb-2 text-lg">
+                    Cadastre um profissional
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Adicione pelo menos um profissional para começar a receber
+                    agendamentos.
+                </p>
+            </div>
+
+            <div className="space-y-6 max-w-lg mx-auto">
+                {/* Toggle "Eu sou o profissional" */}
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">
+                    <div>
+                        <span className="font-medium text-foreground">
+                            Eu serei o profissional
+                        </span>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Preenche automaticamente com seus dados
+                        </p>
+                    </div>
+                    <ControllerSwitch control={control} name="isMe" />
+                </div>
+
+                {/* Inputs */}
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                            Nome <span className="text-[#dd4227]">*</span>
+                        </label>
+                        <Input
+                            placeholder="Nome do profissional"
+                            type="text"
+                            disabled={isMe}
+                            {...register("name")}
+                        />
+                        {form.formState.errors.name && (
+                            <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                            WhatsApp <span className="text-[#dd4227]">*</span>
+                        </label>
+                        <Input
+                            placeholder="(XX) XXXXX-XXXX"
+                            type="text"
+                            {...register("phone", {
+                                onChange: (e) => {
+                                    const formatted = formatPhone(e.target.value);
+                                    setValue("phone", formatted);
+                                }
+                            })}
+                        />
+                        {form.formState.errors.phone && (
+                            <p className="text-destructive text-xs mt-1">{form.formState.errors.phone.message}</p>
+                        )}
+                    </div>
+
+                    {/* Services Linking */}
+                    <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                            Serviços <span className="text-[#dd4227]">*</span>
+                        </label>
+                        <p className="text-xs text-muted-foreground mb-3">
+                            Selecione os serviços que este profissional realiza
+                        </p>
+                        <div className="space-y-2">
+                            {availableServices.map(service => (
+                                <ServiceToggle
+                                    key={service.serviceId}
+                                    service={service}
+                                    control={control}
+                                />
+                            ))}
+                        </div>
+                        {form.formState.errors.services && (
+                            <p className="text-destructive text-xs mt-1">{form.formState.errors.services.message}</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center bg-muted/50 p-3 rounded-lg mt-6">
+                Você pode adicionar mais profissionais posteriormente nas configurações do salão.
+            </p>
+        </div>
+    );
+}
+
+// Controller for Switch to isolate re-renders
+function ControllerSwitch({ control, name }: { control: any; name: "isMe" }) {
+    const { field } = useController({
+        control,
+        name,
+    });
+
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={field.value}
+            data-state={field.value ? "checked" : "unchecked"}
+            onClick={() => field.onChange(!field.value)}
+            className={`
+                peer inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50
+                ${field.value ? "bg-[#dd4227]" : "bg-input"}
+            `}
+        >
+            <span
+                data-state={field.value ? "checked" : "unchecked"}
+                className={`
+                    pointer-events-none block size-4 rounded-full ring-0 transition-transform bg-white shadow-sm
+                    ${field.value ? "translate-x-[calc(100%-2px)]" : "translate-x-0"}
+                `}
+            />
+        </button>
+    );
+}
+
+
+function ServiceToggle({ service, control }: { service: { serviceId: string, name: string }, control: any }) {
+    // Custom logic to handle array of strings with react-hook-form
+    const { field } = useController({
+        control,
+        name: "services", // Array field
+    });
+
+
+    const isChecked = (field.value || []).includes(service.serviceId);
+
+    const handleToggle = () => {
+        const current = field.value || [];
+        if (isChecked) {
+            field.onChange(current.filter((id: string) => id !== service.serviceId));
+        } else {
+            field.onChange([...current, service.serviceId]);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between p-3 border border-border rounded-lg transition-colors hover:bg-muted/30">
+            <span className="text-sm text-foreground">{service.name}</span>
+            <button
+                type="button"
+                role="switch"
+                aria-checked={isChecked}
+                data-state={isChecked ? "checked" : "unchecked"}
+                onClick={handleToggle}
+                className={`
+                    peer inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50
+                    ${isChecked ? "bg-[#dd4227]" : "bg-input"}
+                `}
+            >
+                <span
+                    data-state={isChecked ? "checked" : "unchecked"}
+                    className={`
+                        pointer-events-none block size-4 rounded-full ring-0 transition-transform bg-white shadow-sm
+                        ${isChecked ? "translate-x-[calc(100%-2px)]" : "translate-x-0"}
+                    `}
+                />
+            </button>
+        </div>
+    )
+}

@@ -1,0 +1,311 @@
+"use client"
+
+import { useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Users,
+  UserCheck,
+  UserX,
+  FolderKanban,
+  FolderCheck,
+  FolderX,
+  Clock,
+  Zap,
+  Star,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ArrowRight,
+} from "lucide-react"
+import {
+  Bar,
+  BarChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Cell,
+} from "recharts"
+import { useProjects } from "@/contexts/projects-context"
+import { DashboardSkeleton } from "@/components/content-skeleton"
+import { INITIAL_USERS } from "@/lib/types"
+import { INITIAL_TIME_ENTRIES } from "@/lib/timesheet-types"
+import { useAuth } from "@/contexts/auth-context"
+import { PageHeader } from "@/components/ui/page-header"
+
+function getScoreColor(nota: number) {
+  if (nota <= 30) return { color: "#ef4444", label: "Crítico" }
+  if (nota <= 50) return { color: "#f59e0b", label: "Baixo" }
+  if (nota <= 70) return { color: "#eab308", label: "Regular" }
+  if (nota <= 85) return { color: "#84cc16", label: "Bom" }
+  return { color: "#22c55e", label: "Excelente" }
+}
+
+export default function DashboardPage() {
+  const router = useRouter()
+  const { projects, isLoading } = useProjects()
+  const { activeEmpresaId } = useAuth()
+
+  const companyUsers = useMemo(() => INITIAL_USERS.filter((u) => u.empresaId === activeEmpresaId), [activeEmpresaId])
+  const companyTimeEntries = useMemo(() => INITIAL_TIME_ENTRIES.filter((e) => e.empresaId === activeEmpresaId), [activeEmpresaId])
+
+  const activeProjectCount = projects.filter((p) => p.status === "Ativo").length
+  const inactiveProjectCount = projects.filter((p) => p.status === "Inativo").length
+
+  const activeUserCount = companyUsers.filter((u) => u.status === "Ativo").length
+  const inactiveUserCount = companyUsers.filter((u) => u.status === "Inativo").length
+
+  const totalNormalHours = companyTimeEntries.filter((e) => e.type === "Normal").reduce((s, e) => s + e.hours, 0)
+  const totalExtraHours = companyTimeEntries.filter((e) => e.type === "Extra").reduce((s, e) => s + e.hours, 0)
+  const totalAllHours = totalNormalHours + totalExtraHours
+
+  // Hours by project for the chart
+  const hoursByProject = useMemo(() => {
+    const map = new Map<string, { name: string; normal: number; extra: number }>()
+    companyTimeEntries.forEach((e) => {
+      const existing = map.get(e.projectId) || { name: e.projectName, normal: 0, extra: 0 }
+      if (e.type === "Normal") existing.normal += e.hours
+      else existing.extra += e.hours
+      map.set(e.projectId, existing)
+    })
+    return Array.from(map.values())
+      .sort((a, b) => (b.normal + b.extra) - (a.normal + a.extra))
+  }, [companyTimeEntries])
+
+  // Latest satisfaction per project
+  const projectSatisfaction = useMemo(() => {
+    return projects
+      .filter((p) => p.status === "Ativo" && p.pesquisasSatisfacao && p.pesquisasSatisfacao.length > 0)
+      .map((p) => {
+        const sorted = [...(p.pesquisasSatisfacao || [])].sort((a, b) => b.dataCriacao - a.dataCriacao)
+        const latest = sorted[0]
+        const previous = sorted[1] || null
+        return {
+          id: p.id,
+          name: p.name,
+          jiraKey: p.jiraKey,
+          nota: latest.nota,
+          previousNota: previous ? previous.nota : null,
+        }
+      })
+      .sort((a, b) => b.nota - a.nota)
+  }, [projects])
+
+  // Hours by user across all projects
+  const hoursByUser = useMemo(() => {
+    const map = new Map<string, { name: string; hours: number; projects: Set<string> }>()
+    INITIAL_TIME_ENTRIES.forEach((e) => {
+      const existing = map.get(e.userId) || { name: e.userName, hours: 0, projects: new Set<string>() }
+      existing.hours += e.hours
+      existing.projects.add(e.projectName)
+      map.set(e.userId, existing)
+    })
+    return Array.from(map.values())
+      .sort((a, b) => b.hours - a.hours)
+      .map((u) => ({ ...u, projectCount: u.projects.size }))
+  }, [])
+
+  const maxUserHours = hoursByUser.length > 0 ? hoursByUser[0].hours : 1
+
+  const topStats = [
+    { label: "Projetos Ativos", value: String(activeProjectCount), icon: FolderCheck, iconBg: "bg-[#dcfce7]", iconColor: "text-[#16a34a]" },
+    { label: "Projetos Inativos", value: String(inactiveProjectCount), icon: FolderX, iconBg: "bg-[#fef2f2]", iconColor: "text-[#dc2626]" },
+    { label: "Horas Normais", value: `${totalNormalHours}h`, icon: Clock, iconBg: "bg-secondary", iconColor: "text-primary" },
+    { label: "Horas Extras", value: `${totalExtraHours}h`, icon: Zap, iconBg: "bg-[#fef3c7]", iconColor: "text-[#a16207]" },
+    { label: "Usuários Ativos", value: String(activeUserCount), icon: UserCheck, iconBg: "bg-[#dcfce7]", iconColor: "text-[#16a34a]" },
+    { label: "Usuários Inativos", value: String(inactiveUserCount), icon: UserX, iconBg: "bg-[#fef2f2]", iconColor: "text-[#dc2626]" },
+  ]
+
+  if (isLoading) return <DashboardSkeleton />
+
+  return (
+    <div className="flex flex-col gap-4 animate-content-in">
+      <PageHeader title="Dashboard" description="VISÃO GERAL DO SISTEMA" />
+
+      {/* Stats grid */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {topStats.map((stat) => (
+          <Card key={stat.label} className="shadow-sm">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${stat.iconBg}`}>
+                <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <span className="text-xl font-bold text-foreground">{stat.value}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Hours by project chart */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-foreground">Horas por Projeto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hoursByProject.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhum dado disponível.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={hoursByProject} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    width={120}
+                  />
+                  <RechartsTooltip
+                    formatter={(value: number, name: string) => [
+                      `${value}h`,
+                      name === "normal" ? "Normal" : "Extra",
+                    ]}
+                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  />
+                  <Bar dataKey="normal" stackId="a" fill="primary" radius={[0, 0, 0, 0]} name="normal" />
+                  <Bar dataKey="extra" stackId="a" fill="#f59e0b" radius={[0, 4, 4, 0]} name="extra" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Satisfaction per project */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Star className="h-4 w-4 text-[#eab308]" />
+              Satisfação por Projeto
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {projectSatisfaction.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Nenhuma pesquisa de satisfação registrada.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {projectSatisfaction.map((ps) => {
+                  const scoreInfo = getScoreColor(ps.nota)
+                  const diff = ps.previousNota !== null ? ps.nota - ps.previousNota : null
+                  return (
+                    <Button
+                      key={ps.id}
+                      variant="outline"
+                      onClick={() => router.push(`/dashboard/projetos/${ps.id}`)}
+                      className="group flex h-auto items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-secondary/40 justify-start font-normal"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${scoreInfo.color}15` }}>
+                        <span className="text-base font-bold" style={{ color: scoreInfo.color }}>
+                          {ps.nota}
+                        </span>
+                      </div>
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">{ps.name}</span>
+                          <Badge variant="secondary" className="bg-secondary text-primary text-[10px]">{ps.jiraKey}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium" style={{ color: scoreInfo.color }}>{scoreInfo.label}</span>
+                          {diff !== null && (
+                            <div className="flex items-center gap-0.5 text-xs">
+                              {diff > 0 ? (
+                                <>
+                                  <TrendingUp className="h-3 w-3 text-[#16a34a]" />
+                                  <span className="text-[#16a34a]">+{diff}</span>
+                                </>
+                              ) : diff < 0 ? (
+                                <>
+                                  <TrendingDown className="h-3 w-3 text-[#dc2626]" />
+                                  <span className="text-[#dc2626]">{diff}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Minus className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-muted-foreground">0</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Button>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Hours by User */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-foreground">Horas por Membro (Todos os Projetos)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {hoursByUser.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum dado disponível.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Membro</TableHead>
+                  <TableHead>Horas Totais</TableHead>
+                  <TableHead>Projetos</TableHead>
+                  <TableHead className="w-[40%]">Distribuicao</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {hoursByUser.map((u) => (
+                  <TableRow key={u.name}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
+                          <Users className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span>{u.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-bold">{u.hours}h</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Badge variant="secondary" className="bg-secondary text-primary">
+                        {u.projectCount} {u.projectCount === 1 ? "projeto" : "projetos"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <div className="h-2 rounded-full bg-secondary">
+                        <div
+                          className="h-2 rounded-full bg-primary transition-all"
+                          style={{ width: `${(u.hours / maxUserHours) * 100}%` }}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

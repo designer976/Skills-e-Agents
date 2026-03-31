@@ -1,0 +1,369 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ReactNode, useState } from "react";
+import easySalonLogo from "@/assets/easy-logo.svg";
+
+interface AuthLayoutProps {
+  children: ReactNode;
+  maxWidth?: "md" | "lg" | "xl" | "2xl";
+  bannerWidth?: string;
+  imagePosition?: string;
+}
+
+export const AuthLayout = ({ children, maxWidth = "md", bannerWidth = "lg:w-[60%]", imagePosition = "center" }: AuthLayoutProps) => {
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+
+  const maxWidthClass = {
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+  }[maxWidth];
+
+  return (
+    <div className="h-screen flex overflow-hidden">
+      {/* Left Side - Image */}
+      <div className={`hidden lg:block ${bannerWidth} relative bg-[#2a1810]`}>
+        <div className="relative h-full w-full">
+          <img
+            src="/lovable-uploads/login-bg.png"
+            alt="Easy Salon"
+            className="w-full h-full object-cover opacity-75"
+            style={{ objectPosition: imagePosition }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+          <div className="absolute inset-0 bg-black/30" />
+
+          {/* Logo top */}
+          <div className="absolute top-8 left-8">
+            <img
+              src={easySalonLogo}
+              alt="Easy Salon"
+              className="h-7 w-auto object-contain brightness-0 invert"
+            />
+          </div>
+
+          {/* Text Overlay */}
+          <div className="absolute bottom-20 left-8 right-8">
+            <div className="mb-4">
+              <h2 className="text-white text-3xl leading-tight font-semibold">
+                Agendamentos
+              </h2>
+              <div className="inline-block bg-[#dd4227] px-2 py-1 mt-1">
+                <span className="text-white text-3xl leading-tight font-semibold">
+                  sem complicação
+                </span>
+              </div>
+              <h2 className="text-white text-3xl leading-tight mt-1 font-semibold">
+                e uma gestão que funciona.
+              </h2>
+              <p className="text-white/80 text-lg mt-4">
+                Salão&amp;Tecnologia
+              </p>
+            </div>
+          </div>
+          <div className="absolute bottom-[5%] left-[5%] right-[5%]">
+            <div className="text-white text-sm flex items-center bg-black/30 px-4 py-2 rounded-lg backdrop-blur-sm w-fit">
+              <button
+                onClick={() => setShowPrivacyPolicy(true)}
+                className="hover:underline"
+              >
+                Política de privacidade
+              </button>
+              <span className="mx-2">|</span>
+              <button
+                onClick={() => setShowTerms(true)}
+                className="hover:underline"
+              >
+                Termos de uso
+              </button>
+              <span className="ml-8">v0.0.64</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile banner with logo - fixed at top on small screens */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#dd4227] px-6 py-5 flex items-center justify-center">
+        <img
+          src={easySalonLogo}
+          alt="Easy Salon"
+          className="h-7 w-auto object-contain brightness-0 invert"
+        />
+      </div>
+
+      {/* Right Side - Auth Forms */}
+      <div className="w-full lg:flex-1 flex flex-col lg:flex-row lg:items-center lg:justify-center h-full overflow-y-auto bg-white dark:bg-background px-6 pt-24 pb-8 lg:pt-8 lg:p-8">
+        <div className={`w-full ${maxWidthClass} mx-auto my-auto lg:my-0`}>
+          {children}
+        </div>
+      </div>
+
+      {/* Privacy Policy Modal */}
+      <Dialog open={showPrivacyPolicy} onOpenChange={setShowPrivacyPolicy}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Política de Privacidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm [&_ul]:list-none [&_ul]:pl-4 [&_ul_li]:relative [&_ul_li]:pl-4 [&_ul_li:before]:content-['-'] [&_ul_li:before]:absolute [&_ul_li:before]:left-0 [&_ol]:pl-8">
+            <section>
+              <h2>1. Política de Privacidade</h2>
+              <p>
+                A Política de Privacidade (“Política”) da <strong>Easy Salon</strong> é o documento pelo qual
+                mostramos o nosso compromisso em tratar com segurança, privacidade e transparência
+                os seus dados pessoais. Ela também demonstra a postura requerida por todos os colaboradores
+                no uso dos dados sob sua responsabilidade.
+              </p>
+              <p>
+                A presente Política aplica-se especificamente aos clientes e usuários.
+              </p>
+              <br />
+              <h2>2. Conceitos</h2>
+              <p>Alguns conceitos-chave para entendimento da Política de Privacidade são:</p>
+              <ul>
+                <li>
+                  <strong>Dados pessoais:</strong> informações relacionadas a uma pessoa específica,
+                  como nome, documento de identificação, histórico de relacionamento com a empresa, fotos etc.
+                  O <em>titular</em> é a pessoa a quem os dados se referem (neste caso, você).
+                </li>
+                <li>
+                  <strong>Tratamento de dados pessoais:</strong> uso dos dados, incluindo coleta, classificação,
+                  utilização, acesso, processamento, armazenamento, modificação, eliminação, compartilhamento
+                  e outros usos possíveis.
+                </li>
+                <li>
+                  <strong>Encarregado:</strong> responsável interno por cuidar dos assuntos relacionados
+                  à privacidade na Easy Salon.
+                </li>
+              </ul>
+              <br />
+              <h2>3. Por que utilizamos dados pessoais?</h2>
+              <p>
+                Os dados coletados são necessários para oferecermos os nossos serviços da melhor forma
+                possível e atendermos às exigências legais e regulatórias.
+              </p>
+              <br />
+              <h2>4. Coleta de dados pessoais</h2>
+              <p>Os seus dados pessoais podem ser coletados das seguintes formas:</p>
+              <ol type="a">
+                <li>Informados por você.</li>
+                <li>Gerados durante sua navegação em nosso aplicativo.</li>
+                <li>Gerados ao longo do relacionamento, pelo uso de nossos produtos e serviços.</li>
+                <li>Coletados de terceiros.</li>
+                <li>Através de fontes públicas.</li>
+                <li>Dados sensíveis, incluindo biométricos, como fotografias.</li>
+              </ol>
+              <br />
+              <h2>5. Dados informados pelo titular</h2>
+              <p>Os dados pessoais informados por você podem ser:</p>
+              <ol type="a">
+                <li>Dados cadastrais (nome, filiação, data de nascimento, documentos de identificação etc.).</li>
+                <li>Dados de contato (telefone, e-mail, endereço etc.).</li>
+                <li>Dados bancários.</li>
+                <li>Informações sobre profissão e, no caso de produtores rurais, sobre plantios e lavouras.</li>
+                <li>Renda declarada e comprovante.</li>
+                <li>Dados biométricos, como fotografias.</li>
+                <li>Situações específicas relatadas em algum canal de atendimento.</li>
+              </ol>
+              <p>
+                Você será o único responsável pela veracidade dos dados pessoais fornecidos.
+                A Easy Salon não se responsabiliza por eventuais danos decorrentes da inexatidão
+                ou desatualização dessas informações.
+              </p>
+              <p>
+                Caso seja necessário o tratamento de dados de crianças e/ou adolescentes,
+                será solicitado o consentimento específico e em destaque de, pelo menos,
+                um dos pais ou responsável legal. Após o consentimento válido, a coleta e o tratamento
+                serão realizados conforme as regras desta Política.
+              </p>
+              <br />
+              <h2>6. Dados de navegação e do dispositivo</h2>
+              <p>Os dados pessoais coletados automaticamente durante a navegação no aplicativo podem incluir:</p>
+              <ol type="a">
+                <li>Cookies necessários e opcionais (estes últimos apenas com consentimento).</li>
+                <li>Dados técnicos sobre a conexão e o dispositivo utilizado.</li>
+                <li>Informações de geolocalização do dispositivo (mediante autorização).</li>
+              </ol>
+              <br />
+              <h2>7. Legislação e foro</h2>
+              <p>
+                Esta Política de Privacidade é regida pela legislação brasileira.
+                Disputas ou controvérsias oriundas de atos praticados no âmbito da utilização
+                dos aplicativos pelos usuários, incluindo descumprimento da Política ou violação
+                de direitos da Easy Salon, de outros usuários ou de terceiros (inclusive de
+                propriedade intelectual, sigilo ou personalidade), serão tratadas na
+                <strong> Comarca de Curitiba/PR</strong>.
+              </p>
+              <br />
+              <p>
+                Ao se cadastrar e acessar o aplicativo, o usuário concorda e aceita integralmente
+                as disposições desta Política de Privacidade.
+              </p>
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Terms of Use Modal */}
+      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Termos de Uso</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm [&_ul]:list-none [&_ul]:pl-4 [&_ul_li]:relative [&_ul_li]:pl-4 [&_ul_li:before]:content-['-'] [&_ul_li:before]:absolute [&_ul_li:before]:left-0 [&_ol]:pl-8">
+            <p>Estes são os termos de uso do Easy Salon...</p>
+            <section>
+              <p>
+                Os serviços da Easy Salon são fornecidos pela pessoa jurídica com a seguinte
+                Razão Social/nome: <strong>TECSALAO DESENVOLVIMENTO DE SOFTWARES LTDA</strong>,
+                inscrito no CNPJ/CPF sob o nº <strong>31.162.185/0001-64</strong>, titular da
+                propriedade intelectual sobre software, website, aplicativos, conteúdos e demais
+                ativos relacionados à plataforma <strong>EASY SALON</strong>.
+              </p>
+              <br />
+              <h2>1. Do objeto</h2>
+              <p>
+                A plataforma visa licenciar o uso de seu software, website, aplicativos e demais
+                ativos de propriedade intelectual, fornecendo ferramentas para auxiliar e dinamizar
+                o dia a dia dos seus usuários. A plataforma caracteriza-se pela prestação do seguinte
+                serviço: <strong>gestão de salão de beleza</strong>.
+              </p>
+              <br />
+              <h2>2. Da aceitação</h2>
+              <p>
+                O presente Termo estabelece obrigações contratadas de livre e espontânea vontade,
+                por tempo indeterminado, entre a plataforma e as pessoas físicas ou jurídicas,
+                usuárias do site ou aplicativo.
+              </p>
+              <p>
+                Ao utilizar a plataforma o usuário aceita integralmente as presentes normas e
+                compromete-se a observá-las, sob o risco de aplicação das penalidades cabíveis.
+                A aceitação do presente instrumento é imprescindível para o acesso e para a utilização
+                de quaisquer serviços fornecidos pela empresa. Caso não concorde com as disposições
+                deste instrumento, o usuário não deve utilizá-los.
+              </p>
+              <br />
+              <h2>3. Do acesso dos usuários</h2>
+              <p>
+                Serão utilizadas todas as soluções técnicas à disposição do responsável pela plataforma
+                para permitir o acesso ao serviço 24 (vinte e quatro) horas por dia, 7 (sete) dias por semana.
+                No entanto, a navegação poderá ser interrompida, limitada ou suspensa para atualizações,
+                melhorias, manutenções ou qualquer outra ação necessária ao pleno funcionamento.
+              </p>
+              <br />
+              <h2>4. Do cadastro</h2>
+              <p>
+                O acesso às funcionalidades da plataforma exigirá cadastro prévio e, a depender do serviço ou
+                produto, o pagamento de determinado valor.
+              </p>
+              <ul>
+                <li>O usuário deve informar dados completos, recentes e válidos, mantendo-os atualizados.</li>
+                <li>O usuário compromete-se com a veracidade dos dados fornecidos.</li>
+                <li>É proibido informar dados cadastrais e/ou de acesso à plataforma a terceiros.</li>
+                <li>Menores de 18 anos devem ter consentimento dos responsáveis legais.</li>
+                <li>Após cadastro confirmado, o usuário terá login e senha pessoais e intransferíveis.</li>
+                <li>O descadastramento poderá ser solicitado, desde que não haja débitos em aberto.</li>
+              </ul>
+              <br />
+              <h2>5. Dos serviços ou produtos</h2>
+              <p>
+                A plataforma disponibilizará funcionalidades e ferramentas descritas com clareza,
+                incluindo informações sobre características, quantidades, composição, preço, garantia
+                e riscos. A entrega dos serviços/produtos será informada no momento da compra.
+              </p>
+              <br />
+              <h2>6. Dos preços</h2>
+              <p>
+                A plataforma poderá reajustar valores a qualquer tempo. Os preços são apresentados
+                em reais, não incluindo taxas de entrega (informadas à parte).
+              </p>
+              <p>
+                Ao inserir dados financeiros, o usuário concorda com a cobrança. As contratações serão
+                renovadas automaticamente, conforme forma de pagamento indicada.
+              </p>
+              <br />
+              <h2>7. Do cancelamento</h2>
+              <p>O usuário poderá cancelar:</p>
+              <ul>
+                <li>Em até 7 (sete) dias após a contratação, conforme o Código de Defesa do Consumidor.</li>
+                <li>A qualquer tempo, sendo que os serviços cessarão ao final do ciclo vigente.</li>
+                <li>Por violação dos Termos de Uso, com cessação imediata.</li>
+              </ul>
+              <br />
+              <h2>8. Da troca e devolução</h2>
+              <p>
+                Regidas pelo Código de Defesa do Consumidor (Lei nº 8.078/90), podem ocorrer por:
+              </p>
+              <ul>
+                <li><strong>Direito de arrependimento:</strong> devolução em até 7 dias após o recebimento.</li>
+                <li><strong>Vício do produto:</strong> defeitos que comprometam uso, valor ou adequação.</li>
+              </ul>
+              <p>
+                O usuário poderá solicitar substituição, reexecução do serviço, devolução de valores ou
+                abatimento proporcional.
+              </p>
+              <br />
+              <h2>9. Do suporte</h2>
+              <p>
+                Em caso de dúvidas ou problemas, o usuário poderá entrar em contato via e-mail:
+                <a href="mailto:contato@easysalon.com.br">contato@easysalon.com.br</a>.
+              </p>
+              <br />
+              <h2>10. Das responsabilidades</h2>
+              <p><strong>Do usuário:</strong></p>
+              <ul>
+                <li>Defeitos técnicos em seu próprio sistema.</li>
+                <li>Uso correto da plataforma e boa convivência com outros usuários.</li>
+                <li>Cumprimento das regras deste Termo e legislação vigente.</li>
+                <li>Proteção dos dados de acesso (login e senha).</li>
+              </ul>
+              <p><strong>Da plataforma:</strong></p>
+              <ul>
+                <li>Indicar características dos serviços/produtos.</li>
+                <li>Responder por defeitos/vícios quando lhe couber.</li>
+                <li>Responder pelas informações divulgadas (exceto conteúdos de usuários).</li>
+                <li>Adotar medidas contra conteúdos ou atividades ilícitas.</li>
+              </ul>
+              <br />
+              <h2>11. Dos direitos autorais</h2>
+              <p>
+                O Termo concede licença não exclusiva e intransferível para uso da plataforma.
+                Marcas, logotipos, layouts, imagens, conteúdos e demais direitos de propriedade
+                intelectual pertencem à Easy Salon, protegidos por lei.
+              </p>
+              <br />
+              <h2>12. Das sanções</h2>
+              <p>
+                A Easy Salon poderá advertir, suspender ou cancelar contas que violem este Termo.
+              </p>
+              <br />
+              <h2>13. Da rescisão</h2>
+              <p>
+                O descumprimento das obrigações poderá gerar rescisão imediata e bloqueio dos serviços.
+              </p>
+              <br />
+              <h2>14. Das alterações</h2>
+              <p>
+                Os itens deste Termo poderão ser alterados unilateralmente, a qualquer tempo, pela
+                Easy Salon, para adequações legais ou de serviços.
+              </p>
+              <br />
+              <h2>15. Da política de privacidade</h2>
+              <p>
+                Além deste Termo, o usuário deverá consentir com a Política de Privacidade apresentada
+                dentro da plataforma.
+              </p>
+              <br />
+              <h2>16. Do foro</h2>
+              <p>
+                Estes Termos de Uso são regidos pela legislação brasileira. Disputas serão tratadas
+                na Comarca onde se encontra a sede da empresa. Ao se cadastrar, o usuário concorda
+                integralmente com estas disposições.
+              </p>
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};

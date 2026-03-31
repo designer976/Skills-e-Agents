@@ -1,0 +1,257 @@
+"use client"
+
+import { PageHeader } from "@/components/ui/page-header"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProposalTemplateManager } from "@/components/proposta/ProposalTemplateManager"
+import { criarPropostaExemplo, criarPropostaComPadrao } from "@/lib/proposta-pdf-generator"
+import type { PropostaTemplateData } from "@/lib/proposta-template-types"
+
+export default function ExemplosTemplatePropostaPage() {
+  // Exemplo 1: E-commerce simples
+  const exemploEcommerce = criarPropostaComPadrao({
+    capa: {
+      titulo: "Proposta Comercial",
+      subtitulo: "Loja Virtual Premium",
+      dataEmissao: "30/03/2026",
+      validadeDias: 15,
+      cliente: {
+        empresa: "Fashion Store LTDA",
+        pessoa: "Maria Silva"
+      },
+      tipoEscopo: "Escopo fechado"
+    },
+    projeto: {
+      titulo: "Sobre o Projeto",
+      nome: "E-commerce de Roupas Femininas",
+      descricao: "Desenvolvimento completo de loja virtual responsiva com carrinho de compras, sistema de pagamento integrado e painel administrativo para gestão de produtos e pedidos.",
+      objetivo: "Digitalizar as vendas da empresa e expandir o alcance de mercado para todo o território nacional."
+    },
+    funcionalidades: {
+      titulo: "Funcionalidades",
+      itens: [
+        {
+          numero: 1,
+          titulo: "Vitrine de Produtos",
+          descricao: "Catálogo completo com filtros por categoria, tamanho, cor e faixa de preço. Fotos em alta resolução com zoom e galeria."
+        },
+        {
+          numero: 2,
+          titulo: "Carrinho e Checkout",
+          descricao: "Carrinho inteligente com cálculo automático de frete, aplicação de cupons de desconto e múltiplas formas de pagamento."
+        },
+        {
+          numero: 3,
+          titulo: "Painel Administrativo",
+          descricao: "Gestão completa de produtos, estoque, pedidos e relatórios de vendas com dashboard analítico."
+        }
+      ]
+    },
+    equipe: {
+      titulo: "Equipe",
+      descricao: "Time especializado em e-commerce:",
+      membros: [
+        {
+          cargo: "UX/UI Designer",
+          descricao: "Design da experiência de compra, prototipagem e interface responsiva."
+        },
+        {
+          cargo: "Desenvolvedor Full Stack",
+          descricao: "Implementação da loja, integrações de pagamento e painel administrativo."
+        }
+      ]
+    },
+    investimento: {
+      titulo: "Investimento",
+      valorTotal: "R$ 45.000",
+      condicoesPagamento: [
+        {
+          parcela: "1ª Parcela",
+          momento: "Na assinatura do contrato",
+          valor: "R$ 22.500"
+        },
+        {
+          parcela: "2ª Parcela",
+          momento: "Na entrega final",
+          valor: "R$ 22.500"
+        }
+      ]
+    },
+    cronograma: {
+      titulo: "Cronograma",
+      prazoTotal: "Prazo total estimado: 8 semanas"
+    }
+  } as Partial<PropostaTemplateData>)
+
+  // Exemplo 2: Sistema ERP complexo
+  const exemploERP = criarPropostaComPadrao({
+    capa: {
+      titulo: "Proposta Comercial",
+      subtitulo: "Sistema ERP Integrado",
+      dataEmissao: "30/03/2026",
+      validadeDias: 45,
+      cliente: {
+        empresa: "Indústria ABC SA",
+        pessoa: "João Santos"
+      },
+      tipoEscopo: "Squad Gerenciado"
+    },
+    projeto: {
+      titulo: "Sobre o Projeto",
+      nome: "ERP Completo para Indústria",
+      descricao: "Desenvolvimento de sistema ERP completo para gestão industrial, abrangendo financeiro, produção, estoque, RH e vendas em plataforma única integrada.",
+      objetivo: "Centralizar todos os processos empresariais em um sistema único, aumentando eficiência operacional e controle gerencial."
+    },
+    funcionalidades: {
+      titulo: "Módulos do Sistema",
+      itens: [
+        {
+          numero: 1,
+          titulo: "Módulo Financeiro",
+          descricao: "Controle completo de contas a pagar, receber, fluxo de caixa, conciliação bancária e relatórios gerenciais DRE."
+        },
+        {
+          numero: 2,
+          titulo: "Gestão de Produção",
+          descricao: "Controle de ordens de produção, planejamento de capacidade, apontamento de horas e controle de qualidade."
+        },
+        {
+          numero: 3,
+          titulo: "Controle de Estoque",
+          descricao: "Gestão de materiais, controle de entrada/saída, inventário, código de barras e alertas de estoque mínimo."
+        },
+        {
+          numero: 4,
+          titulo: "Recursos Humanos",
+          descricao: "Cadastro de funcionários, folha de pagamento, ponto eletrônico, férias e relatórios trabalhistas."
+        }
+      ]
+    },
+    equipe: {
+      titulo: "Squad Dedicado",
+      descricao: "Equipe completa alocada exclusivamente para o projeto:",
+      membros: [
+        {
+          cargo: "Tech Lead",
+          descricao: "Arquitetura do sistema, liderança técnica e integração entre módulos."
+        },
+        {
+          cargo: "Product Owner",
+          descricao: "Gestão do backlog, priorização e comunicação com stakeholders."
+        },
+        {
+          cargo: "Desenvolvedor Backend Sênior",
+          descricao: "APIs, regras de negócio, integrações e performance."
+        },
+        {
+          cargo: "Desenvolvedor Frontend Pleno",
+          descricao: "Interface web responsiva e experiência do usuário."
+        },
+        {
+          cargo: "Tester QA",
+          descricao: "Testes automatizados, homologação e garantia de qualidade."
+        }
+      ]
+    },
+    investimento: {
+      titulo: "Investimento",
+      valorTotal: "R$ 350.000",
+      condicoesPagamento: [
+        {
+          parcela: "1ª Parcela",
+          momento: "Assinatura do contrato",
+          valor: "R$ 105.000"
+        },
+        {
+          parcela: "2ª Parcela",
+          momento: "Entrega do MVP (módulos essenciais)",
+          valor: "R$ 122.500"
+        },
+        {
+          parcela: "3ª Parcela",
+          momento: "Go-live completo",
+          valor: "R$ 122.500"
+        }
+      ]
+    },
+    cronograma: {
+      titulo: "Cronograma",
+      prazoTotal: "Prazo total estimado: 20 semanas",
+      fases: [
+        { fase: "Fase 1", nome: "Discovery e Arquitetura", periodo: "Semanas 1-3" },
+        { fase: "Fase 2", nome: "MVP - Módulos Essenciais", periodo: "Semanas 4-10" },
+        { fase: "Fase 3", nome: "Módulos Avançados", periodo: "Semanas 11-17" },
+        { fase: "Fase 4", nome: "Testes e Go-live", periodo: "Semanas 18-20" }
+      ]
+    }
+  } as Partial<PropostaTemplateData>)
+
+  // Exemplo padrão
+  const exemploBasico = criarPropostaExemplo()
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="Exemplos de Template"
+        description="DIFERENTES TIPOS DE PROPOSTA PARA COMPARAÇÃO"
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* E-commerce */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">E-commerce (R$ 45k)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ProposalTemplateManager
+              data={exemploEcommerce}
+              showControls={true}
+              previewMode="compact"
+            />
+          </CardContent>
+        </Card>
+
+        {/* ERP */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">ERP Complexo (R$ 350k)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ProposalTemplateManager
+              data={exemploERP}
+              showControls={true}
+              previewMode="compact"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Básico */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Exemplo Básico</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ProposalTemplateManager
+              data={exemploBasico}
+              showControls={true}
+              previewMode="compact"
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Preview completo do primeiro exemplo */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Preview Completo - E-commerce</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProposalTemplateManager
+            data={exemploEcommerce}
+            showControls={true}
+            previewMode="full"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

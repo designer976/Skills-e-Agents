@@ -1,0 +1,284 @@
+/**
+ * Integração entre IA geradora de proposta existente e template refatorado
+ * Converte saída da IA (markdown/seções) para PropostaTemplateData estruturado
+ */
+
+import type { ProposalSection } from './proposal-types'
+import type { PropostaTemplateData, FuncionalidadeItem, MembroEquipe, CondicaoPagamento } from './proposta-template-types'
+import { TEMPLATE_PADRAO_WA_PROJECT } from './proposta-template-types'
+
+/**
+ * Converte dados da proposta atual (seções markdown) para nova estrutura
+ */
+export function converterPropostaParaTemplate(dados: {
+  empresa: string
+  para?: string
+  projeto?: string
+  dataCriacao: number
+  sections: ProposalSection[]
+  modeloTrabalho?: string
+}): PropostaTemplateData {
+
+  const { empresa, para, projeto, dataCriacao, sections, modeloTrabalho } = dados
+
+  // Data formatada
+  const dataFormatada = new Date(dataCriacao).toLocaleDateString('pt-BR')
+
+  // Encontrar seções específicas
+  const secaoFuncionalidades = sections.find(s =>
+    s.title.toLowerCase().includes('funcionalid') ||
+    s.title.toLowerCase().includes('escopo') ||
+    s.title.toLowerCase().includes('serviço')
+  )
+
+  const secaoEquipe = sections.find(s =>
+    s.title.toLowerCase().includes('equipe') ||
+    s.title.toLowerCase().includes('time')
+  )
+
+  const secaoInvestimento = sections.find(s =>
+    s.title.toLowerCase().includes('investimento') ||
+    s.title.toLowerCase().includes('valor') ||
+    s.title.toLowerCase().includes('preço')
+  )
+
+  const secaoCronograma = sections.find(s =>
+    s.title.toLowerCase().includes('cronograma') ||
+    s.title.toLowerCase().includes('prazo') ||
+    s.title.toLowerCase().includes('tempo')
+  )
+
+  // Processar funcionalidades
+  const funcionalidades = extrairFuncionalidades(secaoFuncionalidades?.content || '')
+
+  // Processar equipe
+  const membrosEquipe = extrairMembrosEquipe(secaoEquipe?.content || '')
+
+  // Processar investimento
+  const { valorTotal, condicoesPagamento } = extrairInvestimento(secaoInvestimento?.content || '')
+
+  // Processar cronograma
+  const prazoTotal = extrairPrazoTotal(secaoCronograma?.content || '')
+
+  // Construir estrutura completa
+  const propostaCompleta: PropostaTemplateData = {
+    capa: {
+      titulo: "Proposta Comercial",
+      subtitulo: projeto || `Projeto ${empresa}`,
+      dataEmissao: dataFormatada,
+      validadeDias: 30,
+      cliente: {
+        empresa: empresa,
+        pessoa: para
+      },
+      tipoEscopo: (modeloTrabalho && modeloTrabalho !== "Vazio")
+        ? modeloTrabalho as any
+        : "Escopo fechado"
+    },
+
+    // Usar dados padrão da Wa Project
+    empresa: TEMPLATE_PADRAO_WA_PROJECT.empresa!,
+
+    projeto: {
+      titulo: "Sobre o Projeto",
+      nome: projeto || `Sistema para ${empresa}`,
+      descricao: extrairDescricaoProjeto(sections) || `Desenvolvimento de solução tecnológica customizada para ${empresa}.`,
+      objetivo: extrairObjetivoProjeto(sections)
+    },
+
+    funcionalidades: {
+      titulo: "Funcionalidades",
+      itens: funcionalidades.length > 0 ? funcionalidades : [{
+        numero: 1,
+        titulo: "Funcionalidade Principal",
+        descricao: "Funcionalidade extraída do conteúdo da proposta."
+      }]
+    },
+
+    // Usar estrutura padrão se não encontrou específicas
+    modeloTrabalho: TEMPLATE_PADRAO_WA_PROJECT.modeloTrabalho!,
+
+    equipe: {
+      titulo: "Equipe",
+      descricao: "Time especializado para o projeto:",
+      membros: membrosEquipe.length > 0 ? membrosEquipe : [
+        {
+          cargo: "Desenvolvedor Full Stack",
+          descricao: "Responsável pela implementação técnica completa."
+        }
+      ]
+    },
+
+    cronograma: {
+      titulo: "Cronograma",
+      prazoTotal: prazoTotal || "Prazo a ser definido conforme escopo detalhado"
+    },
+
+    investimento: {
+      titulo: "Investimento",
+      valorTotal: valorTotal || "Valor a definir",
+      condicoesPagamento: condicoesPagamento.length > 0 ? condicoesPagamento : [
+        {
+          parcela: "À vista",
+          momento: "Na assinatura do contrato",
+          valor: valorTotal || "Valor total"
+        }
+      ]
+    },
+
+    // Usar padrões da Wa Project
+    entregaveis: TEMPLATE_PADRAO_WA_PROJECT.entregaveis!,
+    proximosPassos: TEMPLATE_PADRAO_WA_PROJECT.proximosPassos!,
+    encerramento: TEMPLATE_PADRAO_WA_PROJECT.encerramento!
+  }
+
+  return propostaCompleta
+}
+
+/**
+ * Extrai funcionalidades do conteúdo markdown
+ */
+function extrairFuncionalidades(content: string): FuncionalidadeItem[] {
+  const funcionalidades: FuncionalidadeItem[] = []
+
+  // Buscar listas numeradas
+  const numeradas = content.match(/(\d+)\.\s*\*?\*?(.*?)\*?\*?\s*[-–—]\s*(.*?)(?=\n\d+\.|\n\n|$)/gs)
+
+  if (numeradas) {
+    numeradas.forEach(match => {
+      const parsed = match.match(/(\d+)\.\s*\*?\*?(.*?)\*?\*?\s*[-–—]\s*(.*)/s)
+      if (parsed) {
+        funcionalidades.push({
+          numero: parseInt(parsed[1]),
+          titulo: parsed[2].trim(),
+          descricao: parsed[3].trim()
+        })
+      }
+    })
+  }
+
+  // Se não encontrou numeradas, buscar bullets com negrito
+  if (funcionalidades.length === 0) {
+    const bullets = content.match(/[-*]\s*\*?\*?(.*?)\*?\*?\s*[-–—]?\s*(.*?)(?=\n[-*]|\n\n|$)/gs)
+
+    if (bullets) {
+      bullets.forEach((match, index) => {
+        const parsed = match.match(/[-*]\s*\*?\*?(.*?)\*?\*?\s*[-–—]?\s*(.*)/s)
+        if (parsed) {
+          funcionalidades.push({
+            numero: index + 1,
+            titulo: parsed[1].trim(),
+            descricao: parsed[2].trim() || parsed[1].trim()
+          })
+        }
+      })
+    }
+  }
+
+  return funcionalidades
+}
+
+/**
+ * Extrai membros da equipe do conteúdo
+ */
+function extrairMembrosEquipe(content: string): MembroEquipe[] {
+  const membros: MembroEquipe[] = []
+
+  // Buscar padrões como "**Cargo**" seguido de descrição
+  const cargos = content.match(/\*\*([^*]+)\*\*\s*(.*?)(?=\n\*\*|\n\n|$)/gs)
+
+  if (cargos) {
+    cargos.forEach(match => {
+      const parsed = match.match(/\*\*([^*]+)\*\*\s*(.*)/s)
+      if (parsed) {
+        membros.push({
+          cargo: parsed[1].trim(),
+          descricao: parsed[2].trim()
+        })
+      }
+    })
+  }
+
+  return membros
+}
+
+/**
+ * Extrai valor total e condições de pagamento
+ */
+function extrairInvestimento(content: string): { valorTotal: string; condicoesPagamento: CondicaoPagamento[] } {
+  let valorTotal = ""
+  const condicoes: CondicaoPagamento[] = []
+
+  // Buscar valor total
+  const totalMatch = content.match(/total[:\s]*R?\$?\s*([\d.,]+)/i)
+  if (totalMatch) {
+    valorTotal = `R$ ${totalMatch[1]}`
+  }
+
+  // Buscar condições de pagamento
+  const condicoesMatch = content.match(/(\d+[ªa]?\s*parcela[^:]*):?\s*(.*?)\s*[-–—]?\s*R?\$?\s*([\d.,]+)/gi)
+
+  if (condicoesMatch) {
+    condicoesMatch.forEach(match => {
+      const parsed = match.match(/(\d+[ªa]?\s*parcela[^:]*):?\s*(.*?)\s*[-–—]?\s*R?\$?\s*([\d.,]+)/i)
+      if (parsed) {
+        condicoes.push({
+          parcela: parsed[1].trim(),
+          momento: parsed[2].trim(),
+          valor: `R$ ${parsed[3]}`
+        })
+      }
+    })
+  }
+
+  return { valorTotal, condicoesPagamento: condicoes }
+}
+
+/**
+ * Extrai prazo total do cronograma
+ */
+function extrairPrazoTotal(content: string): string {
+  const prazoMatch = content.match(/prazo\s+total[^:]*:?\s*([^\n]+)/i) ||
+                   content.match(/(\d+\s*semanas?)/i) ||
+                   content.match(/(\d+\s*meses?)/i)
+
+  if (prazoMatch) {
+    return `Prazo total estimado: ${prazoMatch[1].trim()}`
+  }
+
+  return ""
+}
+
+/**
+ * Extrai descrição do projeto das seções
+ */
+function extrairDescricaoProjeto(sections: ProposalSection[]): string {
+  const secaoObjetivo = sections.find(s =>
+    s.title.toLowerCase().includes('objetivo') ||
+    s.title.toLowerCase().includes('sobre') ||
+    s.title.toLowerCase().includes('projeto')
+  )
+
+  if (secaoObjetivo) {
+    // Pegar primeiro parágrafo da seção
+    const firstParagraph = secaoObjetivo.content.split('\n\n')[0]
+    return firstParagraph.replace(/[*#]/g, '').trim()
+  }
+
+  return ""
+}
+
+/**
+ * Extrai objetivo do projeto
+ */
+function extrairObjetivoProjeto(sections: ProposalSection[]): string | undefined {
+  const secaoObjetivo = sections.find(s =>
+    s.title.toLowerCase().includes('objetivo')
+  )
+
+  if (secaoObjetivo && secaoObjetivo.content.length > 200) {
+    return secaoObjetivo.content.replace(/[*#]/g, '').trim()
+  }
+
+  return undefined
+}

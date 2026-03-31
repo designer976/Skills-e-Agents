@@ -1,0 +1,126 @@
+---
+description: Pipeline completo — Designer valida, Front-end-UI implementa, Front-end-Code revisa, Designer aprova
+---
+
+# /all-agents Command
+
+Execute o pipeline completo com **todos os agentes** para a tarefa solicitada, em quatro fases sequenciais.
+
+---
+
+## Fase 1 — Designer (Validacao e Planejamento)
+
+Adote o papel do **Agente Designer**.
+
+**Objetivo**: Garantir que a spec está completa e alinhada ao Design System antes de qualquer implementação.
+
+**Passos**:
+1. Leia a solicitação com atenção
+2. Verifique se contém:
+   - **Local** onde será aplicado (rota, arquivo, componente pai)
+   - **Especificação visual** (layout, componentes, cores, comportamento)
+   - Se deve reutilizar componente do DS ou criar novo
+3. Se faltar qualquer informação → **pergunte ao usuário e aguarde resposta** antes de continuar
+   - Repita quantas vezes for necessário até spec estar completa
+4. Consulte o DS para identificar tokens e componentes relevantes:
+   - `frontend/src/index.css`, `frontend/tailwind.config.ts`
+   - `frontend/src/components/ui/`, `frontend/src/pages/DesignSystemPage.tsx`
+5. Monte o **plano de implementação** com componentes, tokens e arquivos
+6. Apresente o plano — prossiga somente quando tudo estiver claro
+
+---
+
+## Fase 2 — Front-end-UI (Implementacao)
+
+Adote o papel do **Agente Front-end-UI**.
+
+**Objetivo**: Implementar a UI conforme o plano do Designer.
+
+**Tokens obrigatórios**:
+| Categoria | Correto                                    | Proibido                              |
+|-----------|-------------------------------------------|---------------------------------------|
+| Fundo     | `bg-background`, `bg-card`, `bg-muted`    | `bg-gray-*`, `bg-white`, `bg-zinc-*`  |
+| Texto     | `text-foreground`, `text-muted-foreground` | `text-gray-*`                        |
+| Borda     | `border-border`                            | `border-gray-*`                       |
+| Radius    | `rounded-lg`                               | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
+| Hover     | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*`                   |
+
+**Exceção aceita**: cores semânticas intencionais (`bg-green-500` pago, `bg-red-500` cancelado, `bg-yellow-500` atendendo).
+
+**Regras**:
+- Nunca alterar lógica de negócio ou hooks
+- Nunca modificar arquivos fora do escopo da tarefa
+- Listar arquivos alterados ao final desta fase
+
+---
+
+## Fase 3 — Front-end-Code (Revisao)
+
+Adote o papel do **Agente Front-end-Code**.
+
+**Objetivo**: Revisar todo o código da Fase 2 sem alterar nada visual.
+
+**O que revisar**:
+1. **Performance**: `useMemo`/`useCallback` ausentes, listas sem `key`, subscriptions sem cleanup
+2. **TypeScript**: sem `any`, props tipadas, retornos explícitos
+3. **DS Tokens**: classes proibidas nos arquivos alterados na Fase 2
+4. **Navegabilidade**: z-index, overflow, acessibilidade básica (`aria-label`, `role`)
+5. **Código limpo**: imports não usados, `console.log`, variáveis mortas
+
+**Regra CRITICA**: Nao alterar nada visual. Problemas visuais → reportar ao Designer.
+
+**Formato por problema**:
+```
+ARQUIVO: caminho/arquivo.tsx:linha
+PROBLEMA: descricao
+ACAO: correcao aplicada (ou "→ Designer" se visual)
+```
+
+---
+
+## Fase 4 — Designer (Revisao Final)
+
+Adote o papel do **Agente Designer**.
+
+**Objetivo**: Validar consistência visual e aprovar ou listar pendências.
+
+**Verificar nos arquivos alterados**:
+1. Nenhuma cor hardcoded introduzida (`gray-*`, `blue-*`, `white` direto)
+2. Radius usa exclusivamente `rounded-lg`
+3. Componentes seguem o padrão visual do projeto
+4. Estrutura semântica e acessível
+
+**Se houver inconsistência** → avise o usuário com detalhes antes de finalizar.
+**Se tudo ok** → declare aprovação.
+
+---
+
+## Resumo Executivo Final
+
+```
+PIPELINE CONCLUIDO
+
+Fase 1 - Designer:
+  - Spec validada: sim/nao (itens pendentes se houver)
+  - Plano: [descricao resumida]
+
+Fase 2 - Front-end-UI:
+  - Arquivos criados/editados: [lista]
+  - O que foi implementado: [descricao]
+
+Fase 3 - Front-end-Code:
+  - Problemas corrigidos: X
+  - Itens para o Designer: Y
+
+Fase 4 - Designer:
+  - Status: APROVADO / PENDENCIAS (listar)
+```
+
+## Contexto do Projeto — Easy Salon
+
+- Plataforma multi-tenant SaaS para gestão de salões de beleza
+- Stack: React + Vite + TypeScript + Tailwind CSS + shadcn/ui | Backend: NestJS
+- Design System: `frontend/src/pages/DesignSystemPage.tsx`
+- Tokens CSS: `frontend/src/index.css` | Tailwind: `frontend/tailwind.config.ts`
+- Componentes UI: `frontend/src/components/ui/`
+- `rounded-lg` = `var(--radius)` = token canônico de border-radius

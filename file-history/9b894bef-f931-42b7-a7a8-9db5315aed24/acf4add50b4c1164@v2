@@ -1,0 +1,87 @@
+import { BookingSource } from '@/types/appointment';
+
+export type EventVariant = 'online' | 'ausencia' | 'default' | 'agendado' | 'atendendo' | 'pgto-pendente' | 'pago' | 'cancelado' | 'reserva';
+
+export type EventStatus = 'Agendado' | 'Atendendo' | 'Pgto Pendente' | 'Pago' | 'Cancelado';
+
+export interface ProfessionalBreak {
+  id: string;
+  start: string;
+  end: string;
+  type: 'ausencia' | 'indisponibilidade';
+  reason?: string;
+}
+
+export interface ProfessionalColumn {
+  id: string;
+  name: string;
+  nickname?: string;
+  avatar?: string;
+  breaks: ProfessionalBreak[];
+  schedule?: any; // Professional schedule metadata for blocking logic
+  salonDaySchedule?: { startHour: number; endHour: number; isOpen: boolean };
+  salonTimezone?: string; // IANA timezone of the salon (e.g., "America/Sao_Paulo")
+}
+
+export interface CalendarEvent {
+  id: string;
+  clientName: string;
+  serviceName: string;
+  professionalId: string;
+  start: string;
+  end: string;
+  variant?: EventVariant;
+  status?: EventStatus;
+  price?: number;
+  isOnlineBooking?: boolean;
+  source?: BookingSource;
+  rawData?: unknown;
+}
+
+export interface AbsenceBlockData {
+  id: string;
+  professionalId: string;
+  startTime: string;
+  endTime: string;
+  reason?: string;
+}
+
+export interface EasyCalendarProps {
+  date: string;
+  columns: ProfessionalColumn[];
+  events: CalendarEvent[];
+  startHour?: number;
+  endHour?: number;
+  slotMinutes?: number;
+  primaryColor?: string;
+  salonTimezone?: string;
+  onEventClick?: (event: CalendarEvent) => void;
+  onEventMove?: (event: CalendarEvent, newStart: string, newEnd: string) => void;
+  onSlotClick?: (professionalId: string, startTime: string) => void;
+  onAbsenceClick?: (professionalId: string, startTime: string) => void;
+  onAbsenceBlockClick?: (absenceData: AbsenceBlockData) => void;
+  loading?: boolean;
+  isSalonClosed?: boolean;
+  focusAppointment?: { id: string; time: string; professionalId: string } | null;
+  onFocusConsumed?: () => void;
+  containerClassName?: string;
+}
+
+export interface TimeSlot {
+  hour: number;
+  minute: number;
+  label: string;
+  time: string;
+}
+
+export interface EventPosition {
+  top: number;
+  height: number;
+}
+
+export interface EventLayout {
+  event: CalendarEvent;
+  position: EventPosition;
+  column: number;      // Qual sub-coluna ocupar (0, 1, 2...)
+  totalColumns: number; // Total de sub-colunas necessárias no grupo
+}

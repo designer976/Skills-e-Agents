@@ -1,0 +1,268 @@
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { ArrowRight, Play, Check } from 'lucide-react'
+import AuroraBackground from './ui/AuroraBackground'
+
+const rotatingWords = ['barbearias', 'salões de beleza', 'estúdios de beleza']
+
+const features = [
+  'Agendamento via WhatsApp IA',
+  'Sem limites de mensagens',
+  'Agenda inteligente',
+  'Gestão financeira',
+  'Relatórios em tempo real',
+  'Multi-profissionais',
+  'Notificações automáticas',
+  'Sem fidelidade',
+]
+
+interface AppointmentRowProps {
+  time: string
+  name: string
+  service: string
+  active?: boolean
+}
+
+function AppointmentRow({ time, name, service, active = false }: AppointmentRowProps) {
+  return (
+    <div
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+        active ? 'bg-primary/15 border border-primary/20' : 'hover:bg-surface-3'
+      }`}
+    >
+      <span className="text-xs text-fg-muted w-10 flex-shrink-0">{time}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-fg truncate">{name}</p>
+        <p className="text-[10px] text-fg-muted truncate">{service}</p>
+      </div>
+      {active && (
+        <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full flex-shrink-0">
+          Em breve
+        </span>
+      )}
+    </div>
+  )
+}
+
+export default function Hero() {
+  const [wordIndex, setWordIndex] = useState(0)
+  const [wordVisible, setWordVisible] = useState(true)
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>
+    const interval = setInterval(() => {
+      setWordVisible(false)
+      timeoutId = setTimeout(() => {
+        setWordIndex((i) => (i + 1) % rotatingWords.length)
+        setWordVisible(true)
+      }, 350)
+    }, 3000)
+    return () => {
+      clearInterval(interval)
+      clearTimeout(timeoutId)
+    }
+  }, [])
+
+  return (
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-bg pt-16">
+      <AuroraBackground />
+
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-20 py-20 lg:py-28">
+
+          {/* Left — Copy */}
+          <div className="flex-1 text-center lg:text-left max-w-2xl lg:max-w-none">
+
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-block mb-6"
+            >
+              <span className="pill">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                Inteligência Artificial para beleza
+              </span>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              className="display-title text-5xl sm:text-6xl lg:text-7xl text-fg mb-6 leading-[1.08]"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.1 }}
+            >
+              IA de agendamento
+              <br />
+              <span className="text-fg-muted font-normal">para </span>
+              <span
+                className="italic gradient-text"
+                style={{
+                  display: 'inline-block',
+                  transition: 'opacity 0.3s, transform 0.3s',
+                  opacity: wordVisible ? 1 : 0,
+                  transform: wordVisible ? 'translateY(0)' : 'translateY(8px)',
+                }}
+              >
+                {rotatingWords[wordIndex]}
+              </span>
+            </motion.h1>
+
+            {/* Subheadline */}
+            <motion.p
+              className="text-lg text-fg-muted leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.2 }}
+            >
+              A Easy Salon ajuda donos de salões, barbearias e estúdios de beleza
+              a organizarem sua agenda e evoluírem para uma{' '}
+              <span className="text-fg font-medium">gestão simples e inteligente.</span>
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.3 }}
+            >
+              <a href="#" className="btn-primary text-base px-7 py-3.5">
+                Começar grátis
+                <ArrowRight size={18} />
+              </a>
+              <a href="#" className="btn-ghost text-base px-7 py-3.5">
+                <Play size={15} className="text-primary fill-primary" />
+                Ver demonstração
+              </a>
+            </motion.div>
+
+            {/* Trust row */}
+            <motion.div
+              className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center lg:justify-start"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.65, delay: 0.45 }}
+            >
+              {['+2.000 negócios ativos', '3 meses grátis', 'Sem fidelidade'].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <Check size={13} className="text-primary flex-shrink-0" />
+                  <span className="text-sm text-fg-muted">{item}</span>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Right — App Mockup */}
+          <motion.div
+            className="flex-shrink-0 w-full max-w-sm lg:max-w-[360px]"
+            initial={{ opacity: 0, x: 40, y: 10 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.25 }}
+          >
+            <div className="relative animate-float">
+
+              {/* Main card — Chat IA */}
+              <div className="glass-card p-5 mb-4 glow-primary-sm relative overflow-hidden">
+                <div className="absolute inset-0 rounded-2xl"
+                  style={{ background: 'linear-gradient(135deg, rgba(196,75,58,0.06) 0%, transparent 60%)' }}
+                />
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                      <span className="text-sm text-primary font-bold">E</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-fg">Easy IA</p>
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                        <span className="text-[10px] text-fg-muted">Online agora</span>
+                      </div>
+                    </div>
+                    <span className="ml-auto text-[10px] text-fg-muted">09:41</span>
+                  </div>
+
+                  {/* Chat bubbles */}
+                  <div className="space-y-2.5">
+                    <div className="flex gap-2">
+                      <div className="bg-surface-3 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[75%]">
+                        <p className="text-xs text-fg-muted">Oi! Quero corte amanhã às 14h 💈</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <div className="bg-primary/20 border border-primary/20 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[80%]">
+                        <p className="text-xs text-primary font-medium">
+                          Perfeito! Carlos confirmado para amanhã, 14h. Até lá! ✅
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="bg-surface-3 rounded-2xl rounded-tl-sm px-3 py-2">
+                        <p className="text-xs text-fg-muted">Pode remarcar para 15h?</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <div className="bg-primary/20 border border-primary/20 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[80%]">
+                        <p className="text-xs text-primary font-medium">
+                          Remarcado! Novo horário: 15h ✅
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Secondary card — Agenda */}
+              <div className="glass-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-fg">Agenda — Hoje</span>
+                  <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
+                    4 horários
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <AppointmentRow time="09:00" name="Ana Silva" service="Escova + Corte" />
+                  <AppointmentRow time="11:30" name="Beatriz Costa" service="Coloração" />
+                  <AppointmentRow time="14:00" name="Carlos Mendes" service="Corte masculino" active />
+                  <AppointmentRow time="16:30" name="Diana Lima" service="Manicure" />
+                </div>
+              </div>
+
+              {/* Floating badge */}
+              <div className="absolute -left-8 top-1/3 -translate-y-1/2 glass-card px-3 py-2.5 flex items-center gap-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+                <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <Check size={12} className="text-green-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-fg">Confirmado</p>
+                  <p className="text-[9px] text-fg-muted">via WhatsApp IA</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Bottom feature marquee strip */}
+      <div className="relative z-10 w-full border-t border-tan/10 bg-surface/30 backdrop-blur-sm py-4 overflow-hidden"
+        style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}
+      >
+        <div
+          className="flex"
+          style={{ animation: 'marquee 35s linear infinite' }}
+        >
+          {[...features, ...features].map((feat, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 flex-shrink-0 px-6"
+            >
+              <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
+              <span className="text-xs font-medium text-fg-muted whitespace-nowrap">{feat}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

@@ -1,0 +1,28 @@
+import { SelectPopover } from "@/components/ui/select";
+import { TIMEZONES, getTimezoneByValue } from "@/constants/timezones";
+
+interface TimezoneComboboxProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+export function TimezoneCombobox({ value, onValueChange, disabled }: TimezoneComboboxProps) {
+  const options = TIMEZONES.map((tz) => ({
+    value: tz.value,
+    label: `${tz.label} - ${tz.country} (${tz.offset})`,
+  }));
+
+  return (
+    <SelectPopover
+      value={value}
+      onValueChange={onValueChange}
+      options={options}
+      placeholder="Selecione o fuso horário"
+      searchable
+      searchPlaceholder="Buscar fuso horário..."
+      disabled={disabled}
+      className="salon-input"
+    />
+  );
+}

@@ -1,0 +1,70 @@
+import { ReactNode, useState } from "react"; // RESP: Adicionado useState
+import { EasySalonSidebar } from "./EasySalonSidebar";
+import { Header } from "./Header";
+import { NavItem, NavSection } from "@/types/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSalonNavItems } from "@/config/navigation";
+import { useSolicitacoes } from "@/contexts/SolicitacoesContext";
+import { Sheet, SheetContent } from "@/components/ui/sheet"; // RESP: Importado Sheet para mobile
+
+interface EasySalonLayoutProps {
+  children: ReactNode;
+  sideNavItems?: NavItem[] | NavSection[];
+  sideNavTitle: string;
+  sideNavSubtitle?: string;
+}
+
+export function EasySalonLayout({
+  children,
+  sideNavItems,
+  sideNavTitle,
+  sideNavSubtitle,
+}: EasySalonLayoutProps) {
+  const { user } = useAuth();
+  const { hasPendingSolicitacoes } = useSolicitacoes();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // RESP: Estado do menu mobile
+
+  // Se não foram fornecidos items específicos, usar os baseados no perfil do usuário
+  const navItems =
+    sideNavItems ||
+    getSalonNavItems(
+      user?.role || "Easy Salon",
+      hasPendingSolicitacoes ? 1 : undefined
+    );
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden bg-background w-full max-w-full">
+      {/* Header in-flow */}
+      <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
+
+      <div className="flex flex-1 min-h-0 w-full max-w-full">
+        {/* Sidebar Desktop: oculto em mobile (< md) */}
+        <EasySalonSidebar
+          title={sideNavTitle}
+          subtitle={sideNavSubtitle}
+          items={navItems}
+          variant="sidebar"
+        />
+
+        {/* Sidebar Mobile: Drawer */}
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="p-0 w-64">
+            <EasySalonSidebar
+              title={sideNavTitle}
+              subtitle={sideNavSubtitle}
+              items={navItems}
+              variant="drawer"
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Main content area */}
+        <div className="flex-1 min-w-0 overflow-auto w-full max-w-full">
+          <main className="p-4 md:p-6 md:mt-3 w-full max-w-full">
+            {children}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}

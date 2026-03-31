@@ -1,0 +1,478 @@
+import React, { useState, useEffect } from "react";
+import { useServiceRecommendations } from "@/hooks/useServiceRecommendations";
+import { serviceService } from "@/services/serviceService";
+import { Service } from "@/types/service";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { IconPlus as Plus, IconTrash as Trash2, IconGripVertical as GripVertical, IconDeviceFloppy as Save, IconEdit as Edit } from "@tabler/icons-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface ServiceRecommendationsManagerProps {
+    serviceId: string;
+    serviceName: string;
+}
+
+export function ServiceRecommendationsManager({
+    serviceId,
+    serviceName,
+}: ServiceRecommendationsManagerProps) {
+    const {
+        recommendations,
+        loading,
+        error,
+        addRecommendation,
+        removeRecommendation,
+        updateRecommendation,
+        reorderRecommendations,
+        saveRecommendationsOrder,
+    } = useServiceRecommendations(serviceId);
+
+    const [availableServices, setAvailableServices] = useState<Service[]>([]);
+    const [loadingServices, setLoadingServices] = useState(false);
+    const [showAddDialog, setShowAddDialog] = useState(false);
+    const [editingRecommendation, setEditingRecommendation] = useState<string | null>(null);
+
+    // Form state
+    const [selectedServiceId, setSelectedServiceId] = useState("");
+    const [customDescription, setCustomDescription] = useState("");
+    const [displayOrder, setDisplayOrder] = useState<number>(recommendations.length);
+
+    // Drag and drop
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [orderChanged, setOrderChanged] = useState(false);
+
+    // Buscar serviços disponíveis
+    useEffect(() => {
+        const fetchServices = async () => {
+            setLoadingServices(true);
+            try {
+                const response = await serviceService.getAll({ active: true });
+
+                // response pode ter customServices e standardServices
+                let allServices: Service[] = [];
+
+                if (response.customServices && response.standardServices) {
+                    allServices = [...response.customServices, ...response.standardServices];
+                } else if (Array.isArray(response.data)) {
+                    allServices = response.data;
+                } else if (Array.isArray(response)) {
+                    allServices = response;
+                }
+
+                // Filtrar o serviço atual e serviços já recomendados
+                const recommendedIds = recommendations.map((r) => r.recommendedServiceId);
+                const filtered = allServices.filter(
+                    (s: Service) => s.id !== serviceId && !recommendedIds.includes(s.id) && s.isActive !== false
+                );
+
+                setAvailableServices(filtered);
+            } catch (err) {
+                console.error("Erro ao buscar serviços:", err);
+            } finally {
+                setLoadingServices(false);
+            }
+        };
+
+        if (showAddDialog) {
+            fetchServices();
+        }
+    }, [serviceId, recommendations, showAddDialog]);
+
+    // Reset form
+    const resetForm = () => {
+        setSelectedServiceId("");
+        setCustomDescription("");
+        setDisplayOrder(recommendations.length);
+        setEditingRecommendation(null);
+    };
+
+    // Adicionar recomendação
+    const handleAddRecommendation = async () => {
+        if (!selectedServiceId) return;
+
+        const result = await addRecommendation({
+            recommendedServiceId: selectedServiceId,
+            customDescription: customDescription || undefined,
+            displayOrder,
+            isActive: true,
+        });
+
+        if (result) {
+            setShowAddDialog(false);
+            resetForm();
+        }
+    };
+
+    // Remover recomendação
+    const handleRemoveRecommendation = async (recommendationId: string) => {
+        await removeRecommendation(recommendationId);
+    };
+
+    // Drag and Drop handlers
+    const handleDragStart = (index: number) => {
+        setDraggedIndex(index);
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        const newRecommendations = reorderRecommendations(draggedIndex, index);
+        setDraggedIndex(index);
+        setOrderChanged(true);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+    };
+
+    // Salvar nova ordem
+    const handleSaveOrder = async () => {
+        const success = await saveRecommendationsOrder(recommendations);
+        if (success) {
+            setOrderChanged(false);
+        }
+    };
+
+    // Formatar preço
+    const formatPrice = (price: number | string): string => {
+        const numPrice = typeof price === "string" ? parseFloat(price) : price;
+        return new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        }).format(numPrice);
+    };
+
+    if (loading && recommendations.length === 0) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-4 w-2/3 mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Mostrar erro amigável se a tabela não existir
+    if (error && error.includes("relation") && error.includes("does not exist")) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>⚠️ Configuração Necessária</CardTitle>
+                    <CardDescription>
+                        A funcionalidade de recomendações precisa de uma configuração inicial no banco de dados
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Alert>
+                        <AlertDescription>
+                            <p className="font-medium mb-2">A tabela de recomendações ainda não foi criada.</p>
+                            <p className="text-sm text-muted-foreground">
+                                É necessário executar a migration SQL no banco de dados para habilitar esta funcionalidade.
+                            </p>
+                        </AlertDescription>
+                    </Alert>
+
+                    <div className="bg-muted p-4 rounded-lg">
+                        <p className="text-sm font-medium mb-2">Execute este comando SQL no banco de dados:</p>
+                        <pre className="text-xs bg-background p-2 rounded overflow-x-auto">
+                            {`psql -h localhost -p 5432 -U seu_usuario -d seu_banco \\
+  -f backend/migrations/1731518400000-create-service-recommendations.sql`}
+                        </pre>
+                    </div>
+
+                    <div className="text-sm text-muted-foreground">
+                        <p>Ou copie o arquivo de migration localizado em:</p>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">
+                            backend/migrations/1731518400000-create-service-recommendations.sql
+                        </code>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <CardTitle>Recomendações de Serviços</CardTitle>
+                        <CardDescription>
+                            Configure serviços recomendados para "{serviceName}"
+                        </CardDescription>
+                    </div>
+                    <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                        <DialogTrigger asChild>
+                            <Button size="sm" className="w-full sm:w-auto min-h-[44px]" onClick={() => resetForm()}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Adicionar Recomendação
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                                <DialogTitle>Adicionar Recomendação</DialogTitle>
+                                <DialogDescription>
+                                    Selecione um serviço para recomendar junto com "{serviceName}"
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="service">Serviço Recomendado *</Label>
+                                    <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
+                                        <SelectTrigger id="service">
+                                            <SelectValue placeholder="Selecione um serviço" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <ScrollArea className="h-[200px]">
+                                                {loadingServices ? (
+                                                    <div className="p-2 text-sm text-muted-foreground">
+                                                        Carregando serviços...
+                                                    </div>
+                                                ) : availableServices.length === 0 ? (
+                                                    <div className="p-2 text-sm text-muted-foreground">
+                                                        Nenhum serviço disponível
+                                                    </div>
+                                                ) : (
+                                                    availableServices.map((service) => (
+                                                        <SelectItem key={service.id} value={service.id}>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">{service.name}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {formatPrice(service.price)} • {service.duration}min
+                                                                    {service.category?.name && ` • ${service.category.name}`}
+                                                                </span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </ScrollArea>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="description">Descrição Personalizada (Opcional)</Label>
+                                    <Textarea
+                                        id="description"
+                                        placeholder="Ex: Recomendamos lavar o cabelo antes da tintura para melhor resultado"
+                                        value={customDescription}
+                                        onChange={(e) => setCustomDescription(e.target.value)}
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="order">Ordem de Exibição</Label>
+                                    <Input
+                                        id="order"
+                                        type="number"
+                                        min="0"
+                                        value={displayOrder}
+                                        onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Ordem em que a recomendação será exibida (menor = primeiro)
+                                    </p>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowAddDialog(false);
+                                        resetForm();
+                                    }}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleAddRecommendation}
+                                    disabled={!selectedServiceId || loading}
+                                >
+                                    {loading ? "Adicionando..." : "Adicionar Recomendação"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </CardHeader>
+
+            <CardContent>
+                {error && (
+                    <Alert variant="destructive" className="mb-4">
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+
+                {orderChanged && (
+                    <Alert className="mb-4">
+                        <AlertDescription className="flex items-center justify-between">
+                            <span>A ordem das recomendações foi alterada</span>
+                            <Button size="sm" onClick={handleSaveOrder} disabled={loading}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Salvar Ordem
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {recommendations.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <p>Nenhuma recomendação configurada</p>
+                        <p className="text-sm mt-1">
+                            Adicione serviços que complementam este serviço
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {recommendations.map((rec, index) => (
+                            <div
+                                key={rec.id}
+                                draggable
+                                onDragStart={() => handleDragStart(index)}
+                                onDragOver={(e) => handleDragOver(e, index)}
+                                onDragEnd={handleDragEnd}
+                                className={`flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-move ${draggedIndex === index ? "opacity-50" : ""
+                                    }`}
+                            >
+                                <div className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing">
+                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h4 className="font-medium">{rec.recommendedService.name}</h4>
+                                                <Badge variant="secondary" className="text-xs">
+                                                    {formatPrice(rec.recommendedService.price)}
+                                                </Badge>
+                                                <Badge variant="outline" className="text-xs">
+                                                    {rec.recommendedService.duration}min
+                                                </Badge>
+                                                {rec.recommendedService.categoryName && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {rec.recommendedService.categoryName}
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            {rec.recommendedService.description && (
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                    {rec.recommendedService.description}
+                                                </p>
+                                            )}
+
+                                            {rec.customDescription && (
+                                                <div className="mt-2 p-2 bg-accent/30 rounded text-sm">
+                                                    <span className="font-medium text-xs text-muted-foreground uppercase">
+                                                        Descrição Personalizada:
+                                                    </span>
+                                                    <p className="mt-1">{rec.customDescription}</p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                                <span>Ordem: {rec.displayOrder}</span>
+                                                <Separator orientation="vertical" className="h-3" />
+                                                <span>ID: {rec.id.slice(0, 8)}...</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0"
+                                                        disabled={loading}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Remover Recomendação</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Tem certeza que deseja remover a recomendação "{rec.recommendedService.name}"?
+                                                            Esta ação não pode ser desfeita.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleRemoveRecommendation(rec.id)}
+                                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                        >
+                                                            Remover
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {recommendations.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                            💡 Dica: Arraste os cards para reordenar as recomendações
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+

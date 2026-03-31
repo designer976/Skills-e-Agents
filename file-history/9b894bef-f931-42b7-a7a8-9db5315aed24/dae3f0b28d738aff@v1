@@ -1,0 +1,46 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NetworkFinancialOverview } from "@/types/financial";
+
+interface FinancialOverviewCardsProps {
+    data: NetworkFinancialOverview;
+}
+
+export function FinancialOverviewCards({ data }: FinancialOverviewCardsProps) {
+    // Derived data from the overview response
+    const pendingCount = data.salons.filter(s => s.status === 'past_due' || s.status === 'unpaid').length;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Salões</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{data.totalSalons}</div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Salões com Planos Ativos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                        {data.activeSubscriptions}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pendências</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">
+                        {pendingCount}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

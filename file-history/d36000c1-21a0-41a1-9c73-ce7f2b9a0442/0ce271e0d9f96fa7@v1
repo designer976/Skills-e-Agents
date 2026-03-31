@@ -1,0 +1,942 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconX as X, IconCheck as Check, IconLoader2 as Loader2, IconSearch as Search, IconCalendar as CalendarIcon, IconClock as Clock, IconUserPlus as UserPlus } from "@tabler/icons-react";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { useSelectedSalon } from '@/hooks/useSelectedSalon';
+import { clientService } from '@/services/clientService';
+import { serviceService } from '@/services/serviceService';
+import { userService } from '@/services/userService';
+import { appointmentService } from '@/services/appointmentService';
+import { AppointmentStatus } from '@/types/appointment';
+import { convertLocalToUTC, formatUTCToLocal } from '@/utils/dateTimeHelpers';
+import { getUserDisplayName } from '@/utils/userHelpers';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { formatPhone, cleanPhone } from '@/utils/clientHelpers';
+
+interface Client {
+    id: string;
+    nome: string;
+    telefone: string;
+}
+
+interface Service {
+    id: string;
+    nome: string;
+    duracao: number;
+    preco: number;
+}
+
+interface Professional {
+    id: string;
+    nome: string;
+    name: string;
+    nickname?: string;
+    avatar?: string;
+}
+
+interface TimeSlot {
+    slot: string;
+    available: boolean;
+}
+
+interface NewAppointmentBottomSheetProps {
+    isOpen: boolean;
+    onClose: () => void;
+    initialProfessionalId?: string;
+    initialDate?: string;
+    initialTime?: string;
+    initialClientId?: string;
+    onSuccess?: (appointment: { id: string; date: string; time: string; professionalId: string }) => void;
+}
+
+export function NewAppointmentBottomSheet({
+    isOpen,
+    onClose,
+    initialProfessionalId,
+    initialDate,
+    initialTime,
+    initialClientId,
+    onSuccess,
+}: NewAppointmentBottomSheetProps) {
+    // Step navigation
+    const [currentStep, setCurrentStep] = useState(1);
+    const totalSteps = 6;
+
+    // Form data
+    const [clientId, setClientId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [professionalId, setProfessionalId] = useState(initialProfessionalId || '');
+    const [date, setDate] = useState<Date | undefined>(
+        initialDate ? new Date(initialDate + 'T00:00:00') : undefined
+    );
+    const [time, setTime] = useState(initialTime || '');
+
+    // API data
+    const [clients, setClients] = useState<Client[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
+    const [filteredServices, setFilteredServices] = useState<Service[]>([]);
+    const [professionals, setProfessionals] = useState<Professional[]>([]);
+    const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
+    const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+
+    // Loading states
+    const [loadingClients, setLoadingClients] = useState(false);
+    const [loadingServices, setLoadingServices] = useState(false);
+    const [loadingProfessionals, setLoadingProfessionals] = useState(false);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // Estados para cadastro simplificado de cliente
+    const [isModoCadastroCliente, setIsModoCadastroCliente] = useState(false);
+    const [novoCliente, setNovoCliente] = useState({ nome: '', telefone: '' });
+    const [isCriandoCliente, setIsCriandoCliente] = useState(false);
+
+    // Search
+    const [clientSearch, setClientSearch] = useState('');
+
+    const { selectedSalon } = useSelectedSalon();
+
+    // Reset form when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentStep(1); // Always start at Step 1 as per user requirement
+            setClientId(initialClientId || '');
+            setServiceId('');
+            setProfessionalId(initialProfessionalId || '');
+            setDate(initialDate ? new Date(initialDate + 'T00:00:00') : undefined);
+            setTime(initialTime || '');
+            setClientSearch('');
+            setIsModoCadastroCliente(false);
+            setNovoCliente({ nome: '', telefone: '' });
+
+            // Load initial data
+            loadClients();
+            loadServices();
+            loadProfessionals();
+        } else {
+            // Comprehensive reset when closing to avoid state pollution on next open
+            setCurrentStep(1);
+            setClientId('');
+            setServiceId('');
+            setProfessionalId('');
+            setDate(undefined);
+            setTime('');
+            setClients([]);
+            setServices([]);
+            setFilteredServices([]);
+            setProfessionals([]);
+            setFilteredProfessionals([]);
+            setTimeSlots([]);
+            setClientSearch('');
+            setIsModoCadastroCliente(false);
+            setNovoCliente({ nome: '', telefone: '' });
+        }
+    }, [isOpen, initialClientId, initialProfessionalId, initialDate, initialTime]);
+
+    // Load clients
+    const loadClients = async () => {
+        setLoadingClients(true);
+        try {
+            const response = await clientService.list({
+                limit: '100',
+                sortBy: 'name',
+                sortOrder: 'ASC',
+            });
+            setClients(
+                (response?.data || []).map((c) => ({
+                    id: c.id,
+                    nome: c.name,
+                    telefone: c.phone,
+                }))
+            );
+
+            // Auto-select if only one client
+            if (response?.data?.length === 1 && !initialClientId && !clientId) {
+                setClientId(response.data[0].id);
+            }
+        } catch (error) {
+            console.error('Error loading clients:', error);
+            toast.error('Erro ao carregar clientes');
+        } finally {
+            setLoadingClients(false);
+        }
+    };
+
+    // Load services
+    const loadServices = async () => {
+        setLoadingServices(true);
+        try {
+            const response = await serviceService.getBookableServices();
+            const allServices = (response || [])
+                .filter((s) => s?.duration && s?.duration > 0)
+                .map((s) => ({
+                    id: s.id,
+                    nome: s.name,
+                    duracao: s.duration,
+                    preco: typeof s.price === 'string' ? parseFloat(s.price) : s.price,
+                }));
+            setServices(allServices);
+            setFilteredServices(allServices);
+        } catch (error) {
+            console.error('Error loading services:', error);
+            toast.error('Erro ao carregar serviços');
+        } finally {
+            setLoadingServices(false);
+        }
+    };
+
+    // Load professionals
+    const loadProfessionals = async () => {
+        if (!selectedSalon?.id) return;
+
+        setLoadingProfessionals(true);
+        try {
+            const response = await userService.list({
+                role: 'professional' as any,
+                salonId: selectedSalon.id,
+            });
+            setProfessionals(
+                (response?.data || []).map((p) => ({
+                    id: p.id,
+                    nome: p.name,
+                    name: p.name,
+                    nickname: p.nickname,
+                    avatar: p.avatar,
+                }))
+            );
+            setFilteredProfessionals(
+                (response?.data || []).map((p) => ({
+                    id: p.id,
+                    nome: p.name,
+                    name: p.name,
+                    nickname: p.nickname,
+                    avatar: p.avatar,
+                }))
+            );
+        } catch (error) {
+            console.error('Error loading professionals:', error);
+            toast.error('Erro ao carregar profissionais');
+        } finally {
+            setLoadingProfessionals(false);
+        }
+    };
+
+    // Filter services by professional
+    useEffect(() => {
+        const filterServices = async () => {
+            if (!professionalId) {
+                setFilteredServices(services);
+                return;
+            }
+
+            try {
+                const userServices = await userService.getUserServices(professionalId);
+                const filtered = services.filter((service) => {
+                    const userService = userServices.find(
+                        (us: any) =>
+                            (us.serviceId === service.id ||
+                                us.id === service.id ||
+                                us.service_id === service.id) &&
+                            us.isActive !== false &&
+                            us.is_active !== false
+                    );
+                    return !!userService;
+                });
+                setFilteredServices(filtered);
+
+                // Clear service if not available for this professional
+                if (serviceId && !filtered.some((s) => s.id === serviceId)) {
+                    setServiceId('');
+                }
+            } catch (error) {
+                console.error('Error filtering services:', error);
+                setFilteredServices(services);
+            }
+        };
+
+        if (isOpen) {
+            filterServices();
+        }
+    }, [professionalId, services, isOpen]);
+
+    // Filter professionals by service
+    useEffect(() => {
+        const filterProfessionals = async () => {
+            if (!serviceId) {
+                setFilteredProfessionals(professionals);
+                return;
+            }
+
+            try {
+                const filtered = professionals.filter((prof) => {
+                    // This is a naive filter, ideally the professionals list would already contain their services
+                    // or we should have a mapping loaded once.
+                    // For now, let's keep it simple and avoid the Promise.all logic if possible.
+                    return true; // Fallback to all professionals if we don't have mapping
+                });
+                
+                setFilteredProfessionals(filtered);
+
+                // Clear professional if doesn't offer this service
+                if (professionalId && !filtered.some((p) => p.id === professionalId)) {
+                    setProfessionalId('');
+                }
+            } catch (error) {
+                console.error('Error filtering professionals:', error);
+                setFilteredProfessionals(professionals);
+            }
+        };
+
+        if (isOpen) {
+            filterProfessionals();
+        }
+    }, [serviceId, professionals, isOpen]);
+
+    // Step 2 & 3 Auto-selection (Waterfall - NO AUTO ADVANCE)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        // Auto-select Service if only one available
+        if (currentStep === 2 && filteredServices.length === 1 && !serviceId) {
+            setServiceId(filteredServices[0].id);
+        }
+
+        // Auto-select Professional if only one available
+        if (currentStep === 3 && filteredProfessionals.length === 1 && !professionalId) {
+            setProfessionalId(filteredProfessionals[0].id);
+        }
+    }, [isOpen, currentStep, filteredServices, filteredProfessionals]); // Removed serviceId/professionalId to avoid loops or stale checks
+
+    // Load time slots
+    useEffect(() => {
+        const loadTimeSlots = async () => {
+            if (!professionalId || !serviceId || !date) {
+                setTimeSlots([]);
+                return;
+            }
+
+            setLoadingSlots(true);
+            try {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                const availability = await appointmentService.getAvailability({
+                    date: dateStr,
+                    professionalId,
+                    serviceId,
+                    intervalMinutes: 15,
+                });
+
+                const slotsData =
+                    availability.slots ||
+                    availability.availableSlots?.map(({ start, end }: any) => ({
+                        startTime: start,
+                        endTime: end,
+                        available: true,
+                    })) ||
+                    [];
+
+                const salonTimezone = selectedSalon?.timezone || 'America/Sao_Paulo';
+                const slots = slotsData.map((slot: any) => {
+                    const slotLabel = formatUTCToLocal(
+                        slot.startTime,
+                        salonTimezone,
+                        'HH:mm'
+                    );
+                    return { slot: slotLabel, available: slot.available !== false };
+                });
+
+                setTimeSlots(slots);
+
+                // Auto-select initial time if available
+                if (initialTime && slots.find((s: TimeSlot) => s.slot === initialTime && s.available)) {
+                    setTime(initialTime);
+                }
+            } catch (error) {
+                console.error('Error loading time slots:', error);
+                setTimeSlots([]);
+            } finally {
+                setLoadingSlots(false);
+            }
+        };
+
+        if (isOpen) {
+            loadTimeSlots();
+        }
+    }, [professionalId, serviceId, date, isOpen]);
+
+    // Navigation
+    const canProceed = (): boolean => {
+        switch (currentStep) {
+            case 1:
+                return !!clientId;
+            case 2:
+                return !!serviceId;
+            case 3:
+                return !!professionalId;
+            case 4:
+                return !!date;
+            case 5:
+                return !!time && timeSlots.find((s) => s.slot === time)?.available === true;
+            case 6:
+                return true;
+            default:
+                return false;
+        }
+    };
+
+    const goNext = () => {
+        if (currentStep < totalSteps && canProceed()) {
+            setCurrentStep((s) => s + 1);
+        } else if (currentStep === totalSteps) {
+            handleConfirm();
+        }
+    };
+
+    const goBack = () => {
+        if (currentStep > 1) {
+            setCurrentStep((s) => s - 1);
+        }
+    };
+
+    // Create appointment
+    const handleConfirm = async () => {
+        if (!selectedSalon?.id || !canProceed()) return;
+
+        setSaving(true);
+        try {
+            const service = services.find((s) => s.id === serviceId);
+            if (!service || !date) return;
+
+            const salonTimezone = selectedSalon?.timezone || 'America/Sao_Paulo';
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const appointmentDateTime = convertLocalToUTC(dateStr, time, salonTimezone);
+            const endDateTime = new Date(
+                appointmentDateTime.getTime() + service.duracao * 60 * 1000
+            );
+
+            const created = await appointmentService.create({
+                clientId,
+                professionalId,
+                serviceId,
+                startTime: appointmentDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                status: AppointmentStatus.SCHEDULED,
+            });
+
+            toast.success('Agendamento criado com sucesso!');
+            onSuccess?.({
+                id: created.id,
+                date: format(date, 'yyyy-MM-dd'),
+                time,
+                professionalId,
+            });
+            onClose();
+        } catch (error: any) {
+            const errorMsg = error.response?.data?.message || 'Erro ao criar agendamento';
+            toast.error(errorMsg);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Filter clients by search
+    const filteredClients = clients.filter((client) =>
+        client.nome.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        client.telefone.includes(clientSearch)
+    );
+
+    // Get step title
+    const getStepTitle = (): string => {
+        switch (currentStep) {
+            case 1:
+                return 'Selecione o Cliente';
+            case 2:
+                return 'Selecione o Serviço';
+            case 3:
+                return 'Selecione o Profissional';
+            case 4:
+                return 'Selecione a Data';
+            case 5:
+                return 'Selecione o Horário';
+            case 6:
+                return 'Confirmar Agendamento';
+            default:
+                return '';
+        }
+    };
+
+    // Render current step
+    const renderStep = () => {
+        switch (currentStep) {
+            case 1:
+                return renderSelectClient();
+            case 2:
+                return renderSelectService();
+            case 3:
+                return renderSelectProfessional();
+            case 4:
+                return renderSelectDate();
+            case 5:
+                return renderSelectTime();
+            case 6:
+                return renderSummary();
+            default:
+                return null;
+        }
+    };
+
+    // Step 1: Select Client
+    const renderSelectClient = () => (
+        <div className="space-y-4">
+            {!isModoCadastroCliente ? (
+                <>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar cliente..."
+                                value={clientSearch}
+                                onChange={(e) => setClientSearch(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setIsModoCadastroCliente(true)}
+                            className="shrink-0"
+                        >
+                            <UserPlus className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {loadingClients ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-[50vh] overflow-y-auto pb-4">
+                            {filteredClients.map((client) => (
+                                <motion.button
+                                    key={client.id}
+                                    onClick={() => setClientId(client.id)}
+                                    className={cn(
+                                        'w-full p-4 rounded-xl border-2 text-left transition-colors',
+                                        clientId === client.id
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-border'
+                                    )}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-semibold text-foreground">{client.nome}</p>
+                                            <p className="text-sm text-muted-foreground">{client.telefone}</p>
+                                        </div>
+                                        {clientId === client.id && (
+                                            <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                                        )}
+                                    </div>
+                                </motion.button>
+                            ))}
+                            {filteredClients.length === 0 && clientSearch && (
+                                <div className="text-center py-6 space-y-3">
+                                    <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            setNovoCliente(prev => ({ ...prev, nome: clientSearch }));
+                                            setIsModoCadastroCliente(true);
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <UserPlus className="h-4 w-4" />
+                                        Cadastrar "{clientSearch}"
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
+            ) : (
+                <div className="space-y-4 p-1">
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="mobile-client-name">Nome Completo *</Label>
+                            <Input
+                                id="mobile-client-name"
+                                placeholder="Digite o nome"
+                                value={novoCliente.nome}
+                                onChange={(e) => setNovoCliente(prev => ({ ...prev, nome: e.target.value }))}
+                                autoFocus
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="mobile-client-phone">Telefone *</Label>
+                            <Input
+                                id="mobile-client-phone"
+                                placeholder="(00) 00000-0000"
+                                value={novoCliente.telefone}
+                                onChange={(e) => setNovoCliente(prev => ({ ...prev, telefone: formatPhone(e.target.value) }))}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setIsModoCadastroCliente(false)}
+                            disabled={isCriandoCliente}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            className="flex-1"
+                            onClick={async () => {
+                                if (!novoCliente.nome.trim()) {
+                                    toast.error("Nome é obrigatório");
+                                    return;
+                                }
+                                const cleanedPhone = cleanPhone(novoCliente.telefone);
+                                if (cleanedPhone.length < 10) {
+                                    toast.error("Por favor, insira um telefone válido com DDD");
+                                    return;
+                                }
+                                setIsCriandoCliente(true);
+                                try {
+                                    const created = await clientService.create({
+                                        name: novoCliente.nome,
+                                        phone: cleanPhone(novoCliente.telefone),
+                                        salonId: selectedSalon?.id
+                                    });
+
+                                    const novo = {
+                                        id: created.id,
+                                        nome: created.name,
+                                        telefone: created.phone
+                                    };
+                                    setClients(prev => [{ id: created.id, nome: created.name, telefone: created.phone }, ...prev]);
+                                    setClientId(created.id);
+                                    setIsModoCadastroCliente(false);
+                                    setNovoCliente({ nome: '', telefone: '' });
+                                } catch (error: any) {
+                                    toast.error(error.message || "Erro ao criar cliente");
+                                } finally {
+                                    setIsCriandoCliente(false);
+                                }
+                            }}
+                            disabled={isCriandoCliente}
+                        >
+                            {isCriandoCliente ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                "Criar e Selecionar"
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    // Step 2: Select Service
+    const renderSelectService = () => (
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {loadingServices ? (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                filteredServices.map((service) => (
+                    <motion.button
+                        key={service.id}
+                        onClick={() => setServiceId(service.id)}
+                        className={cn(
+                            'w-full p-4 rounded-xl border-2 text-left transition-colors',
+                            serviceId === service.id
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-border'
+                        )}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                                <p className="font-semibold text-foreground">{service.nome}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {service.duracao} min • R$ {service.preco.toFixed(2)}
+                                </p>
+                            </div>
+                            {serviceId === service.id && (
+                                <Check className="h-5 w-5 text-primary flex-shrink-0 ml-2" />
+                            )}
+                        </div>
+                    </motion.button>
+                ))
+            )}
+        </div>
+    );
+
+    // Step 3: Select Professional
+    const renderSelectProfessional = () => (
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {loadingProfessionals ? (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                filteredProfessionals.map((prof) => (
+                    <motion.button
+                        key={prof.id}
+                        onClick={() => setProfessionalId(prof.id)}
+                        className={cn(
+                            'w-full p-4 rounded-xl border-2 text-left transition-colors',
+                            professionalId === prof.id
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-border'
+                        )}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <UserAvatar
+                                    src={prof.avatar}
+                                    name={getUserDisplayName(prof)}
+                                    size="sm"
+                                />
+                                <p className="font-semibold text-foreground">
+                                    {getUserDisplayName(prof)}
+                                </p>
+                            </div>
+                            {professionalId === prof.id && (
+                                <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                            )}
+                        </div>
+                    </motion.button>
+                ))
+            )}
+        </div>
+    );
+
+    // Step 4: Select Date
+    const renderSelectDate = () => (
+        <div className="space-y-4 flex flex-col items-center">
+            <Button
+                variant="outline"
+                onClick={() => setDate(new Date())}
+                className="w-full"
+            >
+                Hoje
+            </Button>
+
+            <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                }}
+                locale={ptBR}
+                className="rounded-xl border mx-auto"
+            />
+        </div>
+    );
+
+    // Step 5: Select Time
+    const renderSelectTime = () => (
+        <div className="space-y-4">
+            {loadingSlots ? (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : timeSlots.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                    Nenhum horário disponível para esta data
+                </div>
+            ) : (
+                <div className="grid grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto">
+                    {timeSlots.map((slot) => (
+                        <motion.button
+                            key={slot.slot}
+                            onClick={() => slot.available && setTime(slot.slot)}
+                            disabled={!slot.available}
+                            className={cn(
+                                'p-3 rounded-lg font-medium text-sm transition-colors',
+                                slot.available
+                                    ? time === slot.slot
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                            )}
+                            whileTap={slot.available ? { scale: 0.95 } : {}}
+                        >
+                            {slot.slot}
+                        </motion.button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
+    // Step 6: Summary
+    const renderSummary = () => {
+        const selectedClient = clients.find((c) => c.id === clientId);
+        const selectedService = services.find((s) => s.id === serviceId);
+        const selectedProfessional = professionals.find((p) => p.id === professionalId);
+
+        return (
+            <div className="space-y-6">
+                <div className="bg-muted rounded-xl p-6 space-y-4">
+                    <div className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Cliente</p>
+                            <p className="font-semibold">{selectedClient?.nome}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Serviço</p>
+                            <p className="font-semibold">{selectedService?.nome}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Profissional</p>
+                            <p className="font-semibold">{getUserDisplayName(selectedProfessional)}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <CalendarIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Data</p>
+                            <p className="font-semibold">
+                                {date && format(date, "d 'de' MMMM, yyyy", { locale: ptBR })}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Horário</p>
+                            <p className="font-semibold">{time}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-secondary rounded-xl p-4 border border-border">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Duração</span>
+                        <span className="font-semibold text-foreground">
+                            {selectedService?.duracao} min
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                        <span className="text-sm font-medium text-foreground">Valor</span>
+                        <span className="font-semibold text-foreground">
+                            R$ {selectedService?.preco.toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <Sheet open={isOpen} onOpenChange={onClose}>
+            <SheetContent side="bottom" className="max-h-[85vh] rounded-t-3xl p-0 flex flex-col">
+                {/* Drag handle */}
+                <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mt-3 mb-2" />
+
+                <div className="flex flex-col flex-1 min-h-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={goBack}
+                            disabled={currentStep === 1}
+                            className="h-9 w-9"
+                        >
+                            <ChevronLeft className="h-5 w-5" />
+                        </Button>
+
+                        <div className="text-center flex-1">
+                            <h2 className="font-semibold text-base">Novo Agendamento</h2>
+                            <p className="text-xs text-muted-foreground">
+                                Passo {currentStep} de {totalSteps}
+                            </p>
+                        </div>
+
+                        {/* Espaço vazio para manter simetria */}
+                        <div className="h-9 w-9" />
+                    </div>
+
+
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto px-4 py-6 pb-24">
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            <motion.div
+                                key={currentStep}
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15, ease: "easeOut" }}
+                            >
+                                {/* Step Title inside animation for better flow */}
+                                <div className="py-2 mb-4">
+                                    <h3 className="text-lg font-semibold">{getStepTitle()}</h3>
+                                </div>
+                                {renderStep()}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex gap-3 px-4 py-4 pb-6 border-t bg-background flex-shrink-0">
+                        {currentStep > 1 && (
+                            <Button variant="outline" onClick={goBack} className="flex-1">
+                                Voltar
+                            </Button>
+                        )}
+
+                        <Button
+                            onClick={goNext}
+                            disabled={!canProceed() || saving}
+                            className="flex-1"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : currentStep === totalSteps ? (
+                                'Confirmar'
+                            ) : (
+                                <>
+                                    Próximo
+                                    <ChevronRight className="ml-2 h-4 w-4" />
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}

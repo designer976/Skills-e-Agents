@@ -1,0 +1,108 @@
+import { useState } from "react";
+import { Check as Check, ChevronsUpDown as ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { TIMEZONES, TimezoneOption, getTimezoneByValue } from "@/constants/timezones";
+
+interface TimezoneComboboxProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+export function TimezoneCombobox({ value, onValueChange, disabled }: TimezoneComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const selectedTimezone = getTimezoneByValue(value);
+
+  // Filter timezones based on search query
+  const filteredTimezones = TIMEZONES.filter((tz) => {
+    const search = searchQuery.toLowerCase();
+    return (
+      tz.label.toLowerCase().includes(search) ||
+      tz.country.toLowerCase().includes(search) ||
+      tz.value.toLowerCase().includes(search) ||
+      tz.offset.toLowerCase().includes(search)
+    );
+  });
+
+  const handleSelect = (currentValue: string): void => {
+    onValueChange(currentValue);
+    setOpen(false);
+    setSearchQuery("");
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+          disabled={disabled}
+        >
+          {selectedTimezone ? (
+            <span className="truncate">
+              {selectedTimezone.label} - {selectedTimezone.country} ({selectedTimezone.offset})
+            </span>
+          ) : (
+            <span className="text-muted-foreground">Selecione o fuso horário</span>
+          )}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder="Buscar fuso horário..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList>
+            <CommandEmpty>Nenhum fuso horário encontrado.</CommandEmpty>
+            <CommandGroup>
+              {filteredTimezones.map((tz) => (
+                <CommandItem
+                  key={tz.value}
+                  value={tz.value}
+                  onSelect={handleSelect}
+                  className="cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === tz.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {tz.label} - {tz.country}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {tz.offset}
+                    </span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

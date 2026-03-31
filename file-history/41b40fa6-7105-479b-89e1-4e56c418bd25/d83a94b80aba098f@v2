@@ -1,0 +1,115 @@
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { ArrowUpRight } from 'lucide-react'
+
+const businesses = [
+  {
+    tag: 'Tenho um',
+    title: 'salão de beleza',
+    description:
+      'Quero organizar a agenda dos profissionais e evoluir para uma gestão mais inteligente.',
+    color: 'from-[#CE4836]/20 to-[#EDE4D4]',
+    icon: '💇‍♀️',
+    bg: 'bg-gradient-to-br from-rose-50 to-orange-50',
+  },
+  {
+    tag: 'Tenho uma',
+    title: 'barbearia',
+    description:
+      'Quero organizar a agenda dos profissionais e evoluir para uma gestão mais inteligente.',
+    color: 'from-[#1A0F0D]/10 to-[#EDE4D4]',
+    icon: '✂️',
+    bg: 'bg-gradient-to-br from-stone-100 to-amber-50',
+  },
+  {
+    tag: 'Tenho um',
+    title: 'estúdio de beleza',
+    description:
+      'Quero organizar a agenda dos profissionais e evoluir para uma gestão mais inteligente.',
+    color: 'from-[#CE4836]/10 to-[#F8F5F0]',
+    icon: '💅',
+    bg: 'bg-gradient-to-br from-pink-50 to-cream',
+  },
+]
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+}
+
+export default function BusinessTypes() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <section className="py-24 lg:py-32 bg-cream">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Header */}
+        <motion.div
+          ref={ref}
+          className="mb-4"
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="section-label mb-4 block">Para quem é</span>
+          <h2 className="display-title text-3xl lg:text-5xl text-[#1A1A1A] mb-4">
+            Veja a Easy funcionando no seu negócio
+          </h2>
+          <p className="text-muted max-w-xl">
+            Cada tipo de negócio tem um ritmo. Escolha o seu e descubra como a Easy organiza a
+            rotina, simplifica a gestão e impulsiona o crescimento.
+          </p>
+        </motion.div>
+
+        <div className="mt-12">
+          <motion.div
+            className="grid md:grid-cols-3 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate={inView ? 'visible' : 'hidden'}
+          >
+            {businesses.map((biz) => (
+              <motion.div
+                key={biz.title}
+                variants={itemVariants}
+                className="group relative rounded-3xl overflow-hidden border border-accent hover:border-primary/30 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer"
+              >
+                {/* Photo area (gradient placeholder) */}
+                <div className={`h-56 ${biz.bg} flex items-center justify-center relative overflow-hidden`}>
+                  <span className="text-7xl group-hover:scale-110 transition-transform duration-300">
+                    {biz.icon}
+                  </span>
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
+                    {biz.tag}
+                  </p>
+                  <h3 className="display-title text-2xl text-[#1A1A1A] mb-3">{biz.title}</h3>
+                  <p className="text-sm text-muted leading-relaxed mb-6">{biz.description}</p>
+
+                  <a
+                    href="#"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary group-hover:gap-3 transition-all duration-200"
+                  >
+                    Ver como funciona
+                    <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  )
+}

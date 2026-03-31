@@ -1,0 +1,261 @@
+import { NavItem, NavSection } from "@/types/navigation";
+import { BarChart3, Briefcase, Building2, Calendar, ClipboardList, Settings as Cog, CreditCard, Scissors, UserCircle, Users } from "lucide-react";
+
+// Função para obter navegação da área admin baseada no perfil do usuário
+export const getAdminNavItems = (userRole: string): NavItem[] => {
+  const baseItems: NavItem[] = [
+    {
+      title: "Salões",
+      href: "/admin/salons",
+      icon: Building2,
+    },
+  ];
+
+  if (userRole === "Easy Salon" || userRole === "Tenant Admin") {
+    const items: NavItem[] = [...baseItems];
+
+    if (userRole === "Easy Salon") {
+      // Dashboard first (only for Super Admin)
+      items.unshift({
+        title: "Dashboard",
+        href: "/admin/dashboard",
+        icon: BarChart3,
+      });
+    }
+
+    items.push({
+      title: "Gestão de Acesso",
+      href: "/admin/users",
+      icon: Users,
+    });
+
+    if (userRole === "Easy Salon") {
+      items.push({
+        title: "Gestão de Especialidades",
+        href: "/admin/specialties",
+        icon: Briefcase,
+      });
+    }
+
+    // TODO: Módulo financeiro não lançado ainda — remover comentário quando pronto
+    // items.push({
+    //   title: "Financeiro",
+    //   href: "/admin/financial",
+    //   icon: Wallet,
+    // });
+
+    return items;
+  }
+
+  return baseItems;
+};
+
+// Navegação da Área de Gestão da Plataforma (Admin) - mantido para compatibilidade
+export const adminNavItems: NavItem[] = getAdminNavItems("Easy Salon");
+
+// Função para obter navegação baseada no perfil do usuário
+export const getSalonNavItems = (
+  userRole:
+    | "Easy Salon"
+    | "Tenant Admin"
+    | "Profissional"
+    | "Recepcionista"
+    | "Administrador",
+  pendingSolicitacoes?: number
+): NavSection[] => {
+  const baseItems: NavSection[] = [
+    {
+      items: [
+        {
+          title: "Agenda",
+          href: "/salon/agenda",
+          icon: Calendar,
+        },
+        {
+          title: "Solicitações",
+          href: "/salon/solicitacoes",
+          icon: ClipboardList,
+          badge: pendingSolicitacoes,
+        },
+      ],
+    },
+  ];
+
+  // Profissional vê apenas agenda
+  if (userRole === "Profissional") {
+    return [
+      {
+        items: [
+          {
+            title: "Agenda",
+            href: "/salon/agenda",
+            icon: Calendar,
+          },
+        ],
+      },
+    ];
+  }
+
+  // Recepcionista pode ver dashboard, agenda e clientes
+  if (userRole === "Recepcionista") {
+    return [
+      {
+        items: [
+          {
+            title: "Dashboard",
+            href: "/salon/dashboard",
+            icon: BarChart3,
+          },
+          {
+            title: "Agenda",
+            href: "/salon/agenda",
+            icon: Calendar,
+          },
+          // {
+          //   title: "Ausências",
+          //   href: "/salon/absences",
+          //   icon: CalendarOff,
+          // },
+          {
+            title: "Clientes",
+            href: "/salon/clients",
+            icon: UserCircle,
+          },
+        ],
+      },
+    ];
+  }
+
+  // Administrador do salão - vê tudo exceto configurações de plataforma
+  if (userRole === "Administrador") {
+    return [
+      {
+        items: [
+          {
+            title: "Dashboard",
+            href: "/salon/dashboard",
+            icon: BarChart3,
+          },
+          {
+            title: "Agenda",
+            href: "/salon/agenda",
+            icon: Calendar,
+          },
+          {
+            title: "Solicitações",
+            href: "/salon/solicitacoes",
+            icon: ClipboardList,
+            badge: pendingSolicitacoes,
+          },
+          // {
+          //   title: "Ausências",
+          //   href: "/salon/absences",
+          //   icon: CalendarOff,
+          // },
+          {
+            title: "Clientes",
+            href: "/salon/clients",
+            icon: UserCircle,
+          },
+        ],
+      },
+      {
+        title: "Gerenciamento",
+        items: [
+          {
+            title: "Serviços",
+            href: "/salon/services",
+            icon: Scissors,
+          },
+          {
+            title: "Usuários",
+            href: "/salon/users",
+            icon: Users,
+          },
+        ],
+      },
+      {
+        title: "O Estabelecimento",
+        items: [
+          {
+            title: "Configurações",
+            href: "/salon/settings",
+            icon: Cog,
+          },
+          {
+            title: "Meu Plano",
+            href: "/salon/my-plan",
+            icon: CreditCard,
+          },
+        ],
+      },
+    ];
+  }
+
+  // Easy Salon (super admin) vê tudo
+  return [
+    {
+      items: [
+        {
+          title: "Dashboard",
+          href: "/salon/dashboard",
+          icon: BarChart3,
+        },
+        {
+          title: "Agenda",
+          href: "/salon/agenda",
+          icon: Calendar,
+        },
+        {
+          title: "Solicitações",
+          href: "/salon/solicitacoes",
+          icon: ClipboardList,
+          badge: pendingSolicitacoes,
+        },
+        // {
+        //   title: "Ausências",
+        //   href: "/salon/absences",
+        //   icon: CalendarOff,
+        // },
+        {
+          title: "Clientes",
+          href: "/salon/clients",
+          icon: UserCircle,
+        },
+      ],
+    },
+    {
+      title: "Gerenciamento",
+      items: [
+        {
+          title: "Serviços",
+          href: "/salon/services",
+          icon: Scissors,
+        },
+        {
+          title: "Usuários",
+          href: "/salon/users",
+          icon: Users,
+        },
+      ],
+    },
+    {
+      title: "O Estabelecimento",
+      items: [
+        {
+          title: "Configurações",
+          href: "/salon/settings",
+          icon: Cog,
+        },
+        {
+          title: "Meu Plano",
+          href: "/salon/my-plan",
+          icon: CreditCard,
+        },
+      ],
+    },
+  ];
+};
+
+// Navegação da Área de Gestão do Salão (manter para compatibilidade)
+export const salonNavItems: NavSection[] = getSalonNavItems("Easy Salon", 0);

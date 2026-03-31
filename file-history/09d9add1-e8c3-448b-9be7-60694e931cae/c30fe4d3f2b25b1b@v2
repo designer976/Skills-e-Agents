@@ -1,0 +1,1431 @@
+import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { DataTable } from "@/components/ui/data-table";
+import { IconPackage } from "@tabler/icons-react";
+
+// ─── Helper: Code Snippet Block ────────────────────────────────────────────────
+function CodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="relative">
+      <pre className="rounded-md bg-muted p-4 text-xs overflow-x-auto text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">
+        {code}
+      </pre>
+      <button
+        onClick={copy}
+        className="absolute top-2 right-2 text-[10px] bg-background border border-border rounded px-2 py-0.5 hover:bg-muted transition-colors"
+      >
+        {copied ? "Copiado!" : "Copiar"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Helper: Props Table ────────────────────────────────────────────────────────
+interface PropRow {
+  name: string;
+  type: string;
+  default?: string;
+  description: string;
+}
+function PropsTable({ props }: { props: PropRow[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="border-b bg-muted/50">
+            <th className="text-left p-2 font-semibold text-foreground w-32">Prop</th>
+            <th className="text-left p-2 font-semibold text-foreground w-48">Tipo</th>
+            <th className="text-left p-2 font-semibold text-foreground w-24">Default</th>
+            <th className="text-left p-2 font-semibold text-foreground">Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.map((p) => (
+            <tr key={p.name} className="border-b hover:bg-muted/30 transition-colors">
+              <td className="p-2 font-mono text-primary">{p.name}</td>
+              <td className="p-2 font-mono text-muted-foreground">{p.type}</td>
+              <td className="p-2 font-mono text-muted-foreground">{p.default ?? "—"}</td>
+              <td className="p-2 text-muted-foreground">{p.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Helper: Section wrapper ────────────────────────────────────────────────────
+function Section({ id, title, description, children }: {
+  id: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-20 space-y-4">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+      </div>
+      <Separator />
+      {children}
+    </section>
+  );
+}
+
+// ─── Helper: Preview + Code side-by-side ───────────────────────────────────────
+function PreviewAndCode({ preview, code }: { preview: React.ReactNode; code: string }) {
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="rounded-lg border bg-background p-6 flex flex-wrap gap-3 items-center justify-start min-h-[80px]">
+        {preview}
+      </div>
+      <CodeBlock code={code} />
+    </div>
+  );
+}
+
+// ─── Nav items ──────────────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+  { id: "button", label: "Button" },
+  { id: "badge", label: "Badge" },
+  { id: "input", label: "Input" },
+  { id: "textarea", label: "Textarea" },
+  { id: "select", label: "Select" },
+  { id: "checkbox", label: "Checkbox" },
+  { id: "switch", label: "Switch" },
+  { id: "card", label: "Card" },
+  { id: "dialog", label: "Dialog" },
+  { id: "alert", label: "Alert" },
+  { id: "avatar", label: "Avatar" },
+  { id: "badge-section", label: "Badge" },
+  { id: "skeleton", label: "Skeleton" },
+  { id: "separator", label: "Separator" },
+  { id: "tabs", label: "Tabs" },
+  { id: "tooltip", label: "Tooltip" },
+  { id: "table", label: "Table" },
+  { id: "data-table", label: "DataTable" },
+  { id: "loading-spinner", label: "LoadingSpinner" },
+  { id: "empty", label: "Empty" },
+].filter((v, i, arr) => arr.findIndex((x) => x.id === v.id) === i);
+
+// ─── Sample data for DataTable demo ────────────────────────────────────────────
+interface SampleRow {
+  name: string;
+  role: string;
+  status: string;
+}
+const SAMPLE_DATA: SampleRow[] = [
+  { name: "Ana Silva", role: "Administrador", status: "Ativo" },
+  { name: "Carlos Lima", role: "Profissional", status: "Inativo" },
+  { name: "Mariana Costa", role: "Recepcionista", status: "Ativo" },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+export default function DesignSystemPage() {
+  const [switchOn, setSwitchOn] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  return (
+    <TooltipProvider>
+      <div className="flex min-h-screen bg-background">
+        {/* ── Sidebar nav ── */}
+        <aside className="hidden lg:flex w-52 shrink-0 flex-col border-r bg-muted/30 p-4 sticky top-0 h-screen overflow-y-auto">
+          <div className="mb-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Design System
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Uso interno</p>
+          </div>
+          <nav className="space-y-0.5">
+            {NAV_ITEMS.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="block text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </aside>
+
+        {/* ── Main content ── */}
+        <main className="flex-1 px-6 py-10 max-w-5xl space-y-16">
+          {/* Header */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                Uso Interno
+              </span>
+              <span className="text-xs text-muted-foreground">Não exibido nos menus</span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
+            <p className="text-muted-foreground mt-1 max-w-2xl">
+              Fonte Única de Verdade dos componentes shadcn/ui ativos no projeto.
+              Cada componente exibido aqui é o componente real — alterações em{" "}
+              <code className="text-xs bg-muted px-1 rounded">src/components/ui</code>{" "}
+              refletem automaticamente nesta página.
+            </p>
+            <div className="mt-4 p-3 rounded-lg bg-muted/60 border text-xs text-muted-foreground">
+              <strong className="text-foreground">Princípio de Separação:</strong> Os componentes
+              gerenciam apenas o <strong>visual</strong>. Os dados são sempre injetados
+              externamente pelas páginas de consumo via props.
+            </div>
+          </div>
+
+          {/* ── BUTTON ─────────────────────────────────────────────────────── */}
+          <Section
+            id="button"
+            title="Button"
+            description="Botão de ação principal. Suporta 6 variantes e 4 tamanhos."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview" className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Variantes</p>
+                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
+                    <Button variant="default">Default</Button>
+                    <Button variant="destructive">Destructive</Button>
+                    <Button variant="outline">Outline</Button>
+                    <Button variant="secondary">Secondary</Button>
+                    <Button variant="ghost">Ghost</Button>
+                    <Button variant="link">Link</Button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Tamanhos</p>
+                  <div className="flex flex-wrap gap-3 items-center p-4 border rounded-lg bg-background">
+                    <Button size="sm">Small</Button>
+                    <Button size="default">Default</Button>
+                    <Button size="lg">Large</Button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Estado Disabled</p>
+                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
+                    <Button disabled>Desabilitado</Button>
+                    <Button variant="outline" disabled>Outline Disabled</Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Button } from "@/components/ui/button"
+
+// Variantes
+<Button variant="default">Default</Button>
+<Button variant="destructive">Destructive</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+
+// Tamanhos
+<Button size="sm">Small</Button>
+<Button size="default">Default</Button>
+<Button size="lg">Large</Button>
+<Button size="icon"><IconPlus /></Button>
+
+// Disabled
+<Button disabled>Desabilitado</Button>
+
+// Como outro elemento (Link)
+<Button asChild>
+  <a href="/pagina">Navegar</a>
+</Button>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "variant", type: "'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'", default: "'default'", description: "Estilo visual do botão" },
+                  { name: "size", type: "'default' | 'sm' | 'lg' | 'icon'", default: "'default'", description: "Tamanho do botão" },
+                  { name: "asChild", type: "boolean", default: "false", description: "Repassa o comportamento para o elemento filho (ex: Link)" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o botão" },
+                  { name: "onClick", type: "() => void", description: "Callback de clique" },
+                  { name: "className", type: "string", description: "Classes CSS extras via Tailwind" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── BADGE ──────────────────────────────────────────────────────── */}
+          <Section
+            id="badge"
+            title="Badge"
+            description="Etiqueta inline para status, categorias ou contagens."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
+                  <Badge variant="default">Default</Badge>
+                  <Badge variant="secondary">Secondary</Badge>
+                  <Badge variant="destructive">Destructive</Badge>
+                  <Badge variant="outline">Outline</Badge>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Badge } from "@/components/ui/badge"
+
+<Badge variant="default">Default</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="destructive">Destructive</Badge>
+<Badge variant="outline">Outline</Badge>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "variant", type: "'default' | 'secondary' | 'destructive' | 'outline'", default: "'default'", description: "Estilo visual da badge" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                  { name: "children", type: "ReactNode", description: "Conteúdo da badge" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── INPUT ──────────────────────────────────────────────────────── */}
+          <Section
+            id="input"
+            title="Input"
+            description="Campo de texto de linha única. Suporta todos os atributos HTML nativos."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-sm">
+                  <Input placeholder="Placeholder padrão" />
+                  <Input type="email" placeholder="email@exemplo.com" />
+                  <Input type="password" placeholder="Senha" />
+                  <Input disabled placeholder="Desabilitado" />
+                  <div className="space-y-1.5">
+                    <Label>Com Label</Label>
+                    <Input placeholder="Campo com label" />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+<Input placeholder="Texto livre" />
+<Input type="email" placeholder="email@exemplo.com" />
+<Input type="password" placeholder="Senha" />
+<Input disabled placeholder="Desabilitado" />
+
+// Com Label (React Hook Form)
+<div className="space-y-1.5">
+  <Label htmlFor="nome">Nome</Label>
+  <Input id="nome" placeholder="Seu nome" />
+</div>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "type", type: "string", default: "'text'", description: "Tipo HTML: text, email, password, number, etc." },
+                  { name: "placeholder", type: "string", description: "Texto de dica" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o campo" },
+                  { name: "value", type: "string", description: "Valor controlado" },
+                  { name: "onChange", type: "(e: ChangeEvent) => void", description: "Callback de mudança de valor" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TEXTAREA ───────────────────────────────────────────────────── */}
+          <Section
+            id="textarea"
+            title="Textarea"
+            description="Campo de texto multilinha."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-sm">
+                  <Textarea placeholder="Escreva uma observação..." />
+                  <Textarea disabled placeholder="Desabilitado" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Textarea } from "@/components/ui/textarea"
+
+<Textarea placeholder="Escreva aqui..." />
+<Textarea disabled placeholder="Desabilitado" />
+<Textarea rows={6} placeholder="6 linhas de altura" />`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "placeholder", type: "string", description: "Texto de dica" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o campo" },
+                  { name: "rows", type: "number", description: "Altura em linhas" },
+                  { name: "value", type: "string", description: "Valor controlado" },
+                  { name: "onChange", type: "(e: ChangeEvent) => void", description: "Callback de mudança de valor" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SELECT ─────────────────────────────────────────────────────── */}
+          <Section
+            id="select"
+            title="Select"
+            description="Dropdown de seleção única com suporte a grupos e labels."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-xs">
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um cargo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="professional">Profissional</SelectItem>
+                      <SelectItem value="receptionist">Recepcionista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select disabled>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Desabilitado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="a">Opção A</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue, SelectLabel, SelectGroup
+} from "@/components/ui/select"
+
+<Select value={value} onValueChange={setValue}>
+  <SelectTrigger>
+    <SelectValue placeholder="Selecione..." />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectLabel>Cargos</SelectLabel>
+      <SelectItem value="admin">Administrador</SelectItem>
+      <SelectItem value="professional">Profissional</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "value", type: "string", description: "Valor selecionado (controlado)" },
+                  { name: "onValueChange", type: "(value: string) => void", description: "Callback ao selecionar opção" },
+                  { name: "defaultValue", type: "string", description: "Valor inicial (não controlado)" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o select" },
+                  { name: "placeholder", type: "string", description: "Texto do SelectValue quando vazio" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── CHECKBOX ───────────────────────────────────────────────────── */}
+          <Section
+            id="checkbox"
+            title="Checkbox"
+            description="Campo de seleção binária. Geralmente usado com Label."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="check1"
+                      checked={checked}
+                      onCheckedChange={(v) => setChecked(v as boolean)}
+                    />
+                    <Label htmlFor="check1">Aceito os termos de uso</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="check2" checked />
+                    <Label htmlFor="check2">Marcado (read-only)</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="check3" disabled />
+                    <Label htmlFor="check3" className="text-muted-foreground">Desabilitado</Label>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+
+const [checked, setChecked] = useState(false)
+
+<div className="flex items-center gap-2">
+  <Checkbox
+    id="termos"
+    checked={checked}
+    onCheckedChange={(value) => setChecked(value as boolean)}
+  />
+  <Label htmlFor="termos">Aceito os termos</Label>
+</div>
+
+<Checkbox disabled />  // desabilitado`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "checked", type: "boolean | 'indeterminate'", description: "Estado da caixa (controlado)" },
+                  { name: "onCheckedChange", type: "(checked: boolean | 'indeterminate') => void", description: "Callback ao mudar estado" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o checkbox" },
+                  { name: "id", type: "string", description: "ID para associar com <Label>" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SWITCH ─────────────────────────────────────────────────────── */}
+          <Section
+            id="switch"
+            title="Switch"
+            description="Alternador on/off. Ideal para configurações booleanas."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="sw1"
+                      checked={switchOn}
+                      onCheckedChange={setSwitchOn}
+                    />
+                    <Label htmlFor="sw1">{switchOn ? "Ativado" : "Desativado"}</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Switch disabled />
+                    <Label className="text-muted-foreground">Desabilitado</Label>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+
+const [active, setActive] = useState(false)
+
+<div className="flex items-center gap-3">
+  <Switch
+    id="notificacoes"
+    checked={active}
+    onCheckedChange={setActive}
+  />
+  <Label htmlFor="notificacoes">Notificações</Label>
+</div>
+
+<Switch disabled />  // desabilitado`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "checked", type: "boolean", description: "Estado do switch (controlado)" },
+                  { name: "onCheckedChange", type: "(checked: boolean) => void", description: "Callback ao mudar estado" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o switch" },
+                  { name: "id", type: "string", description: "ID para associar com <Label>" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── CARD ───────────────────────────────────────────────────────── */}
+          <Section
+            id="card"
+            title="Card"
+            description="Contêiner com borda e sombra leve. Composto por sub-componentes."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background max-w-sm">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Título do Card</CardTitle>
+                      <CardDescription>Descrição secundária do card</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Conteúdo principal injetado pela página de consumo.
+                      </p>
+                    </CardContent>
+                    <CardFooter className="gap-2">
+                      <Button size="sm">Confirmar</Button>
+                      <Button size="sm" variant="outline">Cancelar</Button>
+                    </CardFooter>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Card, CardHeader, CardTitle, CardDescription,
+  CardContent, CardFooter
+} from "@/components/ui/card"
+
+<Card>
+  <CardHeader>
+    <CardTitle>Título</CardTitle>
+    <CardDescription>Descrição</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* dados injetados pela página */}
+  </CardContent>
+  <CardFooter>
+    <Button>Ação</Button>
+  </CardFooter>
+</Card>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Aplicável a Card, CardHeader, CardContent, CardFooter" },
+                  { name: "children", type: "ReactNode", description: "Conteúdo — os dados vêm da página de consumo" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── DIALOG ─────────────────────────────────────────────────────── */}
+          <Section
+            id="dialog"
+            title="Dialog"
+            description="Modal com overlay. Suporta mostrar/esconder botão de fechar."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background flex gap-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>Abrir Dialog</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Confirmação</DialogTitle>
+                        <DialogDescription>
+                          Tem certeza que deseja executar esta ação?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline">Cancelar</Button>
+                        <Button>Confirmar</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">Sem botão X</Button>
+                    </DialogTrigger>
+                    <DialogContent showCloseButton={false}>
+                      <DialogHeader>
+                        <DialogTitle>Sem botão de fechar</DialogTitle>
+                        <DialogDescription>showCloseButton={"{false}"}</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button>Fechar via botão</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Dialog, DialogTrigger, DialogContent,
+  DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter, DialogClose
+} from "@/components/ui/dialog"
+
+// Controlado externamente
+const [open, setOpen] = useState(false)
+
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogTrigger asChild>
+    <Button>Abrir</Button>
+  </DialogTrigger>
+  <DialogContent showCloseButton={true}>
+    <DialogHeader>
+      <DialogTitle>Título</DialogTitle>
+      <DialogDescription>Descrição</DialogDescription>
+    </DialogHeader>
+    {/* conteúdo injetado */}
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+      <Button onClick={handleConfirm}>Confirmar</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "open", type: "boolean", description: "Controla visibilidade (modo controlado)" },
+                  { name: "onOpenChange", type: "(open: boolean) => void", description: "Callback ao abrir/fechar" },
+                  { name: "showCloseButton", type: "boolean", default: "true", description: "Exibe o botão X no canto superior direito (prop de DialogContent)" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── ALERT ──────────────────────────────────────────────────────── */}
+          <Section
+            id="alert"
+            title="Alert"
+            description="Mensagem inline de destaque. Não é um toast — fica fixo na página."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background">
+                  <Alert>
+                    <AlertTitle>Informação</AlertTitle>
+                    <AlertDescription>
+                      Variante padrão. Use para mensagens neutras ou informativas.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert variant="destructive">
+                    <AlertTitle>Atenção</AlertTitle>
+                    <AlertDescription>
+                      Variante destrutiva. Use para erros ou ações irreversíveis.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { IconAlertTriangle } from "@tabler/icons-react"
+
+<Alert>
+  <AlertTitle>Título</AlertTitle>
+  <AlertDescription>Mensagem informativa.</AlertDescription>
+</Alert>
+
+// Com ícone
+<Alert variant="destructive">
+  <IconAlertTriangle className="h-4 w-4" />
+  <AlertTitle>Erro</AlertTitle>
+  <AlertDescription>Algo deu errado.</AlertDescription>
+</Alert>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "variant", type: "'default' | 'destructive'", default: "'default'", description: "Estilo visual do alerta" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── AVATAR ─────────────────────────────────────────────────────── */}
+          <Section
+            id="avatar"
+            title="Avatar"
+            description="Imagem circular de usuário com fallback de iniciais."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-wrap gap-4 items-center p-4 border rounded-lg bg-background">
+                  <Avatar>
+                    <AvatarImage src="https://github.com/shadcn.png" alt="Shadcn" />
+                    <AvatarFallback>SC</AvatarFallback>
+                  </Avatar>
+                  <Avatar>
+                    <AvatarFallback>AN</AvatarFallback>
+                  </Avatar>
+                  <Avatar className="h-14 w-14">
+                    <AvatarFallback className="text-lg">GG</AvatarFallback>
+                  </Avatar>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+
+// Com imagem (fallback exibido se a imagem falhar)
+<Avatar>
+  <AvatarImage src={user.avatarUrl} alt={user.name} />
+  <AvatarFallback>{user.initials}</AvatarFallback>
+</Avatar>
+
+// Apenas fallback
+<Avatar>
+  <AvatarFallback>AB</AvatarFallback>
+</Avatar>
+
+// Tamanho customizado via className
+<Avatar className="h-14 w-14">
+  <AvatarFallback className="text-lg">GG</AvatarFallback>
+</Avatar>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "src", type: "string", description: "(AvatarImage) URL da imagem" },
+                  { name: "alt", type: "string", description: "(AvatarImage) Texto alternativo" },
+                  { name: "className", type: "string", description: "Tamanho via h-X w-X no Avatar raiz" },
+                  { name: "children", type: "ReactNode", description: "(AvatarFallback) Iniciais ou ícone de fallback" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SKELETON ───────────────────────────────────────────────────── */}
+          <Section
+            id="skeleton"
+            title="Skeleton"
+            description="Placeholder animado para estados de carregamento."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background space-y-3 max-w-xs">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-3/4" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-24 w-full rounded-lg" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Skeleton } from "@/components/ui/skeleton"
+
+// Linha de texto
+<Skeleton className="h-4 w-full" />
+
+// Avatar circular
+<Skeleton className="h-10 w-10 rounded-full" />
+
+// Card
+<Skeleton className="h-24 w-full rounded-lg" />
+
+// Padrão de carregamento de usuário
+<div className="flex items-center gap-3">
+  <Skeleton className="h-10 w-10 rounded-full" />
+  <div className="space-y-2 flex-1">
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-3 w-3/4" />
+  </div>
+</div>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Define dimensões e forma via h-X w-X rounded-X" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SEPARATOR ──────────────────────────────────────────────────── */}
+          <Section
+            id="separator"
+            title="Separator"
+            description="Linha divisória horizontal ou vertical."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background space-y-4">
+                  <p className="text-sm">Acima do separador horizontal</p>
+                  <Separator />
+                  <p className="text-sm">Abaixo do separador</p>
+                  <div className="flex h-10 items-center gap-4">
+                    <span className="text-sm">Item A</span>
+                    <Separator orientation="vertical" />
+                    <span className="text-sm">Item B</span>
+                    <Separator orientation="vertical" />
+                    <span className="text-sm">Item C</span>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Separator } from "@/components/ui/separator"
+
+// Horizontal (padrão)
+<Separator />
+
+// Vertical
+<div className="flex h-10 items-center gap-4">
+  <span>Item A</span>
+  <Separator orientation="vertical" />
+  <span>Item B</span>
+</div>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "orientation", type: "'horizontal' | 'vertical'", default: "'horizontal'", description: "Direção da linha" },
+                  { name: "decorative", type: "boolean", default: "true", description: "Decorativo (sem semântica de acessibilidade)" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TABS ───────────────────────────────────────────────────────── */}
+          <Section
+            id="tabs"
+            title="Tabs"
+            description="Navegação por abas com conteúdo trocável."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background">
+                  <Tabs defaultValue="tab1">
+                    <TabsList>
+                      <TabsTrigger value="tab1">Aba 1</TabsTrigger>
+                      <TabsTrigger value="tab2">Aba 2</TabsTrigger>
+                      <TabsTrigger value="tab3" disabled>Desabilitada</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="tab1" className="mt-4">
+                      <p className="text-sm text-muted-foreground">Conteúdo da Aba 1</p>
+                    </TabsContent>
+                    <TabsContent value="tab2" className="mt-4">
+                      <p className="text-sm text-muted-foreground">Conteúdo da Aba 2</p>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+
+// Não controlado
+<Tabs defaultValue="geral">
+  <TabsList>
+    <TabsTrigger value="geral">Geral</TabsTrigger>
+    <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+  </TabsList>
+  <TabsContent value="geral">
+    {/* dados injetados */}
+  </TabsContent>
+  <TabsContent value="seguranca">
+    {/* dados injetados */}
+  </TabsContent>
+</Tabs>
+
+// Controlado
+const [tab, setTab] = useState("geral")
+<Tabs value={tab} onValueChange={setTab}>...</Tabs>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "defaultValue", type: "string", description: "Aba ativa inicial (não controlado)" },
+                  { name: "value", type: "string", description: "Aba ativa (controlado)" },
+                  { name: "onValueChange", type: "(value: string) => void", description: "Callback ao trocar aba" },
+                  { name: "disabled", type: "boolean", description: "(TabsTrigger) Desabilita a aba" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TOOLTIP ────────────────────────────────────────────────────── */}
+          <Section
+            id="tooltip"
+            title="Tooltip"
+            description="Dica flutuante exibida ao passar o mouse sobre um elemento."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex gap-4 p-4 border rounded-lg bg-background">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline">Passe o mouse</Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Dica de contexto</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon">?</Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Tooltip à direita</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Tooltip, TooltipTrigger, TooltipContent, TooltipProvider
+} from "@/components/ui/tooltip"
+
+// TooltipProvider já está no App.tsx, não precisa repetir
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button variant="outline">Passe o mouse</Button>
+  </TooltipTrigger>
+  <TooltipContent side="top" sideOffset={4}>
+    <p>Texto da dica</p>
+  </TooltipContent>
+</Tooltip>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "side", type: "'top' | 'right' | 'bottom' | 'left'", default: "'top'", description: "(TooltipContent) Lado de exibição" },
+                  { name: "sideOffset", type: "number", default: "4", description: "(TooltipContent) Distância em px do trigger" },
+                  { name: "asChild", type: "boolean", description: "(TooltipTrigger) Usa o elemento filho como trigger" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TABLE ──────────────────────────────────────────────────────── */}
+          <Section
+            id="table"
+            title="Table"
+            description="Componentes primitivos de tabela HTML estilizados. Base do DataTable."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="border rounded-lg bg-background overflow-hidden">
+                  <Table>
+                    <TableCaption>Lista de profissionais</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Cargo</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>Ana Silva</TableCell>
+                        <TableCell>Administrador</TableCell>
+                        <TableCell><Badge variant="default">Ativo</Badge></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Carlos Lima</TableCell>
+                        <TableCell>Profissional</TableCell>
+                        <TableCell><Badge variant="secondary">Inativo</Badge></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Table, TableHeader, TableBody, TableRow,
+  TableHead, TableCell, TableCaption, TableFooter
+} from "@/components/ui/table"
+
+<Table>
+  <TableCaption>Legenda da tabela</TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Coluna 1</TableHead>
+      <TableHead>Coluna 2</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {data.map((row) => (
+      <TableRow key={row.id}>
+        <TableCell>{row.campo1}</TableCell>
+        <TableCell>{row.campo2}</TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Aplicável a todos os sub-componentes" },
+                  { name: "colSpan", type: "number", description: "(TableCell / TableHead) Colspan de coluna" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── DATA TABLE ─────────────────────────────────────────────────── */}
+          <Section
+            id="data-table"
+            title="DataTable"
+            description="Tabela de dados customizada do projeto. Integra @tanstack/react-table + shadcn Table + suporte a cards mobile."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <DataTable<SampleRow>
+                  data={SAMPLE_DATA}
+                  columns={[
+                    { key: "name", header: "Nome" },
+                    { key: "role", header: "Cargo" },
+                    {
+                      key: "status",
+                      header: "Status",
+                      render: (value) => (
+                        <Badge variant={value === "Ativo" ? "default" : "secondary"}>
+                          {value}
+                        </Badge>
+                      ),
+                    },
+                  ]}
+                  mobileView="cards"
+                  mobileCardConfig={{ title: "name", subtitle: "role", badge: "status" }}
+                />
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { DataTable } from "@/components/ui/data-table"
+import { Badge } from "@/components/ui/badge"
+
+interface User { id: string; name: string; role: string; status: string }
+
+<DataTable<User>
+  data={users}          // T[] — injetado pela página
+  columns={[
+    { key: "name",   header: "Nome" },
+    { key: "role",   header: "Cargo" },
+    {
+      key: "status",
+      header: "Status",
+      render: (value) => <Badge>{value}</Badge>,
+    },
+    {
+      key: "id",
+      header: "Ações",
+      render: (_, row) => (
+        <Button size="sm" onClick={() => handleEdit(row)}>Editar</Button>
+      ),
+    },
+  ]}
+  onRowClick={(row) => navigate(\`/users/\${row.id}\`)}
+  mobileView="cards"
+  mobileCardConfig={{
+    title: "name",       // campo principal do card
+    subtitle: "role",    // campo secundário
+    badge: "status",     // campo exibido como badge
+    excludeFromGrid: ["id"],
+  }}
+/>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "data", type: "T[]", description: "Array de dados — sempre injetado pela página de consumo" },
+                  { name: "columns", type: "Column<T>[]", description: "Definição das colunas (key, header, render?, className?, width?)" },
+                  { name: "onRowClick", type: "(row: T) => void", description: "Callback ao clicar em uma linha" },
+                  { name: "className", type: "string", description: "Classes CSS extras no wrapper" },
+                  { name: "mobileView", type: "'cards'", description: "Ativa visualização em cards no mobile" },
+                  { name: "mobileCardConfig.title", type: "keyof T | (row) => ReactNode", description: "Campo principal do card mobile" },
+                  { name: "mobileCardConfig.subtitle", type: "keyof T | (row) => ReactNode", description: "Campo secundário do card" },
+                  { name: "mobileCardConfig.badge", type: "keyof T | (row) => ReactNode", description: "Campo exibido como badge no card" },
+                  { name: "mobileCardConfig.excludeFromGrid", type: "(keyof T)[]", description: "Campos ocultos do grid de detalhes mobile" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── LOADING SPINNER ────────────────────────────────────────────── */}
+          <Section
+            id="loading-spinner"
+            title="LoadingSpinner"
+            description="Indicador de carregamento centralizado. Componente customizado do projeto."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-wrap gap-8 items-center p-6 border rounded-lg bg-background">
+                  <div className="flex flex-col items-center gap-1">
+                    <LoadingSpinner size="sm" />
+                    <span className="text-xs text-muted-foreground">sm</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <LoadingSpinner size="md" />
+                    <span className="text-xs text-muted-foreground">md</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <LoadingSpinner size="lg" />
+                    <span className="text-xs text-muted-foreground">lg</span>
+                  </div>
+                  <LoadingSpinner size="md" text="Carregando dados..." />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { LoadingSpinner } from "@/components/ui/loading-spinner"
+
+<LoadingSpinner />                            // md, sem texto
+<LoadingSpinner size="sm" />                  // pequeno
+<LoadingSpinner size="lg" />                  // grande
+<LoadingSpinner size="md" text="Salvando..." /> // com texto`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "size", type: "'sm' | 'md' | 'lg'", default: "'md'", description: "Tamanho do ícone giratório (sm=h-4, md=h-8, lg=h-12)" },
+                  { name: "text", type: "string", description: "Texto exibido abaixo do spinner" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── EMPTY ──────────────────────────────────────────────────────── */}
+          <Section
+            id="empty"
+            title="Empty"
+            description="Estado vazio padronizado com borda tracejada. Componente customizado do projeto."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background max-w-md">
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia>
+                        <IconPackage className="h-8 w-8 text-muted-foreground" />
+                      </EmptyMedia>
+                      <EmptyTitle>Nenhum item encontrado</EmptyTitle>
+                      <EmptyDescription>
+                        Ainda não há registros nesta lista. Adicione um novo item para começar.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button>Adicionar primeiro item</Button>
+                    </EmptyContent>
+                  </Empty>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Empty, EmptyHeader, EmptyMedia, EmptyTitle,
+  EmptyDescription, EmptyContent
+} from "@/components/ui/empty"
+import { IconPackage } from "@tabler/icons-react"
+
+<Empty>
+  <EmptyHeader>
+    <EmptyMedia>
+      <IconPackage className="h-8 w-8 text-muted-foreground" />
+    </EmptyMedia>
+    <EmptyTitle>Nenhum resultado</EmptyTitle>
+    <EmptyDescription>
+      Descrição explicando o estado vazio.
+    </EmptyDescription>
+  </EmptyHeader>
+  <EmptyContent>
+    {/* ação injetada pela página de consumo */}
+    <Button onClick={handleCreate}>Criar novo</Button>
+  </EmptyContent>
+</Empty>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Aplicável a todos os sub-componentes" },
+                  { name: "children", type: "ReactNode", description: "Conteúdo — ação/CTA vem da página de consumo" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* Footer */}
+          <div className="border-t pt-8 pb-16 text-xs text-muted-foreground space-y-1">
+            <p>Esta página reflete os componentes reais de <code>src/components/ui/</code>.</p>
+            <p>Qualquer alteração nos componentes pai é imediatamente refletida aqui.</p>
+            <p className="text-[10px]">Rota: <code>/design-system</code> — uso interno, não indexada no menu.</p>
+          </div>
+        </main>
+      </div>
+    </TooltipProvider>
+  );
+}

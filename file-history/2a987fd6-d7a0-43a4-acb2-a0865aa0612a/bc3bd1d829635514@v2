@@ -1,0 +1,412 @@
+/**
+ * Testes de integração: Template HTML → PDF conversion
+ */
+
+import { criarPropostaExemplo, validarDadosParaPDF } from '../proposta-pdf-generator'
+import { generateWaProjectProposalPDF } from '../wa-project-pdf-generator'
+import { TEMPLATE_PADRAO_WA_PROJECT } from '../proposta-template-types'
+import type { PropostaTemplateData } from '../proposta-template-types'
+
+// Mock do jsPDF
+jest.mock('jspdf', () => {
+  return jest.fn().mockImplementation(() => ({
+    addPage: jest.fn(),
+    setFont: jest.fn(),
+    setFontSize: jest.fn(),
+    setTextColor: jest.fn(),
+    setFillColor: jest.fn(),
+    text: jest.fn(),
+    addImage: jest.fn(),
+    splitTextToSize: jest.fn().mockReturnValue(['line 1', 'line 2']),
+    getTextWidth: jest.fn().mockReturnValue(50),
+    roundedRect: jest.fn(),
+    setProperties: jest.fn(),
+    setCharSpace: jest.fn(),
+    setWordSpace: jest.fn(),
+    setGState: jest.fn().mockReturnValue({ GState: jest.fn() }),
+    GState: jest.fn(),
+    save: jest.fn()
+  }))
+})
+
+describe('Integração Template → PDF', () => {
+  describe('Validação de dados', () => {
+    it('deve validar template padrão corretamente', () => {
+      const templateData = TEMPLATE_PADRAO_WA_PROJECT
+      const result = validarDadosParaPDF(templateData as any)
+
+      expect(result.valido).toBe(true)
+      expect(result.erros).toHaveLength(0)
+    })
+
+    it('deve detectar dados faltantes obrigatórios', () => {
+      const dadosIncompletos = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        capa: {
+          ...TEMPLATE_PADRAO_WA_PROJECT.capa,
+          cliente: {
+            empresa: '', // Campo obrigatório vazio
+            pessoa: 'João'
+          }
+        }
+      }
+
+      const result = validarDadosParaPDF(dadosIncompletos as any)
+
+      expect(result.valido).toBe(false)
+      expect(result.erros.length).toBeGreaterThan(0)
+    })
+
+    it('deve validar estrutura de dados corretamente', () => {
+      const dadosInvalidos = {
+        // Dados faltando propriedades essenciais
+        capa: {
+          titulo: 'Título'
+          // Faltando outras propriedades obrigatórias
+        }
+      }
+
+      const result = validarDadosParaPDF(dadosInvalidos as any)
+
+      expect(result.valido).toBe(false)
+      expect(result.erros.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Conversão de dados do template', () => {
+    it('deve criar proposta exemplo válida', () => {
+      const exemplo = criarPropostaExemplo()
+
+      expect(exemplo).toBeDefined()
+      expect(exemplo.capa).toBeDefined()
+      expect(exemplo.empresa).toBeDefined()
+      expect(exemplo.projeto).toBeDefined()
+    })
+
+    it('deve manter consistência entre template e dados PDF', () => {
+      const templateData = TEMPLATE_PADRAO_WA_PROJECT
+
+      // Converter dados do template para formato PDF
+      const pdfData = {
+        projeto: {
+          nome: templateData.projeto.nome
+        },
+        data_emissao: templateData.capa.dataEmissao,
+        validade_dias: templateData.capa.validadeDias.toString(),
+        cliente: {
+          nome: templateData.capa.cliente.empresa
+        },
+        tipo_escopo: templateData.capa.tipoEscopo,
+        sections: [],
+        numeracao_pagina: '1'
+      }
+
+      expect(() => {
+        generateWaProjectProposalPDF(pdfData)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Mapeamento de seções', () => {
+    it('deve mapear seções do template para PDF corretamente', () => {
+      const templateComSecoes: PropostaTemplateData = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        funcionalidades: {
+          titulo: 'Funcionalidades',
+          itens: [
+            {
+              numero: 1,
+              titulo: 'Autenticação',
+              descricao: 'Sistema de login e registro'
+            },
+            {
+              numero: 2,
+              titulo: 'Dashboard',
+              descricao: 'Painel administrativo'
+            }
+          ]
+        }
+      }
+
+      // Simular conversão para PDF
+      const secoesPDF = [{
+        title: 'Funcionalidades',
+        content: '1. **Autenticação** - Sistema de login e registro\n2. **Dashboard** - Painel administrativo'
+      }]
+
+      const pdfData = {
+        projeto: { nome: templateComSecoes.projeto.nome },
+        data_emissao: templateComSecoes.capa.dataEmissao,
+        validade_dias: templateComSecoes.capa.validadeDias.toString(),
+        cliente: { nome: templateComSecoes.capa.cliente.empresa },
+        tipo_escopo: templateComSecoes.capa.tipoEscopo,
+        sections: secoesPDF,
+        numeracao_pagina: '1'
+      }
+
+      expect(() => {
+        generateWaProjectProposalPDF(pdfData)
+      }).not.toThrow()
+    })
+
+    it('deve lidar com diferentes tipos de conteúdo', () => {
+      const templateCompleto: PropostaTemplateData = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        empresa: {
+          ...TEMPLATE_PADRAO_WA_PROJECT.empresa,
+          servicos: ['Desenvolvimento Web', 'Consultoria', 'Suporte'],
+          clientes: ['Cliente A', 'Cliente B', 'Cliente C']
+        },
+        equipe: {
+          titulo: 'Equipe',
+          descricao: 'Time dedicado',
+          membros: [
+            {
+              cargo: 'Tech Lead',
+              descricao: 'Liderança técnica'
+            },
+            {
+              cargo: 'Developer',
+              descricao: 'Desenvolvimento'
+            }
+          ]
+        }
+      }
+
+      // Converter diferentes seções
+      const secoes = [
+        {
+          title: 'Nossos Serviços',
+          content: '• Desenvolvimento Web\n• Consultoria\n• Suporte'
+        },
+        {
+          title: 'Equipe',
+          content: '**Tech Lead** - Liderança técnica\n**Developer** - Desenvolvimento'
+        }
+      ]
+
+      const pdfData = {
+        projeto: { nome: templateCompleto.projeto.nome },
+        data_emissao: templateCompleto.capa.dataEmissao,
+        validade_dias: templateCompleto.capa.validadeDias.toString(),
+        cliente: { nome: templateCompleto.capa.cliente.empresa },
+        tipo_escopo: templateCompleto.capa.tipoEscopo,
+        sections: secoes,
+        numeracao_pagina: '1'
+      }
+
+      expect(() => {
+        generateWaProjectProposalPDF(pdfData)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Fidelidade visual', () => {
+    it('deve manter cores consistentes entre template e PDF', () => {
+      const templateData = TEMPLATE_PADRAO_WA_PROJECT
+
+      const pdfData = {
+        projeto: { nome: templateData.projeto.nome },
+        data_emissao: templateData.capa.dataEmissao,
+        validade_dias: templateData.capa.validadeDias.toString(),
+        cliente: { nome: templateData.capa.cliente.empresa },
+        tipo_escopo: templateData.capa.tipoEscopo,
+        sections: [],
+        numeracao_pagina: '1'
+      }
+
+      const mockDoc = require('jspdf')()
+      generateWaProjectProposalPDF(pdfData)
+
+      // Verificar se cores corretas foram definidas
+      expect(mockDoc.setTextColor).toHaveBeenCalledWith('#003B71') // Primary
+    })
+
+    it('deve preservar estrutura hierárquica de títulos', () => {
+      const templateComTitulos: PropostaTemplateData = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        funcionalidades: {
+          titulo: 'Funcionalidades Principais',
+          itens: [
+            { numero: 1, titulo: 'Módulo A', descricao: 'Descrição A' },
+            { numero: 2, titulo: 'Módulo B', descricao: 'Descrição B' }
+          ]
+        }
+      }
+
+      const secaoComTitulos = {
+        title: 'Funcionalidades Principais',
+        content: `
+## Módulos do Sistema
+1. **Módulo A** - Descrição A
+2. **Módulo B** - Descrição B
+        `.trim()
+      }
+
+      const pdfData = {
+        projeto: { nome: templateComTitulos.projeto.nome },
+        data_emissao: templateComTitulos.capa.dataEmissao,
+        validade_dias: templateComTitulos.capa.validadeDias.toString(),
+        cliente: { nome: templateComTitulos.capa.cliente.empresa },
+        tipo_escopo: templateComTitulos.capa.tipoEscopo,
+        sections: [secaoComTitulos],
+        numeracao_pagina: '1'
+      }
+
+      expect(() => {
+        generateWaProjectProposalPDF(pdfData)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Tratamento de edge cases', () => {
+    it('deve lidar com template vazio', () => {
+      const templateVazio: PropostaTemplateData = {
+        capa: {
+          titulo: 'Proposta',
+          subtitulo: 'Projeto',
+          dataEmissao: '01/01/2026',
+          validadeDias: 30,
+          cliente: { empresa: 'Cliente', pessoa: 'Pessoa' },
+          tipoEscopo: 'Escopo'
+        },
+        empresa: {
+          nome: 'Empresa',
+          descricao: 'Descrição',
+          servicos: [],
+          clientes: []
+        },
+        projeto: {
+          titulo: 'Projeto',
+          nome: 'Nome',
+          descricao: 'Descrição'
+        },
+        funcionalidades: { titulo: 'Funcionalidades', itens: [] },
+        modeloTrabalho: { titulo: 'Modelo', tipo: 'Tipo', descricao: 'Desc', fases: [] },
+        equipe: { titulo: 'Equipe', descricao: 'Desc', membros: [] },
+        cronograma: { titulo: 'Cronograma', prazoTotal: '1 mês' },
+        investimento: { titulo: 'Investimento', valorTotal: 'R$ 0', condicoesPagamento: [] },
+        entregaveis: { titulo: 'Entregáveis', itens: [] },
+        proximosPassos: { titulo: 'Próximos Passos', passos: [] },
+        encerramento: {
+          citacao1: 'Citação 1',
+          citacao2: 'Citação 2',
+          informacoesEmpresa: {
+            nomeCompleto: 'Empresa LTDA',
+            cnpj: '00.000.000/0001-00',
+            website: 'website.com',
+            email: 'email@empresa.com',
+            telefone: '(11) 1111-1111'
+          },
+          textoValidade: 'Válido por 30 dias'
+        }
+      }
+
+      const result = validarDadosParaPDF(templateVazio as any)
+      expect(result.valido).toBe(true)
+    })
+
+    it('deve processar template com caracteres especiais', () => {
+      const templateEspecial: PropostaTemplateData = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        projeto: {
+          ...TEMPLATE_PADRAO_WA_PROJECT.projeto,
+          nome: 'Açaí & Vitaminas — "O Melhor" da Região',
+          descricao: 'Descrição com çãracteres éspeciais e símbolos™®'
+        }
+      }
+
+      const pdfData = {
+        projeto: { nome: templateEspecial.projeto.nome },
+        data_emissao: templateEspecial.capa.dataEmissao,
+        validade_dias: templateEspecial.capa.validadeDias.toString(),
+        cliente: { nome: templateEspecial.capa.cliente.empresa },
+        tipo_escopo: templateEspecial.capa.tipoEscopo,
+        sections: [{
+          title: 'Projeto',
+          content: templateEspecial.projeto.descricao
+        }],
+        numeracao_pagina: '1'
+      }
+
+      expect(() => {
+        generateWaProjectProposalPDF(pdfData)
+      }).not.toThrow()
+    })
+
+    it('deve lidar com dados muito grandes', () => {
+      const templateGigante: PropostaTemplateData = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        funcionalidades: {
+          titulo: 'Funcionalidades',
+          itens: Array.from({ length: 1000 }, (_, i) => ({
+            numero: i + 1,
+            titulo: `Funcionalidade ${i + 1}`,
+            descricao: `Descrição muito detalhada da funcionalidade ${i + 1} com texto suficientemente longo para testar o processamento de grandes volumes de dados.`
+          }))
+        }
+      }
+
+      const secaoGigante = {
+        title: 'Funcionalidades',
+        content: Array.from({ length: 1000 }, (_, i) =>
+          `${i + 1}. **Funcionalidade ${i + 1}** - Descrição muito detalhada da funcionalidade ${i + 1}.`
+        ).join('\n')
+      }
+
+      const pdfData = {
+        projeto: { nome: templateGigante.projeto.nome },
+        data_emissao: templateGigante.capa.dataEmissao,
+        validade_dias: templateGigante.capa.validadeDias.toString(),
+        cliente: { nome: templateGigante.capa.cliente.empresa },
+        tipo_escopo: templateGigante.capa.tipoEscopo,
+        sections: [secaoGigante],
+        numeracao_pagina: '1'
+      }
+
+      expect(() => {
+        generateWaProjectProposalPDF(pdfData)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Performance de conversão', () => {
+    it('deve converter template complexo em tempo aceitável', async () => {
+      const templateComplexo: PropostaTemplateData = {
+        ...TEMPLATE_PADRAO_WA_PROJECT,
+        funcionalidades: {
+          titulo: 'Funcionalidades',
+          itens: Array.from({ length: 100 }, (_, i) => ({
+            numero: i + 1,
+            titulo: `Funcionalidade ${i + 1}`,
+            descricao: `Descrição da funcionalidade ${i + 1}`
+          }))
+        }
+      }
+
+      const start = Date.now()
+
+      const pdfData = {
+        projeto: { nome: templateComplexo.projeto.nome },
+        data_emissao: templateComplexo.capa.dataEmissao,
+        validade_dias: templateComplexo.capa.validadeDias.toString(),
+        cliente: { nome: templateComplexo.capa.cliente.empresa },
+        tipo_escopo: templateComplexo.capa.tipoEscopo,
+        sections: [{
+          title: 'Funcionalidades',
+          content: Array.from({ length: 100 }, (_, i) =>
+            `${i + 1}. **Funcionalidade ${i + 1}** - Descrição da funcionalidade ${i + 1}`
+          ).join('\n')
+        }],
+        numeracao_pagina: '1'
+      }
+
+      await generateWaProjectProposalPDF(pdfData)
+
+      const duration = Date.now() - start
+
+      // Com mocks, deve ser muito rápido
+      expect(duration).toBeLessThan(1000) // menos de 1 segundo
+    })
+  })
+})

@@ -1,0 +1,317 @@
+import { ReactNode, useCallback, useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Building2, ChevronDown, AlertCircle, LayoutDashboard } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { NavItem, NavSection } from "@/types/navigation";
+import { analytics } from "@/lib/analytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { salonService } from "@/services/salonService";
+import { Salon } from "@/types/salon";
+
+interface EasySalonSidebarProps {
+  title: string;
+  subtitle?: string;
+  items: NavItem[] | NavSection[];
+  children?: ReactNode;
+  variant?: 'sidebar' | 'drawer';
+}
+
+export function EasySalonSidebar({
+  title,
+  subtitle,
+  items,
+  variant = 'sidebar'
+}: EasySalonSidebarProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { selectedSalon, updateSelectedSalon } = useSelectedSalon();
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [loadingSalons, setLoadingSalons] = useState(true);
+
+  const isAdminArea = location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    if (variant === 'drawer') {
+      const fetchSalons = async () => {
+        try {
+          setLoadingSalons(true);
+          const response = await salonService.list();
+          // @ts-ignore
+          const data = response.data || response;
+          setSalons(Array.isArray(data) ? data : []);
+        } catch (error) {
+          console.error("Error fetching salons:", error);
+        } finally {
+          setLoadingSalons(false);
+        }
+      };
+      fetchSalons();
+    }
+  }, [variant, user]);
+
+  const isPlanExpired = (salon: Salon) => {
+    return (
+      salon.subscription?.status === "past_due" ||
+      salon.subscription?.status === "canceled" ||
+      salon.subscription?.status === "unpaid"
+    );
+  };
+
+  const handleSalonSelect = (salon: Salon) => {
+    updateSelectedSalon(salon);
+    if (location.pathname === "/salon/agenda") {
+      setTimeout(() => { window.location.reload(); }, 100);
+    } else {
+      navigate("/salon/agenda");
+    }
+  };
+
+  const trackNavClick = useCallback((itemTitle: string, href: string): void => {
+    analytics.trackEvent("sidebar_item_clicked", {
+      item_name: itemTitle,
+      path: href,
+      role: user?.role ?? "",
+    });
+  }, [user?.role]);
+
+  const sidebarClasses = cn(
+    "flex flex-col bg-card",
+    variant === 'sidebar'
+      ? "h-full w-56 border-r border-border hidden md:flex flex-shrink-0"
+      : "h-full w-full"
+  );
+
+  // Classes reutilizáveis para nav items
+  const navLinkClasses = (isActive: boolean) => cn(
+    "flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
+    isActive
+      ? "bg-accent text-accent-foreground font-medium"
+      : "text-sidebar-foreground hover:bg-muted"
+  );
+
+  const iconClasses = (isActive: boolean) => cn(
+    "w-5 h-5 shrink-0",
+    isActive ? "text-accent-foreground" : "text-muted-foreground"
+  );
+
+  // Renderiza um NavItem como NavLink ou button
+  const renderNavItem = (navItem: NavItem, key: string) => {
+    const isActive = location.pathname === navItem.href ||
+      (location.pathname.startsWith(navItem.href + "/") && navItem.href !== "/");
+    const Icon = navItem.icon;
+
+    if (navItem.onClick) {
+      return (
+        <button
+          key={key}
+          onClick={() => {
+            trackNavClick(navItem.title, navItem.href);
+            navItem.onClick?.();
+          }}
+          className={cn(
+            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
+            "text-sidebar-foreground hover:bg-muted"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <Icon className="w-5 h-5 shrink-0 text-muted-foreground" />
+            <span>{navItem.title}</span>
+          </div>
+        </button>
+      );
+    }
+
+    return (
+      <NavLink
+        key={key}
+        to={navItem.href}
+        onClick={() => trackNavClick(navItem.title, navItem.href)}
+        className={navLinkClasses(isActive)}
+      >
+        <div className="flex items-center gap-3">
+          <Icon className={iconClasses(isActive)} />
+          <span>{navItem.title}</span>
+        </div>
+        {navItem.badge && (
+          <span className="w-2.5 h-2.5 bg-[#F97316] rounded-full animate-pulse shrink-0" />
+        )}
+      </NavLink>
+    );
+  };
+
+  return (
+    <div className={sidebarClasses}>
+
+      {/* Header */}
+      <div className="p-4 pt-6 border-b flex-shrink-0">
+        <h2 className="text-sm font-medium text-foreground">{title}</h2>
+      </div>
+
+      {/* Salon Selector — apenas no drawer mobile */}
+      {variant === 'drawer' && (
+        <div className="px-4 py-4 border-b border-border bg-muted/20">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+            Salão Selecionado
+          </p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-between gap-2 px-3 py-5 border border-border rounded-xl transition-colors hover:bg-muted cursor-pointer bg-white shadow-sm"
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground truncate">
+                    {isAdminArea
+                      ? "Selecionar Salão"
+                      : selectedSalon?.name || "Selecionar Salão"}
+                  </span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-[calc(100vw-2rem)] md:w-80 bg-card border border-border rounded-xl shadow-xl z-[60] p-0 overflow-hidden"
+            >
+              <div className="max-h-[60vh] overflow-y-auto">
+                {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+                  <div className="p-1 border-b border-border bg-muted/30">
+                    <DropdownMenuItem asChild>
+                      <button
+                        onClick={() => navigate("/admin/salons")}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted rounded-lg transition-colors text-left outline-none"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <LayoutDashboard className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground">Painel Administrativo</p>
+                          <p className="text-[10px] text-muted-foreground">Gestão global do sistema</p>
+                        </div>
+                      </button>
+                    </DropdownMenuItem>
+                  </div>
+                )}
+
+                <div className="px-4 py-3 bg-muted/10 border-b border-border">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Seus Salões
+                  </p>
+                </div>
+
+                {loadingSalons ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground italic">
+                    Carregando salões...
+                  </div>
+                ) : salons.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground italic">
+                    Nenhum salão disponível
+                  </div>
+                ) : (
+                  <div className="p-1">
+                    {salons
+                      .filter(s =>
+                        user?.role === "Easy Salon" ||
+                        user?.role === "Tenant Admin" ||
+                        user?.salonId === s.id
+                      )
+                      .map((salon) => {
+                        const expired = isPlanExpired(salon);
+                        const isSelected = selectedSalon?.id === salon.id;
+                        return (
+                          <DropdownMenuItem key={salon.id} asChild>
+                            <button
+                              onClick={() => handleSalonSelect(salon)}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition-all text-left outline-none mb-1",
+                                isSelected && "bg-primary/5 ring-1 ring-primary/20",
+                                expired && "opacity-70"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center",
+                                isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground",
+                                expired && "bg-destructive/10 text-destructive"
+                              )}>
+                                <Building2 className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className={cn(
+                                    "text-sm font-semibold truncate",
+                                    isSelected ? "text-primary" : "text-foreground"
+                                  )}>
+                                    {salon.name}
+                                  </p>
+                                  {expired && <AlertCircle className="w-3 h-3 text-destructive" />}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {salon.phone || "(Sem telefone)"}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                              )}
+                            </button>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
+        <div>
+          {items.map((item, index) => {
+            if ('items' in item) {
+              // Seção com título e subitens
+              const section = item as NavSection;
+              return (
+                <div key={index} className={cn(index > 0 && "mt-6")}>
+                  {section.title && (
+                    <p className="px-3 mb-2 text-xs font-medium text-muted-foreground tracking-wide uppercase">
+                      {section.title}
+                    </p>
+                  )}
+                  <ul className="space-y-1">
+                    {section.items.map(navItem => (
+                      <li key={navItem.href}>
+                        {renderNavItem(navItem, navItem.href)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            } else {
+              // Item direto sem seção
+              const navItem = item as NavItem;
+              return renderNavItem(navItem, navItem.href);
+            }
+          })}
+        </div>
+      </nav>
+
+      {/* Rodapé com versão */}
+      <div className="p-4 mt-auto border-t border-border flex-shrink-0">
+        <span className="text-xs text-muted-foreground">v0.0.64</span>
+      </div>
+    </div>
+  );
+}

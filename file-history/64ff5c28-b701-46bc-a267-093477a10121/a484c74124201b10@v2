@@ -1,0 +1,280 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { PercentageInput } from "@/components/ui/percentage-input";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+
+interface ServiceData {
+  name: string;
+  acceptsOnlineBooking?: boolean;
+  price?: number | string;
+  duration?: number;
+  commission?: number | string;
+}
+
+interface ServiceFormProps {
+  initialData?: ServiceData;
+  onSave: (data: ServiceData) => void;
+  onCancel: () => void;
+  isEditing?: boolean;
+  isSaving?: boolean;
+  isCustomService?: boolean;
+  disabledActions?: boolean;
+}
+
+export function ServiceForm({
+  initialData,
+  onSave,
+  onCancel,
+  isEditing = false,
+  isSaving = false,
+  isCustomService = false,
+  disabledActions,
+}: ServiceFormProps) {
+  // Format initial values for masked inputs
+  const formatInitialPrice = (price?: number | string): string => {
+    if (!price) return "0,00";
+    const numValue =
+      typeof price === "string" ? parseFloat(price.replace(",", ".")) : price;
+    return numValue.toFixed(2).replace(".", ",");
+  };
+
+  const formatInitialCommission = (commission?: number | string): string => {
+    if (!commission) return "0,00";
+    const numValue =
+      typeof commission === "string"
+        ? parseFloat(commission.replace(",", "."))
+        : commission;
+    return numValue.toFixed(2).replace(".", ",");
+  };
+
+  const [serviceData, setServiceData] = useState<ServiceData>({
+    name: initialData?.name || "",
+    acceptsOnlineBooking: initialData?.acceptsOnlineBooking ?? true,
+    price: formatInitialPrice(initialData?.price),
+    duration: initialData?.duration || 30,
+    commission: formatInitialCommission(initialData?.commission),
+  });
+
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ServiceData, string>>
+  >({});
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+
+    setServiceData((prev) => ({
+      ...prev,
+      [name]: type === "number" ? (value === "" ? 0 : Number(value)) : value,
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name as keyof ServiceData]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof ServiceData, string>> = {};
+
+    // Validate name: Required, min 2 characters, max 100 characters
+    if (!serviceData.name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    } else if (serviceData.name.trim().length < 2) {
+      newErrors.name = "Nome deve ter pelo menos 2 caracteres";
+    } else if (serviceData.name.length > 100) {
+      newErrors.name = "Nome não pode ter mais de 100 caracteres";
+    }
+
+    // Validate price, duration, and commission for custom services
+    if (isCustomService) {
+      const priceValue =
+        typeof serviceData.price === "string"
+          ? parseFloat(serviceData.price.replace(".", "").replace(",", "."))
+          : serviceData.price;
+
+      const commissionValue =
+        typeof serviceData.commission === "string"
+          ? parseFloat(serviceData.commission.replace(",", "."))
+          : serviceData.commission;
+
+      if (priceValue !== undefined && priceValue <= 0) {
+        newErrors.price = "Preço deve ser maior que zero";
+      }
+      if (serviceData.duration !== undefined && serviceData.duration < 1) {
+        newErrors.duration = "Duração deve ser pelo menos 1 minuto";
+      }
+      if (
+        commissionValue !== undefined &&
+        (commissionValue < 0 || commissionValue > 100)
+      ) {
+        newErrors.commission = "Comissão deve estar entre 0% e 100%";
+      }
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    // Convert masked values to numbers before saving
+    const dataToSave = {
+      ...serviceData,
+      price:
+        typeof serviceData.price === "string"
+          ? parseFloat(serviceData.price.replace(".", "").replace(",", "."))
+          : serviceData.price,
+      commission:
+        typeof serviceData.commission === "string"
+          ? parseFloat(serviceData.commission.replace(",", "."))
+          : serviceData.commission,
+    };
+
+    onSave(dataToSave);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome do Serviço *</Label>
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            value={serviceData.name}
+            onChange={handleInputChange}
+            placeholder="Digite o nome do serviço"
+            required
+            disabled={isSaving}
+            maxLength={100}
+            className={errors.name ? "border-destructive" : ""}
+          />
+          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          <p className="text-sm text-muted-foreground">
+            Mínimo 2 caracteres, máximo 100 caracteres
+          </p>
+        </div>
+
+        {/* Show price, duration, and commission fields for custom services */}
+        {isCustomService && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price">Preço *</Label>
+                <CurrencyInput
+                  id="price"
+                  value={serviceData.price as string}
+                  onChange={(value) =>
+                    setServiceData((prev) => ({ ...prev, price: value }))
+                  }
+                  disabled={isSaving}
+                  className={errors.price ? "border-destructive" : ""}
+                  placeholder="Ex: R$ 50,00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duração (minutos)</Label>
+                <Input
+                  id="duration"
+                  name="duration"
+                  type="number"
+                  min="15"
+                  step={15}
+                  value={serviceData.duration || ""}
+                  onChange={handleInputChange}
+                  placeholder="30"
+                  disabled={isSaving}
+                  className={errors.duration ? "border-destructive" : ""}
+                />
+                {errors.duration && (
+                  <p className="text-sm text-destructive">{errors.duration}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="commission">Comissão (%)</Label>
+              <PercentageInput
+                id="commission"
+                value={serviceData.commission as string}
+                onChange={(value) =>
+                  setServiceData((prev) => ({ ...prev, commission: value }))
+                }
+                disabled={isSaving}
+                className={errors.commission ? "border-destructive" : ""}
+              />
+              {errors.commission && (
+                <p className="text-sm text-destructive">{errors.commission}</p>
+              )}
+            </div>
+          </>
+        )}
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5 max-w-[80%]">
+              <Label htmlFor="acceptsOnlineBooking">
+                Agendamento Online
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Disponibilizar para clientes agendarem via web
+              </p>
+            </div>
+            <Switch
+              id="acceptsOnlineBooking"
+              checked={serviceData.acceptsOnlineBooking}
+              onCheckedChange={(checked) =>
+                setServiceData((prev) => ({
+                  ...prev,
+                  acceptsOnlineBooking: checked,
+                }))
+              }
+              disabled={isSaving}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 z-10 bg-background px-6 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSaving}
+          className="w-full sm:w-auto"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          disabled={isSaving || disabledActions}
+        >
+          {isSaving && <LoadingSpinner size="sm" inline className="mr-2" />}
+          {isEditing ? "Salvar Alterações" : "Criar Serviço"}
+        </Button>
+      </div>
+    </form>
+  );
+}

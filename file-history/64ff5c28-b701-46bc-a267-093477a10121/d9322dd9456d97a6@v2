@@ -1,0 +1,27 @@
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+
+interface LoadingSpinnerProps {
+  size?: "sm" | "md" | "lg";
+  text?: string;
+  inline?: boolean;
+  className?: string;
+}
+
+const SIZE_CLASSES: Record<NonNullable<LoadingSpinnerProps["size"]>, string> = {
+  sm: "h-4 w-4",
+  md: "h-8 w-8",
+  lg: "h-12 w-12",
+};
+
+export function LoadingSpinner({ size = "md", text, inline, className }: LoadingSpinnerProps) {
+  if (inline) {
+    return <Loader2 className={cn(SIZE_CLASSES[size], "animate-spin text-primary", className)} />;
+  }
+  return (
+    <div className="flex flex-col items-center justify-center gap-3">
+      <Loader2 className={cn(SIZE_CLASSES[size], "animate-spin text-primary")} />
+      {text && <p className="text-sm text-muted-foreground">{text}</p>}
+    </div>
+  );
+}

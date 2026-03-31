@@ -1,0 +1,288 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 3.9%);
+  --card: hsl(0 0% 96.1%);
+  --card-foreground: hsl(0 0% 3.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 3.9%);
+  --primary: hsl(0 0% 9%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 96.1%);
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 96.1%);
+  --muted-foreground: hsl(0 0% 45.1%);
+  --accent: hsl(0 0% 96.1%);
+  --accent-foreground: hsl(0 0% 9%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 84.2% 60.2%);
+  --border: hsl(0 0% 89.8%);
+  --input: hsl(0 0% 89.8%);
+  --ring: hsl(0 0% 3.9%);
+  --chart-1: hsl(0 0% 9%);
+  --chart-2: hsl(0 0% 25%);
+  --chart-3: hsl(0 0% 45%);
+  --chart-4: hsl(0 0% 65%);
+  --chart-5: hsl(0 0% 85%);
+  --radius: 1rem;
+  --sidebar: hsl(0 0% 3.9%);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(0 0% 98%);
+  --sidebar-primary-foreground: hsl(0 0% 9%);
+  --sidebar-accent: hsl(0 0% 14.9%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(0 0% 14.9%);
+  --sidebar-ring: hsl(0 0% 63.9%);
+}
+
+.dark {
+  --background: hsl(0 0% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(0 0% 3.9%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(0 0% 3.9%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: hsl(0 0% 98%);
+  --primary-foreground: hsl(0 0% 9%);
+  --secondary: hsl(0 0% 14.9%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(0 0% 14.9%);
+  --muted-foreground: hsl(0 0% 63.9%);
+  --accent: hsl(0 0% 14.9%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 62.8% 30.6%);
+  --border: hsl(0 0% 14.9%);
+  --input: hsl(0 0% 14.9%);
+  --ring: hsl(0 0% 83.1%);
+  --chart-1: hsl(0 0% 98%);
+  --chart-2: hsl(0 0% 75%);
+  --chart-3: hsl(0 0% 55%);
+  --chart-4: hsl(0 0% 35%);
+  --chart-5: hsl(0 0% 15%);
+  --sidebar: hsl(0 0% 3.9%);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(0 0% 98%);
+  --sidebar-primary-foreground: hsl(0 0% 9%);
+  --sidebar-accent: hsl(0 0% 14.9%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(0 0% 14.9%);
+  --sidebar-ring: hsl(0 0% 83.1%);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  /* Offset de ancoragem para compensar header fixo */
+  [id^="ds-"] {
+    scroll-margin-top: 1.5rem;
+  }
+  a,
+  button,
+  [role="button"],
+  [data-slot="button"] {
+    cursor: pointer;
+  }
+  html {
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+  body {
+    @apply bg-background text-foreground text-sm;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Fix Radix UI scroll lock causing layout shift */
+  body[data-scroll-locked] {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+  }
+  body[data-scroll-locked] > * {
+    padding-right: 20px !important;
+  }
+  [data-slot="sidebar"],
+  [data-slot="sidebar-inner"],
+  [data-slot="sidebar-container"] {
+    overflow-x: hidden !important;
+  }
+
+  /* Prevent any child from exceeding its parent */
+  main,
+  main > *,
+  [data-slot="sidebar-inset"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Tables: always scroll horizontally inside their wrapper */
+  .table-wrapper,
+  [data-slot="table-container"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Cards and panels should not exceed container */
+  [data-slot="card"],
+  .card-responsive {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Grids: prevent children from overflowing */
+  [class*="grid"] > * {
+    min-width: 0;
+  }
+
+  /* Flex containers: prevent children from overflowing */
+  [class*="flex"] > * {
+    min-width: 0;
+  }
+
+  /* Sidebar scrollbar: hidden by default, visible on hover */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+  .sidebar-scroll:hover {
+    scrollbar-color: hsl(0 0% 30%) transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(0 0% 30%);
+  }
+
+  /* Scrollbar that appears only on hover */
+  .hover-scroll,
+  .hover-scroll [data-radix-scroll-area-viewport] {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+  .hover-scroll:hover,
+  .hover-scroll:hover [data-radix-scroll-area-viewport] {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  .hover-scroll::-webkit-scrollbar,
+  .hover-scroll [data-radix-scroll-area-viewport]::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .hover-scroll::-webkit-scrollbar-track,
+  .hover-scroll [data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hover-scroll::-webkit-scrollbar-thumb,
+  .hover-scroll [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .hover-scroll:hover::-webkit-scrollbar-thumb,
+  .hover-scroll:hover [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+  }
+}
+
+@keyframes content-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-content-in {
+  animation: content-fade-in 0.4s ease-out both;
+}
+
+@keyframes severino-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 59, 113, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(0, 59, 113, 0.25);
+  }
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: #fef3c7;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.section-highlight {
+  animation: highlight-flash 1.5s ease-out;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

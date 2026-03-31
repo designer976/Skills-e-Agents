@@ -1,0 +1,41 @@
+import { Toaster as Sonner, toast } from "sonner"
+
+type ToasterProps = React.ComponentProps<typeof Sonner>
+
+const Toaster = ({ ...props }: ToasterProps) => {
+  const theme: ToasterProps["theme"] = "light";
+
+  return (
+    <Sonner
+      theme={theme}
+      className="toaster group"
+      toastOptions={{
+        classNames: {
+          toast:
+            "group-[.toaster]:bg-card group-[.toaster]:text-foreground group-[.toaster]:border group-[.toaster]:border-border group-[.toaster]:shadow-md group-[.toaster]:rounded-lg",
+          title:
+            "group-[.toast]:font-medium group-[.toast]:text-[13px]",
+          description:
+            "group-[.toast]:text-[12px] group-[.toast]:text-muted-foreground",
+          actionButton:
+            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+          cancelButton:
+            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+          error:
+            "group-[.toaster]:!bg-[#FFF4F4] group-[.toaster]:!border-[#CE4836]/50 group-[.toaster]:!text-[#CE4836]",
+          success:
+            "group-[.toaster]:!bg-[#F2FBE8] group-[.toaster]:!border-[#7DBA44]/50 group-[.toaster]:!text-[#49870E]",
+          warning:
+            "group-[.toaster]:!bg-[#FEF6E4] group-[.toaster]:!border-[#EBB33A]/50 group-[.toaster]:!text-[#C28604]",
+          info:
+            "group-[.toaster]:!bg-[#F1F4FF] group-[.toaster]:!border-[#007AFF]/50 group-[.toaster]:!text-[#1166C3]",
+          loading:
+            "group-[.toaster]:bg-card group-[.toaster]:border-border group-[.toaster]:text-muted-foreground",
+        },
+      }}
+      {...props}
+    />
+  )
+}
+
+export { Toaster, toast }

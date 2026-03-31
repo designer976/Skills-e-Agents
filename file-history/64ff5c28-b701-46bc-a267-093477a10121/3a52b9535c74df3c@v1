@@ -1,0 +1,1455 @@
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { cn } from "@/lib/utils";
+import { agendaService } from "@/services/agendaService";
+import { appointmentService } from "@/services/appointmentService";
+import { clientService } from "@/services/clientService";
+import { serviceService } from "@/services/serviceService";
+import { userService } from "@/services/userService";
+import { AppointmentStatus } from "@/types/appointment";
+import { convertLocalToUTC, formatUTCToLocal } from "@/utils/dateTimeHelpers";
+import { getUserDisplayName } from "@/utils/userHelpers";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar as Calendar, Check as Check, Loader2 as Loader2, Plus as Plus, UserPlus as UserPlus, X as X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { formatPhone, cleanPhone } from "@/utils/clientHelpers";
+import { analytics } from "@/lib/analytics";
+
+interface ModalNovoAgendamentoProps {
+  isOpen: boolean;
+  onClose: () => void;
+  profissionalId?: string;
+  data: string;
+  horarioInicio: string;
+  initialClientId?: string;
+  onAppointmentCreated?: (appointment: { id: string; date: string; time: string; professionalId: string }) => void;
+}
+
+interface Cliente {
+  id: string;
+  nome: string;
+  telefone: string;
+}
+
+interface Servico {
+  id: string;
+  nome: string;
+  duracao: number;
+  preco: number;
+}
+
+interface ProfessionalServiceConfig {
+  customDuration?: number;
+  customPrice?: number;
+}
+
+interface Profissional {
+  id: string;
+  nome: string;
+  name: string;
+  nickname?: string;
+}
+
+// Helper para converter string yyyy-MM-dd em objeto Date local sem problemas de timezone
+const parseLocalDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+  return new Date(year, month - 1, day);
+};
+
+export function ModalNovoAgendamento({
+  isOpen,
+  onClose,
+  profissionalId,
+  data,
+  horarioInicio,
+  initialClientId,
+  onAppointmentCreated,
+}: ModalNovoAgendamentoProps): JSX.Element {
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Estados para dados da API
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [servicosFiltrados, setServicosFiltrados] = useState<Servico[]>([]);
+  const [profissionais, setProfissionais] = useState<Profissional[]>([]);
+  const [profissionaisFiltrados, setProfissionaisFiltrados] = useState<Profissional[]>([]);
+  const [loadingProfissionais, setLoadingProfissionais] = useState(false);
+  const [loadingServicos, setLoadingServicos] = useState(false);
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState<
+    { slot: string; available: boolean }[]
+  >([]);
+  const [salonOpeningHours, setSalonOpeningHours] = useState<any[]>([]);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [professionalServiceConfig, setProfessionalServiceConfig] =
+    useState<ProfessionalServiceConfig | null>(null);
+
+  // Estados do formulário
+  const [clienteSelecionado, setClienteSelecionado] = useState<string>(initialClientId || "");
+  const [servicoSelecionado, setServicoSelecionado] = useState<string>("");
+  const [profissionalSelecionado, setProfissionalSelecionado] =
+    useState<string>(profissionalId || "");
+  const [dataSelecionada, setDataSelecionada] = useState<string>(
+    data ? (typeof data === 'string' ? data : format(data, "yyyy-MM-dd")) : ""
+  );
+  const [horarioSelecionado, setHorarioSelecionado] = useState<string>(horarioInicio);
+  const [precoProfissional, setPrecoProfissional] = useState<number | null>(
+    null
+  );
+
+  // Estados dos popovers
+  const [openCliente, setOpenCliente] = useState(false);
+  const [openServico, setOpenServico] = useState(false);
+  const [openProfissional, setOpenProfissional] = useState(false);
+  const [openHorario, setOpenHorario] = useState(false);
+
+  // Estados para cadastro simplificado de cliente
+  const [isModoCadastroCliente, setIsModoCadastroCliente] = useState(false);
+  const [novoCliente, setNovoCliente] = useState({ nome: "", telefone: "" });
+  const [isCriandoCliente, setIsCriandoCliente] = useState(false);
+  
+  // Refs para controle de inicialização em cascata (Onboarding)
+  const serviceInitialized = useRef(false);
+  const profInitialized = useRef(false);
+  const slotInitialized = useRef(false);
+  // Função para obter mensagem de validação de data
+  const getDateValidationMessage = (): string | null => {
+    if (!dataSelecionada) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selectedDateObj = parseLocalDate(dataSelecionada);
+
+    if (!selectedDateObj || isNaN(selectedDateObj.getTime())) {
+      return "Data inválida";
+    }
+
+    if (selectedDateObj < today) {
+      return "Data não pode ser anterior a hoje";
+    }
+
+    return null;
+  };
+
+  // Track modal open
+  useEffect(() => {
+    if (!isOpen) return;
+    analytics.trackEvent("appointment_modal_opened", {
+      has_preselected_professional: !!profissionalId,
+      has_preselected_time: !!horarioInicio,
+    });
+  }, [isOpen]);
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async (): Promise<void> => {
+      const salonId =
+        selectedSalon?.id || localStorage.getItem("selectedSalonId");
+
+      if (!isOpen || !salonId) {
+        return;
+      }
+
+      setIsLoading(true);
+      setIsModoCadastroCliente(false);
+      setNovoCliente({ nome: "", telefone: "" });
+
+      try {
+        // Sempre buscar dados frescos quando o modal abrir
+        const [
+          servicesResponse,
+          professionalsResponse,
+          clientsResponse,
+          salonHoursResponse,
+        ] = await Promise.all([
+          serviceService.getBookableServices(),
+          userService.list({
+            role: "professional" as any,
+            salonId,
+          }),
+          clientService.list({
+            limit: "100",
+            sortBy: "name",
+            sortOrder: "ASC",
+          }),
+          agendaService.getSalonOperatingHours(salonId),
+        ]);
+
+        // Inicializar servicosFiltrados com todos os serviços
+        const allServices = (servicesResponse || [])
+          .filter((s) => s?.duration && s?.duration > 0)
+          .map((s) => ({
+            id: s.id,
+            nome: s.name,
+            duracao: s.duration,
+            preco:
+              typeof s.price === "string" ? parseFloat(s.price) : s.price,
+          }));
+
+        setServicos(allServices);
+        setServicosFiltrados(allServices);
+
+        setProfissionais(
+          (professionalsResponse?.data || []).map((p) => ({
+            id: p.id,
+            nome: p.name,
+            name: p.name,
+            nickname: p.nickname,
+          }))
+        );
+
+        setClientes(
+          (clientsResponse?.data || []).map((c) => ({
+            id: c.id,
+            nome: c.name,
+            telefone: c.phone,
+          }))
+        );
+
+        // Processar horários do salão
+        if (salonHoursResponse && salonHoursResponse.openingHours) {
+          setSalonOpeningHours(salonHoursResponse.openingHours);
+        }
+      } catch (error) {
+        console.error("[ModalNovoAgendamento] Error fetching data:", error);
+        toast.error("Erro ao carregar dados");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [isOpen, selectedSalon?.id, user?.id]);
+
+  // Filter services based on selected professional
+  useEffect(() => {
+    const filterServicesByProfessional = async () => {
+      // If no professional selected, show all services
+      if (!profissionalSelecionado) {
+        setServicosFiltrados(servicos);
+        return;
+      }
+
+      setLoadingServicos(true);
+      try {
+        // Fetch services for the selected professional
+        const userServices = await userService.getUserServices(
+          profissionalSelecionado
+        );
+
+        // Filter the full service list to only include those offered by the professional
+        const filteredServices = servicos.filter((service) => {
+          // Check if professional has this service associated and active
+          const userService = userServices.find(
+            (us: any) => {
+              const matchesService =
+                us.serviceId === service.id ||
+                us.id === service.id ||
+                us.service_id === service.id;
+
+              const isActive = us.isActive !== false && us.is_active !== false;
+
+              return matchesService && isActive;
+            }
+          );
+          return !!userService;
+        });
+
+        // Set the filtered list
+        setServicosFiltrados(filteredServices);
+
+        // If a service was already selected but is not offered by this professional, clear selection
+        if (
+          servicoSelecionado &&
+          !filteredServices.some((s) => s.id === servicoSelecionado)
+        ) {
+          setServicoSelecionado("");
+          toast.info(
+            "Serviço desmarcado pois não é oferecido pelo profissional selecionado"
+          );
+        }
+      } catch (error) {
+        console.error("Error filtering services by professional:", error);
+        // On error, fallback to showing all services to avoid blocking the user
+        setServicosFiltrados(servicos);
+      } finally {
+        setLoadingServicos(false);
+      }
+    };
+
+    if (isOpen) {
+      filterServicesByProfessional();
+    }
+  }, [profissionalSelecionado, servicos, isOpen]);
+
+  // Auto-seleção de cliente único
+  useEffect(() => {
+    if (!isOpen || clienteSelecionado || clientes.length !== 1) return;
+    setClienteSelecionado(clientes[0].id);
+  }, [clientes, isOpen, clienteSelecionado]);
+
+  // Waterfall Fase 1: Serviço (Auto-seleção se houver apenas uma opção)
+  useEffect(() => {
+    if (serviceInitialized.current || !isOpen || servicosFiltrados.length !== 1) return;
+    
+    setServicoSelecionado(servicosFiltrados[0].id);
+    serviceInitialized.current = true;
+  }, [servicosFiltrados, isOpen]);
+
+  // Waterfall Fase 2: Profissional (Auto-seleção se houver apenas uma opção)
+  useEffect(() => {
+    if (profInitialized.current || !isOpen || !servicoSelecionado || profissionaisFiltrados.length !== 1) return;
+    
+    setProfissionalSelecionado(profissionaisFiltrados[0].id);
+    profInitialized.current = true;
+  }, [profissionaisFiltrados, servicoSelecionado, isOpen]);
+
+  // Waterfall Fase 3: Horário (Auto-seleção se houver apenas uma opção)
+  useEffect(() => {
+    if (slotInitialized.current || !isOpen || !profissionalSelecionado || horariosDisponiveis.length !== 1) return;
+    
+    const singleSlot = horariosDisponiveis.find(h => h.available);
+    if (singleSlot) {
+      setHorarioSelecionado(singleSlot.slot);
+      slotInitialized.current = true;
+    }
+  }, [horariosDisponiveis, profissionalSelecionado, isOpen]);
+
+  // Reset de refs ao trocar serviço manualmente (se o usuário decidir mudar após a auto-seleção)
+  useEffect(() => {
+    if (!isOpen) return;
+    // Se o serviço mudar, permitimos que as fases subsequentes rodem de novo se houver apenas uma opção
+    profInitialized.current = false;
+    slotInitialized.current = false;
+  }, [servicoSelecionado]);
+
+  // Filter professionals based on selected service (Optimized: single API call)
+  useEffect(() => {
+    let active = true;
+
+    const filterProfessionalsByService = async (): Promise<void> => {
+      if (!isOpen) return;
+
+      if (!servicoSelecionado) {
+        setProfissionaisFiltrados(profissionais);
+        return;
+      }
+
+      setLoadingProfissionais(true);
+
+      try {
+        // Use optimized endpoint to get only professionals that offer this service
+        const professionalsWithService = await userService.listProfessionalsByService(
+          servicoSelecionado
+        );
+
+        if (!active) return;
+
+        // Map the IDs from the optimized call to the local professional objects
+        const allowedIds = new Set(professionalsWithService.map((p: any) => p.id));
+        const filtered = profissionais.filter((p) => allowedIds.has(p.id));
+
+        setProfissionaisFiltrados(filtered);
+
+        // Clear professional selection if they don't offer the new service
+        if (
+          profissionalSelecionado && 
+          !allowedIds.has(profissionalSelecionado)
+        ) {
+          setProfissionalSelecionado("");
+        }
+      } catch (error) {
+        console.error("[FILTRO] Erro ao filtrar profissionais:", error);
+        if (active) setProfissionaisFiltrados(profissionais);
+      } finally {
+        if (active) setLoadingProfissionais(false);
+      }
+    };
+
+    filterProfessionalsByService();
+
+    return () => {
+      active = false;
+    };
+  }, [servicoSelecionado, profissionais, isOpen]);
+
+  // Fetch available time slots when professional, service or date are selected
+  useEffect(() => {
+    const fetchHorarios = async (): Promise<void> => {
+      if (
+        !profissionalSelecionado ||
+        !servicoSelecionado ||
+        !dataSelecionada ||
+        !isOpen
+      ) {
+        setHorariosDisponiveis([]);
+        return;
+      }
+
+      setLoadingHorarios(true);
+      try {
+        const availability = await appointmentService.getAvailability({
+          date: dataSelecionada,
+          professionalId: profissionalSelecionado,
+          serviceId: servicoSelecionado,
+          intervalMinutes: 15,
+        });
+
+        // API pode retornar slots ou availableSlots
+        const slotsData =
+          availability.slots ||
+          availability.availableSlots?.map(({ start, end }) => ({
+            startTime: start,
+            endTime: end,
+            available: true,
+          })) ||
+          [];
+
+        const salonTimezone = selectedSalon?.timezone || "America/Sao_Paulo";
+        const horarios = slotsData.map((slot) => {
+          // Converter horário UTC para timezone do salão
+          const slotLabel = formatUTCToLocal(
+            slot.startTime,
+            salonTimezone,
+            "HH:mm"
+          );
+
+          // Usar o valor de available retornado pela API
+          return { slot: slotLabel, available: slot.available !== false };
+        });
+
+        setHorariosDisponiveis(horarios);
+
+        // Se o horário inicial está disponível, mantê-lo selecionado
+        const horarioInicialDisponivel = horarios.find(
+          ({ slot, available }) => slot === horarioInicio && available
+        );
+
+        if (horarioInicialDisponivel) {
+          setHorarioSelecionado(horarioInicio);
+        } else {
+          // Tenta selecionar o primeiro horário DISPONÍVEL
+          const primeiroDisponivel = horarios.find((h) => h.available);
+          if (primeiroDisponivel) {
+            setHorarioSelecionado(primeiroDisponivel.slot);
+          } else {
+            setHorarioSelecionado("");
+          }
+        }
+      } catch (error) {
+        console.error("[ModalNovoAgendamento] Error fetching horarios:", error);
+        setHorariosDisponiveis([]);
+        setHorarioSelecionado("");
+      } finally {
+        setLoadingHorarios(false);
+      }
+    };
+
+    fetchHorarios();
+  }, [
+    profissionalSelecionado,
+    servicoSelecionado,
+    dataSelecionada,
+    isOpen,
+    horarioInicio,
+    selectedSalon?.timezone,
+  ]);
+
+  // Fetch professional-specific service configuration
+  useEffect(() => {
+    const fetchProfessionalConfig = async (): Promise<void> => {
+      if (!profissionalSelecionado || !servicoSelecionado || !isOpen) {
+        setProfessionalServiceConfig(null);
+        return;
+      }
+
+      try {
+        const userServices = await serviceService.getUserServices(
+          profissionalSelecionado
+        );
+
+        setServicos((currentServicos) =>
+          currentServicos.map((userServico) => {
+            const userService = userServices.find(
+              (userServico) => userServico.id === servicoSelecionado
+            );
+
+            const newDuration =
+              userService?.duration > 0
+                ? userService?.duration
+                : userServico.duracao;
+
+            const newPrice = userService?.price
+              ? Number(String(userService?.price).replace(",", "."))
+              : userServico.preco;
+
+            return {
+              ...userServico,
+              preco: newPrice,
+              duracao: newDuration,
+            };
+          })
+        );
+
+        const serviceConfig = userServices.find(
+          (us: any) => us.service_id === servicoSelecionado
+        );
+
+        if (serviceConfig) {
+          setProfessionalServiceConfig({
+            customDuration: serviceConfig.custom_duration,
+            customPrice: serviceConfig.custom_price,
+          });
+        } else {
+          setProfessionalServiceConfig(null);
+        }
+      } catch (error) {
+        console.error(
+          "[ModalNovoAgendamento] Error fetching professional config:",
+          error
+        );
+        setProfessionalServiceConfig(null);
+      }
+    };
+
+    fetchProfessionalConfig();
+  }, [profissionalSelecionado, servicoSelecionado, isOpen]);
+
+  // Calculate effective duration based on professional config or service default
+  const getEffectiveDuration = (): number => {
+    const servico = servicos.find((s) => s.id === servicoSelecionado);
+
+    // Priority: 1. Professional custom duration, 2. Service duration (salon or default)
+    if (professionalServiceConfig?.customDuration) {
+      return professionalServiceConfig.customDuration;
+    }
+
+    return servico?.duracao || 0;
+  };
+
+  const podeAgendar = (): boolean => {
+    // Validar se o horário selecionado está realmente disponível
+    const isHorarioValido = horariosDisponiveis.find(
+      (h) => h.slot === horarioSelecionado
+    )?.available;
+
+    return !!(
+      clienteSelecionado &&
+      servicoSelecionado &&
+      profissionalSelecionado &&
+      dataSelecionada &&
+      horarioSelecionado &&
+      isHorarioValido
+    );
+  };
+
+  const handleClose = (): void => {
+    if (!isSaving) {
+      const completedSteps = [clienteSelecionado, servicoSelecionado, profissionalSelecionado, dataSelecionada, horarioSelecionado]
+        .filter(Boolean).length;
+      if (completedSteps > 0) {
+        analytics.trackEvent("appointment_modal_abandoned", {
+          completed_steps: completedSteps,
+          has_client: !!clienteSelecionado,
+          has_service: !!servicoSelecionado,
+          has_professional: !!profissionalSelecionado,
+          has_date: !!dataSelecionada,
+          has_time: !!horarioSelecionado,
+        });
+      }
+    }
+    onClose();
+  };
+
+  const handleAgendar = async (): Promise<void> => {
+    if (!selectedSalon?.id || !podeAgendar()) return;
+
+    setIsSaving(true);
+    try {
+      const servico = servicos.find((s) => s.id === servicoSelecionado);
+      if (!servico) return;
+
+      // Get effective duration (professional custom or service default)
+      const effectiveDuration = getEffectiveDuration();
+
+      // Converter horário local do salão para UTC
+      const salonTimezone = selectedSalon?.timezone || "America/Sao_Paulo";
+      const appointmentDateTime = convertLocalToUTC(
+        dataSelecionada,
+        horarioSelecionado,
+        salonTimezone
+      );
+
+      const endDateTime = new Date(
+        appointmentDateTime.getTime() + effectiveDuration * 60 * 1000
+      );
+
+      // Backend will automatically calculate:
+      // - Price from professional-specific pricing, or service default price
+      // - Duration from professional-specific duration, or service default duration
+      const appointmentPayload = {
+        clientId: clienteSelecionado,
+        professionalId: profissionalSelecionado,
+        serviceId: servicoSelecionado,
+        startTime: appointmentDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        status: AppointmentStatus.SCHEDULED,
+        // Don't send price - let backend calculate from professional or service pricing
+      };
+
+      const created = await appointmentService.create(appointmentPayload);
+
+      toast.success("Agendamento criado com sucesso");
+
+      trackSeverinoEvent('agendamento_realizado', { description: 'Agendamento criado via agenda interna' });
+
+      // Call refresh callback before closing
+      if (onAppointmentCreated) {
+        onAppointmentCreated({
+          id: created.id,
+          date: dataSelecionada,
+          time: horarioSelecionado,
+          professionalId: profissionalSelecionado,
+        });
+      }
+
+      onClose();
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message || "Erro ao criar agendamento";
+      analytics.trackEvent("appointment_creation_failed", { error_type: error.response?.data?.message || "unknown" });
+      toast.error(errorMsg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formBody = isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="px-4 pb-8 pt-5 space-y-6">
+            {/* Step 1: Cliente */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                    clienteSelecionado
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted border border-border"
+                  )}
+                >
+                  {clienteSelecionado && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                </div>
+                <span className="text-sm font-semibold">Selecione o Cliente</span>
+              </div>
+
+              <div>
+                <Popover
+                  open={openCliente}
+                  onOpenChange={setOpenCliente}
+                  modal={false}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCliente}
+                      className="w-full justify-between"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Carregando clientes...
+                        </>
+                      ) : clienteSelecionado ? (
+                        clientes.find((c) => c.id === clienteSelecionado)?.nome
+                      ) : (
+                        "Buscar e selecionar cliente..."
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="p-0 pointer-events-auto"
+                    align="start"
+                    style={{ width: "var(--radix-popover-trigger-width)" }}
+                    onWheel={(e) => e.stopPropagation()}
+                  >
+                    <Command>
+                      {!isModoCadastroCliente && (
+                        <CommandInput placeholder="Buscar cliente..." />
+                      )}
+                      <CommandList>
+                        {isModoCadastroCliente ? (
+                          <div className="p-4 space-y-4">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <UserPlus className="h-4 w-4" />
+                              Novo Cliente
+                            </h4>
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <Label htmlFor="new-client-name" className="text-xs">Nome *</Label>
+                                <Input
+                                  id="new-client-name"
+                                  placeholder="Nome completo"
+                                  value={novoCliente.nome}
+                                  onChange={(e) => setNovoCliente(prev => ({ ...prev, nome: e.target.value }))}
+                                  className="h-9"
+                                  autoFocus
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor="new-client-phone" className="text-xs">Telefone *</Label>
+                                <Input
+                                  id="new-client-phone"
+                                  placeholder="(00) 00000-0000"
+                                  value={novoCliente.telefone}
+                                  onChange={(e) => setNovoCliente(prev => ({ ...prev, telefone: formatPhone(e.target.value) }))}
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => setIsModoCadastroCliente(false)}
+                                disabled={isCriandoCliente}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                onClick={async () => {
+                                  if (!novoCliente.nome.trim()) {
+                                    toast.error("Nome é obrigatório");
+                                    return;
+                                  }
+                                  const cleanedPhone = cleanPhone(novoCliente.telefone);
+                                  if (cleanedPhone.length < 10) {
+                                    toast.error("Por favor, insira um telefone válido com DDD");
+                                    return;
+                                  }
+                                  setIsCriandoCliente(true);
+                                  try {
+                                    const created = await clientService.create({
+                                      name: novoCliente.nome,
+                                      phone: cleanPhone(novoCliente.telefone),
+                                      salonId: selectedSalon?.id
+                                    });
+
+                                    // Adicionar o novo cliente na lista local para evitar requisição extra
+                                    const novo = {
+                                      id: created.id,
+                                      nome: created.name,
+                                      telefone: created.phone
+                                    };
+                                    setClientes(prev => [novo, ...prev]);
+                                    setClienteSelecionado(created.id);
+                                    setOpenCliente(false);
+                                    setIsModoCadastroCliente(false);
+                                    setNovoCliente({ nome: "", telefone: "" });
+                                  } catch (error: any) {
+                                    toast.error(error.message || "Erro ao criar cliente");
+                                  } finally {
+                                    setIsCriandoCliente(false);
+                                  }
+                                }}
+                                disabled={isCriandoCliente}
+                              >
+                                {isCriandoCliente ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Confirmar"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <CommandEmpty className="p-0">
+                              <div className="p-4 flex flex-col items-center gap-3">
+                                <p className="text-sm text-muted-foreground text-center">Nenhum cliente encontrado.</p>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="w-full text-xs gap-2"
+                                  onClick={() => setIsModoCadastroCliente(true)}
+                                >
+                                  <UserPlus className="h-3 w-3" />
+                                  Cadastrar "{novoCliente.nome || "Novo Cliente"}"
+                                </Button>
+                              </div>
+                            </CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                onSelect={() => setIsModoCadastroCliente(true)}
+                                className="text-blue-600 font-medium gap-2 cursor-pointer"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Cadastrar Novo Cliente
+                              </CommandItem>
+                              {clientes.map((cliente) => (
+                                <CommandItem
+                                  key={cliente.id}
+                                  value={`${cliente.nome} ${cliente.telefone}`}
+                                  onSelect={() => {
+                                    setClienteSelecionado(cliente.id);
+                                    setOpenCliente(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      clienteSelecionado === cliente.id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {cliente.nome}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {cliente.telefone}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+              </div>
+            </div>
+
+            {/* Step 2: Serviço */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                    servicoSelecionado
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted border border-border"
+                  )}
+                >
+                  {servicoSelecionado && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                </div>
+                <span className="text-sm font-semibold">Selecione o Serviço</span>
+              </div>
+
+              <div>
+                <Popover
+                  open={openServico}
+                  onOpenChange={setOpenServico}
+                  modal={false}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openServico}
+                      className="w-full justify-between"
+                      disabled={isLoading || loadingServicos}
+                    >
+                      {isLoading || loadingServicos ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Carregando serviços...
+                        </>
+                      ) : servicoSelecionado ? (
+                        <div className="flex items-center justify-between w-full gap-2 overflow-hidden">
+                          <span className="truncate">
+                            {
+                              servicosFiltrados.find(
+                                (s) => s.id === servicoSelecionado
+                              )?.nome
+                            }
+                          </span>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            className="p-1 hover:bg-muted rounded-full cursor-pointer transition-colors shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setServicoSelecionado("");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.stopPropagation();
+                                setServicoSelecionado("");
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4 opacity-50 hover:opacity-100" />
+                          </div>
+                        </div>
+                      ) : (
+                        "Buscar e selecionar serviço..."
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="p-0 pointer-events-auto"
+                    align="start"
+                    style={{ width: "var(--radix-popover-trigger-width)" }}
+                    onWheel={(e) => e.stopPropagation()}
+                  >
+                    <Command>
+                      <CommandInput placeholder="Buscar serviço..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          Nenhum serviço encontrado.
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {servicosFiltrados.map((servico) => (
+                            <CommandItem
+                              key={servico.id}
+                              value={servico.nome}
+                              onSelect={() => {
+                                setServicoSelecionado(servico.id);
+                                setOpenServico(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  servicoSelecionado === servico.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {servico.nome}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  {servico.duracao} min • R${" "}
+                                  {servico.preco.toFixed(2)}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+              </div>
+            </div>
+
+            {/* Step 3: Profissional */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                    profissionalSelecionado
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted border border-border"
+                  )}
+                >
+                  {profissionalSelecionado && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                </div>
+                <span className="text-sm font-semibold">Selecione o Profissional</span>
+              </div>
+
+              <div>
+                <Popover
+                  open={openProfissional}
+                  onOpenChange={setOpenProfissional}
+                  modal={false}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openProfissional}
+                      className="w-full justify-between"
+                      disabled={isLoading || loadingProfissionais || !servicoSelecionado}
+                    >
+                      {isLoading || loadingProfissionais ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Carregando profissionais...
+                        </>
+                      ) : !servicoSelecionado ? (
+                        "Selecione um serviço primeiro..."
+                      ) : profissionalSelecionado ? (
+                        <div className="flex items-center justify-between w-full gap-2 overflow-hidden">
+                          <span className="truncate">
+                            {getUserDisplayName(
+                              profissionaisFiltrados.find(
+                                (p) => p.id === profissionalSelecionado
+                              )
+                            )}
+                          </span>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            className="p-1 hover:bg-muted rounded-full cursor-pointer transition-colors shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProfissionalSelecionado("");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.stopPropagation();
+                                setProfissionalSelecionado("");
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4 opacity-50 hover:opacity-100" />
+                          </div>
+                        </div>
+                      ) : profissionaisFiltrados.length === 0 ? (
+                        "Nenhum profissional disponível para este serviço"
+                      ) : (
+                        "Buscar e selecionar profissional..."
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="p-0 pointer-events-auto"
+                    align="start"
+                    style={{ width: "var(--radix-popover-trigger-width)" }}
+                    onWheel={(e) => e.stopPropagation()}
+                  >
+                    <Command>
+                      <CommandInput placeholder="Buscar profissional..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          {profissionaisFiltrados.length === 0 && servicoSelecionado
+                            ? "Nenhum profissional oferece este serviço."
+                            : "Nenhum profissional encontrado."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {profissionaisFiltrados.map((prof) => (
+                            <CommandItem
+                              key={prof.id}
+                              value={getUserDisplayName(prof)}
+                              onSelect={() => {
+                                setProfissionalSelecionado(prof.id);
+                                setOpenProfissional(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  profissionalSelecionado === prof.id
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {getUserDisplayName(prof)}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {servicoSelecionado && profissionaisFiltrados.length === 0 && !loadingProfissionais && (
+                  <p className="text-sm text-amber-600 mt-2">
+                    ⚠️ Nenhum profissional oferece este serviço
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Data do Agendamento */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0", dataSelecionada ? "bg-primary text-primary-foreground" : "bg-muted border border-border")}>
+                  {dataSelecionada && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                </div>
+                <span className="text-sm font-semibold">Selecione a Data</span>
+              </div>
+              <Popover modal={false}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dataSelecionada && "text-muted-foreground",
+                      getDateValidationMessage() && "border-destructive"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dataSelecionada ? (
+                      (() => {
+                        const dateObj = parseLocalDate(dataSelecionada);
+                        
+                        if (!dateObj || isNaN(dateObj.getTime())) return <span>Data inválida</span>;
+                        
+                        return format(dateObj, "PPP", {
+                          locale: ptBR,
+                        });
+                      })()
+                    ) : (
+                      <span>Selecione uma data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={
+                      (() => {
+                        if (!dataSelecionada) return undefined;
+                        const dateObj = parseLocalDate(dataSelecionada);
+                        return (!dateObj || isNaN(dateObj.getTime())) ? undefined : dateObj;
+                      })()
+                    }
+                    onSelect={(date) => {
+                      if (date) {
+                        const newDate = format(date, "yyyy-MM-dd");
+                        setDataSelecionada(newDate);
+                        setHorarioSelecionado(""); // Resetar horário quando mudar a data
+                      }
+                    }}
+                    disabled={(date) => {
+                      // Bloquear datas passadas
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      if (date < today) return true;
+
+                      // Bloquear datas em que o salão não está aberto
+                      if (salonOpeningHours.length > 0) {
+                        const dayOfWeek = date.getDay();
+                        const dayNames = [
+                          "sunday",
+                          "monday",
+                          "tuesday",
+                          "wednesday",
+                          "thursday",
+                          "friday",
+                          "saturday",
+                        ];
+                        const dayName = dayNames[dayOfWeek];
+
+                        const daySchedule = salonOpeningHours.find(
+                          (schedule) => {
+                            const scheduleDayOfWeek =
+                              typeof schedule.dayOfWeek === "string"
+                                ? schedule.dayOfWeek.toLowerCase()
+                                : dayNames[schedule.dayOfWeek];
+                            return (
+                              scheduleDayOfWeek === dayName && schedule.isOpen
+                            );
+                          }
+                        );
+
+                        return !daySchedule;
+                      }
+
+                      return false;
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {getDateValidationMessage() && (
+                <p className="text-sm text-destructive">
+                  {getDateValidationMessage()}
+                </p>
+              )}
+            </div>
+
+            {/* Horário disponível - mostrar após selecionar profissional e serviço */}
+            {profissionalSelecionado && servicoSelecionado && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0", horarioSelecionado ? "bg-primary text-primary-foreground" : "bg-muted border border-border")}>
+                    {horarioSelecionado && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                  </div>
+                  <span className="text-sm font-semibold">Horário disponível</span>
+                </div>
+                {loadingHorarios ? (
+                  <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando horários disponíveis...
+                  </div>
+                ) : horariosDisponiveis.length === 0 ? (
+                  <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md">
+                    Nenhum horário disponível para esta data. Tente selecionar
+                    outra data ou profissional.
+                  </div>
+                ) : (
+                  <>
+                    <Popover
+                      open={openHorario}
+                      onOpenChange={setOpenHorario}
+                      modal={false}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openHorario}
+                          className="w-full justify-between"
+                        >
+                          {horarioSelecionado || "Selecionar horário..."}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="p-0 pointer-events-auto"
+                        align="start"
+                        style={{ width: "var(--radix-popover-trigger-width)" }}
+                        onWheel={(e) => e.stopPropagation()}
+                      >
+                        <Command>
+                          <CommandInput placeholder="Buscar horário..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              Nenhum horário disponível.
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {horariosDisponiveis.map(
+                                ({ slot: horario, available }) => (
+                                  <CommandItem
+                                    disabled={!available}
+                                    key={horario}
+                                    value={horario}
+                                    onSelect={() => {
+                                      setHorarioSelecionado(horario);
+                                      setOpenHorario(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        horarioSelecionado === horario
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {horario}
+                                  </CommandItem>
+                                )
+                              )}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">
+                      {horariosDisponiveis.length}{" "}
+                      {horariosDisponiveis.length === 1
+                        ? "horário disponível"
+                        : "horários disponíveis"}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Resumo */}
+            {clienteSelecionado &&
+              servicoSelecionado &&
+              profissionalSelecionado &&
+              horarioSelecionado && (
+                <>
+                  <div className="border border-border rounded-lg p-4 bg-muted/30">
+                    <h3 className="font-semibold mb-3 text-foreground">Resumo do Agendamento</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Cliente:
+                          </span>
+                          <span className="font-medium">
+                            {
+                              clientes.find((c) => c.id === clienteSelecionado)
+                                ?.nome
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Serviço:
+                          </span>
+                          <span className="font-medium">
+                            {
+                              servicos.find((s) => s.id === servicoSelecionado)
+                                ?.nome
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Profissional:
+                          </span>
+                          <span className="font-medium">
+                            {
+                              profissionaisFiltrados.find(
+                                (p) => p.id === profissionalSelecionado
+                              )?.nome
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Duração:
+                          </span>
+                          <span className="font-medium">
+                            {getEffectiveDuration()} min
+                            {professionalServiceConfig?.customDuration && (
+                              <span className="text-xs text-blue-600 ml-1">
+                                (configuração do profissional)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Valor:</span>
+                          <span className="font-medium">
+                            {precoProfissional !== null
+                              ? `R$ ${precoProfissional.toFixed(2)}`
+                              : servicos.find(
+                                (s) => s.id === servicoSelecionado
+                              )?.preco
+                                ? `R$ ${servicos
+                                  .find((s) => s.id === servicoSelecionado)
+                                  ?.preco.toFixed(2)}`
+                                : "Consultar valor"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t">
+                          <span className="text-muted-foreground">Data:</span>
+                          <span className="font-medium">
+                            {(() => {
+                              const dateObj = parseLocalDate(dataSelecionada);
+                              if (!dateObj || isNaN(dateObj.getTime())) return "";
+                              return format(dateObj, "dd/MM/yyyy");
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Horário:
+                          </span>
+                          <span className="font-medium">
+                            {horarioSelecionado}
+                          </span>
+                        </div>
+                      </div>
+                  </div>
+                </>
+              )}
+
+          </div>
+        );
+
+  return isMobile ? (
+    <Drawer open={isOpen} onOpenChange={handleClose}>
+      <DrawerContent className="flex flex-col" style={{ maxHeight: "calc(var(--window-height, 100dvh) - 40px)" }}>
+        <DrawerHeader className="text-left pb-5 border-b border-border flex-shrink-0">
+          <DrawerTitle>Novo Agendamento</DrawerTitle>
+        </DrawerHeader>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {formBody}
+        </div>
+        <div className="flex gap-3 px-4 py-6 border-t border-border flex-shrink-0">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+          <Button
+            onClick={handleAgendar}
+            disabled={!podeAgendar() || isSaving || !selectedSalon?.active}
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Agendando...
+              </>
+            ) : (
+              "Criar agendamento"
+            )}
+          </Button>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  ) : (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent
+        className="p-0 flex flex-col"
+        style={{ width: "90vw", maxWidth: "560px", maxHeight: "90vh" }}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
+          <DialogTitle>Novo Agendamento</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto">
+          {formBody}
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border flex-shrink-0">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            onClick={handleAgendar}
+            disabled={!podeAgendar() || isSaving || !selectedSalon?.active}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Agendando...
+              </>
+            ) : (
+              "Criar agendamento"
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,59 @@
+import { salonService } from "@/services/salonService";
+import { unformatCNPJ } from "@/utils/formatters";
+
+export interface SalonFormData {
+  nomeFantasia: string;
+  razaoSocial: string;
+  cnpj: string;
+  telefoneComercial: string;
+  emailContato: string;
+  nomeLinkUtil: string;
+  urlLinkUtil: string;
+  timezone: string;
+}
+
+export type SalonFormErrors = Partial<Record<keyof SalonFormData, string>>;
+
+export const SALON_FORM_INITIAL_DATA: SalonFormData = {
+  nomeFantasia: "",
+  razaoSocial: "",
+  cnpj: "",
+  telefoneComercial: "",
+  emailContato: "",
+  nomeLinkUtil: "",
+  urlLinkUtil: "",
+  timezone: "America/Sao_Paulo",
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const URL_REGEX = /^https?:\/\/.+/;
+
+export function validateSalonForm(data: SalonFormData): SalonFormErrors {
+  const errors: SalonFormErrors = {};
+
+  if (!data.nomeFantasia.trim()) {
+    errors.nomeFantasia = "Nome fantasia é obrigatório";
+  } else if (data.nomeFantasia.trim().length < 2) {
+    errors.nomeFantasia = "Nome fantasia deve ter pelo menos 2 caracteres";
+  }
+
+  if (!data.telefoneComercial.trim()) {
+    errors.telefoneComercial = "Telefone é obrigatório";
+  } else if (unformatCNPJ(data.telefoneComercial).length < 10) {
+    errors.telefoneComercial = "Telefone inválido";
+  }
+
+  if (data.cnpj && !salonService.validateCNPJ(data.cnpj)) {
+    errors.cnpj = "CNPJ inválido";
+  }
+
+  if (data.emailContato && !EMAIL_REGEX.test(data.emailContato)) {
+    errors.emailContato = "E-mail inválido";
+  }
+
+  if (data.urlLinkUtil && !URL_REGEX.test(data.urlLinkUtil)) {
+    errors.urlLinkUtil = "URL deve começar com http:// ou https://";
+  }
+
+  return errors;
+}

@@ -1,0 +1,60 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { AlertTriangle as AlertTriangle } from "lucide-react";
+
+interface ConfirmCancelModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title?: string;
+  description?: string;
+  itemName?: string;
+}
+
+export function ConfirmCancelModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Confirmar Cancelamento",
+  description,
+  itemName,
+}: ConfirmCancelModalProps) {
+  const defaultDescription = itemName
+    ? `Tem certeza que deseja cancelar "${itemName}"? Esta ação não pode ser desfeita.`
+    : "Tem certeza que deseja cancelar esta solicitação? Esta ação não pode ser desfeita.";
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-2xl p-6 gap-6"> {/* RESP: AlertDialog adaptado */}
+        <AlertDialogHeader className="text-left">
+          <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            {title}
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-base pt-2 text-muted-foreground">
+            {description || defaultDescription}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3"> {/* RESP: Footer empilhado no mobile */}
+          <AlertDialogCancel onClick={onClose} className="w-full sm:w-auto mt-0">Voltar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md transition-all active:scale-[0.98]"
+          >
+            Confirmar Cancelamento
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}

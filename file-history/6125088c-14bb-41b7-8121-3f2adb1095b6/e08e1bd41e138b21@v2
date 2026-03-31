@@ -1,0 +1,424 @@
+import jsPDF from 'jspdf'
+
+// Cores do modelo
+const COLORS = {
+  primary: '#003B71',     // Azul principal
+  text: '#2e2e2e',       // Texto principal
+  textMuted: '#374151',  // Texto secundário
+  border: '#E5E7EB'      // Bordas
+}
+
+// Medidas da página A4 em mm
+const PAGE = {
+  width: 210,
+  height: 297,
+  margin: {
+    top: 56,
+    right: 56,
+    bottom: 56,
+    left: 56
+  }
+}
+
+// Área de conteúdo
+const CONTENT = {
+  width: PAGE.width - PAGE.margin.left - PAGE.margin.right,
+  startX: PAGE.margin.left,
+  startY: PAGE.margin.top
+}
+
+interface PDFGeneratorOptions {
+  tokens: Record<string, string>
+  filename?: string
+}
+
+export class PDFGenerator {
+  private doc: jsPDF
+  private currentY: number
+  private pageNumber: number
+
+  constructor() {
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+    this.currentY = CONTENT.startY
+    this.pageNumber = 1
+
+    // Configurar fonte padrão
+    this.doc.setFont('helvetica')
+  }
+
+  private addPageNumber() {
+    this.doc.setFontSize(12)
+    this.doc.setTextColor(COLORS.textMuted)
+    this.doc.text(
+      this.pageNumber.toString(),
+      PAGE.width - PAGE.margin.right,
+      PAGE.height - 20,
+      { align: 'right' }
+    )
+  }
+
+  private checkPageBreak(neededHeight: number): boolean {
+    if (this.currentY + neededHeight > PAGE.height - PAGE.margin.bottom - 30) {
+      this.addPageNumber()
+      this.doc.addPage()
+      this.pageNumber++
+      this.currentY = CONTENT.startY
+      return true
+    }
+    return false
+  }
+
+  private addLogo() {
+    // Logo Wa Project (baseado no modelo timbrado)
+    // Como não temos a logo em base64, vamos criar um placeholder
+    this.doc.setFillColor(COLORS.primary)
+    this.doc.roundedRect(CONTENT.startX, this.currentY, 30, 12, 2, 2, 'F')
+
+    this.doc.setTextColor('#ffffff')
+    this.doc.setFontSize(14)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text('Wa', CONTENT.startX + 3, this.currentY + 8)
+    this.doc.text('Project.', CONTENT.startX + 12, this.currentY + 8)
+
+    this.currentY += 20
+  }
+
+  private addTitle(text: string, subtitle?: string) {
+    this.doc.setTextColor(COLORS.primary)
+    this.doc.setFontSize(24)
+    this.doc.setFont('helvetica', 'bold')
+
+    this.doc.text(text, CONTENT.startX, this.currentY)
+    this.currentY += 12
+
+    if (subtitle) {
+      this.doc.setFontSize(24)
+      this.doc.text(subtitle, CONTENT.startX, this.currentY)
+      this.currentY += 15
+    }
+  }
+
+  private addInfoLine(label: string, value: string) {
+    this.doc.setTextColor(COLORS.text)
+    this.doc.setFontSize(12)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(`${label}:`, CONTENT.startX, this.currentY)
+
+    this.doc.setFont('helvetica', 'normal')
+    this.doc.text(value, CONTENT.startX + 25, this.currentY)
+    this.currentY += 6
+  }
+
+  private addSeparator() {
+    this.doc.setDrawColor(COLORS.border)
+    this.doc.setLineWidth(0.5)
+    this.doc.line(CONTENT.startX, this.currentY, CONTENT.startX + CONTENT.width, this.currentY)
+    this.currentY += 8
+  }
+
+  private addSectionTitle(title: string) {
+    this.checkPageBreak(15)
+
+    this.doc.setTextColor(COLORS.primary)
+    this.doc.setFontSize(16)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(title, CONTENT.startX, this.currentY)
+    this.currentY += 10
+  }
+
+  private addParagraph(text: string) {
+    this.doc.setTextColor(COLORS.textMuted)
+    this.doc.setFontSize(11)
+    this.doc.setFont('helvetica', 'normal')
+
+    // Quebrar texto em linhas
+    const lines = this.doc.splitTextToSize(text, CONTENT.width)
+
+    for (const line of lines) {
+      this.checkPageBreak(6)
+      this.doc.text(line, CONTENT.startX, this.currentY)
+      this.currentY += 5
+    }
+    this.currentY += 3
+  }
+
+  private addBulletList(items: string[]) {
+    for (const item of items) {
+      this.checkPageBreak(8)
+
+      this.doc.setTextColor(COLORS.primary)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text('•', CONTENT.startX, this.currentY)
+
+      this.doc.setTextColor(COLORS.textMuted)
+      this.doc.setFont('helvetica', 'normal')
+
+      const lines = this.doc.splitTextToSize(item, CONTENT.width - 8)
+      for (let i = 0; i < lines.length; i++) {
+        if (i > 0) this.checkPageBreak(5)
+        this.doc.text(lines[i], CONTENT.startX + 8, this.currentY)
+        if (i < lines.length - 1) this.currentY += 5
+      }
+      this.currentY += 7
+    }
+  }
+
+  private addNumberedList(items: string[]) {
+    items.forEach((item, index) => {
+      this.checkPageBreak(8)
+
+      this.doc.setTextColor(COLORS.text)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text(`${index + 1}.`, CONTENT.startX, this.currentY)
+
+      this.doc.setTextColor(COLORS.textMuted)
+      this.doc.setFont('helvetica', 'normal')
+
+      const lines = this.doc.splitTextToSize(item, CONTENT.width - 12)
+      for (let i = 0; i < lines.length; i++) {
+        if (i > 0) this.checkPageBreak(5)
+        this.doc.text(lines[i], CONTENT.startX + 12, this.currentY)
+        if (i < lines.length - 1) this.currentY += 5
+      }
+      this.currentY += 7
+    })
+  }
+
+  private parseHTMLToText(html: string): string {
+    // Remove tags HTML e converte para texto simples
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .trim()
+  }
+
+  private parseHTMLList(html: string): string[] {
+    // Extrair itens de lista HTML
+    const items: string[] = []
+    const liMatches = html.match(/<li[^>]*>(.*?)<\/li>/gs)
+
+    if (liMatches) {
+      liMatches.forEach(match => {
+        const text = match.replace(/<li[^>]*>/, '').replace(/<\/li>/, '')
+        items.push(this.parseHTMLToText(text))
+      })
+    }
+
+    return items
+  }
+
+  public generateProposal(options: PDFGeneratorOptions): void {
+    const { tokens } = options
+
+    // Cabeçalho com logo
+    this.addLogo()
+
+    // Título principal
+    this.addTitle('Proposta Comercial', tokens.NOME_CLIENTE || tokens.CLIENTE_EMPRESA)
+
+    // Informações da proposta
+    this.addInfoLine('Para', tokens.CLIENTE_EMPRESA || '')
+    this.addInfoLine('Tipo', tokens.TIPO_ESCOPO || '')
+    this.currentY += 5
+
+    this.addSeparator()
+
+    // Sobre a Wa Project
+    this.addSectionTitle('Sobre a Wa Project')
+    this.addParagraph(this.parseHTMLToText(tokens.DESCRICAO_EMPRESA || ''))
+
+    // Nossos serviços (se existir)
+    if (tokens.SECAO_SERVICOS) {
+      this.addParagraph('Nossos serviços:')
+      const servicos = this.parseHTMLList(tokens.SECAO_SERVICOS)
+      this.addBulletList(servicos)
+    }
+
+    // Nossos clientes
+    this.addSectionTitle('Nossos Clientes')
+    if (tokens.LISTA_CLIENTES) {
+      const clientes = this.parseHTMLList(tokens.LISTA_CLIENTES)
+      this.addBulletList(clientes)
+    }
+
+    // Sobre o Projeto
+    if (tokens.TITULO_PROJETO) {
+      this.addSectionTitle(tokens.TITULO_PROJETO)
+      if (tokens.SUBTITULO_PROJETO) {
+        this.doc.setTextColor(COLORS.text)
+        this.doc.setFontSize(14)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(tokens.SUBTITULO_PROJETO, CONTENT.startX, this.currentY)
+        this.currentY += 8
+      }
+
+      if (tokens.DESCRICAO_PROJETO) {
+        this.addParagraph(this.parseHTMLToText(tokens.DESCRICAO_PROJETO))
+      }
+    }
+
+    // Funcionalidades
+    if (tokens.TITULO_FUNCIONALIDADES) {
+      this.addSectionTitle(tokens.TITULO_FUNCIONALIDADES)
+      if (tokens.LISTA_FUNCIONALIDADES) {
+        // Processar funcionalidades formatadas
+        const funcText = this.parseHTMLToText(tokens.LISTA_FUNCIONALIDADES)
+        const funcItems = funcText.split(/\d+\.\s+/).filter(item => item.trim())
+        this.addNumberedList(funcItems)
+      }
+    }
+
+    // Integrações
+    if (tokens.TITULO_INTEGRACOES) {
+      this.addSectionTitle(tokens.TITULO_INTEGRACOES)
+      if (tokens.DESCRICAO_INTEGRACOES) {
+        this.addParagraph(this.parseHTMLToText(tokens.DESCRICAO_INTEGRACOES))
+      }
+    }
+
+    // Modelo de Trabalho
+    if (tokens.TITULO_MODELO_TRABALHO) {
+      this.addSectionTitle(tokens.TITULO_MODELO_TRABALHO)
+      if (tokens.DESCRICAO_MODELO) {
+        this.addParagraph(this.parseHTMLToText(tokens.DESCRICAO_MODELO))
+      }
+
+      if (tokens.TITULO_FASES && tokens.LISTA_FASES) {
+        this.doc.setTextColor(COLORS.text)
+        this.doc.setFontSize(12)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(tokens.TITULO_FASES, CONTENT.startX, this.currentY)
+        this.currentY += 8
+
+        const fases = this.parseHTMLToText(tokens.LISTA_FASES).split('Fase').filter(f => f.trim())
+        fases.forEach(fase => {
+          if (fase.trim()) {
+            this.addParagraph(`Fase ${fase.trim()}`)
+          }
+        })
+      }
+    }
+
+    // Equipe
+    if (tokens.TITULO_EQUIPE) {
+      this.addSectionTitle(tokens.TITULO_EQUIPE)
+      if (tokens.DESCRICAO_EQUIPE) {
+        this.addParagraph(this.parseHTMLToText(tokens.DESCRICAO_EQUIPE))
+      }
+    }
+
+    // Cronograma
+    if (tokens.TITULO_CRONOGRAMA) {
+      this.addSectionTitle(tokens.TITULO_CRONOGRAMA)
+      if (tokens.PRAZO_TOTAL) {
+        this.addParagraph(this.parseHTMLToText(tokens.PRAZO_TOTAL))
+      }
+    }
+
+    // Investimento
+    if (tokens.TITULO_INVESTIMENTO) {
+      this.addSectionTitle(tokens.TITULO_INVESTIMENTO)
+      if (tokens.VALOR_TOTAL) {
+        this.doc.setTextColor(COLORS.text)
+        this.doc.setFontSize(14)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(this.parseHTMLToText(tokens.VALOR_TOTAL), CONTENT.startX, this.currentY)
+        this.currentY += 10
+      }
+
+      if (tokens.TITULO_CONDICOES_PAGAMENTO && tokens.CONDICOES_PAGAMENTO) {
+        this.doc.setTextColor(COLORS.text)
+        this.doc.setFontSize(12)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(tokens.TITULO_CONDICOES_PAGAMENTO, CONTENT.startX, this.currentY)
+        this.currentY += 8
+
+        const condicoes = this.parseHTMLToText(tokens.CONDICOES_PAGAMENTO).split(/\d+ª\s*[Pp]arcela:/).filter(c => c.trim())
+        condicoes.forEach((condicao, index) => {
+          if (condicao.trim()) {
+            this.addParagraph(`${index + 1}ª Parcela: ${condicao.trim()}`)
+          }
+        })
+      }
+    }
+
+    // Entregáveis
+    if (tokens.TITULO_ENTREGAVEIS) {
+      this.addSectionTitle(tokens.TITULO_ENTREGAVEIS)
+      if (tokens.LISTA_ENTREGAVEIS) {
+        const entregaveis = this.parseHTMLList(tokens.LISTA_ENTREGAVEIS)
+        this.addBulletList(entregaveis)
+      }
+    }
+
+    // Próximos Passos
+    if (tokens.TITULO_PROXIMOS_PASSOS) {
+      this.addSectionTitle(tokens.TITULO_PROXIMOS_PASSOS)
+      const passos = [
+        'Aprovação desta proposta comercial',
+        'Assinatura do contrato de prestação de serviços',
+        'Kick-off do projeto com stakeholders',
+        'Início do levantamento detalhado de requisitos',
+        'Criação dos primeiros protótipos para validação'
+      ]
+      this.addNumberedList(passos)
+
+      this.addParagraph('Estamos à disposição para esclarecer dúvidas e ansiosos para iniciar esta parceria!')
+    }
+
+    // Encerramento
+    if (tokens.CITACAO_ENCERRAMENTO) {
+      this.checkPageBreak(20)
+      this.currentY += 10
+
+      this.doc.setTextColor(COLORS.primary)
+      this.doc.setFontSize(14)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text('Não é sobre desenvolvimento, é sobre envolvimento.', CONTENT.startX, this.currentY)
+      this.currentY += 8
+
+      this.doc.setTextColor(COLORS.text)
+      this.doc.setFontSize(12)
+      this.doc.text('Obrigado por confiar na Wa Project!', CONTENT.startX, this.currentY)
+      this.currentY += 15
+
+      // Informações da empresa
+      if (tokens.INFORMACOES_EMPRESA_COMPLETA) {
+        const empresaInfo = this.parseHTMLToText(tokens.INFORMACOES_EMPRESA_COMPLETA)
+        this.addParagraph(empresaInfo)
+        this.addParagraph('Email: comercial@waproject.com.br')
+        this.addParagraph('Telefone/WhatsApp: (11) 5028-2010')
+      }
+
+      if (tokens.TEXTO_VALIDADE) {
+        this.currentY += 5
+        this.doc.setTextColor(COLORS.textMuted)
+        this.doc.setFontSize(10)
+        this.doc.text(this.parseHTMLToText(tokens.TEXTO_VALIDADE), CONTENT.startX, this.currentY)
+      }
+    }
+
+    // Adicionar numeração na última página
+    this.addPageNumber()
+  }
+
+  public save(filename: string = 'proposta.pdf'): void {
+    this.doc.save(filename)
+  }
+}
+
+// Função utilitária principal
+export function generateProposalPDF(options: PDFGeneratorOptions): void {
+  const generator = new PDFGenerator()
+  generator.generateProposal(options)
+
+  const filename = options.filename || `Proposta_${options.tokens.NOME_CLIENTE || 'Cliente'}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`
+  generator.save(filename)
+}

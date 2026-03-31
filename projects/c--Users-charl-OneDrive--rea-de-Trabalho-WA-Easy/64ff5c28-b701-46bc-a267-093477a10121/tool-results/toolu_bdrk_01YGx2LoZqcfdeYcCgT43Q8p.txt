@@ -1,0 +1,245 @@
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1399-          <DrawerTitle>Novo Agendamento</DrawerTitle>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1400-        </DrawerHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1401:        <div className="flex-1 min-h-0 overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1402-          {formBody}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1403-        </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1431-          <DialogTitle>Novo Agendamento</DialogTitle>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1432-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1433:        <div className="flex-1 overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1434-          {formBody}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1435-        </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-94-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-95-      {/* Right Side - Auth Forms */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx:96:      <div className="w-full lg:flex-1 flex flex-col lg:flex-row lg:items-center lg:justify-center h-full overflow-y-auto bg-background px-6 pt-24 pb-8 lg:pt-8 lg:p-8">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-97-        <div className={`w-full ${maxWidthClass} mx-auto my-auto lg:my-0`}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-98-          {children}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-102-      {/* Privacy Policy Modal */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-103-      <Dialog open={showPrivacyPolicy} onOpenChange={setShowPrivacyPolicy}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx:104:        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-105-          <DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-106-            <DialogTitle>Política de Privacidade</DialogTitle>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-207-      {/* Terms of Use Modal */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-208-      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx:209:        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-210-          <DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\AuthLayout.tsx-211-            <DialogTitle>Termos de Uso</DialogTitle>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx-323-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx-324-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx:325:        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 custom-scrollbar">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx-326-          <div className="space-y-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx-327-          {/* Informações Pré-selecionadas */}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1173-          </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1174-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1175:          <div className="flex-1 overflow-y-auto px-5 py-6 custom-scrollbar"> {/* RESP: Área de conteúdo rolável com padding consistente */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1176-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1177-          {loadingData ? (
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-521-  if (variant === 'mobile') {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-522-    return (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:523:      <div className="space-y-6 max-h-[calc(100vh-150px)] overflow-y-auto pb-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-524-        {/* Especialidades */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-525-        <div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-205-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-206-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:207:        <div className="flex-1 overflow-y-auto px-5 py-6 custom-scrollbar"> {/* RESP: Área de scroll com padding padrão */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-208-          <div className="space-y-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-209-            <div className="flex items-center justify-between">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-293-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-294-            {/* Timeline com Swipe */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx:295:            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-296-                <AnimatePresence mode="wait" custom={swipeDirection}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-297-                    <motion.div
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-524-                        </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-525-                    ) : (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:526:                        <div className="space-y-2 max-h-[50vh] overflow-y-auto pb-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-527-                            {filteredClients.map((client) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-528-                                <motion.button
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-651-    // Step 2: Select Service
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-652-    const renderSelectService = () => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:653:        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-654-            {loadingServices ? (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-655-                <div className="flex items-center justify-center py-12">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-688-    // Step 3: Select Professional
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-689-    const renderSelectProfessional = () => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:690:        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-691-            {loadingProfessionals ? (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-692-                <div className="flex items-center justify-center py-12">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-765-                </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-766-            ) : (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:767:                <div className="grid grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-768-                    {timeSlots.map((slot) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-769-                        <motion.button
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-891-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-892-                    {/* Body */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:893:                    <div className="flex-1 overflow-y-auto px-4 py-6 pb-24">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-894-                        <AnimatePresence mode="popLayout" initial={false}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-895-                            <motion.div
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\select.tsx-242-          </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\select.tsx-243-        )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\select.tsx:244:        <div className="max-h-56 overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\select.tsx-245-          {filteredOptions.length === 0 ? (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\select.tsx-246-            <p className="py-3 text-center text-sm text-muted-foreground">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\command.tsx-61-  <CommandPrimitive.List
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\command.tsx-62-    ref={ref}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\command.tsx:63:    className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\command.tsx-64-    {...props}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\command.tsx-65-  />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-69-          <div
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-70-            key={column.id}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:71:            className="flex  max-h-[920px] overflow-y-auto flex-col"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-72-          >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-73-            <div
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\MobileBottomSheet.tsx-86-                <div
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\MobileBottomSheet.tsx-87-                    className={cn(
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\MobileBottomSheet.tsx:88:                        'overflow-y-auto',
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\MobileBottomSheet.tsx-89-                        withPadding && 'px-4 pb-4',
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\MobileBottomSheet.tsx-90-                        height === 'full' && 'h-[calc(100vh-80px)]',
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionConfirmationModal.tsx-38-                </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionConfirmationModal.tsx-39-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionConfirmationModal.tsx:40:                <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionConfirmationModal.tsx-41-                    <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionConfirmationModal.tsx-42-                        <div className="flex justify-between items-center text-body">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-545-      <div className="flex min-h-screen bg-background">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-546-        {/* ── Sidebar nav ── */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:547:        <aside className="hidden lg:flex w-52 shrink-0 flex-col border-r bg-muted/30 p-4 sticky top-0 h-screen overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-548-          <div className="mb-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-549-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\FirstAppointmentModal.tsx-103-        </DialogDescription>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\FirstAppointmentModal.tsx-104-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\FirstAppointmentModal.tsx:105:        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col h-full"> {/* RESP: Scroll interno se o conteúdo exceder a altura no mobile */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\FirstAppointmentModal.tsx-106-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\FirstAppointmentModal.tsx-107-          {/* Banner top — 700×196 (desktop), responsive balance for mobile */}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUserFormPage.tsx-426-          <Form {...form}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUserFormPage.tsx-427-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-[calc(100vh-140px)] md:h-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUserFormPage.tsx:428:              <div className="flex-1 overflow-y-auto md:overflow-visible p-1">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUserFormPage.tsx-429-                <div className="md:bg-card md:border md:border-border md:rounded-lg">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUserFormPage.tsx-430-                  <div className="p-0 md:p-6">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-236-            {salonDropdownOpen && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-237-              <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:238:                <div className="max-h-96 overflow-y-auto p-2 flex flex-col gap-1">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-239-                  {/* Admin/Network panels */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-240-                  {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-349-            <DrawerTitle className="text-left">Selecionar salão</DrawerTitle>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-350-          </DrawerHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:351:          <div className="px-4 pb-6 pt-5 space-y-2 overflow-y-auto flex-1 min-h-0">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-352-            {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-353-              <button
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\EasySalonSidebar.tsx-124-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\EasySalonSidebar.tsx-125-      {/* Navigation */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\EasySalonSidebar.tsx:126:      <nav className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\EasySalonSidebar.tsx-127-        <div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\EasySalonSidebar.tsx-128-          {items.map((item, index) => {
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx-1106-        <Command>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx-1107-          <CommandInput placeholder="Pesquisar..." />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx:1108:          <CommandList className="max-h-[300px] overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx-1109-            <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx-1110-            <CommandGroup>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServicePricingModal.tsx-104-          </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServicePricingModal.tsx-105-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServicePricingModal.tsx:106:          <div className="flex-1 overflow-y-auto">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServicePricingModal.tsx-107-            <TabsContent value="pricing" className="mt-0">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServicePricingModal.tsx-108-              <ServicePricingForm
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-461-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-462-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:463:        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar"> {/* RESP: Área de conteúdo com scroll interno e padding reduzido */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-464-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2"> {/* RESP: Grid se mantém, mas dentro do scroll */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-465-            {/* Lado Esquerdo - Informações e Formulário */}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx-155-  return (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx-156-    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:157:      <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx-158-        <div className="space-y-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx-159-          <Label htmlFor="name">Nome do Serviço *</Label>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1166-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1167-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx:1168:        <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1169-          <div className="space-y-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1170-          {currentStep === 1 && (
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx-175-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx-176-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:177:          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx-178-            <div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx-179-              <Label htmlFor="service-name" className="text-muted-foreground">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-143-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-144-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:145:          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-146-            {userName && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-147-              <div className="p-3 bg-muted rounded-lg">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-67-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-68-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:69:        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-70-          <div className="space-y-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-71-            {/* Informações do Cliente */}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ReplaceCardModal.tsx-120-                </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ReplaceCardModal.tsx-121-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ReplaceCardModal.tsx:122:                <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ReplaceCardModal.tsx-123-                    <div className="space-y-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ReplaceCardModal.tsx-124-                        <Label htmlFor="newCardNumber" className="text-body font-medium">Número do Cartão</Label>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ChangePlanModal.tsx-63-                </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ChangePlanModal.tsx-64-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ChangePlanModal.tsx:65:                <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ChangePlanModal.tsx-66-                    <div className="space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ChangePlanModal.tsx-67-                        {plans.map((plan) => {
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx-97-  return (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx-98-    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx:99:      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx-100-        <div className="space-y-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx-101-          <Input
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx-386-            </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx-387-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:388:            <div className="flex-1 overflow-y-auto py-6 px-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx-389-              <TabsContent value="info" className="mt-0 space-y-6">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx-390-                {/* Nome Completo */}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-123-        </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-124-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:125:        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-126-          <div className="grid gap-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-127-            {/* Customer Info */}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx-86-  return (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx-87-    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx:88:      <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar space-y-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx-89-        <div className="space-y-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx-90-          <Label htmlFor="name">Nome da Especialidade *</Label>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CancelSubscriptionModal.tsx-42-                </DialogHeader>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CancelSubscriptionModal.tsx-43-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CancelSubscriptionModal.tsx:44:                <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CancelSubscriptionModal.tsx-45-                    <div className="flex items-start space-x-3 p-4 bg-muted/30 rounded-lg border border-border">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CancelSubscriptionModal.tsx-46-                        <Checkbox

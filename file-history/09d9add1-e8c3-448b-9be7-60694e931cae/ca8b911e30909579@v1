@@ -1,0 +1,1897 @@
+import { useState, useEffect, useCallback } from "react";
+import { X as X, Calendar as CalendarIcon, Clock as Clock, User as User, Wrench as Wrench, UserCheck as UserCheck, Pencil as Edit, Phone as Phone, Mail as Mail, Trash2 as Trash2, Search as Search, Check as Check, Loader2 as Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { appointmentService } from "@/services/appointmentService";
+import { userService } from "@/services/userService";
+import { serviceService } from "@/services/serviceService";
+import { clientService } from "@/services/clientService";
+import { agendaService } from "@/services/agendaService";
+import { serviceTasksService } from "@/services/serviceTasksService";
+import { Appointment } from "@/types/appointment";
+import { UserRole } from "@/types/user";
+import { UserServiceTask } from "@/types/service";
+import { convertLocalToUTC, formatUTCToLocal } from "@/utils/dateTimeHelpers";
+import { getUserDisplayName } from "@/utils/userHelpers";
+import { useAssistants } from "@/hooks/useAssistants";
+import { Separator } from "@/components/ui/separator";
+
+interface Professional {
+  id: string;
+  name: string;
+  nickname?: string;
+  workingHours?: Array<{
+    dayOfWeek?: string | number;
+    start: string;
+    end: string;
+    isOpen?: boolean;
+  }>;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  duration: number;
+  price: number;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+}
+
+interface ModalEditarAgendamentoProps {
+  isOpen: boolean;
+  onClose: () => void;
+  appointment: Appointment | null;
+  onAppointmentUpdated: () => void;
+}
+
+// Função de busca inteligente que ignora case, acentos e permite busca parcial
+const normalizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^a-z0-9\s]/g, ""); // Remove caracteres especiais
+};
+
+// Função de busca flexível que funciona com diferentes formatos de texto
+const smartSearch = (searchTerm: string, target: string): boolean => {
+  if (!searchTerm || !target) return true;
+
+  const normalizedSearch = normalizeString(searchTerm);
+  const normalizedTarget = normalizeString(target);
+
+  // Busca exata
+  if (normalizedTarget.includes(normalizedSearch)) {
+    return true;
+  }
+
+  // Busca por palavras separadas (permite buscar "jo si" para encontrar "João Silva")
+  const searchWords = normalizedSearch
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+  return searchWords.every((word) => normalizedTarget.includes(word));
+};
+
+export function ModalEditarAgendamento({
+  isOpen,
+  onClose,
+  appointment,
+  onAppointmentUpdated,
+}: ModalEditarAgendamentoProps) {
+  const { selectedSalon } = useSelectedSalon();
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Função para verificar se o agendamento já passou considerando o timezone do salão
+  const isAppointmentPast = (): boolean => {
+    if (!appointment) return false;
+
+    try {
+      const appointmentTime = new Date(appointment.startTime);
+      const now = new Date();
+
+      // Se o salão tiver timezone configurado, usar para comparação mais precisa
+      // Por enquanto, fazemos comparação direta já que os horários estão em UTC
+      return appointmentTime < now;
+    } catch (error) {
+      console.error("Error checking appointment time:", error);
+      return false;
+    }
+  };
+
+  // Função para verificar se é uma reserva (quando clientName e serviceName são null/undefined)
+  const isReserva = (): boolean => {
+    if (!appointment) return false;
+
+    const clientName = (appointment as any).clientName || appointment.client?.name;
+    const serviceName = (appointment as any).serviceName || appointment.service?.name;
+
+    // É uma reserva quando ambos são nulos/undefined/vazios
+    return !clientName && !serviceName;
+  };
+
+  // Helper para formatar preço
+  const formatPrice = (price: any): string => {
+    if (typeof price === "number") {
+      return price.toFixed(2);
+    }
+    if (typeof price === "string") {
+      const numPrice = parseFloat(price);
+      return isNaN(numPrice) ? "0.00" : numPrice.toFixed(2);
+    }
+    return "0.00";
+  };
+
+  // Helper para converter data dd/MM/yyyy para yyyy-MM-dd (formato do input)
+  const formatDateForInput = (dateStr: string): string => {
+    if (!dateStr) return "";
+    const [day, month, year] = dateStr.split("/");
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  };
+
+  // Helper para converter data yyyy-MM-dd para dd/MM/yyyy (exibição)
+  const formatDateForDisplay = (dateStr: string): string => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  // Estados para os dados do formulário
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedProfessional, setSelectedProfessional] = useState<string>("");
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+
+  // Estados para os dados carregados
+  const [clients, setClients] = useState<Client[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [salonWorkingHours, setSalonWorkingHours] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
+  const [salonOpeningHours, setSalonOpeningHours] = useState<any[]>([]);
+
+  // Estados para busca nos dropdowns
+  const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
+  const [serviceSearchQuery, setServiceSearchQuery] = useState<string>("");
+  const [professionalSearchQuery, setProfessionalSearchQuery] =
+    useState<string>("");
+
+  // Estados para edição de horários (substituem selectedTime no modo edição)
+  const [editableStartTime, setEditableStartTime] = useState<string>("");
+  const [editableEndTime, setEditableEndTime] = useState<string>("");
+  const [editableDuration, setEditableDuration] = useState<number>(0);
+
+  // Opções para os dropdowns de horários
+  const [startTimeOptions, setStartTimeOptions] = useState<string[]>([]);
+  const [endTimeOptions, setEndTimeOptions] = useState<string[]>([]);
+  const [durationOptions, setDurationOptions] = useState<number[]>([]);
+
+  // Callbacks memoizados para evitar re-renderizações
+  const handleProfessionalSearchChange = useCallback((value: string) => {
+    setProfessionalSearchQuery(value);
+  }, []);
+
+  const handleServiceSearchChange = useCallback((value: string) => {
+    setServiceSearchQuery(value);
+  }, []);
+
+  const handleProfessionalSelect = useCallback((value: string) => {
+    setSelectedProfessional(value);
+    setProfessionalSearchQuery("");
+  }, []);
+
+  const handleServiceSelect = useCallback((value: string) => {
+    setSelectedService(value);
+    setServiceSearchQuery("");
+  }, []);
+
+  // Resetar formulário quando o modal abre/fecha
+  useEffect(() => {
+    if (isOpen && appointment) {
+      setLoadingData(false); // Não precisa carregar dados para o preview
+      // Carregar dados imediatamente para que estejam prontos para edição
+      if (selectedSalon?.id) {
+        loadInitialData();
+      }
+    } else {
+      resetForm();
+    }
+  }, [isOpen, appointment, selectedSalon?.id]);
+
+  const resetForm = () => {
+    setSelectedClient("");
+    setSelectedProfessional("");
+    setSelectedService("");
+    setSelectedDate("");
+    setSelectedTime("");
+    setNotes("");
+    setClients([]);
+    setProfessionals([]);
+    setServices([]);
+    setAvailableSlots([]);
+    setSalonWorkingHours(null);
+    setLoadingData(true);
+    setIsEditing(false);
+    // Limpar campos de busca
+    setClientSearchQuery("");
+    setServiceSearchQuery("");
+    setProfessionalSearchQuery("");
+    // Limpar campos editáveis
+    setEditableStartTime("");
+    setEditableEndTime("");
+    setEditableDuration(0);
+    setStartTimeOptions([]);
+    setEndTimeOptions([]);
+    setDurationOptions([]);
+  };
+
+  // Gerar opções de horário de 15 em 15 minutos (00:00 - 23:45)
+  const generateTimeOptions = (): string[] => {
+    const options: string[] = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+        options.push(time);
+      }
+    }
+    return options;
+  };
+
+  // Gerar opções de duração: 15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360 minutos
+  const generateDurationOptions = (): number[] => {
+    return [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360];
+  };
+
+  // Carregar horários disponíveis da API para os dropdowns editáveis
+  const loadEditableTimeSlots = useCallback(async (): Promise<void> => {
+    if (
+      !selectedProfessional ||
+      !selectedService ||
+      !selectedDate ||
+      !selectedSalon?.id
+    ) {
+      return;
+    }
+
+    try {
+      setLoadingHorarios(true);
+
+      // Buscar horários disponíveis da API
+      const response = await appointmentService.checkAvailability(
+        selectedDate,
+        selectedProfessional,
+        selectedService,
+        true // isEdit = true
+      );
+
+      const slotsFromAPI = Array.isArray(response)
+        ? response
+        : response.availableSlots || [];
+
+      if (slotsFromAPI.length > 0) {
+        const salonTimezone = selectedSalon?.timezone || "America/Sao_Paulo";
+
+        // Converter slots de ISO UTC para HH:mm no timezone do salão
+        const formattedSlots = slotsFromAPI.map((slot) => {
+          // Se o slot já está em formato HH:mm, manter
+          if (slot.match(/^\d{2}:\d{2}$/)) {
+            return slot;
+          }
+          // Se está em formato ISO (UTC), converter para o timezone do salão
+          return formatUTCToLocal(slot, salonTimezone, "HH:mm");
+        });
+
+        // Incluir o horário atual do agendamento como disponível
+        if (appointment) {
+          const currentStartTime = formatUTCToLocal(
+            appointment.startTime,
+            salonTimezone,
+            "HH:mm"
+          );
+          const currentEndTime = formatUTCToLocal(
+            appointment.endTime,
+            salonTimezone,
+            "HH:mm"
+          );
+
+          // Adicionar horário inicial atual se não estiver na lista
+          if (!formattedSlots.includes(currentStartTime)) {
+            formattedSlots.push(currentStartTime);
+          }
+
+          // Adicionar horário final atual se não estiver na lista
+          if (!formattedSlots.includes(currentEndTime)) {
+            formattedSlots.push(currentEndTime);
+          }
+
+          formattedSlots.sort();
+        }
+
+        // Atualizar opções dos dropdowns
+        setStartTimeOptions(formattedSlots);
+        setEndTimeOptions(formattedSlots);
+      } else {
+        // Fallback: usar horários mockados se API não retornar nada
+        setStartTimeOptions(generateTimeOptions());
+        setEndTimeOptions(generateTimeOptions());
+      }
+    } catch (error) {
+      console.error("Erro ao carregar horários disponíveis:", error);
+      // Fallback em caso de erro: usar horários mockados
+      setStartTimeOptions(generateTimeOptions());
+      setEndTimeOptions(generateTimeOptions());
+    } finally {
+      setLoadingHorarios(false);
+    }
+  }, [
+    selectedProfessional,
+    selectedService,
+    selectedDate,
+    selectedSalon?.id,
+    appointment,
+  ]);
+
+  const populateFormWithAppointment = () => {
+    if (!appointment) {
+      return;
+    }
+
+    const startTime = new Date(appointment.startTime);
+
+    const clientId = appointment.clientId || appointment.client?.id || "";
+    const professionalId =
+      appointment.professionalId || appointment.professional?.id || "";
+    const serviceId = appointment.serviceId || appointment.service?.id || "";
+
+    // Verificar se os IDs existem nas listas carregadas
+    const clientExists = clients.find((c) => c.id === clientId);
+    const professionalExists = professionals.find(
+      (p) => p.id === professionalId
+    );
+    const serviceExists = services.find((s) => s.id === serviceId);
+
+    // Popular os campos
+    setSelectedClient(clientId);
+    setSelectedProfessional(professionalId);
+    setSelectedService(serviceId);
+    setSelectedDate(format(startTime, "yyyy-MM-dd"));
+    setSelectedTime(format(startTime, "HH:mm"));
+    setNotes(appointment.notes || "");
+
+    // Popular horários editáveis para edição
+    const endTime = new Date(appointment.endTime);
+    setEditableStartTime(format(startTime, "HH:mm"));
+    setEditableEndTime(format(endTime, "HH:mm"));
+    setEditableDuration(appointment.duration || 60);
+
+    // Gerar opções de duração (mantém mockado)
+    setDurationOptions(generateDurationOptions());
+
+    // Carregar horários disponíveis da API (assíncrono)
+    loadEditableTimeSlots();
+  };
+
+  const loadInitialData = async () => {
+    if (!selectedSalon?.id) return;
+
+    try {
+      setLoadingData(true);
+
+      // Carregar clientes, profissionais e salão em paralelo
+      const [clientsResponse, professionalsResponse, salonResponse] =
+        await Promise.all([
+          clientService.getAll(),
+          userService.list({
+            role: UserRole.PROFESSIONAL,
+            salonId: selectedSalon.id,
+          }),
+          agendaService.getSalonOperatingHours(selectedSalon.id),
+        ]);
+
+      // Processar clientes
+      const clientsData = Array.isArray(clientsResponse)
+        ? clientsResponse
+        : (clientsResponse as any).data || [];
+      setClients(clientsData);
+
+      // Processar profissionais
+      const professionalsData = Array.isArray(professionalsResponse)
+        ? professionalsResponse
+        : professionalsResponse.data || [];
+      const processedProfessionals = professionalsData.map((prof: any) => {
+        return {
+          id: prof.id,
+          name: prof.name,
+          nickname: prof.nickname,
+          workingHours: prof.workingHours ||
+            prof.schedule || [{ start: "09:00", end: "18:00" }],
+        };
+      });
+      setProfessionals(processedProfessionals);
+
+      // Carregar todos os serviços do salão filtrados para reserva
+      const allServicesResponse = await serviceService.getBookableServices();
+      let allServices = [];
+      if (
+        allServicesResponse.customServices ||
+        allServicesResponse.standardServices
+      ) {
+        allServices = [
+          ...(allServicesResponse.customServices || []),
+          ...(allServicesResponse.standardServices || []),
+        ];
+      } else if (Array.isArray(allServicesResponse)) {
+        allServices = allServicesResponse;
+      }
+
+      // Remover duplicatas baseado no ID usando Map
+      const uniqueServicesMap = new Map();
+      allServices.forEach((service) => {
+        if (!uniqueServicesMap.has(service.id)) {
+          uniqueServicesMap.set(service.id, service);
+        }
+      });
+      const uniqueServices = Array.from(uniqueServicesMap.values());
+
+      setServices(uniqueServices);
+
+      // Processar horários do salão
+      if (
+        salonResponse &&
+        salonResponse.openingHours &&
+        salonResponse.openingHours.length > 0
+      ) {
+        // Salvar todos os horários para validação de datas
+        setSalonOpeningHours(salonResponse.openingHours);
+
+        // Pegar o primeiro horário encontrado como padrão
+        const firstOpenDay = salonResponse.openingHours.find(
+          (day) => day.isOpen
+        );
+        if (firstOpenDay) {
+          setSalonWorkingHours({
+            start: firstOpenDay.open || "09:00",
+            end: firstOpenDay.close || "18:00",
+          });
+        }
+      } else {
+        // Horário padrão se não conseguir carregar
+        setSalonWorkingHours({
+          start: "09:00",
+          end: "18:00",
+        });
+      }
+
+      // Popular o formulário agora que os dados estão carregados
+      if (appointment) {
+        // Forçar re-população depois que os estados foram atualizados
+        setTimeout(() => {
+          populateFormWithAppointment();
+        }, 200); // Delay maior para garantir que os estados foram atualizados
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar dados necessários");
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  // Carregar serviços quando profissional for selecionado (apenas durante edição ativa)
+  useEffect(() => {
+    if (isEditing && selectedProfessional && selectedSalon?.id) {
+      loadProfessionalServices(selectedProfessional);
+    }
+  }, [selectedProfessional, selectedSalon?.id, isEditing]);
+
+  // Popular formulário quando dados estão carregados e modal está aberto
+  useEffect(() => {
+    if (
+      isOpen &&
+      appointment &&
+      clients.length > 0 &&
+      professionals.length > 0 &&
+      services.length > 0 &&
+      !isEditing
+    ) {
+      populateFormWithAppointment();
+    }
+  }, [
+    isOpen,
+    appointment,
+    clients.length,
+    professionals.length,
+    services.length,
+    isEditing,
+  ]);
+
+  // Carregar horários disponíveis quando profissional, serviço ou data mudarem
+  useEffect(() => {
+    if (selectedProfessional && selectedService && selectedDate) {
+      loadAvailableSlots();
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [selectedProfessional, selectedService, selectedDate]);
+
+  // Recarregar horários disponíveis para edição quando profissional, serviço ou data mudarem
+  useEffect(() => {
+    if (isEditing && selectedProfessional && selectedService && selectedDate) {
+      loadEditableTimeSlots();
+    }
+  }, [
+    isEditing,
+    selectedProfessional,
+    selectedService,
+    selectedDate,
+    loadEditableTimeSlots,
+  ]);
+
+  const loadProfessionalServices = async (professionalId: string) => {
+    try {
+      // Para edição, sempre mostrar todos os serviços ativos
+      // O usuário pode querer mudar o serviço para outro que o profissional não está vinculado
+      if (!selectedSalon?.id) return;
+
+      const response = await serviceService.getBookableServices();
+      let servicesData = [];
+      if (response.customServices || response.standardServices) {
+        servicesData = [
+          ...(response.customServices || []),
+          ...(response.standardServices || []),
+        ];
+      } else if (Array.isArray(response)) {
+        servicesData = response;
+      }
+      setServices(servicesData);
+    } catch (error) {
+      setServices([]);
+    }
+  };
+
+  const generateTimeSlots = (
+    startHour: string,
+    endHour: string,
+    interval: number = 15
+  ): string[] => {
+    const slots: string[] = [];
+    const [startH, startM] = startHour.split(":").map(Number);
+    const [endH, endM] = endHour.split(":").map(Number);
+
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    for (
+      let minutes = startMinutes;
+      minutes < endMinutes;
+      minutes += interval
+    ) {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      slots.push(
+        `${hours.toString().padStart(2, "0")}:${mins
+          .toString()
+          .padStart(2, "0")}`
+      );
+    }
+
+    return slots;
+  };
+
+  const getProfessionalWorkingHours = (
+    professionalId: string,
+    date: string
+  ) => {
+    const professional = professionals.find((p) => p.id === professionalId);
+    if (
+      !professional ||
+      !professional.workingHours ||
+      !Array.isArray(professional.workingHours) ||
+      professional.workingHours.length === 0
+    ) {
+      return null;
+    }
+
+    const dayOfWeek = new Date(date).getDay();
+    const dayNames = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    const dayName = dayNames[dayOfWeek];
+
+    // Procurar horário específico do profissional para o dia
+    const daySchedule = professional.workingHours.find(
+      (wh: any) => wh.dayOfWeek === dayName || wh.dayOfWeek === dayOfWeek
+    );
+
+    if (daySchedule && daySchedule.start && daySchedule.end) {
+      return {
+        start: daySchedule.start,
+        end: daySchedule.end,
+      };
+    }
+
+    // Fallback para o primeiro horário encontrado
+    if (professional.workingHours[0]) {
+      return {
+        start: professional.workingHours[0].start,
+        end: professional.workingHours[0].end,
+      };
+    }
+
+    return null;
+  };
+
+  const loadAvailableSlots = async () => {
+    if (
+      !selectedProfessional ||
+      !selectedService ||
+      !selectedDate ||
+      !selectedSalon?.id
+    ) {
+      return;
+    }
+
+    setLoadingHorarios(true);
+    try {
+      // Primeiro, tentar usar a API de disponibilidade
+      try {
+        const response = await appointmentService.checkAvailability(
+          selectedDate,
+          selectedProfessional,
+          selectedService,
+          true // isEdit = true para edição
+        );
+
+        const slotsFromAPI = Array.isArray(response)
+          ? response
+          : response.availableSlots || [];
+
+        // Se a API retornou slots, formatar eles do UTC para o timezone do salão
+        if (slotsFromAPI.length > 0) {
+          const salonTimezone = selectedSalon?.timezone || "America/Sao_Paulo";
+
+          // Converter slots de ISO UTC para HH:mm no timezone do salão
+          const formattedSlots = slotsFromAPI.map((slot) => {
+            // Se o slot já está em formato HH:mm, manter
+            if (slot.match(/^\d{2}:\d{2}$/)) {
+              return slot;
+            }
+
+            // Se está em formato ISO (UTC), converter para o timezone do salão
+            return formatUTCToLocal(slot, salonTimezone, "HH:mm");
+          });
+
+          // Se estamos editando, incluir o horário atual como disponível
+          if (appointment) {
+            const currentTime = formatUTCToLocal(
+              appointment.startTime,
+              salonTimezone,
+              "HH:mm"
+            );
+            if (!formattedSlots.includes(currentTime)) {
+              formattedSlots.push(currentTime);
+              formattedSlots.sort();
+            }
+          }
+
+          setAvailableSlots(formattedSlots);
+          return;
+        }
+      } catch (apiError) {
+        console.error("Error loading availability from API:", apiError);
+        // API fallback
+      }
+
+      // Fallback: gerar slots baseados nos horários do profissional ou salão
+      // Tentar obter horários do profissional primeiro
+      const professionalHours = getProfessionalWorkingHours(
+        selectedProfessional,
+        selectedDate
+      );
+
+      let workingHours;
+      if (professionalHours) {
+        workingHours = professionalHours;
+      } else if (salonWorkingHours) {
+        workingHours = salonWorkingHours;
+      } else {
+        workingHours = { start: "09:00", end: "18:00" };
+      }
+
+      // Gerar slots de 15 em 15 minutos
+      let generatedSlots = generateTimeSlots(
+        workingHours.start,
+        workingHours.end,
+        15
+      );
+
+      // Filtrar horários passados se for hoje
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // Parse safely
+      const selectedDateObj = selectedDate.includes('T') 
+        ? new Date(selectedDate) 
+        : new Date(selectedDate + "T00:00:00");
+
+      if (isNaN(selectedDateObj.getTime())) return;
+
+      if (selectedDateObj.getTime() === today.getTime()) {
+        generatedSlots = generatedSlots.filter((slot) => {
+          const [h, m] = slot.split(":").map(Number);
+          const slotDateTime = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            h,
+            m
+          );
+          return slotDateTime > now;
+        });
+      }
+
+      // Se estamos editando, incluir o horário atual (mesmo que já tenha passado, para permitir manter o mesmo horário)
+      if (appointment) {
+        const currentTime = format(new Date(appointment.startTime), "HH:mm");
+        if (!generatedSlots.includes(currentTime)) {
+          generatedSlots.push(currentTime);
+          generatedSlots.sort();
+        }
+      }
+
+      setAvailableSlots(generatedSlots);
+    } catch (error) {
+      // Último fallback: horários básicos
+      const basicSlots = generateTimeSlots("09:00", "18:00", 15);
+      if (appointment) {
+        const currentTime = format(new Date(appointment.startTime), "HH:mm");
+        if (!basicSlots.includes(currentTime)) {
+          basicSlots.push(currentTime);
+          basicSlots.sort();
+        }
+      }
+      setAvailableSlots(basicSlots);
+    } finally {
+      setLoadingHorarios(false);
+    }
+  };
+
+  // Handler: Quando HORÁRIO INICIAL mudar → Recalcula DURAÇÃO (mantém horário final)
+  const handleStartTimeChange = (newStartTime: string): void => {
+    setEditableStartTime(newStartTime);
+
+    if (!editableEndTime) return;
+
+    // Calcular nova duração baseada no novo horário inicial e horário final existente
+    const [startHour, startMinute] = newStartTime.split(":").map(Number);
+    const [endHour, endMinute] = editableEndTime.split(":").map(Number);
+
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+
+    let newDuration = endMinutes - startMinutes;
+
+    // Se o horário final for menor que o inicial, assumir dia seguinte
+    if (newDuration <= 0) {
+      newDuration += 24 * 60; // Adicionar 24 horas em minutos
+    }
+
+    setEditableDuration(newDuration);
+  };
+
+  // Handler: Quando DURAÇÃO mudar → Recalcula HORÁRIO FINAL (mantém horário inicial)
+  const handleDurationChange = (newDuration: number): void => {
+    setEditableDuration(newDuration);
+
+    if (!editableStartTime) return;
+
+    // Calcular novo horário final baseado no horário inicial e nova duração
+    const [startHour, startMinute] = editableStartTime.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = startMinutes + newDuration;
+
+    // Normalizar para 24h (pode passar da meia-noite)
+    const normalizedEndMinutes = endMinutes % (24 * 60);
+    const endHour = Math.floor(normalizedEndMinutes / 60);
+    const endMinute = normalizedEndMinutes % 60;
+
+    const newEndTime = `${endHour.toString().padStart(2, "0")}:${endMinute
+      .toString()
+      .padStart(2, "0")}`;
+
+    setEditableEndTime(newEndTime);
+  };
+
+  // Handler: Quando HORÁRIO FINAL mudar → Recalcula DURAÇÃO (mantém horário inicial)
+  const handleEndTimeChange = (newEndTime: string): void => {
+    setEditableEndTime(newEndTime);
+
+    if (!editableStartTime) return;
+
+    // Calcular nova duração baseada no horário inicial existente e novo horário final
+    const [startHour, startMinute] = editableStartTime.split(":").map(Number);
+    const [endHour, endMinute] = newEndTime.split(":").map(Number);
+
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+
+    let newDuration = endMinutes - startMinutes;
+
+    // Se o horário final for menor que o inicial, assumir dia seguinte
+    if (newDuration <= 0) {
+      newDuration += 24 * 60; // Adicionar 24 horas em minutos
+    }
+
+    setEditableDuration(newDuration);
+  };
+
+  const validateForm = (): string | null => {
+    if (!selectedClient) return "Selecione um cliente";
+    if (!selectedProfessional) return "Selecione um profissional";
+    if (!selectedService) return "Selecione um serviço";
+    if (!selectedDate) return "Selecione uma data";
+    if (!selectedTime) return "Selecione um horário";
+
+    // Validar data e horário
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selectedDateObj = new Date(selectedDate + "T00:00:00");
+
+    // Não permitir datas anteriores a hoje
+    if (selectedDateObj < today) {
+      return "Não é possível agendar para datas anteriores";
+    }
+
+    // Se for hoje, validar se o horário não passou
+    if (selectedDateObj.getTime() === today.getTime()) {
+      const [hours, minutes] = selectedTime.split(":").map(Number);
+      const appointmentDateTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        hours,
+        minutes
+      );
+
+      if (appointmentDateTime <= now) {
+        return "Para agendamentos hoje, selecione um horário futuro";
+      }
+    }
+
+    // Validar se o profissional trabalha na data selecionada
+    const professional = professionals.find(
+      (p) => p.id === selectedProfessional
+    );
+    if (!professional) return "Profissional não encontrado";
+
+    const selectedDayOfWeek = new Date(selectedDate).getDay();
+    const dayNames = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    const dayName = dayNames[selectedDayOfWeek];
+
+    // A validação de horários de funcionamento não é mais necessária aqui
+    // porque o backend já valida e retorna apenas horários disponíveis
+    // considerando o timezone do salão corretamente
+
+    // Validar horários editáveis (quando estiver em modo de edição)
+    if (isEditing) {
+      if (!editableStartTime) return "Selecione o horário inicial";
+      if (!editableEndTime) return "Selecione o horário final";
+      if (!editableDuration || editableDuration < 15) {
+        return "A duração mínima é de 15 minutos";
+      }
+      if (editableDuration > 480) {
+        return "A duração máxima é de 8 horas (480 minutos)";
+      }
+
+      // VALIDAÇÃO 1: Horário inicial não pode ser no passado (se for hoje)
+      if (selectedDateObj.getTime() === today.getTime()) {
+        const [startHour, startMinute] = editableStartTime.split(":").map(Number);
+        const appointmentDateTime = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          startHour,
+          startMinute
+        );
+
+        if (appointmentDateTime <= now) {
+          return "Horário inicial já passou. Selecione um horário futuro.";
+        }
+      }
+
+      // VALIDAÇÃO 2: Verificar se horário final não ultrapassa horário de fechamento do salão
+      if (salonWorkingHours) {
+        const [endHour, endMinute] = editableEndTime.split(":").map(Number);
+        const [salonEndHour, salonEndMinute] = salonWorkingHours.end
+          .split(":")
+          .map(Number);
+
+        const endMinutes = endHour * 60 + endMinute;
+        const salonEndMinutes = salonEndHour * 60 + salonEndMinute;
+
+        if (endMinutes > salonEndMinutes) {
+          return `Horário final ultrapassa o horário de fechamento do salão (${salonWorkingHours.end})`;
+        }
+      }
+
+      // VALIDAÇÃO 3: Verificar se horário final não ultrapassa horário do profissional
+      const professionalHours = getProfessionalWorkingHours(
+        selectedProfessional,
+        selectedDate
+      );
+
+      if (professionalHours) {
+        const [endHour, endMinute] = editableEndTime.split(":").map(Number);
+        const [profEndHour, profEndMinute] = professionalHours.end
+          .split(":")
+          .map(Number);
+
+        const endMinutes = endHour * 60 + endMinute;
+        const profEndMinutes = profEndHour * 60 + profEndMinute;
+
+        if (endMinutes > profEndMinutes) {
+          return `Horário final ultrapassa o horário de trabalho do profissional (${professionalHours.end})`;
+        }
+      }
+
+      // VALIDAÇÃO 4: Verificar consistência entre horário inicial, final e duração
+      const [startHour, startMinute] = editableStartTime.split(":").map(Number);
+      const [endHour, endMinute] = editableEndTime.split(":").map(Number);
+
+      const startMinutes = startHour * 60 + startMinute;
+      const endMinutes = endHour * 60 + endMinute;
+
+      // Permitir horário final no dia seguinte (se for madrugada)
+      const calculatedDuration =
+        endMinutes < startMinutes
+          ? 24 * 60 - startMinutes + endMinutes
+          : endMinutes - startMinutes;
+
+      if (calculatedDuration !== editableDuration) {
+        return "Inconsistência entre horário inicial, final e duração";
+      }
+    }
+
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    if (!appointment) return;
+
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Converter horário local do salão para UTC usando HORÁRIO EDITÁVEL
+      const salonTimezone = selectedSalon?.timezone || "America/Sao_Paulo";
+      const appointmentDateTime = convertLocalToUTC(
+        selectedDate,
+        editableStartTime, // USAR HORÁRIO EDITÁVEL
+        salonTimezone
+      );
+
+      // Calcular endDateTime baseado no HORÁRIO FINAL EDITÁVEL
+      const [endHour, endMinute] = editableEndTime.split(":").map(Number);
+      const endDate = new Date(appointmentDateTime);
+      endDate.setHours(endHour, endMinute, 0, 0);
+
+      // Se horário final < horário inicial, adicionar 1 dia
+      if (endDate <= appointmentDateTime) {
+        endDate.setDate(endDate.getDate() + 1);
+      }
+
+      const startTimeISO = appointmentDateTime.toISOString();
+      const endTimeISO = endDate.toISOString();
+
+      // Obter preço do serviço
+      const selectedServiceData = services.find((s) => s.id === selectedService);
+
+      // Preparar dados para atualização com ISO strings corretos
+      // Nota: clientId não pode ser atualizado após criação
+      const updateData = {
+        professionalId: selectedProfessional,
+        serviceId: selectedService,
+        startTime: startTimeISO,
+        endTime: endTimeISO,
+        duration: editableDuration, // USAR DURAÇÃO EDITÁVEL
+        notes: notes.trim() || undefined,
+        price: selectedServiceData?.price || appointment.price,
+      };
+
+      await appointmentService.update(appointment.id, updateData);
+
+      toast.success("Agendamento atualizado com sucesso!");
+      onAppointmentUpdated();
+      onClose();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Erro ao atualizar agendamento";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!appointment) return;
+
+    try {
+      setCancelLoading(true);
+      await appointmentService.delete(appointment.id);
+
+      toast.success("Agendamento cancelado com sucesso!");
+
+      // Chamar callback de atualização antes de fechar
+      if (onAppointmentUpdated) {
+        onAppointmentUpdated();
+      }
+
+      setShowCancelDialog(false);
+      onClose();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Erro ao cancelar agendamento";
+      toast.error(errorMessage);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const getDateValidationMessage = () => {
+    if (!selectedDate) return null;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selectedDateObj = new Date(selectedDate + "T00:00:00");
+
+    if (selectedDateObj < today) {
+      return "Data não pode ser anterior a hoje";
+    }
+
+    return null;
+  };
+
+  const getTimeValidationMessage = () => {
+    if (!selectedDate || !selectedTime) return null;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selectedDateObj = new Date(selectedDate + "T00:00:00");
+
+    // Se for hoje, validar se o horário não passou
+    if (selectedDateObj.getTime() === today.getTime()) {
+      const [hours, minutes] = selectedTime.split(":").map(Number);
+      const appointmentDateTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        hours,
+        minutes
+      );
+
+      if (appointmentDateTime <= now) {
+        const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`;
+        return `Para hoje, selecione um horário após ${currentTime}`;
+      }
+    }
+
+    return null;
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent
+          className="w-[95vw] md:max-w-[500px] max-h-[90vh] p-0 gap-0 rounded-xl md:rounded-2xl border-none shadow-2xl overflow-hidden flex flex-col" /* RESP: Dimensões e arredondamento padrão */
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="sticky top-0 z-10 bg-background px-5 py-4 border-b shrink-0 text-left"> {/* RESP: Header fixo com padding padrão */}
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <CalendarIcon className="h-5 w-5 text-primary" /> {/* RESP: Cor primária no ícone */}
+              {isReserva() ? "Detalhes da reserva" : "Editar Agendamento"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-5 py-6 custom-scrollbar"> {/* RESP: Área de conteúdo rolável com padding consistente */}
+
+          {loadingData ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-sm text-muted-foreground">
+                  Carregando dados...
+                </p>
+              </div>
+            </div>
+          ) : !isEditing && !loadingData ? (
+            // Preview do agendamento
+            <div className="space-y-6">
+              {appointment && (
+                <>
+                  {/* Informações do Cliente */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <User className="h-4 w-4" />
+                      Cliente
+                    </div>
+                    <div className="pl-6">
+                      <p className="font-medium">
+                        {(() => {
+                          const clientName = (appointment as any).clientName || appointment.client?.name ||
+                            clients.find((c) => c.id === appointment.clientId)?.name;
+                          if (!clientName) return "Cliente não definido";
+                          return clientName;
+                        })()}
+                      </p>
+                      {(appointment.client?.phone ||
+                        clients.find((c) => c.id === appointment.clientId)
+                          ?.phone) && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {appointment.client?.phone ||
+                            clients.find((c) => c.id === appointment.clientId)
+                              ?.phone}
+                        </p>
+                      )}
+                      {(appointment.client?.email ||
+                        clients.find((c) => c.id === appointment.clientId)
+                          ?.email) && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {appointment.client?.email ||
+                            clients.find((c) => c.id === appointment.clientId)
+                              ?.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Data e Horário */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <CalendarIcon className="h-4 w-4" />
+                      Data e Horário
+                    </div>
+                    <div className="pl-6">
+                      <p className="font-medium">
+                        {format(new Date(appointment.startTime), "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatUTCToLocal(
+                          appointment.startTime,
+                          selectedSalon?.timezone || "America/Sao_Paulo",
+                          "HH:mm"
+                        )} - {formatUTCToLocal(
+                          appointment.endTime,
+                          selectedSalon?.timezone || "America/Sao_Paulo",
+                          "HH:mm"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Profissional */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <UserCheck className="h-4 w-4" />
+                      Profissional
+                    </div>
+                    <div className="pl-6">
+                      <p className="font-medium">
+                        {appointment.professional?.name ||
+                          professionals.find(
+                            (p) => p.id === appointment.professionalId
+                          )?.name ||
+                          "Profissional não identificado"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Serviço */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Wrench className="h-4 w-4" />
+                      Serviço
+                    </div>
+                    <div className="pl-6">
+                      <p className="font-medium">
+                        {(() => {
+                          const serviceName = (appointment as any).serviceName || appointment.service?.name ||
+                            services.find((s) => s.id === appointment.serviceId)?.name;
+                          if (serviceName === "Unknown") return "Não definido";
+                          return serviceName || "Serviço não identificado";
+                        })()}
+                      </p>
+                      <div className="flex gap-4 text-sm text-muted-foreground">
+                        <span>{appointment.duration || 0} min</span>
+                        <span>R$ {formatPrice(appointment.price)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Observações */}
+                  {appointment.notes && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        Observações
+                      </div>
+                      <div className="pl-6">
+                        <p className="text-sm text-muted-foreground">
+                          {appointment.notes}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Aviso se o agendamento já passou */}
+                  {isAppointmentPast() && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                      <p className="text-sm text-amber-800">
+                        ⚠️ Este agendamento já passou. Não é possível editar ou
+                        cancelar.
+                      </p>
+                    </div>
+                  )}
+
+                </>
+              )}
+            </div>
+          ) : (
+            // Formulário de edição
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"> {/* RESP: Grid responsivo de 1 ou 2 colunas */}
+              {/* Cliente */}
+              <div className="space-y-2 col-span-1 md:col-span-2"> {/* RESP: Cliente ocupa largura total */}
+                <Label htmlFor="client" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <User className="h-3.5 w-3.5" />
+                  Cliente (não editável)
+                </Label>
+                <Select
+                  value={selectedClient}
+                  onValueChange={setSelectedClient}
+                  disabled
+                >
+                  <SelectTrigger disabled className="bg-muted/30">
+                    <SelectValue
+                      placeholder={
+                        selectedClient
+                          ? clients.find((c) => c.id === selectedClient)
+                              ?.name || "Cliente selecionado"
+                          : "Selecione o cliente"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name} {client.phone && `- ${client.phone}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedClient && (
+                  <p className="text-[10px] text-muted-foreground">
+                    O cliente não pode ser alterado após a criação do agendamento
+                  </p>
+                )}
+              </div>
+
+              {/* Data */}
+              <div className="space-y-2">
+                <Label htmlFor="date" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  Data *
+                </Label>
+                <Popover modal={false}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-11",
+                        !selectedDate && "text-muted-foreground",
+                        getDateValidationMessage() && "border-red-500"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(new Date(selectedDate + "T00:00:00"), "PPP", {
+                          locale: ptBR,
+                        })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        selectedDate
+                          ? new Date(selectedDate + "T00:00:00")
+                          : undefined
+                      }
+                      onSelect={(date) => {
+                        if (date) {
+                          const newDate = format(date, "yyyy-MM-dd");
+                          setSelectedDate(newDate);
+                          setSelectedTime(""); // Resetar horário quando mudar a data
+                        }
+                      }}
+                      disabled={(date) => {
+                        // Bloquear datas passadas
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (date < today) return true;
+
+                        // Bloquear datas em que o salão não está aberto
+                        if (salonOpeningHours.length > 0) {
+                          const dayOfWeek = date.getDay();
+                          const dayNames = [
+                            "sunday",
+                            "monday",
+                            "tuesday",
+                            "wednesday",
+                            "thursday",
+                            "friday",
+                            "saturday",
+                          ];
+                          const dayName = dayNames[dayOfWeek];
+
+                          const daySchedule = salonOpeningHours.find(
+                            (schedule) => {
+                              const scheduleDayOfWeek =
+                                typeof schedule.dayOfWeek === "string"
+                                  ? schedule.dayOfWeek.toLowerCase()
+                                  : dayNames[schedule.dayOfWeek];
+                              return (
+                                scheduleDayOfWeek === dayName && schedule.isOpen
+                              );
+                            }
+                          );
+
+                          return !daySchedule;
+                        }
+
+                        return false;
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {getDateValidationMessage() && (
+                  <p className="text-[10px] text-red-500 font-medium">
+                    {getDateValidationMessage()}
+                  </p>
+                )}
+                {selectedDate && !getDateValidationMessage() && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-medium">Data selecionada:</span>{" "}
+                    {(() => {
+                      const dateObj = selectedDate.includes('T') 
+                        ? new Date(selectedDate) 
+                        : new Date(selectedDate + "T00:00:00");
+                      
+                      if (isNaN(dateObj.getTime())) return <span>Data inválida</span>;
+                      
+                      return format(dateObj, "EEEE, d 'de' MMMM 'de' yyyy", {
+                        locale: ptBR,
+                      });
+                    })()}
+                  </p>
+                )}
+              </div>
+
+              {/* Profissional */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="professional"
+                  className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                >
+                  <UserCheck className="h-3.5 w-3.5" />
+                  Profissional *
+                </Label>
+                <Select
+                  value={selectedProfessional}
+                  onValueChange={handleProfessionalSelect}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue
+                      placeholder={
+                        selectedProfessional
+                          ? professionals.find(
+                              (p) => p.id === selectedProfessional
+                            )?.name || "Profissional selecionado"
+                          : "Selecione o profissional"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    {/* Search field for professionals */}
+                    <div className="sticky top-0 p-2 bg-background border-b z-50">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar profissional..."
+                          value={professionalSearchQuery}
+                          onChange={(e) =>
+                            handleProfessionalSearchChange(e.target.value)
+                          }
+                          className="pl-8 h-9"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            // Prevent default behavior that might cause focus loss
+                            if (e.key === "Enter" || e.key === "Escape") {
+                              e.preventDefault();
+                            }
+                          }}
+                          autoFocus={false}
+                        />
+                      </div>
+                    </div>
+
+                    {professionals.length === 0 ? (
+                      <div className="p-2 text-center text-muted-foreground">
+                        Nenhum profissional encontrado
+                      </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          const filteredProfessionals = professionals.filter(
+                            (professional) =>
+                              smartSearch(
+                                professionalSearchQuery,
+                                getUserDisplayName(professional)
+                              ) ||
+                              smartSearch(
+                                professionalSearchQuery,
+                                professional.name
+                              )
+                          );
+
+                          if (filteredProfessionals.length === 0) {
+                            return (
+                              <div className="p-3 text-center text-muted-foreground text-sm">
+                                Nenhum profissional encontrado para "
+                                {professionalSearchQuery}"
+                              </div>
+                            );
+                          }
+
+                          return filteredProfessionals.map((professional) => (
+                            <SelectItem
+                              key={professional.id}
+                              value={professional.id}
+                            >
+                              {getUserDisplayName(professional)}
+                            </SelectItem>
+                          ));
+                        })()}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Serviço */}
+              <div className="space-y-2">
+                <Label htmlFor="service" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Wrench className="h-3.5 w-3.5" />
+                  Serviço *
+                </Label>
+                <Select
+                  value={selectedService}
+                  onValueChange={handleServiceSelect}
+                >
+                  <SelectTrigger className="h-11 md:w-full">
+                    <SelectValue
+                      placeholder={
+                        selectedService
+                          ? services.find((s) => s.id === selectedService)
+                              ?.name || "Serviço selecionado"
+                          : "Selecione o serviço"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <div className="sticky top-0 p-2 bg-background border-b z-50">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar serviço..."
+                          value={serviceSearchQuery}
+                          onChange={(e) =>
+                            handleServiceSearchChange(e.target.value)
+                          }
+                          className="pl-8 h-9"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter" || e.key === "Escape") {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {services.length === 0 ? (
+                      <div className="p-2 text-center text-muted-foreground">
+                        Nenhum serviço encontrado
+                      </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          const filteredServices = services.filter((service) =>
+                            smartSearch(serviceSearchQuery, service.name)
+                          );
+
+                          if (filteredServices.length === 0) {
+                            return (
+                              <div className="p-3 text-center text-muted-foreground text-sm">
+                                Nenhum serviço encontrado para "
+                                {serviceSearchQuery}"
+                              </div>
+                            );
+                          }
+
+                          return filteredServices.map((service) => (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.name}
+                            </SelectItem>
+                          ));
+                        })()}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Horário Inicial */}
+              <div className="space-y-2">
+                <Label htmlFor="time" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  Horário Inicial *
+                </Label>
+                {loadingHorarios ? (
+                  <div className="h-11 text-sm text-muted-foreground p-3 bg-muted/30 rounded-md flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Buscando horários...
+                  </div>
+                ) : (
+                  <Select
+                    value={editableStartTime}
+                    onValueChange={handleStartTimeChange}
+                    disabled={startTimeOptions.length === 0}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Selecione o horário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {startTimeOptions.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {getTimeValidationMessage() && (
+                  <p className="text-[10px] text-red-500 font-medium">
+                    {getTimeValidationMessage()}
+                  </p>
+                )}
+              </div>
+
+              {/* Duração */}
+              <div className="space-y-2">
+                <Label htmlFor="duration" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  Duração *
+                </Label>
+                <Select
+                  value={editableDuration.toString()}
+                  onValueChange={(value) => handleDurationChange(Number(value))}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione a duração" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {durationOptions.map((duration) => (
+                      <SelectItem key={duration} value={duration.toString()}>
+                        {duration} minutos{" "}
+                        {duration >= 60 &&
+                          `(${Math.floor(duration / 60)}h${duration % 60 > 0 ? ` ${duration % 60}min` : ""})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Horário Final */}
+              <div className="space-y-2">
+                <Label htmlFor="endTime" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  Horário Final *
+                </Label>
+                {loadingHorarios ? (
+                  <div className="h-11 text-sm text-muted-foreground p-3 bg-muted/30 rounded-md flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Buscando horários...
+                  </div>
+                ) : (
+                  <Select
+                    value={editableEndTime}
+                    onValueChange={handleEndTimeChange}
+                    disabled={endTimeOptions.length === 0 || !editableStartTime}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Selecione o horário final" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {(() => {
+                        if (!editableStartTime) {
+                          return (
+                            <div className="p-2 text-sm text-muted-foreground text-center">
+                              Selecione o horário inicial primeiro
+                            </div>
+                          );
+                        }
+
+                        const mockedTimes: string[] = [];
+                        const [startHour, startMinute] = editableStartTime.split(":").map(Number);
+                        const startMinutes = startHour * 60 + startMinute;
+
+                        let maxMinutes = startMinutes + 480; 
+                        if (editableEndTime) {
+                          const [endHour, endMinute] = editableEndTime.split(":").map(Number);
+                          const endMinutes = endHour * 60 + endMinute;
+                          maxMinutes = Math.max(endMinutes, startMinutes + 480);
+                        }
+
+                        for (let minutes = startMinutes + 15; minutes <= maxMinutes && minutes < 24 * 60; minutes += 15) {
+                          const hour = Math.floor(minutes / 60);
+                          const minute = minutes % 60;
+                          const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+                          mockedTimes.push(timeStr);
+                        }
+
+                        const allEndTimes = [...new Set([...mockedTimes, ...endTimeOptions])];
+                        allEndTimes.sort();
+
+                        const filteredEndTimes = allEndTimes.filter((time) => {
+                          const [endHour, endMinute] = time.split(":").map(Number);
+                          const endMinutes = endHour * 60 + endMinute;
+                          return endMinutes > startMinutes;
+                        });
+
+                        if (filteredEndTimes.length === 0) {
+                          return (
+                            <div className="p-2 text-sm text-muted-foreground text-center">
+                              Indisponível após {editableStartTime}
+                            </div>
+                          );
+                        }
+
+                        return filteredEndTimes.map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* Observações */}
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <Label htmlFor="notes" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Observações</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Informações adicionais sobre este agendamento..."
+                  className="salon-input min-h-[100px] resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {/* Aviso se o agendamento já passou */}
+              {isAppointmentPast() && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md col-span-1 md:col-span-2">
+                  <p className="text-xs text-amber-800 flex items-center gap-2">
+                    <span className="text-base">⚠️</span> 
+                    Este agendamento já passou. Não é possível fazer alterações.
+                  </p>
+                </div>
+              )}
+              </div>
+            )}
+          </div>
+
+          <div className="sticky bottom-0 z-10 bg-background px-5 py-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-3"> {/* RESP: Footer fixo com padding e gap padrão */}
+            {loadingData || !appointment ? (
+              <Button variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-[44px] rounded-xl">
+                Fechar
+              </Button>
+            ) : !isEditing ? (
+              <>
+                <Button variant="outline" onClick={onClose} className="w-full sm:flex-1 min-h-[44px] rounded-xl">
+                  Fechar
+                </Button>
+                {!isReserva() && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowCancelDialog(true)}
+                      className="w-full sm:flex-1 min-h-[44px] rounded-xl"
+                      disabled={isAppointmentPast() || !selectedSalon?.active}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      className="w-full sm:flex-1 min-h-[44px] rounded-xl"
+                      disabled={isAppointmentPast() || !selectedSalon?.active}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                  className="w-full sm:flex-1 min-h-[44px] rounded-xl"
+                  disabled={loading}
+                >
+                  Voltar
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  className="w-full sm:flex-1 min-h-[44px] rounded-xl shadow-md transition-all active:scale-[0.98]" /* RESP: Efeito tátil e sombra no botão principal */
+                  disabled={
+                    loading ||
+                    isAppointmentPast() ||
+                    !selectedClient ||
+                    !selectedProfessional ||
+                    !selectedService ||
+                    !selectedDate ||
+                    !selectedTime
+                  }
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar Alterações"
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmação de cancelamento */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-2xl p-6 gap-6"> {/* RESP: AlertDialog adaptado para mobile */}
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle className="text-xl font-bold">Confirmar Cancelamento</AlertDialogTitle>
+            <AlertDialogDescription className="text-base pt-2">
+              Tem certeza que deseja cancelar este agendamento? Esta ação não
+              pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2"> {/* RESP: Footer flex-col no mobile */}
+            <AlertDialogCancel disabled={cancelLoading} className="w-full sm:w-auto min-h-[44px] rounded-xl mt-0">
+              Voltar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={cancelLoading}
+              className="w-full sm:w-auto min-h-[44px] rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Cancelando...
+                </>
+              ) : (
+                "Sim, Cancelar Agendamento"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

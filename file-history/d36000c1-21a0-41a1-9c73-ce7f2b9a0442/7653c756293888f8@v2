@@ -1,0 +1,184 @@
+import { Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CalendarEvent, EventPosition } from "./types";
+import { formatUTCToLocal } from "@/utils/dateTimeHelpers";
+import { BookingSourceBadge } from "@/components/agenda/BookingSourceBadge";
+
+interface EventBlockProps {
+  event: CalendarEvent;
+  position: EventPosition;
+  layout?: { column: number; totalColumns: number };
+  primaryColor?: string;
+  salonTimezone?: string;
+  onClick?: (event: CalendarEvent) => void;
+  isHighlighted?: boolean;
+}
+
+interface EventStyleConfig {
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+}
+
+const getEventStyles = (
+  variant?: string,
+  status?: string,
+  primaryColor?: string
+): EventStyleConfig => {
+  // Ausência sempre vermelho
+  if (variant === "ausencia") {
+    return {
+      bgColor: "bg-red-50",
+      borderColor: "border-l-red-500",
+      textColor: "text-red-900",
+    };
+  }
+
+  // Reserva sempre roxo
+  if (variant === "reserva") {
+    return {
+      bgColor: "bg-purple-50",
+      borderColor: "border-l-purple-500",
+      textColor: "text-purple-900",
+    };
+  }
+
+  // Status-based colors
+  if (status === "Atendendo") {
+    return {
+      bgColor: "bg-blue-50",
+      borderColor: "border-l-blue-500",
+      textColor: "text-blue-900",
+    };
+  }
+  if (status === "Pgto Pendente") {
+    return {
+      bgColor: "bg-yellow-50",
+      borderColor: "border-l-yellow-500",
+      textColor: "text-yellow-900",
+    };
+  }
+  if (status === "Pago") {
+    return {
+      bgColor: "bg-green-50",
+      borderColor: "border-l-green-500",
+      textColor: "text-green-900",
+    };
+  }
+  if (status === "Cancelado") {
+    return {
+      bgColor: "bg-muted",
+      borderColor: "border-l-muted-foreground",
+      textColor: "text-muted-foreground",
+    };
+  }
+
+  // Default - usa cor do salão ou token do DS
+  return {
+    bgColor: "bg-secondary",
+    borderColor: primaryColor ? "" : "border-l-border",
+    textColor: "text-foreground",
+  };
+};
+
+const formatTime = (dateStr: string, timezone: string): string => {
+  // Converter UTC para timezone do salão
+  return formatUTCToLocal(dateStr, timezone, 'HH:mm');
+};
+
+export const EventBlock: React.FC<EventBlockProps> = ({
+  event,
+  position,
+  layout,
+  primaryColor,
+  salonTimezone = "America/Sao_Paulo",
+  onClick,
+  isHighlighted = false,
+}) => {
+  const styles = getEventStyles(event.variant, event.status, primaryColor);
+  const isReserva = event.variant === "reserva";
+
+  const minHeight = 50; // Minimum height in pixels (aligned with SLOT_HEIGHT for 15 min slots)
+  const eventHeight = Math.max(position.height, minHeight);
+
+  // Calcula posicionamento e largura baseado no layout
+  const layoutStyles = layout ? {
+    left: `${(layout.column / layout.totalColumns) * 100}%`,
+    width: `calc(${100 / layout.totalColumns}% - 4px)`,
+  } : {
+    left: '4px',
+    right: '4px',
+  };
+
+  // Ajusta padding quando o evento está comprimido
+  const isCompressed = layout && layout.totalColumns > 1;
+  const paddingClass = isCompressed && layout.totalColumns >= 3 ? "px-1 py-0.5" : "px-2 py-1";
+
+  return (
+    <div
+      className={cn(
+        "absolute rounded-md shadow-sm cursor-pointer",
+        "hover:shadow-md transition-shadow duration-150",
+        paddingClass,
+        "overflow-hidden border-l-4",
+        styles.bgColor,
+        styles.borderColor,
+        styles.textColor,
+        isHighlighted && "ring-2 ring-blue-500 ring-offset-1 z-30"
+      )}
+      style={{
+        top: `${position.top}px`,
+        height: `${eventHeight}px`,
+        minHeight: `${minHeight}px`,
+        ...layoutStyles,
+        ...(primaryColor && !styles.borderColor
+          ? { borderLeftColor: primaryColor }
+          : {}),
+      }}
+      onClick={() => onClick?.(event)}
+      title={isCompressed ? `${event.clientName} - ${event.serviceName}` : undefined}
+    >
+      {/* Ping overlay — visível apenas quando highlighted */}
+      {isHighlighted && (
+        <span className="absolute inset-0 rounded-md ring-2 ring-blue-400 animate-ping opacity-75 pointer-events-none z-0" />
+      )}
+
+      <div className="relative z-10 h-full">
+      {isReserva ? (
+        <div className="flex flex-col h-full justify-center items-center">
+          <span className="font-bold text-sm text-center">Reserva feita pelo profissional</span>
+          <div className="flex items-center gap-1 text-[10px] opacity-80 mt-1">
+            <Clock className="w-3 h-3" />
+            <span>
+              {formatTime(event.start, salonTimezone)} -{" "}
+              {formatTime(event.end, salonTimezone)}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col h-full text-xs">
+          <div className="flex items-center justify-between gap-1">
+            <span className="font-semibold truncate">{event.clientName}</span>
+            {event.source && (
+              <BookingSourceBadge
+                source={event.source}
+                className="flex-shrink-0 text-[9px] px-1 py-0.5"
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-[10px] opacity-80">
+            <Clock className="w-3 h-3" />
+            <span>
+              {formatTime(event.start, salonTimezone)} -{" "}
+              {formatTime(event.end, salonTimezone)}
+            </span>
+          </div>
+          <div className="text-[10px] truncate opacity-70">
+            {event.serviceName}
+          </div>
+        </div>
+      )}
+      </div>
+    </div>
+  );
+};

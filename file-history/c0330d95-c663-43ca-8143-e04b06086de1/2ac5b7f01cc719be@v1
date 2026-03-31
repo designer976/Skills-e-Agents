@@ -1,0 +1,48 @@
+# Application
+NODE_ENV=production
+PORT=3000
+FRONTEND_PORT=8080
+API_URL=https://api-easysalon-dev.waproject.com.br
+
+# Database
+DATABASE_HOST=postgres
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=postgres123
+DATABASE_NAME=easy_salon
+
+# Security
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# AWS S3 Configuration (Optional - for image uploads)
+# If not configured, system will use local storage in /app/uploads
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=sa-east-1
+AWS_S3_BUCKET=codefica-easysalon-dev
+# AWS_CLOUDFRONT_URL=https://your-distribution.cloudfront.net
+
+# Email Configuration
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=your-email@gmail.com
+MAIL_PASS=your-app-password
+MAIL_FROM=noreply@easysalon.com.br
+
+# CORS
+CORS_ALLOWED_ORIGINS='https://easy-salon.backoffice-dev.codefica.dev,https://easy-salon.backoffice-hml.codefica.dev,https://easy-salon.backoffice-prd.codefica.dev,https://admin.easysalon.com.br,https://adm.easysalon.com.br,https://www.easy-salon.backoffice-dev.codefica.dev,https://easysalon-api-dev.apps.codefica.dev,http://localhost,http://localhost:80,http://localhost:3000,http://localhost:5173,http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:3001,http://127.0.0.1,http://127.0.0.1:80,https://www.easy-salon.backoffice-dev.codefica.dev,https://easy-salon.backoffice-dev.codefica.dev,https://easy-salon.backoffice-dev.codefica.dev,https://easy-salon.backoffice-hml.codefica.dev,https://admin.easysalon.com.br,https://adm.easysalon.com.br,https://easy-salon.backoffice-prd.codefica.dev,https://easy-salon-api-dev.codefica.dev,https://easy-salon-api.codefica.dev,https://easysalon-api-dev.apps.codefica.dev,https://easysalon-api.apps.codefica.dev,https://easy-salon.backoffice-hml.codefica.dev'
+CORS_ALLOWED_HEADERS='Accept,Accept-Language,Content-Language,Content-Type,Authorization,X-Salon-ID,X-Tenant-ID,X-Request-Timestamp,X-Skip-Toast,X-No-Retry,Origin,X-Requested-With'
+CORS_ALLOWED_METHODS='GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'
+CORS_EXPOSED_HEADERS='X-Total-Count,X-Page,X-Limit,Content-Length,Content-Range,X-Skip-Toast'
+
+# Frontend URLs
+VITE_API_URL=http://localhost:3000
+VITE_WS_URL=ws://localhost:3000
+
+# Production URLs (update these for production)
+# VITE_API_URL=https://api.easysalon.com.br
+# VITE_WS_URL=wss://api.easysalon.com.br

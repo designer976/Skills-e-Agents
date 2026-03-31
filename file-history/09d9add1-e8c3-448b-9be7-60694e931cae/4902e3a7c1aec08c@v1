@@ -1,0 +1,328 @@
+import { useState, useEffect, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { PercentageInput } from "@/components/ui/percentage-input";
+import { Loader2 as Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { CurrencyInput } from "../ui/currency-input";
+import { cn } from "@/lib/utils";
+
+interface ServiceConfigModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  service: {
+    id: string;
+    name: string;
+    configured_price?: number;
+    configured_duration?: number;
+    configured_commission?: number;
+    is_enabled?: boolean;
+    configured_accepts_online?: boolean;
+    duration?: number; // Default duration from service
+  };
+  onSave: (data: {
+    price: string;
+    duration: number;
+    commission: number;
+    isEnabled: boolean;
+    acceptsOnlineBooking: boolean;
+  }) => void;
+  isSaving?: boolean;
+}
+
+const formatInitialPrice = (price?: number | string): string => {
+  if (!price) return "0,00";
+  const numValue =
+    typeof price === "string" ? parseFloat(price.replace(",", ".")) : price;
+  return numValue.toFixed(2).replace(".", ",");
+};
+
+export function ServiceConfigModal({
+  isOpen,
+  onClose,
+  service,
+  onSave,
+  isSaving = false,
+}: ServiceConfigModalProps) {
+  const [formData, setFormData] = useState({
+    price: "",
+    duration: 30,
+    commission: 0,
+    isEnabled: false,
+    acceptsOnlineBooking: true,
+  });
+
+  const [commissionString, setCommissionString] = useState("0,00");
+
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof typeof formData, string>>
+  >({});
+
+  useEffect(() => {
+    if (service && isOpen) {
+      const commissionValue = service.configured_commission || 0;
+      setFormData({
+        price: formatInitialPrice(service.configured_price || ""),
+        duration: service.configured_duration || service.duration || 30,
+        commission: commissionValue,
+        isEnabled: service.is_enabled || false,
+        acceptsOnlineBooking:
+          service.configured_accepts_online !== undefined
+            ? service.configured_accepts_online
+            : true,
+      });
+      setCommissionString(commissionValue.toFixed(2).replace(".", ","));
+      setErrors({});
+    }
+  }, [service, isOpen]);
+
+  const handleInputChange = (field: keyof typeof formData, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const price = useMemo(() => {
+    return typeof formData.price === "string"
+      ? parseFloat(formData.price.replace(".", "").replace(",", "."))
+      : formData.price;
+  }, [formData.price]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof typeof formData, string>> = {};
+
+    // Validate price
+    if (price <= 0) {
+      newErrors.price = "Preço deve ser maior que zero";
+    }
+
+    // Validate duration
+    if (formData.duration < 15) {
+      newErrors.duration = "Duração deve ser pelo menos 15 minutos";
+    } else if (formData.duration > 480) {
+      newErrors.duration = "Duração não pode exceder 8 horas";
+    } else if (formData.duration % 15 !== 0) {
+      newErrors.duration = "Duração deve ser em intervalos de 15 minutos";
+    }
+
+    // Validate commission
+    if (formData.commission < 0) {
+      newErrors.commission = "Comissão não pode ser negativa";
+    } else if (formData.commission > 100) {
+      newErrors.commission = "Comissão não pode ser maior que 100%";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      price: "",
+      duration: 30,
+      commission: 0,
+      isEnabled: false,
+      acceptsOnlineBooking: true,
+    });
+    setErrors({});
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="w-[95vw] md:max-w-lg max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-xl md:rounded-lg border-none shadow-2xl overflow-hidden flex flex-col"
+        aria-describedby="service-config-modal-description"
+      >
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-3 border-b shrink-0">
+          <DialogTitle className="text-xl font-semibold">Configurar Serviço Padrão</DialogTitle>
+          <div id="service-config-modal-description" className="sr-only">
+            Formulário para configurar preço, duração e comissão de um serviço
+            padrão
+          </div>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar space-y-4">
+            <div>
+              <Label htmlFor="service-name" className="text-muted-foreground">
+                Serviço
+              </Label>
+              <p className="font-medium">{service?.name}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price">Preço (R$) *</Label>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Valor deve ser maior que zero
+                </p>
+                <CurrencyInput
+                  id="price"
+                  value={String(formData.price)}
+                  onChange={(value) => handleInputChange("price", value || 0)}
+                  placeholder="0,00"
+                  disabled={isSaving}
+                  className={cn("text-base md:text-sm sm:h-9", errors.price ? "border-red-500" : "")}
+                />
+                {errors.price && (
+                  <p className="text-sm text-red-500">{errors.price}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duração (min) *</Label>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Intervalos de 15 minutos
+                </p>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="15"
+                  max="480"
+                  step="15"
+                  value={formData.duration}
+                  onChange={(e) =>
+                    handleInputChange("duration", parseInt(e.target.value) || 30)
+                  }
+                  placeholder="30"
+                  required
+                  disabled={isSaving}
+                  className={cn("text-base md:text-sm sm:h-9", errors.duration ? "border-red-500" : "")}
+                  maxLength={3}
+                />
+                {errors.duration && (
+                  <p className="text-sm text-red-500">{errors.duration}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="commission">Comissão (%)</Label>
+              <PercentageInput
+                id="commission"
+                value={commissionString}
+                onChange={(value) => {
+                  setCommissionString(value);
+                  const numValue = parseFloat(value.replace(",", ".")) || 0;
+                  handleInputChange("commission", numValue);
+                }}
+                min={0}
+                max={100}
+                disabled={isSaving}
+                className={cn("text-base md:text-sm sm:h-9", errors.commission ? "border-red-500" : "")}
+              />
+              {errors.commission && (
+                <p className="text-sm text-red-500">{errors.commission}</p>
+              )}
+              <p className="text-sm text-muted-foreground">
+                Porcentagem de comissão para o profissional
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="isEnabled" className="text-base">
+                    Serviço Ativo
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Ativar este serviço para o salão
+                  </p>
+                </div>
+                <Switch
+                  id="isEnabled"
+                  checked={formData.isEnabled}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("isEnabled", checked)
+                  }
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="acceptsOnlineBooking" className="text-base">
+                    Aceita Agendamento Online
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permitir que clientes agendem este serviço online
+                  </p>
+                </div>
+                <Switch
+                  id="acceptsOnlineBooking"
+                  checked={formData.acceptsOnlineBooking}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("acceptsOnlineBooking", checked)
+                  }
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
+
+            {price <= 0 && formData.isEnabled && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Atenção: O serviço está ativo mas não tem um preço válido.
+                  Ele não estará disponível para agendamento até que um preço
+                  maior que zero seja definido.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="sticky bottom-0 z-10 bg-background px-4 md:px-6 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isSaving}
+              className="w-full sm:w-auto min-h-[44px]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto min-h-[44px] salon-button-primary"
+              disabled={isSaving}
+            >
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar Configuração
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

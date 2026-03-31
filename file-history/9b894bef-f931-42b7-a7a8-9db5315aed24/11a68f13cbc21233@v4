@@ -1,0 +1,377 @@
+import { SubscriptionAlertModal } from "@/components/modals/SubscriptionAlertModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { salonService } from "@/services/salonService";
+import { Salon } from "@/types/salon";
+import { getInitials } from "@/utils/imageUtils";
+import { AlertCircle, AppWindow, Bot, Building2, ChevronDown, LayoutDashboard, LogOut, Menu, Network, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+// Using the logo from assets folder
+import easySalonLogo from "@/assets/easy-logo.svg";
+
+interface HeaderProps {
+  onMenuClick?: () => void; // RESP: Prop para abrir side menu no mobile
+}
+
+export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenuClick
+  const navigate = useNavigate();
+
+  const location = useLocation();
+  const { selectedSalon, updateSelectedSalon } = useSelectedSalon();
+  const { logout, user } = useAuth();
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [loadingSalons, setLoadingSalons] = useState(true);
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
+  const [pendingSalon, setPendingSalon] = useState<Salon | null>(null);
+  const [salonDrawerOpen, setSalonDrawerOpen] = useState(false);
+
+  const isSalonArea = location.pathname.startsWith("/salon");
+
+  // Verifica se está na área administrativa
+  const isAdminArea = location.pathname.startsWith("/admin");
+
+  // Fetch salons on mount
+  useEffect(() => {
+    const fetchSalons = async () => {
+      try {
+        setLoadingSalons(true);
+        const response = await salonService.list();
+        // @ts-ignore - Backend response might be paginated or raw array
+        const data = response.data || response;
+        setSalons(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error fetching salons:", error);
+        setSalons([]);
+      } finally {
+        setLoadingSalons(false);
+      }
+    };
+
+    fetchSalons();
+  }, [user]);
+
+  const isPlanExpired = (salon: Salon) => {
+    return (
+      salon.subscription?.status === "past_due" ||
+      salon.subscription?.status === "canceled" ||
+      salon.subscription?.status === "unpaid"
+    );
+  };
+
+  const handleSalonSelect = (salon: Salon) => {
+    if (isPlanExpired(salon)) {
+      setPendingSalon(salon);
+      setShowExpiredModal(true);
+      return;
+    }
+
+    updateSelectedSalon(salon);
+
+    // If already on agenda page, reload to fetch new salon data
+    if (location.pathname === "/salon/agenda") {
+      // Small delay to ensure salon is updated in context before reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } else {
+      navigate("/salon/agenda");
+    }
+  };
+
+  const handleExpiredPlanConfirm = () => {
+    if (pendingSalon) {
+      updateSelectedSalon(pendingSalon);
+      setShowExpiredModal(false);
+      navigate("/salon/my-plan");
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
+  const handleAdminPanel = () => {
+    navigate("/admin/salons");
+  };
+
+  return (
+    <>
+      <header className="h-16 border-b bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0">
+        {/* Botão Hambúrguer + Logo - Esquerda */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onMenuClick}
+            aria-label="Toggle Menu"
+            className="w-10 h-10 flex items-center justify-center hover:bg-muted rounded-lg transition-colors md:hidden mr-1"
+          >
+            <Menu className="w-6 h-6 text-foreground" />
+          </button>
+
+          <div className="flex items-center">
+            <img
+              src={easySalonLogo}
+              alt="Easy Salon"
+              className="h-6 md:h-8 w-auto object-contain hidden sm:block"
+              style={{ imageRendering: "auto" }}
+            />
+            <img
+              src={easySalonLogo}
+              alt="ES"
+              className="h-5 w-auto object-contain sm:hidden"
+            />
+          </div>
+        </div>
+
+        {/* Right side controls */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="hidden md:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg transition-colors hover:bg-muted cursor-pointer h-10">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">
+                    {isAdminArea
+                      ? "Selecionar Salão"
+                      : selectedSalon?.name || "Selecionar Salão"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform data-[state=open]:rotate-180" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 bg-card border border-border rounded-lg shadow-lg z-50 p-0 overflow-hidden">
+                <div className="max-h-96 overflow-y-auto">
+                  {/* Admin/Network panels */}
+                  {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <button
+                          onClick={handleAdminPanel}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border bg-muted/30 outline-none"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <LayoutDashboard className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">Painel da Easy</p>
+                            <p className="text-xs text-muted-foreground">Voltar à Easy Salon</p>
+                          </div>
+                        </button>
+                      </DropdownMenuItem>
+                      {(user?.role === "Easy Salon") && (
+                        <DropdownMenuItem asChild>
+                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border bg-muted/30 outline-none">
+                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                              <Network className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground">Painel da rede</p>
+                              <p className="text-xs text-muted-foreground">Sua rede</p>
+                            </div>
+                          </button>
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section header */}
+                  <div className="px-4 py-2 bg-muted/50 border-b border-border">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Salões</p>
+                  </div>
+
+                  {/* Loading state */}
+                  {loadingSalons ? (
+                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                      Carregando salões...
+                    </div>
+                  ) : salons.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                      Nenhum salão disponível
+                    </div>
+                  ) : (
+                    /* Filtrar salões baseado no papel do usuário */
+                    (() => {
+                      const filtered = salons.filter((salon) => {
+                        // Admin e Tenant Admin vêem todos os salões (já filtrados pelo backend)
+                        if (
+                          user?.role === "Easy Salon" ||
+                          user?.role === "Tenant Admin"
+                        )
+                          return true;
+                        // Profissional só vê o seu salão
+                        return user?.salonId === salon.id;
+                      });
+
+                      return filtered.map((salon) => {
+                        const expired = isPlanExpired(salon);
+                        const isSelected = selectedSalon?.id === salon.id;
+                        return (
+                          <DropdownMenuItem key={salon.id} asChild>
+                            <button
+                              onClick={() => handleSalonSelect(salon)}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-b-0 outline-none ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : ""
+                                } ${expired ? "bg-red-50/50" : ""}`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${expired ? "bg-red-100/50" : "bg-primary/10"
+                                }`}>
+                                <Building2 className={`w-4 h-4 ${expired ? "text-red-500" : "text-primary"}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-foreground truncate">
+                                    {salon.name}
+                                  </p>
+                                  {expired && (
+                                    <AlertCircle className="w-3 h-3 text-red-500" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {salon.phone || "(s/ contato)"}
+                                </p>
+                              </div>
+                            </button>
+                          </DropdownMenuItem>
+                        );
+                      });
+                    })()
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* User dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 hover:bg-muted rounded-lg transition-colors">
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <span className="text-primary-foreground text-xs font-semibold">
+                    {getInitials(user?.name || "Usuário")}
+                  </span>
+                </div>
+                <span className="font-medium text-sm hidden sm:inline-block">{user?.name || "Usuário"}</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-card border border-border rounded-lg shadow-lg z-50 p-0">
+              <DropdownMenuItem onClick={handleProfile} className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border">
+                <User className="mr-2 h-4 w-4" />
+                Meu perfil
+              </DropdownMenuItem>
+              {/* Selecionar salão — mobile only */}
+              {isSalonArea && (
+                <DropdownMenuItem
+                  className="md:hidden px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border"
+                  onClick={() => setSalonDrawerOpen(true)}
+                >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Selecionar salão
+                </DropdownMenuItem>
+              )}
+              {isSalonArea && (
+                <>
+                  <DropdownMenuItem
+                    className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border"
+                    onClick={() => window.open("/agenda-online", "_blank")}
+                  >
+                    <AppWindow className="mr-2 h-4 w-4" />
+                    Minha página web
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border"
+                    onClick={() => window.open("https://wa.me/5541992938071", "_blank")}
+                  >
+                    <Bot className="mr-2 h-4 w-4" />
+                    Agendamento IA
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuItem onClick={handleLogout} className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none text-[#dd4227] focus:text-[#dd4227]">
+                <LogOut className="mr-2 h-4 w-4 text-[#dd4227]" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+      <SubscriptionAlertModal
+        isOpen={showExpiredModal}
+        onConfirm={handleExpiredPlanConfirm}
+      />
+
+      {/* Drawer para selecionar salão — mobile only */}
+      <Drawer open={salonDrawerOpen} onOpenChange={setSalonDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader className="text-left pb-5 border-b border-border">
+            <DrawerTitle className="text-left">Selecionar salão</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 pt-5 space-y-2">
+            {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+              <button
+                onClick={() => { setSalonDrawerOpen(false); navigate("/admin/salons"); }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border border-border rounded-lg bg-muted/30"
+              >
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  <LayoutDashboard className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Painel da Easy</p>
+                  <p className="text-xs text-muted-foreground">Voltar à Easy Salon</p>
+                </div>
+              </button>
+            )}
+
+            {loadingSalons ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Carregando salões...</p>
+            ) : (
+              <div className="space-y-2">
+                {salons
+                  .filter((s) =>
+                    user?.role === "Easy Salon" ||
+                    user?.role === "Tenant Admin" ||
+                    user?.salonId === s.id
+                  )
+                  .map((salon) => {
+                    const expired = isPlanExpired(salon);
+                    const isSelected = selectedSalon?.id === salon.id;
+                    return (
+                      <button
+                        key={salon.id}
+                        onClick={() => { setSalonDrawerOpen(false); handleSalonSelect(salon); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border rounded-lg ${
+                          isSelected ? "bg-primary/10 border-primary" : "border-border"
+                        } ${expired ? "opacity-70" : ""}`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Building2 className={`w-4 h-4 ${expired ? "text-destructive" : "text-primary"}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">{salon.name}</p>
+                            {expired && <AlertCircle className="w-3 h-3 text-destructive" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{salon.phone || "(s/ contato)"}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
+  );
+}

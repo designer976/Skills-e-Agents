@@ -1,0 +1,214 @@
+# 📊 Análise Comparativa: Protótipo vs Easy Salon
+
+## 🎯 Resumo Executivo
+
+O **protótipo** possui recursos significativamente mais avançados que o projeto **Easy Salon** atual. Principais diferenças identificadas:
+
+- ✅ **Estados de foco** sofisticados no protótipo
+- ✅ **Acessibilidade** aprimorada (aria-invalid, estados de erro)
+- ✅ **Dark mode** mais robusto
+- ✅ **Sistema de sombras** implementado
+- ✅ **Transições** mais elegantes
+- ❌ **Easy Salon** tem implementação mais básica
+
+---
+
+## 🔍 Comparação Detalhada por Componente
+
+### 1. 🔘 **Button Component**
+
+#### **Protótipo (Avançado)**
+```tsx
+// Focus states sofisticados
+"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+
+// Aria states para acessibilidade
+"aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+
+// SVG handling inteligente
+"[&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0"
+
+// Dark mode específico
+"dark:bg-input/30 dark:border-input dark:hover:bg-input/50"
+
+// Shadow system
+"shadow-xs"
+
+// Responsividade avançada
+"has-[>svg]:px-3" // Detecta se há SVG e ajusta padding
+```
+
+#### **Easy Salon (Básico)**
+```tsx
+// Focus básico
+"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+
+// Aria limitado
+"aria-invalid:ring-destructive/20 aria-invalid:border-destructive"
+
+// SVG simples
+"[&_svg]:size-4 [&_svg]:shrink-0"
+
+// Sem variações dark específicas
+// Sem shadow system
+// Padding fixo sem detecção de conteúdo
+```
+
+### 2. 📝 **Input Component**
+
+#### **Protótipo (Avançado)**
+```tsx
+// Background adaptativo para dark mode
+"dark:bg-input/30"
+
+// Shadow system
+"shadow-xs"
+
+// Transições específicas
+"transition-[color,box-shadow]"
+
+// Easy Salon branding já integrado
+"focus-visible:border-[#dd4227] focus-visible:ring-[#dd4227]/30"
+```
+
+#### **Easy Salon (Básico)**
+```tsx
+// Background sempre transparente
+"bg-transparent"
+
+// Shadow básico
+"shadow-sm"
+
+// Transições genéricas
+"transition-colors"
+
+// Mesmo branding aplicado
+"focus-visible:border-[#dd4227] focus-visible:ring-[#dd4227]/30"
+```
+
+### 3. 🏷️ **Badge Component**
+
+#### **Protótipo (Avançado)**
+```tsx
+// Focus states completos
+"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+
+// Estados de erro robustos
+"aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+
+// Hover específico para links
+"[a&]:hover:bg-primary/90"
+
+// Transições elegantes
+"transition-[color,box-shadow]"
+
+// Dark mode específico para destructive
+"dark:bg-destructive/60"
+```
+
+#### **Easy Salon (Básico)**
+```tsx
+// Sem focus states
+// Sem aria-invalid states
+// Hover genérico
+"hover:bg-primary/90"
+
+// Transição básica
+"transition-colors"
+
+// Sem variações dark específicas
+```
+
+### 4. 🪟 **Dialog Component**
+
+#### **Protótipo (Avançado)**
+```tsx
+// Data slots para debugging
+data-slot="dialog"
+data-slot="dialog-trigger"
+data-slot="dialog-portal"
+
+// Estrutura mais funcional
+function Dialog({ ...props }) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+```
+
+#### **Easy Salon (Básico)**
+```tsx
+// Estrutura tradicional
+const Dialog = DialogPrimitive.Root
+const DialogTrigger = DialogPrimitive.Trigger
+
+// Sem data slots
+// Implementação mais direta
+```
+
+---
+
+## 🎨 Diferenças no Design System
+
+### **Protótipo (OKLCH)**
+```css
+--primary: oklch(0.205 0 0);
+--radius: 0.625rem; /* 10px */
+--font-sans: 'Geist', 'Geist Fallback';
+```
+
+### **Easy Salon (HSL + Branding)**
+```css
+--primary: 9 73% 51%; /* #dd4227 */
+--radius: 0.875rem; /* 14px */
+font-family: Inter;
+```
+
+---
+
+## 🚀 Melhorias Prioritárias para Easy Salon
+
+### **🔥 Alta Prioridade**
+1. **Estados de Focus** - Implementar `ring-[3px]` e `aria-invalid` states
+2. **Dark Mode** - Adicionar variações específicas (`dark:bg-input/30`)
+3. **Shadow System** - Implementar `shadow-xs` consistente
+4. **SVG Handling** - Melhorar seletores `[&_svg:not([class*='size-'])]`
+
+### **⚡ Média Prioridade**
+5. **Transições** - Migrar para `transition-[color,box-shadow]`
+6. **Hover States** - Implementar `[a&]:hover` para elementos link
+7. **Data Slots** - Adicionar para debugging
+8. **Responsividade** - Implementar `has-[>svg]` selectors
+
+### **📊 Baixa Prioridade**
+9. **Sistema de Cores** - Considerar migração para OKLCH
+10. **Fonte** - Avaliar Geist vs Inter
+11. **Border Radius** - Padronizar 10px vs 14px
+
+---
+
+## 🎯 Estratégia de Implementação
+
+### **Fase 1: Core Improvements**
+- ✅ Focus states e acessibilidade
+- ✅ Shadow system
+- ✅ Dark mode variants
+
+### **Fase 2: Advanced Features**
+- ⚡ SVG handling inteligente
+- ⚡ Responsive selectors
+- ⚡ Data slots
+
+### **Fase 3: Design System Alignment**
+- 📋 Avaliar OKLCH vs HSL
+- 📋 Padronizar measurements
+- 📋 Typography review
+
+---
+
+## 💡 Recomendações
+
+1. **Manter branding Easy Salon** (#dd4227, 14px radius, Inter)
+2. **Implementar recursos avançados** do protótipo
+3. **Priorizar acessibilidade** (aria-invalid, focus states)
+4. **Gradual migration** - componente por componente
+
+**Status**: Pronto para implementação das melhorias 🚀

@@ -1,0 +1,14 @@
+# Regras Globais — Claude Code
+
+## Skills Front-end (Auto-ativação)
+
+Ao detectar as situações abaixo, invoque o skill correspondente via Skill tool
+sem esperar o usuário digitar o comando:
+
+| Situação detectada | Skill a invocar |
+|--------------------|----------------|
+| Pedido de novo componente, tela ou ajuste visual sem spec clara | `/designer` |
+| Spec pronta + pedido de implementação de UI | `/front-end-ui` |
+| Após qualquer implementação front-end concluída | `/front-end-code` |
+| Pedido do zero: nova tela ou componente sem spec definida | `/all-agents` |
+| Spec já validada + implementar + revisar em sequência | `/all-front-end` |

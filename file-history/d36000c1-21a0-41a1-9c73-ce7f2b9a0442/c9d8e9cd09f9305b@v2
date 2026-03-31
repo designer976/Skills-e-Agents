@@ -1,0 +1,275 @@
+import { useRef, useMemo, useEffect, useState } from "react";
+import { isBefore, startOfDay } from "date-fns";
+import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { Loader2 } from "lucide-react";
+import { EasyCalendarProps, TimeSlot } from "./types";
+import { TimeGrid } from "./TimeGrid";
+import { ProfessionalColumn } from "./ProfessionalColumn";
+
+// Base slot height for 15-minute intervals
+const BASE_SLOT_HEIGHT = 50; // pixels
+const BASE_SLOT_MINUTES = 15; // minutes
+
+const generateTimeSlots = (
+  startHour: number,
+  endHour: number,
+  slotMinutes: number
+): TimeSlot[] => {
+  const slots: TimeSlot[] = [];
+  let currentHour = startHour;
+  let currentMinute = 0;
+
+  while (
+    currentHour < endHour ||
+    (currentHour === endHour && currentMinute === 0)
+  ) {
+    const label = `${currentHour.toString().padStart(2, "0")}:${currentMinute
+      .toString()
+      .padStart(2, "0")}`;
+    const time = `${currentHour}:${currentMinute.toString().padStart(2, "0")}`;
+
+    slots.push({
+      hour: currentHour,
+      minute: currentMinute,
+      label,
+      time,
+    });
+
+    currentMinute += slotMinutes;
+    if (currentMinute >= 60) {
+      currentMinute = 0;
+      currentHour += 1;
+    }
+  }
+
+  return slots;
+};
+
+const calculateCurrentTimePosition = (
+  currentDate: Date,
+  timeSlots: TimeSlot[],
+  slotHeight: number,
+  timezone?: string
+): number | undefined => {
+  if (timeSlots.length === 0) return undefined;
+
+  // Get current time in the salon's timezone
+  // We need to extract hours and minutes in the salon's timezone, not local browser timezone
+  const currentHour = timezone
+    ? parseInt(formatInTimeZone(currentDate, timezone, "HH"), 10)
+    : currentDate.getHours();
+  const currentMinute = timezone
+    ? parseInt(formatInTimeZone(currentDate, timezone, "mm"), 10)
+    : currentDate.getMinutes();
+
+  const firstSlot = timeSlots[0];
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+  const firstSlotMinutes = firstSlot.hour * 60 + firstSlot.minute;
+
+  // If current time is before the first slot, return 0
+  if (currentTotalMinutes < firstSlotMinutes) return 0;
+
+  const minutesFromFirst = currentTotalMinutes - firstSlotMinutes;
+
+  const slotMinutes =
+    timeSlots.length > 1
+      ? timeSlots[1].hour * 60 + timeSlots[1].minute - firstSlotMinutes
+      : 15;
+
+  const position = (minutesFromFirst / slotMinutes) * slotHeight;
+
+  return position;
+};
+
+export const EasyCalendar: React.FC<EasyCalendarProps> = ({
+  date,
+  columns,
+  events,
+  startHour = 8,
+  endHour = 20,
+  slotMinutes = 15,
+  primaryColor,
+  salonTimezone = "America/Sao_Paulo",
+  onEventClick,
+  onEventMove,
+  onSlotClick,
+  onAbsenceClick,
+  onAbsenceBlockClick,
+  loading = false,
+  isSalonClosed = false,
+  focusAppointment = null,
+  onFocusConsumed,
+}) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const timeSlots = useMemo(
+    () => generateTimeSlots(startHour, endHour, slotMinutes),
+    [startHour, endHour, slotMinutes]
+  );
+
+  // Calculate slot height dynamically based on slot minutes
+  // 15 minutes = 50px (base), 30 minutes = 100px, etc.
+  const slotHeight = useMemo(
+    () => (slotMinutes / BASE_SLOT_MINUTES) * BASE_SLOT_HEIGHT,
+    [slotMinutes]
+  );
+
+  const calendarDate = useMemo(() => {
+    // Parse date string as UTC to ensure consistent behavior across timezones
+    // The date string comes in format YYYY-MM-DD and represents a date in UTC
+    return new Date(date + "T00:00:00.000Z");
+  }, [date]);
+
+  // Check if it's today in the salon's timezone
+  const isTodayDate = useMemo(() => {
+    // Get current date in salon's timezone
+    const nowInSalonTz = toZonedTime(new Date(), salonTimezone);
+    const todayInSalonTz = formatInTimeZone(
+      nowInSalonTz,
+      salonTimezone,
+      "yyyy-MM-dd"
+    );
+
+    return date === todayInSalonTz;
+  }, [date, salonTimezone]);
+
+  const isPastDay = useMemo(
+    () => isBefore(startOfDay(calendarDate), startOfDay(new Date())),
+    [calendarDate]
+  );
+
+  const currentTimePosition = useMemo(() => {
+    // Always show current time marker on today, regardless of past/future
+    if (!isTodayDate) return undefined;
+    return calculateCurrentTimePosition(
+      currentTime,
+      timeSlots,
+      slotHeight,
+      salonTimezone
+    );
+  }, [isTodayDate, currentTime, timeSlots, slotHeight, salonTimezone]);
+
+  useEffect(() => {
+    // Always update current time when on today's date
+    if (!isTodayDate) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [isTodayDate]);
+
+  // Focus and Scroll Effect (Desktop)
+  useEffect(() => {
+    if (!focusAppointment || loading) return;
+
+    const timer = setTimeout(() => {
+      // 1. Scroll horizontal para a coluna do profissional
+      const profColumn = scrollContainerRef.current?.querySelector(
+        `[data-professional-id="${focusAppointment.professionalId}"]`
+      );
+      if (profColumn) {
+         profColumn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+      }
+
+      // 2. Scroll vertical para o horário
+      // Buscamos o label do horário na TimeGrid
+      const timeLabel = scrollContainerRef.current?.querySelector(
+        `[data-time-slot="${focusAppointment.time}"]`
+      );
+      if (timeLabel) {
+        timeLabel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      // 3. Limpar após animação completar (4s para o ping)
+      setTimeout(() => onFocusConsumed?.(), 4000);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [focusAppointment, loading, onFocusConsumed]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isSalonClosed) {
+    return (
+      <div className="salon-card max-h-[720px]">
+        <div className="flex flex-col items-center justify-center h-96 px-4 text-center">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Salão fechado neste dia
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            O salão não está aberto na data selecionada. Verifique os horários
+            de funcionamento ou selecione outro dia.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (columns.length === 0) {
+    return (
+      <div className="salon-card max-h-[720px]">
+        <div className="flex flex-col items-center justify-center h-96 px-4 text-center">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Nenhum profissional cadastrado
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Para utilizar a agenda, é necessário cadastrar pelo menos um
+            profissional no salão.
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Acesse <span className="font-semibold">Gestão de Acesso</span> para
+            cadastrar profissionais.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 256px + 48px
+  return (
+    <div ref={scrollContainerRef} className="salon-card max-h-[720px] overflow-auto">
+      <div className="flex min-h-full max-w-[calc(100vw-383px)]">
+        <TimeGrid
+          timeSlots={timeSlots}
+          slotHeight={slotHeight}
+          currentTimePosition={currentTimePosition}
+        />
+
+        <div className="flex flex-1">
+          {columns.map((column) => {
+            const columnEvents = events.filter(
+              (event) => event.professionalId === column.id
+            );
+
+            return (
+              <ProfessionalColumn
+                key={column.id}
+                professional={column}
+                events={columnEvents}
+                timeSlots={timeSlots}
+                slotHeight={slotHeight}
+                primaryColor={primaryColor}
+                onEventClick={onEventClick}
+                onSlotClick={onSlotClick}
+                onAbsenceClick={onAbsenceClick}
+                onAbsenceBlockClick={onAbsenceBlockClick}
+                isPastDay={isPastDay}
+                selectedDate={calendarDate}
+                highlightAppointmentId={focusAppointment?.id ?? null}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};

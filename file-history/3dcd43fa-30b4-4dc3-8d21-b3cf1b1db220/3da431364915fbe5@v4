@@ -1,0 +1,77 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { SpecialtyForm } from "@/components/forms/SpecialtyForm";
+import { Specialty, CreateSpecialtyDto } from "@/types/specialty";
+
+interface SpecialtyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  specialty?: Specialty;
+  onSave: (data: CreateSpecialtyDto) => void;
+  isSaving?: boolean;
+}
+
+export function SpecialtyModal({
+  isOpen,
+  onClose,
+  specialty,
+  onSave,
+  isSaving,
+}: SpecialtyModalProps) {
+  const isEditing = !!specialty;
+
+  const initialData = specialty
+    ? {
+        name: specialty.name,
+        description: specialty.description,
+        displayOrder: specialty.displayOrder,
+        isActive: specialty.isActive,
+        requestOnly: specialty.requestOnly,
+      }
+    : undefined;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-lg flex flex-col gap-0">
+        <DialogHeader className="border-b pb-3 shrink-0">
+          <DialogTitle>
+            {isEditing ? "Editar Especialidade" : "Nova Especialidade"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? "Edite as informações da especialidade."
+              : "Preencha as informações para criar uma nova especialidade."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogBody>
+          <SpecialtyForm
+            initialData={initialData}
+            onSave={onSave}
+            isEditing={isEditing}
+            isSaving={isSaving}
+          />
+        </DialogBody>
+
+        <DialogFooter className="border-t pt-6 shrink-0">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="specialty-form" disabled={isSaving}>
+            {isSaving && <LoadingSpinner size="sm" inline className="mr-2" />}
+            {isEditing ? "Salvar Alterações" : "Criar Especialidade"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

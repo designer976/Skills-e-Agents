@@ -1,0 +1,291 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { DataTable } from "@/components/ui/data-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import {
+  Edit,
+  Eye,
+  Loader2,
+  Search,
+} from "lucide-react";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { salonService } from "@/services/salonService";
+import { Salon, Address } from "@/types/salon";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { ResponsivePagination } from "@/components/ui/responsive-pagination";
+
+
+
+export default function SalonsPage() {
+  const navigate = useNavigate();
+  const { selectSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
+
+  const handleAddSalon = (): void => {
+    navigate("/admin/salons/create");
+  };
+
+  const handleViewSalon = async (salon: Salon): Promise<void> => {
+    try {
+      await selectSalon(salon);
+      navigate("/salon/agenda");
+    } catch (error) {
+      toast.error("Erro ao selecionar salão");
+    }
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, salon: Salon): Promise<void> => {
+    e.stopPropagation();
+
+    try {
+      setTogglingStatus(salon.id);
+
+      const updatedSalon = salon.active
+        ? await salonService.deactivate(salon.id)
+        : await salonService.activate(salon.id);
+
+      setSalons((prev) =>
+        prev.map((s) =>
+          s.id === salon.id ? { ...s, active: updatedSalon.active } : s
+        )
+      );
+
+      toast.success(
+        `Salão ${updatedSalon.active ? "ativado" : "desativado"} com sucesso!`
+      );
+    } catch (error) {
+      toast.error("Erro ao alterar status do salão");
+    } finally {
+      setTogglingStatus(null);
+    }
+  };
+
+  const loadSalons = async (
+    page: number = 1,
+    search?: string,
+    status?: string,
+    limit: number = pageSize
+  ): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const searchParam = search && search.trim() ? search.trim() : undefined;
+      const response = await salonService.list({
+        page,
+        limit,
+        search: searchParam,
+        status: status && status !== "all" ? status : undefined,
+        sortBy: "name",
+        sortOrder: "asc",
+      });
+
+      setSalons(response.data);
+      setTotalPages(response.totalPages || Math.ceil(response.total / limit));
+      setTotalItems(response.total || response.data.length);
+    } catch (error: any) {
+      toast.error("Erro ao carregar salões. Verifique sua conexão.");
+      setSalons([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSalons(currentPage, debouncedSearchTerm, statusFilter, pageSize);
+  }, [currentPage, debouncedSearchTerm, statusFilter, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, statusFilter]);
+
+  const handlePageSizeChange = (value: string): void => {
+    const newPageSize = Number(value);
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
+  const columns = [
+    {
+      key: "name" as keyof Salon,
+      header: "Nome do Salão",
+    },
+    {
+      key: "responsible" as keyof Salon,
+      header: "Responsável",
+      render: (value: string | undefined) => value || "-",
+    },
+    {
+      key: "phone" as keyof Salon,
+      header: "Telefone",
+    },
+    {
+      key: "address" as keyof Salon,
+      header: "Endereço",
+      render: (value: Address | undefined) => {
+        if (!value) return "-";
+
+        const street = value.street || "S/N";
+        const number = value.number || "S/N";
+        const city = value.city || "A definir";
+        const state = value.state || "";
+
+        return `${street}, ${number} - ${city}${state ? "/" + state : ""}`;
+      },
+    },
+    {
+      key: "active" as keyof Salon,
+      header: "Status",
+      render: (value: boolean, row: Salon) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToggleStatus(e, row)}
+          disabled={togglingStatus === row.id}
+          className="p-0 h-auto hover:bg-transparent"
+        >
+          <Badge
+            variant={value ? "default" : "secondary"}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            {togglingStatus === row.id ? (
+              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+            ) : null}
+            {value ? "Ativo" : "Inativo"}
+          </Badge>
+        </Button>
+      ),
+    },
+    {
+      key: "id" as keyof Salon,
+      header: "Ações",
+      render: (value: any, row: Salon) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewSalon(row);
+            }}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <EasySalonLayout
+        sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle="Área Easy Salon"
+      >
+        <PageHeader
+          title="Gestão de Salões"
+          subtitle="Gerencie todos os salões cadastrados na plataforma"
+        />
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Easy Salon"
+    >
+      <PageHeader
+        title="Gestão de Salões"
+        subtitle="Gerencie todos os salões cadastrados na plataforma"
+        action={{
+          label: "Adicionar Novo Salão",
+          onClick: handleAddSalon,
+          variant: "primary",
+        }}
+      />
+
+      {/* Barra de Ferramentas Responsiva */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Buscar por nome, telefone ou endereço..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 salon-input"
+            />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <label htmlFor="status-filter" className="text-xs font-semibold whitespace-nowrap">
+              Status:
+            </label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[150px] h-9 salon-input">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Inativos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <DataTable
+        data={salons}
+        columns={columns}
+        onRowClick={handleViewSalon}
+        mobileView="cards"
+        mobileCardConfig={{
+          title: "name",
+          subtitle: "phone",
+          badge: (row) => row.active ? "Ativo" : "Inativo",
+        }}
+      />
+
+      {/* Controles de Paginação Responsivos */}
+      <ResponsivePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={handlePageSizeChange}
+        itemLabel="Salões"
+        pageSizeOptions={[5, 10, 20, 50]}
+      />
+    </EasySalonLayout>
+  );
+}

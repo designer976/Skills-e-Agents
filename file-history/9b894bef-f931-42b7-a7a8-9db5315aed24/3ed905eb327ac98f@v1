@@ -1,0 +1,397 @@
+import { useState, useEffect } from "react";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { salonService } from "@/services/salonService";
+import { OpeningHours } from "@/types/salon";
+import { Loader2 } from "lucide-react";
+
+interface DaySchedule {
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+interface WorkingHours {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
+interface DayOfWeek {
+  key: string;
+  label: string;
+  dayOfWeek: number;
+}
+
+interface ErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+const daysOfWeek: DayOfWeek[] = [
+  { key: "monday", label: "Segunda-feira", dayOfWeek: 1 },
+  { key: "tuesday", label: "Terça-feira", dayOfWeek: 2 },
+  { key: "wednesday", label: "Quarta-feira", dayOfWeek: 3 },
+  { key: "thursday", label: "Quinta-feira", dayOfWeek: 4 },
+  { key: "friday", label: "Sexta-feira", dayOfWeek: 5 },
+  { key: "saturday", label: "Sábado", dayOfWeek: 6 },
+  { key: "sunday", label: "Domingo", dayOfWeek: 0 },
+];
+
+export default function WorkingHoursPage() {
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  const [workingHours, setWorkingHours] = useState<WorkingHours>({
+    monday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+    tuesday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+    wednesday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+    thursday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+    friday: { isOpen: true, openTime: "09:00", closeTime: "18:00" },
+    saturday: { isOpen: true, openTime: "09:00", closeTime: "17:00" },
+    sunday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
+  });
+
+  // Fetch working hours on component mount
+  useEffect(() => {
+    const loadWorkingHours = async (): Promise<void> => {
+      if (selectedSalon?.id) {
+        await fetchWorkingHours();
+      }
+    };
+    loadWorkingHours();
+  }, [selectedSalon?.id]);
+
+  const fetchWorkingHours = async (): Promise<void> => {
+    if (!selectedSalon?.id) return;
+
+    setIsLoading(true);
+    try {
+      const data = await salonService.getWorkingHours(selectedSalon.id);
+
+      // Convert backend format to frontend format
+      const convertedHours: WorkingHours = {
+        monday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        tuesday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        wednesday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        thursday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        friday: { isOpen: false, openTime: "09:00", closeTime: "18:00" },
+        saturday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
+        sunday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
+      };
+
+      data.forEach((hours: OpeningHours) => {
+        const dayEntry = daysOfWeek.find(
+          (d) => d.dayOfWeek === hours.dayOfWeek
+        );
+        if (dayEntry) {
+          const dayKey = dayEntry.key as keyof WorkingHours;
+          convertedHours[dayKey] = {
+            isOpen: hours.isOpen,
+            openTime: hours.open || "09:00",
+            closeTime: hours.close || "18:00",
+          };
+        }
+      });
+
+      setWorkingHours(convertedHours);
+    } catch (error: unknown) {
+      const err = error as ErrorResponse;
+      if (err?.response?.status === 404) {
+        toast.error("Salão não encontrado");
+      } else if (err?.response?.status === 401) {
+        toast.error("Sessão expirada. Por favor, faça login novamente");
+      } else if (err?.response?.status === 403) {
+        toast.error("Você não tem permissão para visualizar os horários");
+      } else if (err?.message === "Network Error" || !navigator.onLine) {
+        if (retryCount < MAX_RETRIES) {
+          toast.error(
+            `Falha na conexão. Tentando novamente... (${retryCount + 1
+            }/${MAX_RETRIES})`
+          );
+          setRetryCount((prev) => prev + 1);
+          setTimeout(() => fetchWorkingHours(), 2000);
+          return;
+        } else {
+          toast.error(
+            "Sem conexão com a internet. Verifique sua conexão e tente novamente"
+          );
+        }
+      } else {
+        const message =
+          err?.response?.data?.message ||
+          "Erro ao carregar horários. Tente novamente mais tarde";
+        toast.error(message);
+      }
+      setRetryCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDayToggle = (day: keyof WorkingHours): void => {
+    setWorkingHours((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], isOpen: !prev[day].isOpen },
+    }));
+  };
+
+  const handleTimeChange = (
+    day: keyof WorkingHours,
+    timeType: "openTime" | "closeTime",
+    value: string
+  ): void => {
+    setWorkingHours((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], [timeType]: value },
+    }));
+  };
+
+  const validateWorkingHours = (): boolean => {
+    // Validate that at least one day is open
+    const hasOpenDay = Object.values(workingHours).some((day) => day.isOpen);
+    if (!hasOpenDay) {
+      toast.error("Pelo menos um dia deve estar aberto");
+      return false;
+    }
+
+    // Validate times for open days
+    for (const [key, schedule] of Object.entries(workingHours)) {
+      if (schedule.isOpen) {
+        if (!schedule.openTime || !schedule.closeTime) {
+          const dayLabel = daysOfWeek.find((d) => d.key === key)?.label || key;
+          toast.error(
+            `${dayLabel}: Horários de abertura e fechamento são obrigatórios`
+          );
+          return false;
+        }
+
+        // Validate that closing time is after opening time
+        const openTimeParts = schedule.openTime.split(":");
+        const closeTimeParts = schedule.closeTime.split(":");
+        const openMinutes =
+          parseInt(openTimeParts[0]) * 60 + parseInt(openTimeParts[1]);
+        const closeMinutes =
+          parseInt(closeTimeParts[0]) * 60 + parseInt(closeTimeParts[1]);
+
+        if (closeMinutes <= openMinutes) {
+          const dayLabel = daysOfWeek.find((d) => d.key === key)?.label || key;
+          toast.error(
+            `${dayLabel}: Horário de fechamento deve ser após o horário de abertura`
+          );
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
+  const handleSave = async (): Promise<void> => {
+    // Validate before saving
+    if (!validateWorkingHours()) {
+      return;
+    }
+
+    if (!selectedSalon?.id) {
+      toast.error("Nenhum salão selecionado");
+      return;
+    }
+
+    setIsSaving(true);
+
+    // Show loading toast
+    const loadingToast = toast.loading("Salvando horários de funcionamento...");
+
+    try {
+      // Convert frontend format to backend format
+      const workingHoursData: OpeningHours[] = daysOfWeek.map((day) => {
+        const dayKey = day.key as keyof WorkingHours;
+        const schedule = workingHours[dayKey];
+
+        return {
+          dayOfWeek: day.dayOfWeek,
+          open: schedule.isOpen ? schedule.openTime : "00:00",
+          close: schedule.isOpen ? schedule.closeTime : "00:00",
+          isOpen: schedule.isOpen,
+        };
+      });
+
+      await salonService.updateWorkingHours(selectedSalon.id, workingHoursData);
+
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success(
+        "Horários de funcionamento salvos com sucesso! A agenda foi atualizada automaticamente.",
+        {
+          duration: 4000,
+          id: "working-hours-saved", // Use ID to prevent duplicate toasts
+        }
+      );
+
+      // No need to refresh data here as the component will stay up to date via WebSocket
+      // The agenda will update automatically via WebSocket event
+    } catch (error: unknown) {
+      const err = error as ErrorResponse;
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Handle different error scenarios
+      if (err?.response?.status === 400) {
+        const message = err?.response?.data?.message || "Dados inválidos";
+        toast.error(`Erro de validação: ${message}`);
+      } else if (err?.response?.status === 401) {
+        toast.error("Sessão expirada. Por favor, faça login novamente");
+      } else if (err?.response?.status === 403) {
+        toast.error("Você não tem permissão para editar os horários");
+      } else if (err?.message === "Network Error" || !navigator.onLine) {
+        toast.error(
+          "Sem conexão com a internet. As alterações não foram salvas"
+        );
+      } else {
+        toast.error("Erro ao salvar horários. Tente novamente");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <PageHeader
+        title="Horário de Funcionamento"
+        subtitle="Configure os dias e horários de atendimento"
+        disabledActions={!selectedSalon?.active}
+      />
+
+      {isLoading && retryCount === 0 ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#ce4836]" />
+              <span className="ml-2">Carregando horários...</span>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dias da Semana</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {daysOfWeek.map(({ key, label }) => {
+              const dayKey = key as keyof WorkingHours;
+              const daySchedule = workingHours[dayKey];
+
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3"
+                >
+                  <div className="flex items-center gap-4">
+                    <Switch
+                      checked={daySchedule.isOpen}
+                      disabled={!selectedSalon?.active}
+                      onCheckedChange={() => handleDayToggle(dayKey)}
+                    />
+                    <Label className="font-medium w-32">{label}</Label>
+                  </div>
+
+                  {daySchedule.isOpen && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor={`${key}-open`} className="text-sm text-muted-foreground w-24 shrink-0">
+                          Abertura:
+                        </Label>
+                        <Input
+                          id={`${key}-open`}
+                          type="time"
+                          value={daySchedule.openTime}
+                          onChange={(e) =>
+                            handleTimeChange(dayKey, "openTime", e.target.value)
+                          }
+                          className="w-26 shrink-0 text-center"
+                          required
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor={`${key}-close`} className="text-sm text-muted-foreground w-24 shrink-0">
+                          Fechamento:
+                        </Label>
+                        <Input
+                          id={`${key}-close`}
+                          type="time"
+                          value={daySchedule.closeTime}
+                          onChange={(e) =>
+                            handleTimeChange(
+                              dayKey,
+                              "closeTime",
+                              e.target.value
+                            )
+                          }
+                          className="w-26 shrink-0 text-center"
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {!daySchedule.isOpen && (
+                    <span className="text-muted-foreground">Fechado</span>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleSave}
+                className="salon-button-primary"
+                disabled={isSaving || !selectedSalon?.active}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Horários"
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </EasySalonLayout>
+  );
+}

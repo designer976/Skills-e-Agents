@@ -1,0 +1,239 @@
+import { useState, useEffect, useCallback } from "react";
+import { serviceService } from "@/services/serviceService";
+import {
+    ServiceRecommendation,
+    AddServiceRecommendationDto,
+    UpdateServiceRecommendationDto,
+} from "@/types/service";
+import { useToast } from "./use-toast";
+
+export function useServiceRecommendations(serviceId: string | undefined) {
+    const [recommendations, setRecommendations] = useState<ServiceRecommendation[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    // Buscar recomendações
+    const fetchRecommendations = useCallback(async () => {
+        if (!serviceId) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await serviceService.getServiceRecommendations(serviceId);
+            setRecommendations(data);
+        } catch (err: any) {
+            const errorMessage = err.message || "Erro ao buscar recomendações";
+            setError(errorMessage);
+            toast({
+                title: "Erro",
+                description: errorMessage,
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [serviceId, toast]);
+
+    // Adicionar recomendação
+    const addRecommendation = useCallback(
+        async (data: AddServiceRecommendationDto) => {
+            if (!serviceId) {
+                toast({
+                    title: "Erro",
+                    description: "ID do serviço não fornecido",
+                    variant: "destructive",
+                });
+                return null;
+            }
+
+            setLoading(true);
+            setError(null);
+
+            try {
+                const newRecommendation = await serviceService.addServiceRecommendation(
+                    serviceId,
+                    data
+                );
+
+                // Recarregar todas as recomendações para garantir que os relacionamentos estejam populados
+                await fetchRecommendations();
+
+                toast({
+                    title: "Sucesso",
+                    description: "Recomendação adicionada com sucesso",
+                    variant: "success",
+                });
+
+                return newRecommendation;
+            } catch (err: any) {
+                const errorMessage = err.message || "Erro ao adicionar recomendação";
+                setError(errorMessage);
+                toast({
+                    title: "Erro",
+                    description: errorMessage,
+                    variant: "destructive",
+                });
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [serviceId, toast, fetchRecommendations]
+    );
+
+    // Atualizar recomendação
+    const updateRecommendation = useCallback(
+        async (recommendationId: string, data: UpdateServiceRecommendationDto) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const updatedRecommendation = await serviceService.updateServiceRecommendation(
+                    recommendationId,
+                    data
+                );
+
+                // Recarregar todas as recomendações para garantir que os relacionamentos estejam populados
+                await fetchRecommendations();
+
+                toast({
+                    title: "Sucesso",
+                    description: "Recomendação atualizada com sucesso",
+                    variant: "success",
+                });
+
+                return updatedRecommendation;
+            } catch (err: any) {
+                const errorMessage = err.message || "Erro ao atualizar recomendação";
+                setError(errorMessage);
+                toast({
+                    title: "Erro",
+                    description: errorMessage,
+                    variant: "destructive",
+                });
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [toast, fetchRecommendations]
+    );
+
+    // Remover recomendação
+    const removeRecommendation = useCallback(
+        async (recommendationId: string) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                await serviceService.removeServiceRecommendation(recommendationId);
+
+                setRecommendations((prev) =>
+                    prev.filter((rec) => rec.id !== recommendationId)
+                );
+
+                toast({
+                    title: "Sucesso",
+                    description: "Recomendação removida com sucesso",
+                    variant: "success",
+                });
+
+                return true;
+            } catch (err: any) {
+                const errorMessage = err.message || "Erro ao remover recomendação";
+                setError(errorMessage);
+                toast({
+                    title: "Erro",
+                    description: errorMessage,
+                    variant: "destructive",
+                });
+                return false;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [toast]
+    );
+
+    // Reordenar recomendações localmente
+    const reorderRecommendations = useCallback(
+        (startIndex: number, endIndex: number) => {
+            const result = Array.from(recommendations);
+            const [removed] = result.splice(startIndex, 1);
+            result.splice(endIndex, 0, removed);
+
+            // Atualizar displayOrder
+            const updatedRecommendations = result.map((rec, index) => ({
+                ...rec,
+                displayOrder: index,
+            }));
+
+            setRecommendations(updatedRecommendations);
+
+            return updatedRecommendations;
+        },
+        [recommendations]
+    );
+
+    // Salvar ordem das recomendações
+    const saveRecommendationsOrder = useCallback(
+        async (reorderedRecommendations: ServiceRecommendation[]) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const promises = reorderedRecommendations.map((rec) =>
+                    serviceService.updateServiceRecommendation(rec.id, {
+                        displayOrder: rec.displayOrder,
+                    })
+                );
+
+                await Promise.all(promises);
+
+                toast({
+                    title: "Sucesso",
+                    description: "Ordem das recomendações atualizada",
+                    variant: "success",
+                });
+
+                return true;
+            } catch (err: any) {
+                const errorMessage = err.message || "Erro ao salvar ordem";
+                setError(errorMessage);
+                toast({
+                    title: "Erro",
+                    description: errorMessage,
+                    variant: "destructive",
+                });
+
+                // Recarregar recomendações em caso de erro
+                await fetchRecommendations();
+
+                return false;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [toast, fetchRecommendations]
+    );
+
+    // Buscar recomendações ao montar
+    useEffect(() => {
+        fetchRecommendations();
+    }, [fetchRecommendations]);
+
+    return {
+        recommendations,
+        loading,
+        error,
+        fetchRecommendations,
+        addRecommendation,
+        updateRecommendation,
+        removeRecommendation,
+        reorderRecommendations,
+        saveRecommendationsOrder,
+    };
+}
+

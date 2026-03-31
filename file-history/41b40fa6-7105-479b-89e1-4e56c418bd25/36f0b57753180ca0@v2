@@ -1,0 +1,23 @@
+import Navbar from './components/Navbar'
+import Hero from './components/Hero'
+import HowItWorks from './components/HowItWorks'
+import BusinessTypes from './components/BusinessTypes'
+import About from './components/About'
+import CTA from './components/CTA'
+import Footer from './components/Footer'
+
+export default function App() {
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      <main>
+        <Hero />
+        <HowItWorks />
+        <BusinessTypes />
+        <About />
+        <CTA />
+      </main>
+      <Footer />
+    </div>
+  )
+}

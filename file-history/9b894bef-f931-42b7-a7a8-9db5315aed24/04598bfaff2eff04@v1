@@ -1,0 +1,271 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Easy Salon Design System - Paleta Oficial */
+
+    /* Main Background Colors */
+    --background: 219 20% 98.4%;
+    /* #fbfbfb - Primary Background */
+    --foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+
+    /* Cards and Sidebar Background */
+    --card: 0 0% 100%;
+    /* #ffffff - Secondary Background */
+    --card-foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 25.5%;
+
+    /* Primary Color - Easy Salon Red */
+    --primary: 9 73% 51%;
+    /* #ce4836 - Primary */
+    /* Primary Color - Easy Salon Coral (#D85A30) Old*/
+    /* --primary: 15 67% 52%; */
+    /* #D85A30 - Coral Primary */
+    --primary-foreground: 0 0% 100%;
+    /* Branco */
+
+    /* Secondary Colors */
+    --secondary: 28 25% 95.3%;
+    /* #f5f2ed - Secondary */
+    --secondary-foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+
+    /* Tertiary Color */
+    --tertiary: 34 25% 90.2%;
+    /* #ede7d9 - Tertiary */
+
+    /* Alternate Color */
+    --alternate: 9 60% 28.6%;
+    /* #732a1d - Alternate */
+
+    /* Text Colors */
+    --muted: 215 13% 93.1%;
+    /* #e0e0e0 - Accent 5 para bordas */
+    --muted-foreground: 214 15% 38.8%;
+    /* #57636c - Secondary Text */
+
+    --accent: 28 25% 95.3%;
+    /* Secondary para backgrounds ativos */
+    --accent-foreground: 9 73% 51%;
+    /* Primary para texto ativo */
+
+    /* States */
+    --destructive: 0 84% 60%;
+    /* #EF4444 - Erro */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 64% 52%;
+    /* #10B981 - Sucesso */
+
+    /* Borders and Input */
+    --border: 0 0% 87.8%;
+    /* #e0e0e0 - Accent 5 */
+    --input: 0 0% 87.8%;
+    /* #e0e0e0 - Accent 5 */
+    --ring: 9 73% 51%;
+    /* Primary color for focus */
+
+    /* Border radius - 8px para botões, 12px para cards */
+    --radius: 0.5rem;
+
+    /* Sidebar específico */
+    --sidebar-background: 0 0% 100%;
+    /* #ffffff - Secondary Background */
+    --sidebar-foreground: 0 0% 25.5%;
+    /* #414141 - Primary Text */
+    --sidebar-primary: 9 73% 51%;
+    /* #ce4836 - Primary */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 28 25% 95.3%;
+    /* #f5f2ed - Secondary para fundo ativo */
+    --sidebar-accent-foreground: 9 73% 51%;
+    /* #ce4836 - Primary para texto ativo */
+    --sidebar-border: 0 0% 87.8%;
+    /* #e0e0e0 - Accent 5 */
+    --sidebar-ring: 9 73% 51%;
+    /* #ce4836 - Primary */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Easy Salon custom colors */
+    --salon-blue: 210 100% 50%;
+    --salon-red: 6 73% 51%;
+    --salon-gray: 0 0% 81%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+
+  /* Typography Utilities */
+  .page-title {
+    @apply text-page-title text-foreground;
+  }
+
+  .section-title {
+    @apply text-section-title text-foreground;
+  }
+
+  .body-text {
+    @apply text-body text-foreground;
+  }
+
+  .button-text {
+    @apply text-button;
+  }
+
+  /* Easy Salon Component Styles - Seguindo Design Oficial */
+  .salon-button {
+    @apply h-11 px-6 py-2 rounded-lg button-text transition-colors;
+  }
+
+  .salon-button-primary {
+    @apply salon-button bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .salon-button-secondary {
+    @apply salon-button border border-primary text-primary bg-card hover:bg-secondary;
+  }
+
+  .salon-input {
+    @apply flex h-11 w-full rounded-lg border border-border bg-card px-3 py-2 body-text ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .salon-card {
+    @apply bg-card text-card-foreground rounded-xl border border-border shadow-none;
+  }
+
+  /* Tabela com cabeçalho oficial */
+  .salon-table-header {
+    @apply bg-tertiary text-foreground font-bold;
+  }
+
+  /* Status Badges - Design System Oficial */
+  .salon-badge-active {
+    background-color: #EAF3DE !important;
+    color: #3B6D11 !important;
+    @apply border-none font-medium;
+  }
+
+  .salon-badge-inactive {
+    background-color: #F1EFE8 !important;
+    color: #5F5E5A !important;
+    @apply border-none font-medium;
+  }
+}
+
+
+@layer utilities {
+
+  /**
+   * Modal max-height com fallback para browsers sem suporte a dvh (iOS < 15.4, Chrome < 108).
+   * Browsers antigos lêem apenas a primeira declaração (90vh).
+   * Browsers modernos sobrescrevem com 90dvh (desconta teclado virtual e barras do browser).
+   */
+  .modal-max-h {
+    max-height: 90vh;
+    /* fallback: browsers legados */
+    max-height: 90dvh;
+    /* modern: iOS 15.4+, Chrome 108+ */
+  }
+
+  /**
+   * Aplicar no <body> via JS quando um modal está aberto.
+   * overflow:hidden sozinho é ignorado pelo iOS Safari em fixed overlays.
+   * position:fixed é a única forma garantida — mas causa scroll jump,
+   * então o scroll position deve ser salvo/restaurado via JS (ver SuccessModal useEffect).
+   */
+  .body-scroll-locked {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    /* Preserva a largura para evitar layout shift ao remover a scrollbar no desktop */
+    padding-right: var(--scrollbar-width, 0px);
+  }
+
+  /**
+   * Aplicar no elemento scrollável interno do modal.
+   * Impede que o scroll "vaze" para o body no iOS (scroll chaining).
+   */
+  .modal-scroll-area {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /**
+   * iOS Safari auto-zoom prevention.
+   * iOS zooms into inputs with computed font-size < 16px on focus.
+   * This rule targets iOS only via @supports for -webkit-touch-callout (Safari-only property).
+   * Combined with maximum-scale=1 in the viewport meta tag for bulletproof coverage.
+   */
+  @supports (-webkit-touch-callout: none) {
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}

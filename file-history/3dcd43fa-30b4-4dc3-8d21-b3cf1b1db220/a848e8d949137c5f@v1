@@ -1,0 +1,90 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+} from "@/components/ui/dialog";
+import { ServiceForm } from "@/components/forms/ServiceForm";
+import { Service } from "@/types/service";
+import { Salon } from "@/types/salon";
+
+interface ServiceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  service?: Service;
+  specialtyName: string;
+  onSave: (data: any) => void;
+  isSaving?: boolean;
+  selectedSalon?: Salon;
+}
+
+export function ServiceModal({
+  isOpen,
+  onClose,
+  service,
+  specialtyName,
+  onSave,
+  isSaving,
+  selectedSalon,
+}: ServiceModalProps) {
+  const isEditing = !!service;
+  // A service is custom if it's explicitly marked as custom or if it's not marked as standard
+  // When creating a new service, it's always custom
+  const isCustomService =
+    !service ||
+    (service as any)?.type === "custom" ||
+    ((service as any)?.type && (service as any)?.type !== "standard");
+
+  const handleSave = (data: any) => {
+    onSave(data);
+  };
+
+  const handleCancel = () => {
+    onClose();
+  };
+
+  const initialData = service
+    ? {
+        name: service.name,
+        acceptsOnlineBooking: service.acceptsOnlineBooking,
+        price: (service as any).price || (service as any).configured_price,
+        duration:
+          (service as any).duration || (service as any).configured_duration,
+        commission:
+          (service as any).commission || (service as any).configured_commission,
+      }
+    : undefined;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="w-[95vw] md:max-w-md max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-lg border-none shadow-2xl overflow-hidden flex flex-col"
+        aria-describedby="service-modal-description"
+      >
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <DialogTitle className="text-xl font-semibold">
+            {isEditing ? "Editar Serviço" : "Novo Serviço"} - {specialtyName}
+          </DialogTitle>
+          <div id="service-modal-description" className="sr-only">
+            {isEditing
+              ? "Formulário para editar um serviço existente"
+              : "Formulário para criar um novo serviço"}
+          </div>
+        </DialogHeader>
+
+        <DialogBody className="px-6">
+          <ServiceForm
+            initialData={initialData}
+            onSave={handleSave}
+            onCancel={handleCancel}
+            isEditing={isEditing}
+            isSaving={isSaving}
+            disabledActions={selectedSalon ? !selectedSalon?.active : false}
+            isCustomService={isCustomService}
+          />
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,466 @@
+import { useState, useEffect } from "react";
+import { IconArrowLeft as ArrowLeft, IconExternalLink as ExternalLink } from "@tabler/icons-react";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
+import { salonService } from "@/services/salonService";
+import { SalonSettings } from "@/types/salon";
+import { IconLoader2 as Loader2 } from "@tabler/icons-react";
+import { analytics } from "@/lib/analytics";
+
+export default function OnlineBookingSettingsPage() {
+  const { selectedSalon } = useSelectedSalon();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  const [settings, setSettings] = useState<SalonSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadSettings = async (): Promise<void> => {
+    if (!selectedSalon) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      const bookingSettings = await salonService.getBookingSettings(
+        selectedSalon.id
+      );
+
+      setSettings(bookingSettings);
+    } catch (err: unknown) {
+      setError("Erro ao carregar configurações do agendamento");
+      toast({
+        title: "Erro",
+        description:
+          "Não foi possível carregar as configurações do agendamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const validateSettings = (): string[] => {
+    if (!settings) return [];
+
+    const errors: string[] = [];
+
+    // Check for empty required fields
+    if (
+      settings.maxAdvanceBookingDays === undefined ||
+      settings.maxAdvanceBookingDays === null
+    ) {
+      errors.push("Antecedência máxima é obrigatório.");
+    } else if (
+      settings.maxAdvanceBookingDays < 1 ||
+      settings.maxAdvanceBookingDays > 365
+    ) {
+      errors.push("Antecedência máxima deve estar entre 1 e 365 dias.");
+    }
+
+    if (
+      settings.minAdvanceBookingHours === undefined ||
+      settings.minAdvanceBookingHours === null
+    ) {
+      errors.push("Antecedência mínima é obrigatório.");
+    } else if (
+      settings.minAdvanceBookingHours < 0 ||
+      settings.minAdvanceBookingHours > 168
+    ) {
+      errors.push("Antecedência mínima deve estar entre 0 e 168 horas.");
+    }
+
+    if (
+      settings.cancellationMinAdvanceMinutes === undefined ||
+      settings.cancellationMinAdvanceMinutes === null
+    ) {
+      errors.push("Antecedência de cancelamento é obrigatório.");
+    } else if (settings.cancellationMinAdvanceMinutes < 0) {
+      errors.push("Antecedência de cancelamento não pode ser negativo.");
+    }
+
+    return errors;
+  };
+
+  const handleSave = async (): Promise<void> => {
+    if (!selectedSalon || !settings) return;
+
+    // Validate form
+    const validationErrors = validateSettings();
+    if (validationErrors.length > 0) {
+      toast({
+        title: "Erro de validação",
+        description: validationErrors.join(" "),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set default values if undefined
+    const settingsToSave = {
+      ...settings,
+      maxAdvanceBookingDays: settings.maxAdvanceBookingDays ?? 30,
+      minAdvanceBookingHours: settings.minAdvanceBookingHours ?? 2,
+      cancellationMinAdvanceMinutes:
+        settings.cancellationMinAdvanceMinutes ?? 30,
+    };
+
+    try {
+      setIsSaving(true);
+
+      const updatedSalon = await salonService.updateBookingSettings(
+        selectedSalon.id,
+        settingsToSave
+      );
+
+      // Only update if we got valid settings back
+      if (updatedSalon.settings) {
+        // Don't update the state with backend response to avoid overwriting user selection
+        // The backend should have saved our value correctly
+        // setSettings(updatedSalon.settings);
+
+        // Instead, just reload to get fresh data
+        await loadSettings();
+      }
+
+      toast({
+        title: "Configurações salvas",
+        description:
+          "As configurações do agendamento online foram atualizadas com sucesso.",
+      });
+
+      analytics.trackEvent("online_booking_settings_changed", {});
+    } catch (err: unknown) {
+      toast({
+        title: "Erro",
+        description:
+          "Não foi possível salvar as configurações. Verifique sua conexão e tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updateSetting = <K extends keyof SalonSettings>(
+    key: K,
+    value: SalonSettings[K]
+  ): void => {
+    if (settings) {
+      setSettings({ ...settings, [key]: value });
+    }
+  };
+
+  useEffect(() => {
+    if (selectedSalon) {
+      loadSettings();
+    }
+  }, [selectedSalon?.id]); // Use stable dependency
+
+  const handleBack = (): void => {
+    navigate("/salon/settings");
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      {/* Header com botão voltar */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBack}
+          className="h-8 w-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="page-title">Configurações do Agendamento Online</h1>
+          <p className="text-muted-foreground mt-1">
+            Configure as regras para agendamentos online
+          </p>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2
+            className="h-8 w-8 animate-spin"
+            data-testid="loading-spinner"
+          />
+          <span className="ml-2 text-lg">Carregando configurações...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !isLoading && (
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={loadSettings} variant="outline">
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+
+      {/* Settings Content */}
+      {!isLoading && !error && settings && (
+        <div className="space-y-6">
+          {/* Advance Booking Settings */}
+          <div className="bg-card border border-border rounded-3xl">
+            <div className="px-6 pt-6 pb-0">
+              <h2 className="text-base font-semibold">Configurações de Antecedência</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure os limites de antecedência para agendamentos
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="max-advance-days">
+                    Antecedência máxima (dias)
+                  </Label>
+                  <Input
+                    id="max-advance-days"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={
+                      settings.maxAdvanceBookingDays === undefined
+                        ? ""
+                        : settings.maxAdvanceBookingDays
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        updateSetting("maxAdvanceBookingDays", undefined);
+                      } else {
+                        const numValue = parseInt(value, 10);
+                        if (!isNaN(numValue)) {
+                          updateSetting("maxAdvanceBookingDays", numValue);
+                        }
+                      }
+                    }}
+                    className={
+                      settings.maxAdvanceBookingDays !== undefined &&
+                      (settings.maxAdvanceBookingDays < 1 ||
+                        settings.maxAdvanceBookingDays > 365)
+                        ? "border-red-500"
+                        : ""
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Quantos dias antes o cliente pode agendar
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="min-advance-hours">
+                    Antecedência mínima (horas)
+                  </Label>
+                  <Input
+                    id="min-advance-hours"
+                    type="number"
+                    min="0"
+                    max="168"
+                    value={
+                      settings.minAdvanceBookingHours === undefined
+                        ? ""
+                        : settings.minAdvanceBookingHours
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        updateSetting("minAdvanceBookingHours", undefined);
+                      } else {
+                        const numValue = parseInt(value, 10);
+                        if (!isNaN(numValue)) {
+                          updateSetting("minAdvanceBookingHours", numValue);
+                        }
+                      }
+                    }}
+                    className={
+                      settings.minAdvanceBookingHours !== undefined &&
+                      (settings.minAdvanceBookingHours < 0 ||
+                        settings.minAdvanceBookingHours > 168)
+                        ? "border-red-500"
+                        : ""
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Mínimo de horas antes do horário
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <Label htmlFor="cancellation-advance-minutes">
+                  Antecedência de Cancelamento (minutos)
+                </Label>
+                <Input
+                  id="cancellation-advance-minutes"
+                  type="number"
+                  min="0"
+                  max="10080"
+                  step="5"
+                  value={
+                    settings.cancellationMinAdvanceMinutes === undefined
+                      ? ""
+                      : settings.cancellationMinAdvanceMinutes
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      updateSetting("cancellationMinAdvanceMinutes", undefined);
+                    } else {
+                      const numValue = parseInt(value, 10);
+                      if (!isNaN(numValue)) {
+                        updateSetting(
+                          "cancellationMinAdvanceMinutes",
+                          numValue
+                        );
+                      }
+                    }
+                  }}
+                  className={
+                    settings.cancellationMinAdvanceMinutes !== undefined &&
+                    settings.cancellationMinAdvanceMinutes < 0
+                      ? "border-red-500"
+                      : ""
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tempo mínimo de antecedência para cancelar um agendamento
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Blocking Settings */}
+          <div className="bg-card border border-border rounded-3xl">
+            <div className="px-6 pt-6 pb-0">
+              <h2 className="text-base font-semibold">Comportamento do Agendamento</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure como o sistema deve lidar com os horários após um
+                agendamento
+              </p>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="block-schedule"
+                    name="schedule-behavior"
+                    checked={settings.blockScheduleAfterBooking !== false}
+                    onChange={() =>
+                      updateSetting("blockScheduleAfterBooking", true)
+                    }
+                    className="rounded-full border-gray-300"
+                  />
+                  <Label
+                    htmlFor="block-schedule"
+                    className="flex-1 cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        Bloquear horários após o agendamento
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Um horário agendado não ficará disponível para outros
+                        clientes
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="allow-multiple"
+                    name="schedule-behavior"
+                    checked={settings.blockScheduleAfterBooking === false}
+                    onChange={() =>
+                      updateSetting("blockScheduleAfterBooking", false)
+                    }
+                    className="rounded-full border-gray-300"
+                  />
+                  <Label
+                    htmlFor="allow-multiple"
+                    className="flex-1 cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        Permitir múltiplos agendamentos no mesmo horário
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Vários clientes podem agendar no mesmo horário (útil
+                        para salões com múltiplos profissionais)
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* Save Button - Only show when settings are loaded and no error */}
+      {!isLoading && !error && settings && (
+        <div className="mt-8 space-y-4">
+          <Button
+            onClick={handleSave}
+            className="w-full"
+            size="lg"
+            disabled={isSaving || !selectedSalon?.active}
+          >
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSaving ? "Salvando..." : "Salvar Configurações"}
+          </Button>
+
+          {/* Botão para acessar a Agenda Online */}
+          <Button
+            variant="secondary"
+            disabled={isSaving || !selectedSalon?.active}
+            onClick={() => {
+              if (selectedSalon?.slug) {
+                window.open(`/agenda/${selectedSalon.slug}`, "_blank");
+              } else {
+                toast({
+                  title: "Erro",
+                  description: "Slug do salão não encontrado",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="w-full"
+            size="lg"
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Visualizar Agenda Online
+          </Button>
+        </div>
+      )}
+    </EasySalonLayout>
+  );
+}

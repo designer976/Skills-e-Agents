@@ -1,0 +1,78 @@
+import { Check as Check, X as X } from "lucide-react";
+
+interface PasswordRequirement {
+  label: string;
+  met: boolean;
+  tested: boolean;
+}
+
+interface PasswordRequirementsProps {
+  password: string;
+  confirmPassword: string;
+}
+
+export const PasswordRequirements = ({ password, confirmPassword }: PasswordRequirementsProps) => {
+  const requirements: PasswordRequirement[] = [
+    {
+      label: "Senhas coincidem",
+      met: password === confirmPassword && password.length > 0,
+      tested: password.length > 0 && confirmPassword.length > 0
+    },
+    {
+      label: "8 caracteres",
+      met: password.length >= 8,
+      tested: password.length > 0
+    },
+    {
+      label: "1 letra maiúscula",
+      met: /[A-Z]/.test(password),
+      tested: password.length > 0
+    },
+    {
+      label: "1 letra minúscula", 
+      met: /[a-z]/.test(password),
+      tested: password.length > 0
+    },
+    {
+      label: "1 número",
+      met: /\d/.test(password),
+      tested: password.length > 0
+    },
+    {
+      label: "1 caractere especial (!, @, #, $)",
+      met: /[!@#$]/.test(password),
+      tested: password.length > 0
+    }
+  ];
+
+  return (
+    <div className="space-y-2">
+      {requirements.map((req, index) => {
+        let iconColor = "text-salon-gray";
+        let Icon = X;
+
+        // Só aplica cores se o usuário já começou a digitar
+        if (req.tested) {
+          if (req.met) {
+            iconColor = "text-green-600"; // Sucesso
+            Icon = Check;
+          } else {
+            iconColor = "text-destructive"; // Erro
+            Icon = X;
+          }
+        }
+
+        return (
+          <div key={index} className="flex items-center gap-2">
+            <Icon className={`w-4 h-4 ${iconColor}`} />
+            <span className={`text-sm ${iconColor}`}>{req.label}</span>
+          </div>
+        );
+      })}
+      
+      <p className="text-xs text-muted-foreground mt-4">
+        Evite senhas comuns e informações pessoais.
+      </p>
+    </div>
+  );
+};

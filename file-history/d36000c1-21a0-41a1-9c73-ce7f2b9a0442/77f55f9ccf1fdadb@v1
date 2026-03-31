@@ -1,0 +1,380 @@
+import { useState, useEffect } from "react";
+import { IconPlus as Plus, IconCalendar as Calendar, IconEdit as Edit, IconTrash as Trash2, IconClock as Clock } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+
+import { format, isAfter, startOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AbsenceModal } from "@/components/modals/AbsenceModal";
+import { absenceService } from "@/services/absenceService";
+import { userService } from "@/services/userService";
+import { Absence, CreateAbsenceDto, absenceTypeLabels, absenceTypeColors } from "@/types/absence";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getUserDisplayName } from "@/utils/userHelpers";
+import { UserRole } from "@/types/user";
+
+export default function AbsencesPage() {
+  const { selectedSalon } = useSelectedSalon();
+  const [absences, setAbsences] = useState<Absence[]>([]);
+  const [professionals, setProfessionals] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedProfessional, setSelectedProfessional] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAbsence, setSelectedAbsence] = useState<Absence | undefined>();
+  const [deleteAbsenceId, setDeleteAbsenceId] = useState<string | null>(null);
+
+  // Fetch professionals
+  const fetchProfessionals = async () => {
+    if (!selectedSalon?.id) return;
+
+    try {
+      const response = await userService.list({
+        role: UserRole.PROFISSIONAL,
+        salonId: selectedSalon.id
+      });
+
+      setProfessionals(response.data.map(user => ({
+        id: user.id,
+        name: user.name
+      })));
+    } catch (error) {
+      toast.error('Erro ao carregar profissionais');
+    }
+  };
+
+  // Fetch absences
+  const fetchAbsences = async () => {
+    if (!selectedSalon?.id) return;
+
+    // Don't fetch absences if there are no professionals
+    if (professionals.length === 0) {
+      setAbsences([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const params = selectedProfessional ? { userId: selectedProfessional } : undefined;
+      const absencesData = await absenceService.list(params);
+      setAbsences(absencesData);
+    } catch (error) {
+      toast.error('Erro ao carregar ausências');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfessionals();
+  }, [selectedSalon?.id]);
+
+  useEffect(() => {
+    fetchAbsences();
+  }, [selectedSalon?.id, selectedProfessional]);
+
+  const handleCreateAbsence = () => {
+    setSelectedAbsence(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditAbsence = (absence: Absence) => {
+    setSelectedAbsence(absence);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveAbsence = async (data: CreateAbsenceDto) => {
+    try {
+      if (selectedAbsence) {
+        await absenceService.update(selectedAbsence.id, data);
+        toast.success('Ausência atualizada com sucesso');
+      } else {
+        // salonId is automatically sent via X-Salon-ID header by httpClient
+        await absenceService.create(data);
+        toast.success('Ausência criada com sucesso');
+      }
+      fetchAbsences();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erro ao salvar ausência';
+      toast.error(message);
+    }
+  };
+
+  const handleDeleteAbsence = async () => {
+    if (!deleteAbsenceId) return;
+
+    const absence = absences.find(a => a.id === deleteAbsenceId);
+    if (!absence) return;
+
+    if (!isFutureAbsence(absence.startDate)) {
+      toast.error('Apenas ausências futuras podem ser excluídas');
+      setDeleteAbsenceId(null);
+      return;
+    }
+
+    try {
+      await absenceService.delete(deleteAbsenceId);
+      toast.success('Ausência excluída com sucesso');
+      fetchAbsences();
+    } catch (error) {
+      toast.error('Erro ao excluir ausência');
+    } finally {
+      setDeleteAbsenceId(null);
+    }
+  };
+
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const startStr = format(start, "dd/MM/yyyy HH:mm", { locale: ptBR });
+    const endStr = format(end, "dd/MM/yyyy HH:mm", { locale: ptBR });
+    
+    // If same day, show only time for end
+    if (format(start, "dd/MM/yyyy") === format(end, "dd/MM/yyyy")) {
+      return `${startStr} - ${format(end, "HH:mm")}`;
+    }
+    
+    return `${startStr} - ${endStr}`;
+  };
+
+  const getProfessionalName = (userId: string) => {
+    const professional = professionals.find(p => p.id === userId);
+    return professional?.name || 'Profissional';
+  };
+
+  const isFutureAbsence = (startDate: string): boolean => {
+    const today = startOfDay(new Date());
+    const absenceStart = startOfDay(new Date(startDate));
+    return isAfter(absenceStart, today) || absenceStart.getTime() === today.getTime();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Ausências</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie as ausências dos profissionais
+          </p>
+        </div>
+        <Button onClick={handleCreateAbsence} disabled={professionals.length === 0}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Ausência
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-card border border-border rounded-3xl p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 max-w-xs">
+            <Select
+              value={selectedProfessional || "all"}
+              onValueChange={(value) => setSelectedProfessional(value === "all" ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por profissional" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os profissionais</SelectItem>
+                {professionals.map((professional) => (
+                  <SelectItem key={professional.id} value={professional.id}>
+                    {getUserDisplayName(professional)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Absences Table */}
+      <div className="bg-card border border-border rounded-3xl overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Profissional</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Motivo</TableHead>
+              <TableHead>Período</TableHead>
+              <TableHead>Bloqueia Agenda</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  <div className="flex items-center justify-center">
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Carregando...
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : professionals.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  <div className="text-muted-foreground">
+                    <p className="font-medium mb-2">Nenhum profissional cadastrado</p>
+                    <p className="text-sm">
+                      Para gerenciar ausências, é necessário cadastrar profissionais.
+                      <br />
+                      Acesse <strong>Gestão de Acesso</strong> para cadastrar profissionais.
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : absences.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Nenhuma ausência cadastrada
+                </TableCell>
+              </TableRow>
+            ) : (
+              absences.map((absence) => (
+                <TableRow key={absence.id}>
+                  <TableCell className="font-medium">
+                    {getProfessionalName(absence.userId)}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white",
+                        absenceTypeColors[absence.type]
+                      )}
+                    >
+                      {absenceTypeLabels[absence.type]}
+                    </span>
+                  </TableCell>
+                  <TableCell>{absence.reason}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-sm">
+                        {formatDateRange(absence.startDate, absence.endDate)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+                        absence.blockSchedule
+                          ? "bg-red-100 text-red-800"
+                          : "bg-green-100 text-green-800"
+                      )}
+                    >
+                      {absence.blockSchedule ? "Sim" : "Não"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditAbsence(absence)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeleteAbsenceId(absence.id)}
+                                disabled={!isFutureAbsence(absence.startDate)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          {!isFutureAbsence(absence.startDate) && (
+                            <TooltipContent>
+                              <p>Apenas ausências futuras podem ser excluídas</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Absence Modal */}
+      {isModalOpen && (
+        <AbsenceModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveAbsence}
+          absence={selectedAbsence}
+          userId={selectedAbsence?.userId || professionals[0]?.id || ''}
+          userName={selectedAbsence ? getProfessionalName(selectedAbsence.userId) : undefined}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteAbsenceId} onOpenChange={() => setDeleteAbsenceId(null)}>
+        <AlertDialogContent className="w-[95vw] md:max-w-lg rounded-xl md:rounded-lg border-none shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta ausência? Esta ação não pode ser desfeita.
+              <br />
+              <span className="text-xs text-muted-foreground mt-2 inline-block">
+                Observação: Apenas ausências futuras podem ser excluídas.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto min-h-[44px]">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAbsence}
+              className="w-full sm:w-auto min-h-[44px] bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

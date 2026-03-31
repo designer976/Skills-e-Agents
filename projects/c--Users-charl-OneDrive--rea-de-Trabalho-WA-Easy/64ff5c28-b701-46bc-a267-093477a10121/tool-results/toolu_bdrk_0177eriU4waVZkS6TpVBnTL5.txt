@@ -1,0 +1,206 @@
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-8-import { Card, CardContent } from "@/components/ui/card";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-9-import { Badge } from "@/components/ui/badge";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-10-import { Button } from "@/components/ui/button";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:11:import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-12-import { Clock as Clock, CreditCard as CreditCard, CircleCheck as CheckCircle, CircleX as XCircle, UserCheck as UserCheck, ChevronDown as ChevronDown } from "lucide-react";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-13-import { cn } from "@/lib/utils";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-14-import { appointmentService } from "@/services/appointmentService";
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-247-                                    {currentStatus.toUpperCase()}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-248-                                  </Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-249-                                ) : (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:250:                                  <DropdownMenu>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:251:                                    <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-252-                                      <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-253-                                        variant="ghost"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-254-                                        size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-266-                                          <ChevronDown className="h-3 w-3 opacity-50" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-267-                                        )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-268-                                      </Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:269:                                    </DropdownMenuTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:270:                                    <DropdownMenuContent align="start" className="w-48">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-271-                                      {getAvailableStatuses(currentStatus).map((status) => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-272-                                        const config = getStatusConfig(status);
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-273-                                        const OptionIcon = config.icon;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-274-                                        return (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:275:                                          <DropdownMenuItem
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-276-                                            key={status}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-277-                                            onClick={() => handleStatusChange(service.id, status)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-278-                                            className="text-xs font-medium py-2"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-281-                                              <OptionIcon className={cn("h-3 w-3", config.iconColor)} />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-282-                                            </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-283-                                            {status}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:284:                                          </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-285-                                        );
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-286-                                      })}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:287:                                    </DropdownMenuContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:288:                                  </DropdownMenu>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-289-                                )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-290-                              </div>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-291-                              
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-1-import { Checkbox } from "@/components/ui/checkbox";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-2-import {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:3:  DropdownMenu,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:4:  DropdownMenuContent,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:5:  DropdownMenuItem,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:6:  DropdownMenuSeparator,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:7:  DropdownMenuTrigger
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-8-} from "@/components/ui/dropdown-menu";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-9-import { Input } from "@/components/ui/input";
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-10-import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-613-  return (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-614-    <div className="flex items-center gap-3">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-615-      {/* Filtro por Especialidade/Serviços */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:616:      <DropdownMenu open={servicesDropdownOpen} onOpenChange={setServicesDropdownOpen}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:617:        <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-618-          <Button variant="outline" size="sm" className={selectedSpecialties.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-619-            <Filter className="h-4 w-4 flex-shrink-0" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-620-            <span className="truncate">{loading ? "Carregando..." : getSelectedSpecialtyName()}</span>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-621-            <ChevronDown className="h-4 w-4 flex-shrink-0" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-622-          </Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:623:        </DropdownMenuTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:624:        <DropdownMenuContent className="w-56 p-0 bg-card border border-border shadow-lg" align="end">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-625-          {/* Campo de busca fixo no topo */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-626-          <div className="sticky top-0 p-2 bg-background border-b">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-627-            <div className="relative">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-640-          {/* Opção para limpar seleção */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-641-          {selectedSpecialties.length > 0 && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-642-            <>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:643:              <DropdownMenuItem
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-644-                onClick={() => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-645-                  handleSpecialtyToggle("all");
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-646-                  setSearchQuery("");
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-648-                className="text-body text-muted-foreground"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-649-              >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-650-                Limpar seleção
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:651:              </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:652:              <DropdownMenuSeparator />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-653-            </>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-654-          )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-655-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:656:          <DropdownMenuItem onClick={() => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-657-            handleSpecialtyToggle("all");
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-658-            setSearchQuery("");
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-659-          }}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-660-            Todos
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:661:          </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-662-          {loading ? (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:663:            <DropdownMenuItem disabled>Carregando especialidades...</DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-664-          ) : specialties.length === 0 ? (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:665:            <DropdownMenuItem disabled>Nenhuma especialidade encontrada</DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-666-          ) : (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-667-            <>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:668:              <DropdownMenuSeparator />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-669-              {(() => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-670-                const filteredSpecialties = getFilteredSpecialties();
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-671-
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-678-                }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-679-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-680-                return filteredSpecialties.map((specialty) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:681:                  <DropdownMenuItem
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-682-                    key={specialty.id}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-683-                    onSelect={(e) => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-684-                      e.preventDefault();
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-691-                      className="pointer-events-none"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-692-                    />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-693-                    <span className="flex-1">{specialty.name}</span>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:694:                  </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-695-                ));
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-696-              })()}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-697-            </>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-698-          )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:699:        </DropdownMenuContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:700:      </DropdownMenu>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-701-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-702-      {/* Filtro por Profissional - Oculto para profissionais */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-703-      {userRole !== 'Profissional' && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:704:        <DropdownMenu open={professionalsDropdownOpen} onOpenChange={setProfessionalsDropdownOpen}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:705:          <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-706-            <Button variant="outline" size="sm" className={selectedProfessionals.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-707-              <span className="truncate">{getSelectedProfessionalName()}</span>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-708-              <ChevronDown className="h-4 w-4 flex-shrink-0" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-709-            </Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:710:          </DropdownMenuTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:711:          <DropdownMenuContent className="w-56 p-0 bg-card border border-border shadow-lg" align="end">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-712-            {/* Campo de busca fixo no topo */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-713-            <div className="sticky top-0 p-2 bg-background border-b">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-714-              <div className="relative">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-727-            {/* Opção para limpar seleção */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-728-            {selectedProfessionals.length > 0 && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-729-              <>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:730:                <DropdownMenuItem
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-731-                  onClick={() => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-732-                    handleProfessionalToggle("all");
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-733-                    setProfessionalSearchQuery(""); // Limpa a busca ao limpar seleção
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-735-                  className="text-body text-muted-foreground"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-736-                >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-737-                  Limpar seleção
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:738:                </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:739:                <DropdownMenuSeparator />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-740-              </>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-741-            )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-742-
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-744-              const filteredProfessionals = getFilteredProfessionals();
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-745-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-746-              if (professionals.length === 0) {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:747:                return <DropdownMenuItem disabled>Nenhum profissional encontrado</DropdownMenuItem>;
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-748-              }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-749-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-750-              if (filteredProfessionals.length === 0) {
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-756-              }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-757-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-758-              return filteredProfessionals.map((professional) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:759:                <DropdownMenuItem
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-760-                  key={professional.id}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-761-                  onSelect={(e) => {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-762-                    e.preventDefault();
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-769-                    className="pointer-events-none"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-770-                  />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-771-                  <span className="flex-1">{getUserDisplayName(professional)}</span>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:772:                </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-773-              ));
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-774-            })()}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:775:          </DropdownMenuContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:776:        </DropdownMenu>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-777-      )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-778-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-779-      {/* Filtro por Status */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:780:      <DropdownMenu>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:781:        <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-782-          <Button variant="outline" size="sm" className={selectedStatus ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-783-            <span className="truncate">{selectedStatus || "Status"}</span>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-784-            <ChevronDown className="h-4 w-4 flex-shrink-0" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-785-          </Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:786:        </DropdownMenuTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:787:        <DropdownMenuContent className="w-48 p-0 bg-card border border-border shadow-lg" align="end">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:788:          <DropdownMenuItem onClick={() => handleStatusSelect("all")}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-789-            Todos
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:790:          </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:791:          <DropdownMenuSeparator />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-792-          {statusList.map((status) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:793:            <DropdownMenuItem
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-794-              key={status.id}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-795-              onClick={() => handleStatusSelect(status.id)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-796-              className={selectedStatus === status.id ? "bg-accent" : ""}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-797-            >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-798-              {status.name}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:799:            </DropdownMenuItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-800-          ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:801:        </DropdownMenuContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:802:      </DropdownMenu>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-803-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-804-      {/* Botão para limpar filtros */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-805-      {hasActiveFilters && (

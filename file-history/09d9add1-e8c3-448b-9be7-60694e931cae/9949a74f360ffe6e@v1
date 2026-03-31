@@ -1,0 +1,266 @@
+import React, { useState } from "react";
+import { ServiceRecommendation } from "@/types/service";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Clock as Clock, DollarSign as DollarSign, Sparkles as Sparkles, Plus as Plus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface ServiceRecommendationCardProps {
+    serviceId: string;
+    serviceName: string;
+    recommendations: ServiceRecommendation[];
+    selectedRecommendations?: string[];
+    onRecommendationToggle?: (recommendationId: string, isSelected: boolean) => void;
+    onAddAllToCart?: (recommendations: ServiceRecommendation[]) => void;
+    showPrices?: boolean;
+    className?: string;
+}
+
+export function ServiceRecommendationCard({
+    serviceId,
+    serviceName,
+    recommendations,
+    selectedRecommendations = [],
+    onRecommendationToggle,
+    onAddAllToCart,
+    showPrices = true,
+    className = "",
+}: ServiceRecommendationCardProps) {
+    const [localSelectedIds, setLocalSelectedIds] = useState<Set<string>>(
+        new Set(selectedRecommendations)
+    );
+
+    // Filtrar apenas recomendações ativas
+    const activeRecommendations = recommendations.filter((rec) => rec.isActive);
+
+    if (activeRecommendations.length === 0) {
+        return null;
+    }
+
+    // Calcular totais
+    const selectedRecsData = activeRecommendations.filter((rec) =>
+        localSelectedIds.has(rec.id)
+    );
+
+    const totalPrice = selectedRecsData.reduce(
+        (sum, rec) => sum + Number(rec.recommendedService.price),
+        0
+    );
+
+    const totalDuration = selectedRecsData.reduce(
+        (sum, rec) => sum + Number(rec.recommendedService.duration),
+        0
+    );
+
+    // Formatar preço
+    const formatPrice = (price: number | string): string => {
+        const numPrice = typeof price === "string" ? parseFloat(price) : price;
+        return new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        }).format(numPrice);
+    };
+
+    // Toggle de recomendação
+    const handleToggle = (recommendationId: string, checked: boolean) => {
+        const newSelected = new Set(localSelectedIds);
+
+        if (checked) {
+            newSelected.add(recommendationId);
+        } else {
+            newSelected.delete(recommendationId);
+        }
+
+        setLocalSelectedIds(newSelected);
+
+        if (onRecommendationToggle) {
+            onRecommendationToggle(recommendationId, checked);
+        }
+    };
+
+    // Adicionar todos ao carrinho
+    const handleAddAllToCart = () => {
+        if (onAddAllToCart && selectedRecsData.length > 0) {
+            onAddAllToCart(selectedRecsData);
+        }
+    };
+
+    return (
+        <Card className={`border-primary/20 ${className}`}>
+            <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-lg">Recomendações</CardTitle>
+                        </div>
+                        <CardDescription>
+                            Serviços que combinam bem com "{serviceName}"
+                        </CardDescription>
+                    </div>
+                    {showPrices && localSelectedIds.size > 0 && (
+                        <div className="text-right">
+                            <div className="text-sm font-medium text-primary">
+                                {formatPrice(totalPrice)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{totalDuration}min</div>
+                        </div>
+                    )}
+                </div>
+            </CardHeader>
+
+            <Separator />
+
+            <CardContent className="pt-4">
+                <ScrollArea className="h-full max-h-[400px]">
+                    <div className="space-y-3">
+                        {activeRecommendations.map((rec) => {
+                            const isSelected = localSelectedIds.has(rec.id);
+
+                            return (
+                                <div
+                                    key={rec.id}
+                                    className={`
+                    flex items-start gap-3 p-3 rounded-lg border transition-all
+                    ${isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"}
+                  `}
+                                >
+                                    <Checkbox
+                                        id={`rec-${rec.id}`}
+                                        checked={isSelected}
+                                        onCheckedChange={(checked) =>
+                                            handleToggle(rec.id, checked as boolean)
+                                        }
+                                        className="mt-1"
+                                    />
+
+                                    <label
+                                        htmlFor={`rec-${rec.id}`}
+                                        className="flex-1 cursor-pointer select-none"
+                                    >
+                                        <div className="space-y-2">
+                                            {/* Nome e badges */}
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h4 className="font-medium text-sm">
+                                                    {rec.recommendedService.name}
+                                                </h4>
+                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                    {showPrices && (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            <DollarSign className="h-3 w-3 mr-0.5" />
+                                                            {formatPrice(rec.recommendedService.price)}
+                                                        </Badge>
+                                                    )}
+                                                    <Badge variant="outline" className="text-xs">
+                                                        <Clock className="h-3 w-3 mr-0.5" />
+                                                        {rec.recommendedService.duration}min
+                                                    </Badge>
+                                                </div>
+                                            </div>
+
+                                            {/* Descrição do serviço */}
+                                            {rec.recommendedService.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                                    {rec.recommendedService.description}
+                                                </p>
+                                            )}
+
+                                            {/* Descrição customizada */}
+                                            {rec.customDescription && (
+                                                <Alert className="mt-2">
+                                                    <AlertDescription className="text-xs">
+                                                        💡 {rec.customDescription}
+                                                    </AlertDescription>
+                                                </Alert>
+                                            )}
+
+                                            {/* Categoria */}
+                                            {rec.recommendedService.categoryName && (
+                                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                    <span>{rec.recommendedService.categoryName}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Tipo de preço */}
+                                            {rec.recommendedService.priceType === "A partir de" && (
+                                                <Badge variant="outline" className="text-xs">
+                                                    A partir de{" "}
+                                                    {rec.recommendedService.maxValue &&
+                                                        ` até ${formatPrice(rec.recommendedService.maxValue)}`}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </label>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+
+            {localSelectedIds.size > 0 && onAddAllToCart && (
+                <>
+                    <Separator />
+                    <CardFooter className="pt-4">
+                        <div className="w-full space-y-3">
+                            {/* Resumo */}
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    {localSelectedIds.size}{" "}
+                                    {localSelectedIds.size === 1
+                                        ? "serviço selecionado"
+                                        : "serviços selecionados"}
+                                </span>
+                                {showPrices && (
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="h-4 w-4 text-muted-foreground" />
+                                            <span className="font-medium">{totalDuration}min</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                            <span className="font-medium">{formatPrice(totalPrice)}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Botão de ação */}
+                            <Button
+                                onClick={handleAddAllToCart}
+                                className="w-full"
+                                size="lg"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Adicionar Selecionados ao Agendamento
+                            </Button>
+                        </div>
+                    </CardFooter>
+                </>
+            )}
+
+            {localSelectedIds.size === 0 && (
+                <>
+                    <Separator />
+                    <CardFooter className="pt-4">
+                        <p className="text-xs text-muted-foreground w-full text-center">
+                            Selecione os serviços que deseja adicionar
+                        </p>
+                    </CardFooter>
+                </>
+            )}
+        </Card>
+    );
+}
+

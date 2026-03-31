@@ -1,0 +1,91 @@
+"use client"
+
+import { useMemo } from "react"
+import Link from "next/link"
+import { AdminDashboardLayout } from "@/components/admin/admin-dashboard-layout"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminTable } from "@/components/admin/admin-table"
+import { vistorias, type Vistoria } from "@/lib/mock-vistorias"
+import { type ColumnDef } from "@tanstack/react-table"
+import { Eye, Download } from "lucide-react"
+
+const columns: ColumnDef<Vistoria, unknown>[] = [
+  {
+    accessorKey: "id",
+    meta: { className: "w-[110px]" },
+    header: "Código",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span>
+    ),
+  },
+  {
+    accessorKey: "endereco",
+    meta: { className: "w-[260px]" },
+    header: "Endereço",
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-700 truncate block">{row.original.endereco}</span>
+    ),
+  },
+  {
+    accessorKey: "tipo",
+    meta: { className: "hidden lg:table-cell w-[110px]" },
+    header: "Tipo",
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-500 truncate block">{row.original.tipo}</span>
+    ),
+  },
+  {
+    accessorKey: "data",
+    meta: { className: "hidden lg:table-cell w-[100px]" },
+    header: "Data",
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-500 truncate block">{row.original.data}</span>
+    ),
+  },
+  {
+    id: "status",
+    meta: { className: "w-[100px]" },
+    header: "Status",
+    cell: () => (
+      <span className="px-2.5 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-50">
+        Concluída
+      </span>
+    ),
+  },
+  {
+    id: "acoes",
+    meta: { className: "w-[84px] min-w-[84px]" },
+    header: "",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-1 justify-end">
+        <Link href={`/admin/cliente/vistorias/${row.original.id}`}>
+          <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" title="Ver" />
+        </Link>
+        {row.original.temRelatorio && (
+          <AdminButton variant="ghost" size="sm" icon={<Download size={14} />} className="h-8 w-8 p-0 text-[#0B7A8F]" title="Baixar relatório" />
+        )}
+      </div>
+    ),
+  },
+]
+
+export default function VistoriasConcluidasPage() {
+  const data = useMemo(() => vistorias.filter((v) => v.status === "Concluído"), [])
+
+  return (
+    <AdminDashboardLayout
+      profile="cliente"
+      title="Vistorias Concluídas"
+      breadcrumbs={[
+        { label: "Vistorias", href: "/admin/cliente/vistorias/concluidas" },
+      ]}
+    >
+      <AdminTable
+        data={data}
+        columns={columns}
+        searchPlaceholder="Buscar por código ou endereço..."
+        emptyMessage="Nenhuma vistoria concluída encontrada."
+      />
+    </AdminDashboardLayout>
+  )
+}

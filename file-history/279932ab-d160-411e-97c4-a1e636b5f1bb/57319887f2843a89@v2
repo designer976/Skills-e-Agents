@@ -1,0 +1,21 @@
+export interface SalonFormData {
+  nomeFantasia: string;
+  razaoSocial: string;
+  cnpj: string;
+  telefoneComercial: string;
+  emailContato: string;
+  nomeLinkUtil: string;
+  urlLinkUtil: string;
+  timezone: string;
+}
+
+export const SALON_FORM_INITIAL_DATA: SalonFormData = {
+  nomeFantasia: "",
+  razaoSocial: "",
+  cnpj: "",
+  telefoneComercial: "",
+  emailContato: "",
+  nomeLinkUtil: "",
+  urlLinkUtil: "",
+  timezone: "America/Sao_Paulo",
+};

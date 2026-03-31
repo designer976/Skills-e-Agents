@@ -1,0 +1,92 @@
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plan } from "@/types/subscription";
+import { Check } from "lucide-react";
+
+interface PlanSelectionProps {
+    plans: Plan[];
+    selectedPlanId: string | undefined;
+    onSelect: (planId: string) => void;
+}
+
+export function PlanSelection({
+    plans,
+    selectedPlanId,
+    onSelect,
+}: PlanSelectionProps) {
+    const handleConsultationClick = (planName: string) => {
+        const phoneNumber = import.meta.env.VITE_WHATSAPP_COMERCIAL || "5541985290866";
+        const message = `Olá! Tenho interesse no plano ${planName} do Easy Salon. Poderia me passar mais informações?`;
+        window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Plano e Status</h3>
+            <div className="grid gap-4">
+                {plans.map((plan) => {
+                    const isSelected = selectedPlanId === plan.id;
+                    const isConsultation = plan.consultationRequired;
+
+                    const features: string[] = plan.features?.displayFeatures || [];
+
+                    // Format price
+                    const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(plan.amount);
+
+                    return (
+                        <Card
+                            key={plan.id}
+                            className={`relative transition-all cursor-pointer ${isSelected
+                                ? "border-primary bg-red-50/30"
+                                : "hover:border-primary/50"
+                                }`}
+                            onClick={() => isConsultation ? handleConsultationClick(plan.name) : onSelect(plan.id)}
+                        >
+                            {isConsultation && (
+                                <div className="absolute top-4 right-4">
+                                    <Badge variant="outline" className="text-xs bg-white/50 border-primary text-primary">Sob Consulta</Badge>
+                                </div>
+                            )}
+                            {isSelected && (
+                                <div className="absolute top-[-10px] right-[-10px] bg-primary text-white rounded-full p-1 shadow-md">
+                                    <Check className="w-4 h-4" />
+                                </div>
+                            )}
+
+                            <CardContent className="p-6">
+                                <div className="flex flex-col gap-4">
+                                    <div>
+                                        <h4 className="font-bold text-lg">{plan.name}</h4>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {plan.description}
+                                        </p>
+
+                                        {!isConsultation ? (
+                                            <div className="mt-3 flex items-baseline gap-1">
+                                                <span className="text-2xl font-bold text-primary">{price}</span>
+                                                <span className="text-sm text-muted-foreground">/mês</span>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-3">
+                                                <span className="text-xl font-bold text-primary/80 underline decoration-dotted">Sob Consulta</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8">
+                                        {features.map((feature, i) => (
+                                            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <Check className="h-3.5 w-3.5 text-green-500" />
+                                                <span>{feature}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

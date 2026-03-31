@@ -1,0 +1,101 @@
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { CalendarCheck, BotMessageSquare, TrendingUp, Zap } from 'lucide-react'
+
+const steps = [
+  {
+    number: '01',
+    icon: CalendarCheck,
+    title: 'Comece pela agenda',
+    description:
+      'A partir da agenda, tudo mais começa. A Easy resolve o maior gargalo da gestão: clientes que não aparecem, horários sobrespostos e remarcações de última hora.',
+  },
+  {
+    number: '02',
+    icon: BotMessageSquare,
+    title: 'IA que sempre responde',
+    description:
+      'Uma experiência rápida e moderna: a agenda com IA da Easy transforma a rotina em vitrine do negócio e em base de organização. Tudo sem limites de mensagens.',
+  },
+  {
+    number: '03',
+    icon: Zap,
+    title: 'Sem grandes mudanças',
+    description:
+      'Sem exigir grandes mudanças ou treinamentos complexos, a Easy evolui junto com o profissional: primeiro a agenda, depois os percentuais, o financeiro, a equipe e, por fim, a expansão.',
+  },
+  {
+    number: '04',
+    icon: TrendingUp,
+    title: 'Operação mais inteligente',
+    description:
+      'O resultado é uma operação mais simples e inteligente, na qual o dono ou gestor volta a ter tempo e clareza para a gestão com tranquilidade.',
+  },
+]
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+}
+
+export default function HowItWorks() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-100px' })
+
+  return (
+    <section className="py-24 lg:py-32 bg-white">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Header */}
+        <motion.div
+          ref={ref}
+          className="mb-16 max-w-2xl"
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="section-label mb-4 block">Como funciona</span>
+          <h2 className="display-title text-3xl lg:text-5xl text-[#1A1A1A]">
+            Como organizamos negócios da beleza
+          </h2>
+        </motion.div>
+
+        {/* Grid */}
+        <motion.div
+          className="grid sm:grid-cols-2 gap-6 lg:gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+        >
+          {steps.map((step) => {
+            const Icon = step.icon
+            return (
+              <motion.div
+                key={step.number}
+                variants={itemVariants}
+                className="relative group bg-cream rounded-3xl p-8 border border-accent hover:border-primary/30 hover:shadow-lg transition-all duration-300 overflow-hidden"
+              >
+                {/* Decorative number */}
+                <span className="absolute -right-2 -top-4 font-display font-black text-[100px] leading-none text-accent select-none pointer-events-none group-hover:text-primary/10 transition-colors duration-300">
+                  {step.number}
+                </span>
+
+                <div className="relative z-10">
+                  <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors duration-300">
+                    <Icon size={20} className="text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg text-[#1A1A1A] mb-3">{step.title}</h3>
+                  <p className="text-muted text-sm leading-relaxed">{step.description}</p>
+                </div>
+              </motion.div>
+            )
+          })}
+        </motion.div>
+      </div>
+    </section>
+  )
+}

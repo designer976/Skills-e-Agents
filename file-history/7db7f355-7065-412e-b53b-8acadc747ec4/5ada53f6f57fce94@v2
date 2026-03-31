@@ -1,0 +1,5 @@
+---
+description: Pipeline completo com todos os agentes — redireciona para o skill global
+---
+
+Execute o skill global **all-agents** aplicando todas as suas instruções e workflow à solicitação do usuário.

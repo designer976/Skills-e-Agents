@@ -1,0 +1,239 @@
+import { describe, it, expect } from "vitest"
+import { buildProposalTokens } from "./proposal-pdf-utils"
+import type { ProposalSection, ProposalModelo } from "./proposal-types"
+
+// ── Integration Tests for Template Dynamic System ──
+
+describe("Template Dynamic Integration", () => {
+  // Mock realistic proposal data
+  const mockProposalSections: ProposalSection[] = [
+    {
+      key: "sobre-projeto",
+      title: "Sobre o Projeto",
+      content: `### Sistema de Gestão Veterinária
+Um sistema completo para gerenciar clinicas veterinárias, incluindo agenda, prontuários e estoque.
+
+**Principal benefício**: Automatização completa do fluxo de atendimento.
+**Garantia de qualidade**: Código limpo e testes automatizados.`
+    },
+    {
+      key: "funcionalidades",
+      title: "Funcionalidades Principais",
+      content: `1. **Agendamento Online** — Interface web para clientes marcarem consultas.
+2. **Prontuário Eletrônico** — Sistema digital de histórico médico dos pets.
+3. **Controle de Estoque** — Gestão de medicamentos e materiais.
+4. **Dashboard Gerencial** — Relatórios de faturamento e estatísticas.`
+    },
+    {
+      key: "cronograma",
+      title: "Cronograma de Desenvolvimento",
+      content: `Fase 1 - Levantamento de Requisitos | 1 semana
+Fase 2 - Prototipação e Design | 2 semanas
+Fase 3 - Desenvolvimento Backend | 4 semanas
+Fase 4 - Desenvolvimento Frontend | 3 semanas
+Fase 5 - Testes e Homologação | 1 semana
+
+Prazo total estimado: 11 semanas (aproximadamente 3 meses)`
+    },
+    {
+      key: "investimento",
+      title: "Investimento e Condições",
+      content: `Módulo de Agendamento: R$ 12.000
+Módulo de Prontuários: R$ 18.000
+Módulo de Estoque: R$ 8.000
+Dashboard e Relatórios: R$ 7.000
+Total do Projeto: R$ 45.000
+
+1ª parcela: R$ 15.000 na assinatura do contrato
+2ª parcela: R$ 15.000 na entrega da versão beta (30 dias)
+3ª parcela: R$ 15.000 pós-homologação e entrega final`
+    },
+    {
+      key: "entregaveis",
+      title: "Entregáveis do Projeto",
+      content: `- Protótipos navegáveis no Figma
+- Documentação técnica completa
+- Código fonte no repositório Git privado
+- Sistema em produção com SSL
+- Manual de usuário final
+- 3 meses de suporte técnico incluído`
+    }
+  ]
+
+  const proposalParams = {
+    empresa: "Clínica Veterinária PetCare",
+    para: "Dr. Maria Santos",
+    projeto: "Sistema de Gestão Veterinária",
+    modeloTrabalho: "Escopo Fechado" as ProposalModelo,
+    dataCriacao: new Date(2026, 2, 30, 14, 30).getTime(),
+    sections: mockProposalSections
+  }
+
+  it("deve gerar todas as variáveis obrigatórias do template dinâmico", () => {
+    const tokens = buildProposalTokens(proposalParams)
+
+    // Variáveis da capa
+    expect(tokens.NOME_CLIENTE).toBe("Clínica Veterinária PetCare")
+    expect(tokens.CLIENTE_EMPRESA).toBe("Dr. Maria Santos")
+    expect(tokens.TITULO_PROPOSTA).toBe("Proposta Comercial")
+    expect(tokens.TIPO_ESCOPO).toBe("Escopo Fechado")
+    expect(tokens.DIAS_VALIDADE).toBe("30")
+    expect(tokens.NOME_EMPRESA).toBe("Wa Project")
+
+    // Projeto
+    expect(tokens.SUBTITULO_PROJETO).toBe("Sistema de Gestão Veterinária")
+    expect(tokens.DESCRICAO_PROJETO).toContain("sistema completo para gerenciar")
+    expect(tokens.TITULO_PROJETO).toBe("Sobre o Projeto")
+
+    // Funcionalidades com HTML estruturado
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain('<div class="func-item">')
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain("Agendamento Online")
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain("Prontuário Eletrônico")
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain("Dashboard Gerencial")
+
+    // Cronograma
+    expect(tokens.LISTA_FASES).toContain('<div class="phase">')
+    expect(tokens.LISTA_FASES).toContain("Levantamento de Requisitos")
+    expect(tokens.LISTA_FASES).toContain("Testes e Homologação")
+    expect(tokens.PRAZO_TOTAL).toContain("11 semanas")
+
+    // Investimento
+    expect(tokens.VALOR_TOTAL).toContain("R$ 45.000")
+    expect(tokens.VALOR_TOTAL).toContain('<p class="investment-total">')
+
+    // Condições de pagamento
+    expect(tokens.CONDICOES_PAGAMENTO).toContain('<div class="payment-condition">')
+    expect(tokens.CONDICOES_PAGAMENTO).toContain("R$ 15.000")
+    expect(tokens.CONDICOES_PAGAMENTO).toContain("30 dias")
+
+    // Entregáveis
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("<ul>")
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("Protótipos navegáveis no Figma")
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("Sistema em produção com SSL")
+  })
+
+  it("deve incluir todas as seções de conteúdo fixo", () => {
+    const tokens = buildProposalTokens(proposalParams)
+
+    // Sobre a empresa
+    expect(tokens.TITULO_SOBRE_EMPRESA).toBe("Sobre a Wa Project")
+    expect(tokens.DESCRICAO_EMPRESA).toContain("software house especializada")
+
+    // Serviços
+    expect(tokens.SECAO_SERVICOS).toContain("Desenvolvimento de Software")
+    expect(tokens.SECAO_SERVICOS).toContain("Inteligência Artificial")
+
+    // Clientes
+    expect(tokens.LISTA_CLIENTES).toContain("Easy Salon")
+
+    // Títulos das seções
+    expect(tokens.TITULO_FUNCIONALIDADES).toBe("Funcionalidades")
+    expect(tokens.TITULO_CRONOGRAMA).toBe("Cronograma")
+    expect(tokens.TITULO_INVESTIMENTO).toBe("Investimento")
+    expect(tokens.TITULO_ENTREGAVEIS).toBe("Entregáveis")
+
+    // Encerramento
+    expect(tokens.CITACAO_ENCERRAMENTO).toContain("transformar sua visão")
+    expect(tokens.INFORMACOES_EMPRESA_COMPLETA).toContain("SAKAMOTO TECNOLOGIA")
+    expect(tokens.TEXTO_VALIDADE).toContain("30 dias")
+  })
+
+  it("deve gerar um objeto completo com mais de 40 variáveis", () => {
+    const tokens = buildProposalTokens(proposalParams)
+    const tokenKeys = Object.keys(tokens)
+
+    expect(tokenKeys.length).toBeGreaterThan(40)
+
+    // Verificar que nenhuma variável está undefined (algumas podem estar vazias intencionalmente)
+    const expectedEmptyVars = [
+      "INFORMACOES_ADICIONAIS_CAPA",
+      "CONTEUDO_INICIAL_CAPA",
+      "INFORMACOES_ADICIONAIS_EMPRESA",
+      "FUNCIONALIDADES_ADICIONAIS",
+      "CRONOGRAMA_DETALHADO",
+      "OBSERVACOES_CRONOGRAMA",
+      "MENSAGEM_FINAL_PASSOS"
+    ]
+
+    for (const [key, value] of Object.entries(tokens)) {
+      expect(value).toBeDefined()
+      expect(typeof value).toBe("string")
+
+      if (expectedEmptyVars.includes(key)) {
+        expect(value).toEqual("") // Explicitamente vazio
+      } else {
+        expect(value.length).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it("deve funcionar com sistema de substituição de template", () => {
+    const tokens = buildProposalTokens(proposalParams)
+
+    // Simular o processo de substituição que acontece no download
+    let mockTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{TITULO_PROPOSTA}} — {{NOME_CLIENTE}}</title>
+</head>
+<body>
+    <h1>{{NOME_CLIENTE}}</h1>
+    <h2>{{SUBTITULO_PROJETO}}</h2>
+    <div>{{LISTA_FUNCIONALIDADES}}</div>
+    <div>{{VALOR_TOTAL}}</div>
+    <div>{{CONDICOES_PAGAMENTO}}</div>
+    <div>{{VARIAVEL_NAO_EXISTE}}</div>
+</body>
+</html>`
+
+    // Substituir todas as variáveis
+    for (const [key, value] of Object.entries(tokens)) {
+      mockTemplate = mockTemplate.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value || '')
+    }
+
+    // Remover variáveis não utilizadas (como no código real)
+    mockTemplate = mockTemplate.replace(/\{\{[A-Z_]+\}\}/g, '')
+
+    // Verificar que substituição funcionou
+    expect(mockTemplate).toContain("Clínica Veterinária PetCare")
+    expect(mockTemplate).toContain("Sistema de Gestão Veterinária")
+    expect(mockTemplate).toContain('<div class="func-item">')
+    expect(mockTemplate).toContain("R$ 45.000")
+    expect(mockTemplate).toContain('<div class="payment-condition">')
+
+    // Verificar que variável inexistente foi removida
+    expect(mockTemplate).not.toContain("{{VARIAVEL_NAO_EXISTE}}")
+    expect(mockTemplate).not.toContain("{{")
+    expect(mockTemplate).not.toContain("}}")
+  })
+
+  it("deve manter estrutura HTML válida nos tokens", () => {
+    const tokens = buildProposalTokens(proposalParams)
+
+    // Verificar que HTML está bem formado
+    expect(tokens.LISTA_FUNCIONALIDADES).toMatch(/<div class="func-item">.*<\/div>/)
+    expect(tokens.LISTA_FASES).toMatch(/<div class="phase">.*<\/div>/)
+    expect(tokens.CONDICOES_PAGAMENTO).toMatch(/<div class="payment-condition">.*<\/div>/)
+    expect(tokens.LISTA_ENTREGAVEIS).toMatch(/<ul>[\s\S]*<\/ul>/)
+    expect(tokens.VALOR_TOTAL).toMatch(/<p class="investment-total">.*<\/p>/)
+
+    // Verificar que não há HTML quebrado
+    const htmlTokens = [
+      tokens.LISTA_FUNCIONALIDADES,
+      tokens.LISTA_FASES,
+      tokens.CONDICOES_PAGAMENTO,
+      tokens.LISTA_ENTREGAVEIS,
+      tokens.VALOR_TOTAL,
+      tokens.DESCRICAO_PROJETO
+    ]
+
+    for (const html of htmlTokens) {
+      // Contar abertura e fechamento de tags
+      const openTags = (html.match(/<[^\/][^>]*>/g) || []).length
+      const closeTags = (html.match(/<\/[^>]+>/g) || []).length
+
+      expect(openTags).toBe(closeTags) // Tags balanceadas
+    }
+  })
+})

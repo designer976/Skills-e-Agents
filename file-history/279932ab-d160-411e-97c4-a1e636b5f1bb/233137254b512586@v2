@@ -1,0 +1,105 @@
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { CreateSpecialtyDto } from "@/types/specialty";
+
+interface AdminSpecialtyFormProps {
+  initialData?: Partial<CreateSpecialtyDto>;
+  onSave: (data: CreateSpecialtyDto) => void;
+  isSaving?: boolean;
+}
+
+export function AdminSpecialtyForm({
+  initialData,
+  onSave,
+  isSaving = false
+}: AdminSpecialtyFormProps) {
+  const [specialtyData, setSpecialtyData] = useState<CreateSpecialtyDto>(() => ({
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    displayOrder: initialData?.displayOrder || 0,
+    isActive: initialData?.isActive ?? true,
+    requestOnly: false, // Always false for admin
+  }));
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateSpecialtyDto, string>>>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    setSpecialtyData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof CreateSpecialtyDto]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof CreateSpecialtyDto, string>> = {};
+
+    // Validate name: Required, min 2 characters, max 100 characters
+    if (!specialtyData.name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    } else if (specialtyData.name.trim().length < 2) {
+      newErrors.name = "Nome deve ter pelo menos 2 caracteres";
+    } else if (specialtyData.name.length > 100) {
+      newErrors.name = "Nome não pode ter mais de 100 caracteres";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    // Always send requestOnly as false for admin
+    const dataToSave = {
+      ...specialtyData,
+      requestOnly: false
+    };
+
+    onSave(dataToSave);
+  };
+
+  return (
+    <form id="specialty-form" onSubmit={handleSubmit}>
+      <div className="flex flex-col gap-[4px]">
+        <Label htmlFor="name">Nome da Especialidade <span className="text-destructive ml-0.5">*</span></Label>
+        <Input
+          id="name"
+          name="name"
+          type="text"
+          value={specialtyData.name}
+          onChange={handleInputChange}
+          placeholder="Digite o nome da especialidade"
+          required
+          disabled={isSaving}
+          maxLength={100}
+          className={errors.name ? "border-destructive" : ""}
+        />
+        {errors.name && (
+          <p className="text-[13px] text-destructive">{errors.name}</p>
+        )}
+        <p className="text-body text-muted-foreground">
+          Mínimo 2 caracteres, máximo 100 caracteres
+        </p>
+      </div>
+    </form>
+  );
+}

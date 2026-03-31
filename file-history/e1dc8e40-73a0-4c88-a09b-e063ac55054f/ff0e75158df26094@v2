@@ -1,0 +1,457 @@
+"use client"
+
+import { use, useState } from "react"
+import { useRouter } from "next/navigation"
+import { AdminDashboardLayout } from "@/components/admin/admin-dashboard-layout"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminModal, AdminModalHeader, AdminModalBody, AdminModalFooter } from "@/components/admin/admin-modal"
+import {
+  getVistoriaAndamentoById,
+  FASES_ORDERED,
+  FASE_CONFIG,
+  TAG_CONFIG,
+  faseIndex,
+  type VistoriaAndamento,
+  type FaseVistoria,
+  type Anotacao,
+} from "@/lib/mock-andamento"
+import {
+  MapPin,
+  Tag,
+  CalendarClock,
+  User,
+  Check,
+  Lock,
+  Clock,
+  Zap,
+  MessageSquare,
+  Plus,
+  AlertTriangle,
+  ChevronRight,
+  History,
+} from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 shrink-0">{icon}</div>
+      <div>
+        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+        <p className="text-sm text-gray-800 font-medium mt-0.5">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function BadgeFase({ fase }: { fase: FaseVistoria }) {
+  const cfg = FASE_CONFIG[fase]
+  return (
+    <span className={cn("inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full", cfg.bg, cfg.color)}>
+      {cfg.label}
+    </span>
+  )
+}
+
+// ─── Stepper de fases ─────────────────────────────────────────────────────────
+function StepperFases({ faseAtual }: { faseAtual: FaseVistoria }) {
+  const atualIdx = faseIndex(faseAtual)
+  return (
+    <div className="flex items-start gap-0">
+      {FASES_ORDERED.map((fase, idx) => {
+        const concluida = idx < atualIdx
+        const atual = idx === atualIdx
+        return (
+          <div key={fase} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+            <div className="flex items-center w-full">
+              <div className={cn(
+                "h-0.5 flex-1",
+                idx === 0 ? "invisible" : concluida || atual ? "bg-[#0B7A8F]" : "bg-gray-200"
+              )} />
+              <div className={cn(
+                "shrink-0 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all",
+                concluida ? "bg-[#0B7A8F] border-[#0B7A8F]"
+                  : atual ? "bg-white border-[#0B7A8F]"
+                    : "bg-white border-gray-200"
+              )}>
+                {concluida
+                  ? <Check size={12} className="text-white" />
+                  : atual
+                    ? <div className="w-2 h-2 rounded-full bg-[#0B7A8F]" />
+                    : null}
+              </div>
+              <div className={cn(
+                "h-0.5 flex-1",
+                idx === FASES_ORDERED.length - 1 ? "invisible" : concluida ? "bg-[#0B7A8F]" : "bg-gray-200"
+              )} />
+            </div>
+            <p className={cn(
+              "text-center text-[10px] leading-tight px-0.5 mt-1",
+              concluida ? "text-[#0B7A8F] font-medium"
+                : atual ? "text-[#002533] font-bold"
+                  : "text-gray-400"
+            )}>{fase}</p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Modal Timeline completa ──────────────────────────────────────────────────
+function ModalTimeline({ vistoria, onClose }: { vistoria: VistoriaAndamento; onClose: () => void }) {
+  return (
+    <AdminModal onClose={onClose} size="sm">
+      <AdminModalHeader
+        title="Timeline completa"
+        subtitle={vistoria.id}
+        onClose={onClose}
+      />
+      <AdminModalBody>
+        <div className="space-y-0">
+          {vistoria.eventos.map((ev, i) => {
+            const cfg = FASE_CONFIG[ev.fase]
+            return (
+              <div key={ev.id} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div className={cn("h-2.5 w-2.5 rounded-full mt-1 shrink-0 border-2 border-[#0B7A8F]", cfg.bg)} />
+                  {i < vistoria.eventos.length - 1 && <div className="w-px flex-1 bg-gray-100 mt-1" />}
+                </div>
+                <div className="pb-5">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", cfg.bg, cfg.color)}>
+                      {ev.fase}
+                    </span>
+                    <span className="text-xs text-gray-400">{ev.origem}</span>
+                  </div>
+                  <p className="text-sm text-gray-700">{ev.descricao}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 font-mono">{ev.dataHora}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </AdminModalBody>
+      <AdminModalFooter>
+        <AdminButton variant="outline" onClick={onClose}>Fechar</AdminButton>
+      </AdminModalFooter>
+    </AdminModal>
+  )
+}
+
+// ─── Bloco A — Avaliação bloqueada ────────────────────────────────────────────
+function BlocoAvaliacaoBloqueada() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <h2 className="text-base font-bold text-gray-900 mb-4">Avaliação</h2>
+      <div className="flex flex-col items-center text-center py-4 gap-3">
+        <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+          <Lock size={20} className="text-gray-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-600">Bloqueada enquanto em andamento</p>
+          <p className="text-xs text-gray-400 mt-1">
+            A avaliação será liberada após a finalização da vistoria e envio do laudo.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Bloco B — Status em tempo real ──────────────────────────────────────────
+function BlocoStatusTempoReal({
+  vistoria,
+  onVerTimeline,
+}: {
+  vistoria: VistoriaAndamento
+  onVerTimeline: () => void
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-gray-900">Status em tempo real</h2>
+        {vistoria.temAlerta && (
+          <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
+            <AlertTriangle size={11} />
+            Sem update há {vistoria.semUpdateHaMins} min
+          </span>
+        )}
+      </div>
+
+      {/* Fase atual — destaque */}
+      <div className="flex items-center gap-3 p-4 bg-[#0B7A8F]/5 border border-[#0B7A8F]/10 rounded-lg">
+        <div className="h-10 w-10 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center shrink-0">
+          <Zap size={18} className="text-[#0B7A8F]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-400 mb-1">Fase atual</p>
+          <BadgeFase fase={vistoria.faseAtual} />
+        </div>
+      </div>
+
+      {/* Última atualização */}
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-500 flex items-center gap-1.5">
+          <Clock size={13} className="text-gray-400" />
+          Última atualização
+        </span>
+        <span className="font-medium text-gray-800">{vistoria.ultimaAtualizacaoDataHora}</span>
+      </div>
+
+      {/* Mini stepper */}
+      <StepperFases faseAtual={vistoria.faseAtual} />
+
+      {/* Ver timeline completa */}
+      <button
+        onClick={onVerTimeline}
+        className="w-full flex items-center justify-between px-4 py-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+      >
+        <span className="flex items-center gap-2">
+          <History size={15} className="text-[#0B7A8F]" />
+          Ver timeline completa
+        </span>
+        <ChevronRight size={15} className="text-gray-400" />
+      </button>
+    </div>
+  )
+}
+
+// ─── Bloco C — Anotações internas ────────────────────────────────────────────
+const TAGS: Anotacao["tag"][] = ["Ocorrência", "Cliente", "Acesso", "Financeiro", "Geral"]
+
+function BlocoAnotacoes({ anotacoesIniciais }: { anotacoesIniciais: Anotacao[] }) {
+  const [anotacoes, setAnotacoes] = useState<Anotacao[]>(anotacoesIniciais)
+  const [texto, setTexto] = useState("")
+  const [tag, setTag] = useState<Anotacao["tag"]>("Geral")
+
+  function salvar() {
+    if (!texto.trim()) return
+    const nova: Anotacao = {
+      id: Date.now(),
+      autor: "Admin João",
+      dataHora: new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+      texto: texto.trim(),
+      tag,
+    }
+    setAnotacoes((prev) => [nova, ...prev])
+    setTexto("")
+    setTag("Geral")
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-bold text-gray-900">Anotações internas</h2>
+        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Somente equipe Rios</span>
+      </div>
+
+      {/* Form nova anotação */}
+      <div className="space-y-2">
+        <textarea
+          className="w-full h-20 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B7A8F]/20 focus:border-[#0B7A8F] resize-none"
+          placeholder="Adicione uma anotação interna..."
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+        />
+        <div className="flex items-center gap-2">
+          <Select value={tag} onValueChange={(v) => setTag(v as Anotacao["tag"])}>
+            <SelectTrigger className="h-8 w-36 text-xs px-2">
+              <SelectValue placeholder="Tag" />
+            </SelectTrigger>
+            <SelectContent>
+              {TAGS.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <AdminButton
+            variant="primary"
+            size="sm"
+            icon={<Plus size={13} />}
+            onClick={salvar}
+            disabled={!texto.trim()}
+          >
+            Salvar
+          </AdminButton>
+        </div>
+      </div>
+
+      {/* Lista de anotações */}
+      {anotacoes.length === 0 ? (
+        <div className="flex flex-col items-center py-6 gap-2 text-gray-400">
+          <MessageSquare size={28} className="opacity-30" />
+          <p className="text-sm">Nenhuma anotação ainda.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {anotacoes.map((a) => {
+            const tagCfg = TAG_CONFIG[a.tag]
+            return (
+              <div key={a.id} className="p-3 border border-gray-100 rounded-lg space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-700">{a.autor}</span>
+                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tagCfg.bg, tagCfg.color)}>
+                      {a.tag}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400 font-mono shrink-0">{a.dataHora}</span>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">{a.texto}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function AndamentoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const router = useRouter()
+  const vistoria = getVistoriaAndamentoById(id)
+  const [showTimeline, setShowTimeline] = useState(false)
+
+  if (!vistoria) {
+    return (
+      <AdminDashboardLayout profile="cliente" title="Vistoria não encontrada">
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <p className="text-gray-500">Vistoria não encontrada.</p>
+          <AdminButton variant="outline" onClick={() => router.back()}>Voltar</AdminButton>
+        </div>
+      </AdminDashboardLayout>
+    )
+  }
+
+  return (
+    <AdminDashboardLayout
+      profile="cliente"
+      title={vistoria.id}
+      breadcrumbs={[
+        { label: "Vistorias", href: "/admin/cliente/vistorias/andamento" },
+        { label: "Em andamento", href: "/admin/cliente/vistorias/andamento" },
+      ]}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ── Coluna esquerda (2/3) ──────────────────────────────────────── */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Dados do pedido */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <h2 className="text-base font-bold text-gray-900">Informações da Vistoria</h2>
+              <BadgeFase fase={vistoria.faseAtual} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <InfoRow
+                icon={<MapPin size={16} className="text-[#0B7A8F]" />}
+                label="Endereço"
+                value={`${vistoria.endereco}${vistoria.complemento ? `, ${vistoria.complemento}` : ""} — ${vistoria.cidade}/${vistoria.uf}`}
+              />
+              <InfoRow
+                icon={<Tag size={16} className="text-[#0B7A8F]" />}
+                label="Tipo de vistoria"
+                value={vistoria.tipo}
+              />
+              <InfoRow
+                icon={<CalendarClock size={16} className="text-[#0B7A8F]" />}
+                label="Data / hora agendada"
+                value={`${vistoria.dataAgendada} às ${vistoria.horaAgendada}`}
+              />
+              <InfoRow
+                icon={<User size={16} className="text-[#0B7A8F]" />}
+                label="Vistoriador"
+                value={`${vistoria.vistoriadorNome} · ${vistoria.vistoriadorNivel}`}
+              />
+            </div>
+
+            {/* Dados do imóvel */}
+            <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: "Tipo imóvel",  value: vistoria.tipoImovel   },
+                { label: "Área útil",    value: `${vistoria.areaUtil} m²` },
+                { label: "Mobília",      value: vistoria.mobilia      },
+                { label: "Status imóvel",value: vistoria.statusImovel },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">{label}</p>
+                  <p className="text-sm font-medium text-gray-700 mt-0.5">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {vistoria.referenciaAcesso && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+                <p className="text-xs font-semibold text-yellow-700 mb-0.5">Referência / Acesso</p>
+                <p className="text-sm text-yellow-800">{vistoria.referenciaAcesso}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Status em tempo real */}
+          <BlocoStatusTempoReal
+            vistoria={vistoria}
+            onVerTimeline={() => setShowTimeline(true)}
+          />
+
+          {/* Histórico de eventos (resumo) */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <MessageSquare size={16} className="text-[#0B7A8F]" />
+                Histórico
+              </h2>
+              <button
+                onClick={() => setShowTimeline(true)}
+                className="text-xs font-medium text-[#0B7A8F] hover:underline flex items-center gap-1"
+              >
+                Ver todos <ChevronRight size={13} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {vistoria.eventos.slice(-3).reverse().map((ev) => {
+                const cfg = FASE_CONFIG[ev.fase]
+                return (
+                  <div key={ev.id} className="flex gap-4">
+                    <div className="w-1 rounded-full bg-[#0B7A8F]/20 shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", cfg.bg, cfg.color)}>
+                          {ev.fase}
+                        </span>
+                        <span className="text-xs text-gray-400">{ev.origem}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 font-mono">{ev.dataHora}</p>
+                      <p className="text-sm text-gray-700 leading-relaxed">{ev.descricao}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Coluna direita (1/3) ───────────────────────────────────────── */}
+        <div className="space-y-6">
+          {/* Bloco A — Avaliação bloqueada */}
+          <BlocoAvaliacaoBloqueada />
+
+          {/* Bloco C — Anotações internas */}
+          <BlocoAnotacoes anotacoesIniciais={vistoria.anotacoes} />
+        </div>
+      </div>
+
+      {/* Modal timeline completa */}
+      {showTimeline && (
+        <ModalTimeline vistoria={vistoria} onClose={() => setShowTimeline(false)} />
+      )}
+    </AdminDashboardLayout>
+  )
+}

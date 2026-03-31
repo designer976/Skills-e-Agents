@@ -1,0 +1,107 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ServiceForm } from "@/components/forms/ServiceForm";
+import { Service } from "@/types/service";
+import { Salon } from "@/types/salon";
+
+type ServiceType = "standard" | "custom";
+
+interface ServiceWithExtras extends Service {
+  type?: ServiceType;
+  configured_price?: number;
+  configured_duration?: number;
+  configured_commission?: number;
+}
+
+interface ServiceFormData {
+  name: string;
+  acceptsOnlineBooking?: boolean;
+  price?: number | string;
+  duration?: number;
+  commission?: number | string;
+}
+
+interface ServiceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  service?: ServiceWithExtras;
+  specialtyName: string;
+  onSave: (data: ServiceFormData) => void;
+  isSaving?: boolean;
+  selectedSalon?: Salon;
+}
+
+export function ServiceModal({
+  isOpen,
+  onClose,
+  service,
+  specialtyName,
+  onSave,
+  isSaving,
+  selectedSalon,
+}: ServiceModalProps) {
+  const isEditing = !!service;
+  const isCustomService =
+    !service ||
+    service.type === "custom" ||
+    (service.type !== undefined && service.type !== "standard");
+
+  const initialData = service
+    ? {
+        name: service.name,
+        acceptsOnlineBooking: service.acceptsOnlineBooking,
+        price: service.price || service.configured_price,
+        duration: service.duration || service.configured_duration,
+        commission: service.commission || service.configured_commission,
+      }
+    : undefined;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-lg flex flex-col gap-0">
+        <DialogHeader className="border-b pb-3 shrink-0">
+          <DialogTitle>
+            {isEditing ? "Editar Serviço" : "Novo Serviço"} — {specialtyName}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? "Edite as informações do serviço."
+              : "Preencha as informações para criar um novo serviço."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogBody>
+          <ServiceForm
+            initialData={initialData}
+            onSave={onSave}
+            isSaving={isSaving}
+            isCustomService={isCustomService}
+          />
+        </DialogBody>
+
+        <DialogFooter className="border-t pt-6 shrink-0">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="service-form"
+            disabled={isSaving || (selectedSalon ? !selectedSalon.active : false)}
+          >
+            {isSaving && <LoadingSpinner size="sm" inline className="mr-2" />}
+            {isEditing ? "Salvar Alterações" : "Criar Serviço"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

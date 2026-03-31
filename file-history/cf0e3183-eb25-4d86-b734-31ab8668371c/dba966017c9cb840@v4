@@ -1,0 +1,229 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Pencil as Edit, Trash2 as Trash2, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useNavigate, useParams } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { DataTable, TableAction } from "@/components/ui/data-table";
+import { Button } from "@/components/ui/button";
+import { ServiceModal } from "@/components/modals/ServiceModal";
+import { ConfirmationModal } from "@/components/modals/ConfirmationModal";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { specialtyService } from "@/services/specialtyService";
+import { serviceService } from "@/services/serviceService";
+import { Specialty } from "@/types/specialty";
+import { Service, UpdateServiceDto } from "@/types/service";
+
+interface ServiceFormData {
+  name: string;
+  acceptsOnlineBooking?: boolean;
+  price?: number | string;
+  duration?: number;
+  commission?: number | string;
+}
+
+export default function SpecialtyServicesPage() {
+  const { user } = useAuth();
+  const { specialtyId } = useParams();
+  const navigate = useNavigate();
+
+  const [specialty, setSpecialty] = useState<Specialty | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | undefined>();
+  const [serviceToDelete, setServiceToDelete] = useState<Service | undefined>();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, [specialtyId]);
+
+  const loadData = async (): Promise<void> => {
+    if (!specialtyId) return;
+
+    setIsLoading(true);
+    try {
+      const [specialtyData, servicesData] = await Promise.all([
+        specialtyService.getById(specialtyId),
+        serviceService.listServicesBySpecialty(specialtyId)
+      ]);
+
+      setSpecialty(specialtyData);
+      setServices(servicesData);
+    } catch (error) {
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewService = (): void => {
+    setSelectedService(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditService = useCallback((service: Service): void => {
+    setSelectedService(service);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleDeleteService = useCallback((service: Service): void => {
+    setServiceToDelete(service);
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const confirmDeleteService = async (): Promise<void> => {
+    if (serviceToDelete) {
+      setIsDeleting(true);
+      try {
+        await serviceService.deleteStandardService(serviceToDelete.id);
+        toast.success("Serviço excluído com sucesso!");
+        setServices(prev => prev.filter(s => s.id !== serviceToDelete.id));
+        setIsDeleteModalOpen(false);
+      } catch (error) {
+        toast.error('Erro ao excluir serviço');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const handleBack = (): void => {
+    navigate("/admin/specialties");
+  };
+
+  const handleSaveService = async (data: ServiceFormData): Promise<void> => {
+    setIsSaving(true);
+    try {
+      if (selectedService) {
+        const updateData: UpdateServiceDto = {
+          name: data.name,
+          acceptsOnlineBooking: data.acceptsOnlineBooking
+        };
+
+        const updated = await serviceService.updateStandardService(selectedService.id, updateData);
+        setServices(prev => prev.map(s => s.id === updated.id ? updated : s).sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Serviço editado com sucesso!");
+      } else {
+        if (!specialtyId) {
+          throw new Error('Specialty ID not found');
+        }
+
+        const createData = {
+          name: data.name,
+          acceptsOnlineBooking: data.acceptsOnlineBooking || false,
+          price: data.price,
+          duration: data.duration,
+          commission: data.commission
+        };
+
+        const created = await serviceService.createStandardServiceForSpecialty(specialtyId, createData);
+        setServices(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Serviço padrão criado com sucesso!");
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      if (error?.response?.status === 409 || error?.message?.includes('já existe')) {
+        toast.error('Já existe um serviço com este nome nesta especialidade');
+      } else {
+        toast.error('Erro ao salvar serviço');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const columns = [
+    {
+      key: "name" as keyof Service,
+      header: "Nome do Serviço",
+    },
+    {
+      key: "acceptsOnlineBooking" as keyof Service,
+      header: "Online",
+      width: "100px",
+      render: (_value: unknown, row: Service) => (
+        <Badge variant={row.acceptsOnlineBooking ? "active" : "inactive"}>
+          {row.acceptsOnlineBooking ? "Sim" : "Não"}
+        </Badge>
+      ),
+    },
+  ];
+
+  const serviceActions = useMemo<TableAction<Service>[]>(() => [
+    {
+      label: "Editar serviço",
+      icon: <Edit className="h-4 w-4" />,
+      onClick: (row: Service): void => { handleEditService(row); },
+    },
+    {
+      label: "Excluir serviço",
+      icon: <Trash2 className="h-4 w-4" />,
+      onClick: (row: Service): void => { handleDeleteService(row); },
+      variant: "destructive" as const,
+    },
+  ], [handleEditService, handleDeleteService]);
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || 'Easy Salon')}
+      sideNavTitle="Painel da Easy"
+      sideNavSubtitle="Área Administrativa"
+    >
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="secondary" size="icon" onClick={handleBack} aria-label="Voltar para especialidades">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1 flex items-center justify-between">
+          <div>
+            <h1 className="page-title">{`Serviços — ${specialty?.name || 'Especialidade'}`}</h1>
+            <p className="text-[13px] text-muted-foreground">Gerencie os serviços desta especialidade.</p>
+          </div>
+          <Button onClick={handleNewService}>Novo Serviço</Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner size="md" />
+        </div>
+      ) : (
+        <DataTable
+          data={services}
+          columns={columns}
+          actions={serviceActions}
+          mobileView="cards"
+          mobileCardConfig={{
+            title: "name",
+            subtitle: (row) => row.acceptsOnlineBooking ? "Aceita agendamento online" : "Sem agendamento online",
+          }}
+        />
+      )}
+
+      <ServiceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        service={selectedService}
+        specialtyName={specialty?.name || 'Especialidade'}
+        onSave={handleSaveService}
+        isSaving={isSaving}
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteService}
+        title="Excluir Serviço"
+        description={`Tem certeza que deseja excluir o serviço "${serviceToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
+      />
+    </EasySalonLayout>
+  );
+}

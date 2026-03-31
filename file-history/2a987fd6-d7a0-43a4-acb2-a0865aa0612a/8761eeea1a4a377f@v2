@@ -1,0 +1,336 @@
+import { generateWaProjectProposalPDF, type WaProjectPDFGenerator } from './wa-project-pdf-generator'
+import type { PropostaTemplateData, FuncionalidadeItem, MembroEquipe } from './proposta-template-types'
+import type { ProposalSection } from './proposal-types'
+
+/**
+ * Gerador de PDF para propostas usando a nova estrutura
+ * Converte dados estruturados para o formato esperado pelo WaProjectPDFGenerator
+ */
+
+interface PDFGenerationOptions {
+  filename?: string
+  download?: boolean // true = download automático, false = retorna blob
+}
+
+/**
+ * Gera PDF da proposta a partir dos dados estruturados
+ */
+export async function gerarPDFProposta(
+  data: PropostaTemplateData,
+  options: PDFGenerationOptions = {}
+): Promise<Blob | void> {
+  try {
+    // Converter dados estruturados para o formato do WaProjectPDFGenerator
+    const proposalData = converterParaFormatoLegado(data)
+
+    // Verificar se é download ou retorno de blob
+    if (options.download === false) {
+      // Retorna blob para preview ou outras operações
+      return await gerarPDFBlob(proposalData)
+    } else {
+      // Download automático (comportamento padrão)
+      const filename = options.filename || gerarNomeArquivo(data)
+      await generateWaProjectProposalPDF({ ...proposalData, projeto: { nome: filename } })
+    }
+  } catch (error) {
+    throw new Error(`Falha na geração do PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+  }
+}
+
+/**
+ * Converte PropostaTemplateData para o formato esperado pelo WaProjectPDFGenerator
+ */
+function converterParaFormatoLegado(data: PropostaTemplateData) {
+  // Converter funcionalidades para seções
+  const sections: ProposalSection[] = []
+
+  // === SOBRE O PROJETO ===
+  sections.push({
+    key: 'projeto',
+    title: data.projeto.titulo,
+    content: `**${data.projeto.nome}**\n\n${data.projeto.descricao}${data.projeto.objetivo ? '\n\n' + data.projeto.objetivo : ''}`
+  })
+
+  // === FUNCIONALIDADES ===
+  const funcionalidadesContent = data.funcionalidades.itens
+    .map((item: FuncionalidadeItem) => `**${item.numero}. ${item.titulo}** - ${item.descricao}`)
+    .join('\n\n')
+
+  sections.push({
+    key: 'funcionalidades',
+    title: data.funcionalidades.titulo,
+    content: funcionalidadesContent
+  })
+
+  // === INTEGRAÇÕES (se existir) ===
+  if (data.integracoes) {
+    const integracoesContent = data.integracoes.descricao +
+      (data.integracoes.itens ? '\n\n' + data.integracoes.itens.map(item => `• ${item}`).join('\n') : '')
+
+    sections.push({
+      key: 'integracoes',
+      title: data.integracoes.titulo,
+      content: integracoesContent
+    })
+  }
+
+  // === MODELO DE TRABALHO ===
+  const fasesContent = data.modeloTrabalho.fases
+    .map(fase => `**Fase ${fase.numero}:** ${fase.nome} - ${fase.descricao}`)
+    .join('\n')
+
+  sections.push({
+    key: 'modelo',
+    title: data.modeloTrabalho.titulo,
+    content: `**${data.modeloTrabalho.tipo}** - ${data.modeloTrabalho.descricao}\n\n**Fases do Projeto:**\n${fasesContent}`
+  })
+
+  // === EQUIPE ===
+  const equipeContent = data.equipe.descricao + '\n\n' +
+    data.equipe.membros
+      .map((membro: MembroEquipe) => `**${membro.cargo}**\n${membro.descricao}`)
+      .join('\n\n')
+
+  sections.push({
+    key: 'equipe',
+    title: data.equipe.titulo,
+    content: equipeContent
+  })
+
+  // === CRONOGRAMA ===
+  let cronogramaContent = data.cronograma.prazoTotal
+
+  if (data.cronograma.fases && data.cronograma.fases.length > 0) {
+    cronogramaContent += '\n\n' + data.cronograma.fases
+      .map(fase => `**${fase.fase}:** ${fase.nome}: ${fase.periodo}`)
+      .join('\n')
+  }
+
+  if (data.cronograma.observacoes) {
+    cronogramaContent += '\n\n' + data.cronograma.observacoes
+  }
+
+  sections.push({
+    key: 'cronograma',
+    title: data.cronograma.titulo,
+    content: cronogramaContent
+  })
+
+  // === INVESTIMENTO ===
+  const investimentoContent = `**Investimento total:** ${data.investimento.valorTotal}\n\n` +
+    '**Condições de Pagamento:**\n' +
+    data.investimento.condicoesPagamento
+      .map(condicao => `**${condicao.parcela}:** ${condicao.momento}: ${condicao.valor}`)
+      .join('\n')
+
+  sections.push({
+    key: 'investimento',
+    title: data.investimento.titulo,
+    content: investimentoContent
+  })
+
+  // === ENTREGÁVEIS ===
+  const entregaveisContent = data.entregaveis.itens
+    .map(item => `• ${item}`)
+    .join('\n')
+
+  sections.push({
+    key: 'entregaveis',
+    title: data.entregaveis.titulo,
+    content: entregaveisContent
+  })
+
+  // === PRÓXIMOS PASSOS ===
+  const proximosPassosContent = data.proximosPassos.passos
+    .map((passo, index) => `${index + 1}. ${passo}`)
+    .join('\n') +
+    (data.proximosPassos.observacao ? '\n\n' + data.proximosPassos.observacao : '')
+
+  sections.push({
+    key: 'proximos_passos',
+    title: data.proximosPassos.titulo,
+    content: proximosPassosContent
+  })
+
+  // Retornar no formato esperado pelo WaProjectPDFGenerator
+  return {
+    projeto: {
+      nome: data.projeto.nome
+    },
+    data_emissao: data.capa.dataEmissao,
+    validade_dias: data.capa.validadeDias.toString(),
+    cliente: {
+      nome: data.capa.cliente.empresa
+    },
+    tipo_escopo: data.capa.tipoEscopo,
+    sections: sections,
+    numeracao_pagina: "1"
+  }
+}
+
+/**
+ * Gera PDF como Blob para operações internas
+ */
+async function gerarPDFBlob(proposalData: any): Promise<Blob> {
+  // Esta função precisaria ser implementada para retornar um Blob
+  // Por agora, retorna uma Promise rejeitada pois o WaProjectPDFGenerator não suporta blob diretamente
+  throw new Error('Geração de Blob não implementada ainda - apenas download automático está disponível')
+}
+
+/**
+ * Gera nome de arquivo seguro baseado nos dados da proposta
+ */
+function gerarNomeArquivo(data: PropostaTemplateData): string {
+  const clienteSlug = data.capa.cliente.empresa
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .replace(/\s+/g, '_')
+    .toLowerCase()
+
+  const dataSlug = data.capa.dataEmissao.replace(/\//g, '-')
+
+  return `proposta_${clienteSlug}_${dataSlug}`
+}
+
+/**
+ * Valida dados antes da geração do PDF
+ */
+export function validarDadosParaPDF(data: PropostaTemplateData): { valido: boolean; erros: string[] } {
+  const erros: string[] = []
+
+  // Validações essenciais para PDF
+  if (!data.capa?.titulo) erros.push('Título da capa é obrigatório')
+  if (!data.capa?.subtitulo) erros.push('Subtítulo da capa é obrigatório')
+  if (!data.capa?.dataEmissao) erros.push('Data de emissão é obrigatória')
+  if (!data.capa?.cliente?.empresa) erros.push('Nome da empresa cliente é obrigatório')
+
+  if (!data.projeto?.nome) erros.push('Nome do projeto é obrigatório')
+  if (!data.projeto?.descricao) erros.push('Descrição do projeto é obrigatória')
+
+  if (!data.funcionalidades?.itens?.length) erros.push('Pelo menos uma funcionalidade é obrigatória')
+
+  if (!data.investimento?.valorTotal) erros.push('Valor total do investimento é obrigatório')
+  if (!data.investimento?.condicoesPagamento?.length) erros.push('Condições de pagamento são obrigatórias')
+
+  return {
+    valido: erros.length === 0,
+    erros
+  }
+}
+
+// === FUNÇÕES AUXILIARES PARA IA ===
+
+/**
+ * Cria uma proposta de exemplo com dados mínimos obrigatórios
+ * Útil para a IA entender a estrutura básica
+ */
+export function criarPropostaExemplo(): PropostaTemplateData {
+  return {
+    capa: {
+      titulo: "Proposta Comercial",
+      subtitulo: "Sistema de Gestão",
+      dataEmissao: new Date().toLocaleDateString('pt-BR'),
+      validadeDias: 30,
+      cliente: {
+        empresa: "Empresa Cliente LTDA"
+      },
+      tipoEscopo: "Escopo fechado"
+    },
+    empresa: {
+      nome: "Wa Project",
+      descricao: "A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.",
+      servicos: [
+        "Desenvolvimento de Software.",
+        "Desenvolvimento de Aplicativos.",
+        "Soluções de Inteligência Artificial.",
+        "Alocação de Profissionais."
+      ],
+      clientes: ["PepsiCo", "Vtex", "Santillana", "Dasa"],
+      websiteCases: "waproject.com.br/cases"
+    },
+    projeto: {
+      titulo: "Sobre o Projeto",
+      nome: "Sistema de Gestão Empresarial",
+      descricao: "Desenvolvimento de sistema completo para gestão empresarial."
+    },
+    funcionalidades: {
+      titulo: "Funcionalidades",
+      itens: [
+        {
+          numero: 1,
+          titulo: "Dashboard Administrativo",
+          descricao: "Painel completo com métricas e KPIs da empresa."
+        }
+      ]
+    },
+    modeloTrabalho: {
+      titulo: "Modelo de Trabalho",
+      tipo: "Escopo Fechado",
+      descricao: "Desenvolvimento com prazo e escopo bem definidos.",
+      fases: [
+        { numero: 1, nome: "Planejamento", descricao: "Definição de escopo e arquitetura." },
+        { numero: 2, nome: "Desenvolvimento", descricao: "Implementação das funcionalidades." },
+        { numero: 3, nome: "Testes", descricao: "Validação e correções." }
+      ]
+    },
+    equipe: {
+      titulo: "Equipe",
+      descricao: "Time especializado para o projeto.",
+      membros: [
+        {
+          cargo: "Desenvolvedor Full Stack",
+          descricao: "Responsável pela implementação técnica."
+        }
+      ]
+    },
+    cronograma: {
+      titulo: "Cronograma",
+      prazoTotal: "Prazo total estimado: 8 semanas"
+    },
+    investimento: {
+      titulo: "Investimento",
+      valorTotal: "R$ 50.000",
+      condicoesPagamento: [
+        {
+          parcela: "1ª Parcela",
+          momento: "Na assinatura do contrato",
+          valor: "R$ 25.000"
+        },
+        {
+          parcela: "2ª Parcela",
+          momento: "Na entrega final",
+          valor: "R$ 25.000"
+        }
+      ]
+    },
+    entregaveis: {
+      titulo: "Entregáveis",
+      itens: [
+        "Sistema funcionando em produção",
+        "Código fonte completo",
+        "Documentação técnica"
+      ]
+    },
+    proximosPassos: {
+      titulo: "Próximos Passos",
+      passos: [
+        "Aprovação da proposta",
+        "Assinatura do contrato",
+        "Início do desenvolvimento"
+      ]
+    },
+    encerramento: {
+      citacao1: "Não é sobre desenvolvimento, é sobre envolvimento.",
+      citacao2: "Obrigado por confiar na Wa Project!",
+      informacoesEmpresa: {
+        nomeCompleto: "Wa Project Soluções Tecnológicas LTDA.",
+        cnpj: "19.317.018/0001-40",
+        website: "waproject.com.br",
+        email: "comercial@waproject.com.br",
+        telefone: "(11) 5028-2010"
+      },
+      textoValidade: "Proposta válida por 30 dias a partir da data de emissão"
+    }
+  }
+}
+
+export { type PropostaTemplateData } from './proposta-template-types'

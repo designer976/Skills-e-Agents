@@ -1,0 +1,1776 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { format, isToday } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { clientService } from "@/services/clientService";
+import { userService } from "@/services/userService";
+import { serviceService } from "@/services/serviceService";
+import { appointmentService } from "@/services/appointmentService";
+import { agendaService } from "@/services/agendaService";
+import { salonService } from "@/services/salonService";
+import { Client } from "@/types/client";
+import { User } from "@/types/api";
+import { Service } from "@/types/service";
+import { CreateAppointmentDto, AppointmentStatus } from "@/types/appointment";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Calendar as CalendarIcon, Clock as Clock, User as UserIcon, Scissors as Scissors, Search as Search } from "lucide-react";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserDisplayName } from "@/utils/userHelpers";
+
+interface AppointmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  preSelectedDate?: Date;
+  preSelectedTime?: string;
+  preSelectedProfessionalId?: string;
+  onSuccess?: () => void;
+}
+
+interface TimeSlot {
+  time: string;
+  available: boolean;
+}
+
+// Função de busca inteligente que ignora case, acentos e permite busca parcial
+const normalizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^a-z0-9\s]/g, ""); // Remove caracteres especiais
+};
+
+// Função de busca flexível que funciona com diferentes formatos de texto
+const smartSearch = (searchTerm: string, target: string): boolean => {
+  if (!searchTerm || !target) return true;
+
+  const normalizedSearch = normalizeString(searchTerm);
+  const normalizedTarget = normalizeString(target);
+
+  // Busca exata
+  if (normalizedTarget.includes(normalizedSearch)) {
+    return true;
+  }
+
+  // Busca por palavras separadas (permite buscar "jo si" para encontrar "João Silva")
+  const searchWords = normalizedSearch
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+  return searchWords.every((word) => normalizedTarget.includes(word));
+};
+
+export function AppointmentModal({
+  isOpen,
+  onClose,
+  preSelectedDate,
+  preSelectedTime,
+  preSelectedProfessionalId,
+  onSuccess,
+}: AppointmentModalProps) {
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Usar ref para controlar execução e evitar múltiplas chamadas
+  const loadingSlotsRef = useRef(false);
+  const lastLoadedKey = useRef<string>("");
+
+  // Lists
+  const [clients, setClients] = useState<Client[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [professionals, setProfessionals] = useState<User[]>([]);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+
+  // Form data - Step by step
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [selectedProfessional, setSelectedProfessional] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    // Garantir que sempre temos uma data válida
+    if (
+      preSelectedDate &&
+      preSelectedDate instanceof Date &&
+      !isNaN(preSelectedDate.getTime())
+    ) {
+      return preSelectedDate;
+    }
+    return new Date();
+  });
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+
+  // UI State
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // 1 = selection, 2 = scheduling
+
+  // Search states for dropdowns
+  const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
+  const [serviceSearchQuery, setServiceSearchQuery] = useState<string>("");
+  const [professionalSearchQuery, setProfessionalSearchQuery] =
+    useState<string>("");
+
+  // Callbacks memoizados para evitar re-renderizações
+  const handleClientSearchChange = useCallback((value: string) => {
+    setClientSearchQuery(value);
+  }, []);
+
+  const handleServiceSearchChange = useCallback((value: string) => {
+    setServiceSearchQuery(value);
+  }, []);
+
+  const handleProfessionalSearchChange = useCallback((value: string) => {
+    setProfessionalSearchQuery(value);
+  }, []);
+
+  // Load initial data when modal opens
+  useEffect(() => {
+    if (isOpen && selectedSalon?.id) {
+      loadInitialData();
+      // Pre-select date if provided and valid
+      if (
+        preSelectedDate &&
+        preSelectedDate instanceof Date &&
+        !isNaN(preSelectedDate.getTime())
+      ) {
+        setSelectedDate(preSelectedDate);
+      }
+      // Pre-select professional if provided, or if user is a professional
+      if (user?.role === "Profissional" && user?.id) {
+        setSelectedProfessional(user.id);
+      } else if (preSelectedProfessionalId) {
+        setSelectedProfessional(preSelectedProfessionalId);
+      }
+      // Pre-select time if provided
+      if (preSelectedTime) {
+        setSelectedTime(preSelectedTime);
+      }
+    }
+  }, [
+    isOpen,
+    selectedSalon?.id,
+    preSelectedDate,
+    preSelectedProfessionalId,
+    preSelectedTime,
+  ]);
+
+  // Load clients and services on mount
+  const loadInitialData = async () => {
+    if (!selectedSalon?.id) {
+      toast.error("Nenhum salão selecionado");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Load clients from the salon
+      const clientsResponse = await clientService.getAll({
+        salonId: selectedSalon.id,
+        active: true,
+      });
+      setClients(clientsResponse || []);
+
+      // Load only bookable services using the new dedicated endpoint
+      // Pass salonId and tenantId to get salon-specific pricing
+      const servicesResponse = await serviceService.getBookableServices(
+        selectedSalon.id,
+        selectedSalon.tenantId
+      );
+
+      // CRITICAL VALIDATION: Check if services have category
+      const servicesWithoutCategory =
+        servicesResponse?.filter((s) => !s.categoryId) || [];
+      if (servicesWithoutCategory.length > 0) {
+        toast.warning(
+          `${servicesWithoutCategory.length} serviços sem categoria foram detectados. Entre em contato com o suporte.`
+        );
+      }
+
+      // Filter only services with valid category
+      const validServices = servicesResponse?.filter((s) => s.categoryId) || [];
+
+      if (validServices.length === 0) {
+        toast.error(
+          "Nenhum serviço válido disponível. Verifique se os serviços têm categoria definida."
+        );
+      }
+
+      setServices(validServices);
+    } catch (error) {
+      toast.error("Erro ao carregar dados. Por favor, tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // When service is selected, load professionals who offer this service
+  useEffect(() => {
+    if (selectedService) {
+      loadProfessionalsForService();
+    } else {
+      setProfessionals([]);
+      setSelectedProfessional("");
+    }
+  }, [selectedService]);
+
+  // Helper function to check if professional has availability on the selected date
+  const isProfessionalAvailableOnDate = async (
+    professional: User,
+    date: Date,
+    salonId: string
+  ): Promise<boolean> => {
+    try {
+      const dayOfWeek = date.getDay();
+      const dayNames = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
+      const dayName = dayNames[dayOfWeek];
+
+      // Get salon schedule for this day
+      const salonSchedule = await salonService.getWorkingHours(salonId);
+      const salonDaySchedule = salonSchedule.find(
+        (sh) => Number(sh.dayOfWeek) === dayOfWeek
+      );
+
+      // If salon is closed on this day, professional can't work
+      if (!salonDaySchedule || !salonDaySchedule.isOpen) {
+        return false;
+      }
+
+      // Get salon end time for this day
+      const salonEndTime = salonDaySchedule.close || "18:00";
+
+      // Check professional's schedule for this day
+      let professionalDaySchedule = null;
+      if (professional.schedule) {
+        // Try by day name first, then by day number
+        professionalDaySchedule =
+          professional.schedule[dayName] ||
+          professional.schedule[dayOfWeek.toString()] ||
+          professional.schedule[dayOfWeek];
+      }
+
+      // Determine the final end time for the professional
+      let finalEndTime: string;
+
+      if (professionalDaySchedule) {
+        // Professional has schedule for this day
+        // Check if has breaks, if yes, use the last break end time, otherwise use endTime
+        const professionalEndTime =
+          professionalDaySchedule.endTime || professionalDaySchedule.end || "";
+        const breaks = professionalDaySchedule.breaks || [];
+
+        if (breaks.length > 0) {
+          // Find the last break end time
+          const lastBreakEndTime = breaks.reduce(
+            (latest: string, breakPeriod: any) => {
+              const breakEnd = breakPeriod.end || breakPeriod.endTime || "";
+              if (!latest) return breakEnd;
+              return breakEnd > latest ? breakEnd : latest;
+            },
+            ""
+          );
+
+          // Use the greater between professional end time and last break end
+          finalEndTime =
+            lastBreakEndTime > professionalEndTime
+              ? lastBreakEndTime
+              : professionalEndTime;
+        } else {
+          finalEndTime = professionalEndTime;
+        }
+
+        // If professional has no valid end time, inherit from salon
+        if (!finalEndTime || finalEndTime.trim() === "") {
+          finalEndTime = salonEndTime;
+        }
+      } else {
+        // Professional has no schedule for this day - inherit salon end time
+        finalEndTime = salonEndTime;
+      }
+
+      // Now check if the final end time is >= current time (only if selected date is today)
+      const isSelectedDateToday = isToday(date);
+
+      if (isSelectedDateToday) {
+        const now = new Date();
+        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const [endHour, endMinute] = finalEndTime.split(":").map(Number);
+        const finalEndTimeInMinutes = endHour * 60 + endMinute;
+
+        if (finalEndTimeInMinutes <= currentTimeInMinutes) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        `Error checking availability for ${professional.name}:`,
+        error
+      );
+      return false;
+    }
+  };
+
+  const loadProfessionalsForService = async () => {
+    if (!selectedSalon?.id) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Get all professionals from the salon with their schedules
+      const professionalsResponse = await userService.getAll({
+        salonId: selectedSalon.id,
+        role: "professional",
+        active: true,
+      });
+
+      // For each professional, fetch their services
+      const professionalsWithServices = await Promise.all(
+        professionalsResponse.map(async (prof) => {
+          try {
+            const userServices = await userService.getUserServices(prof.id);
+            return {
+              ...prof,
+              userServices: userServices || [],
+            };
+          } catch (error) {
+            console.error(`❌ Error loading services for ${prof.name}:`, error);
+            return {
+              ...prof,
+              userServices: [],
+            };
+          }
+        })
+      );
+
+      // Filter professionals who:
+      // 1. Offer the selected service
+      // 2. Are available on the selected date
+      const filteredProfessionalsPromises = professionalsWithServices.map(
+        async (prof) => {
+          // Check if professional has the selected service
+          const hasService = prof.userServices.some((us) => {
+            return (
+              (us.serviceId === selectedService || us.id === selectedService) &&
+              us.isActive !== false
+            );
+          });
+
+          if (!hasService) {
+            return null;
+          }
+
+          // Check if professional is available on the selected date
+          const isAvailable = await isProfessionalAvailableOnDate(
+            prof,
+            selectedDate,
+            selectedSalon.id
+          );
+
+          if (isAvailable) {
+            return prof;
+          } else {
+            return null;
+          }
+        }
+      );
+
+      const filteredProfessionalsResults = await Promise.all(
+        filteredProfessionalsPromises
+      );
+      const filteredProfessionals = filteredProfessionalsResults.filter(
+        (p) => p !== null
+      ) as User[];
+
+      setProfessionals(filteredProfessionals);
+
+      // If there's a pre-selected professional and they're available, keep them selected
+      if (
+        preSelectedProfessionalId &&
+        filteredProfessionals.some((p) => p.id === preSelectedProfessionalId)
+      ) {
+        setSelectedProfessional(preSelectedProfessionalId);
+      } else {
+        setSelectedProfessional("");
+      }
+    } catch (error) {
+      console.error("Error loading professionals:", error);
+      toast.error("Erro ao carregar profissionais");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // When professional and date are selected, load available time slots
+  useEffect(() => {
+    // Criar um abort controller para cancelar requisições pendentes
+    const abortController = new AbortController();
+    let isMounted = true;
+
+    const loadSlots = async () => {
+      if (
+        selectedProfessional &&
+        selectedService &&
+        selectedDate &&
+        currentStep === 2
+      ) {
+        // Só executar se o componente ainda estiver montado
+        if (isMounted) {
+          await loadAvailableTimeSlots();
+        }
+      } else {
+        if (isMounted) {
+          setTimeSlots([]);
+        }
+      }
+    };
+
+    loadSlots();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [selectedProfessional, selectedService, selectedDate, currentStep]);
+
+  // Usar useCallback para evitar recreação da função
+  const loadAvailableTimeSlots = useCallback(async () => {
+    // Criar uma chave única para esta combinação
+    const loadKey = `${selectedProfessional}-${selectedService}-${format(
+      selectedDate,
+      "yyyy-MM-dd"
+    )}`;
+
+    // Verificar se já está carregando ou se já foi carregado
+    if (loadingSlotsRef.current) {
+      return;
+    }
+
+    if (lastLoadedKey.current === loadKey) {
+      return;
+    }
+
+    try {
+      loadingSlotsRef.current = true;
+      lastLoadedKey.current = loadKey;
+
+      setLoadingSlots(true);
+      setTimeSlots([]); // Clear previous slots
+
+      // Status baseados no enum AppointmentStatus
+      // Status que NÃO bloqueiam horários:
+      // COMPLETED = agendamento já foi realizado
+      // CANCELLED = agendamento foi cancelado
+      // NO_SHOW = cliente não compareceu
+      const NON_BLOCKING_STATUSES = [
+        AppointmentStatus.COMPLETED,
+        AppointmentStatus.CANCELLED,
+        AppointmentStatus.NO_SHOW,
+      ];
+
+      // Status que BLOQUEIAM horários:
+      // SCHEDULED = agendado mas não confirmado
+      // CONFIRMED = confirmado
+      // IN_PROGRESS = em andamento
+      const BLOCKING_STATUSES = [
+        AppointmentStatus.SCHEDULED,
+        AppointmentStatus.CONFIRMED,
+        AppointmentStatus.IN_PROGRESS,
+      ];
+
+      // REGRA 1: Buscar os horários do salão
+      const dayOfWeek = selectedDate.getDay();
+      const dayNames = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
+      const dayName = dayNames[dayOfWeek];
+
+      const salonSchedule = await salonService.getWorkingHours(
+        selectedSalon.id
+      );
+
+      const salonDaySchedule = salonSchedule.find((sh) => {
+        // Garantir comparação numérica
+        const scheduleDay = Number(sh.dayOfWeek);
+        const targetDay = Number(dayOfWeek);
+        return scheduleDay === targetDay;
+      });
+
+      // Se o salão está fechado neste dia, retornar vazio
+      if (!salonDaySchedule || !salonDaySchedule.isOpen) {
+        setTimeSlots([]);
+        return;
+      }
+
+      // REGRA 2: Buscar os horários do profissional caso ele tenha
+      let professional = professionals.find(
+        (p) => p.id === selectedProfessional
+      );
+
+      // Se profissional não está no cache, buscar da API
+      if (!professional) {
+        try {
+          professional = await userService.getById(selectedProfessional);
+        } catch (error) {
+          console.error("❌ Erro ao buscar profissional:", error);
+          return;
+        }
+      }
+
+      if (!professional) {
+        console.error("❌ Profissional não encontrado");
+        return;
+      }
+
+      // O schedule pode vir em diferentes formatos:
+      // 1. Com chaves nomeadas: { monday: {...}, tuesday: {...} }
+      // 2. Com chaves numéricas: { "0": {...}, "1": {...} }
+      // 3. Pode usar start/end ou startTime/endTime
+      let professionalDaySchedule = null;
+
+      if (professional.schedule) {
+        // Tentar buscar por nome do dia primeiro
+        professionalDaySchedule = professional.schedule[dayName];
+
+        // Se não encontrar, tentar por número
+        if (!professionalDaySchedule) {
+          professionalDaySchedule = professional.schedule[dayOfWeek.toString()];
+        }
+
+        // Se ainda não encontrar, tentar por número sem conversão
+        if (!professionalDaySchedule) {
+          professionalDaySchedule = professional.schedule[dayOfWeek];
+        }
+      }
+
+      // Funções auxiliares para conversão de tempo
+      function timeToMinutes(time: string): number {
+        if (!time || time.trim() === "") return 0;
+        const [hours, minutes] = time.split(":").map(Number);
+        return hours * 60 + minutes;
+      }
+
+      function minutesToTime(minutes: number): string {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours.toString().padStart(2, "0")}:${mins
+          .toString()
+          .padStart(2, "0")}`;
+      }
+
+      // Função para converter horário UTC para minutos locais
+      function utcDateToLocalMinutes(utcDate: Date): number {
+        const localDate = new Date(utcDate);
+        return localDate.getHours() * 60 + localDate.getMinutes();
+      }
+
+      // SEMPRE usar os horários do salão como base
+      const salonStartStr = salonDaySchedule.open || "09:00";
+      const salonEndStr = salonDaySchedule.close || "18:00";
+      const [salonStartHour, salonStartMinute] = salonStartStr
+        .split(":")
+        .map(Number);
+      const [salonEndHour, salonEndMinute] = salonEndStr.split(":").map(Number);
+      const salonStartMinutes = salonStartHour * 60 + salonStartMinute;
+      const salonEndMinutes = salonEndHour * 60 + salonEndMinute;
+
+      // Determinar horário efetivo do profissional
+      let professionalStartMinutes: number | null = null;
+      let professionalEndMinutes: number | null = null;
+      let professionalBreaks: any[] = [];
+
+      if (professionalDaySchedule && professionalDaySchedule.isWorking) {
+        // Profissional tem horário definido e está trabalhando
+        // O backend pode enviar start/end ou startTime/endTime
+        let profStartStr =
+          professionalDaySchedule.start ||
+          professionalDaySchedule.startTime ||
+          "";
+        let profEndStr =
+          professionalDaySchedule.end || professionalDaySchedule.endTime || "";
+
+        // REGRA 4: Se profissional tem strings vazias, herdar do salão
+        if (!profStartStr || profStartStr.trim() === "") {
+          profStartStr = salonStartStr;
+        }
+        if (!profEndStr || profEndStr.trim() === "") {
+          profEndStr = salonEndStr;
+        }
+
+        professionalStartMinutes = timeToMinutes(profStartStr);
+        professionalEndMinutes = timeToMinutes(profEndStr);
+
+        // REGRA 4: Garantir que o profissional não trabalhe fora do horário do salão
+        if (professionalStartMinutes < salonStartMinutes) {
+          professionalStartMinutes = salonStartMinutes;
+        }
+        if (professionalEndMinutes > salonEndMinutes) {
+          professionalEndMinutes = salonEndMinutes;
+        }
+
+        professionalBreaks = professionalDaySchedule.breaks || [];
+      } else if (
+        professionalDaySchedule &&
+        professionalDaySchedule.isWorking === false
+      ) {
+        // Profissional explicitamente marcado como não trabalhando
+
+        professionalStartMinutes = null;
+        professionalEndMinutes = null;
+        professionalBreaks = [];
+      } else {
+        // Profissional sem schedule definido - herda do salão
+
+        professionalStartMinutes = salonStartMinutes;
+        professionalEndMinutes = salonEndMinutes;
+        professionalBreaks = [];
+      }
+
+      // Obter duração do serviço
+      const service = services.find((s) => s.id === selectedService);
+      const serviceDuration = service?.duration || 30;
+
+      // REGRA 5: Sempre gerar TODOS os slots baseados nos horários do SALÃO
+      const slots: TimeSlot[] = [];
+      const slotDuration = 15; // Intervalos de 15 minutos
+
+      // REGRA 3: Verificar se a data selecionada é hoje e obter hora atual em minutos locais
+      const isSelectedDateToday = isToday(selectedDate);
+      const now = new Date();
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Começar do horário de abertura do SALÃO
+      let currentMinutes = salonStartMinutes;
+      let debugFirstSlot = true;
+      let availableCount = 0;
+      let blockedCount = 0;
+
+      while (currentMinutes < salonEndMinutes) {
+        const time = minutesToTime(currentMinutes);
+        const slotStartMinutes = currentMinutes;
+        const serviceEndMinutes = slotStartMinutes + serviceDuration;
+
+        // Inicializar como disponível
+        let available = true;
+        let reason = "";
+
+        // Debug do primeiro slot
+        if (debugFirstSlot) {
+          debugFirstSlot = false;
+        }
+
+        // REGRA 4: Verificar se é data/hora passada
+        if (isSelectedDateToday && slotStartMinutes <= currentTimeInMinutes) {
+          available = false;
+          reason = "Horário já passou";
+        }
+        // Verificar se há tempo suficiente no salão
+        else if (serviceEndMinutes > salonEndMinutes) {
+          available = false;
+          reason = "Sem tempo suficiente antes do fechamento";
+        }
+        // Verificar se está dentro do horário do profissional
+        else if (
+          professionalStartMinutes !== null &&
+          professionalEndMinutes !== null
+        ) {
+          if (
+            slotStartMinutes < professionalStartMinutes ||
+            serviceEndMinutes > professionalEndMinutes
+          ) {
+            available = false;
+            reason = `Fora do horário do profissional (${minutesToTime(
+              professionalStartMinutes
+            )}-${minutesToTime(professionalEndMinutes)})`;
+          }
+        }
+        // Se profissional não trabalha neste dia
+        else if (professionalStartMinutes === null) {
+          available = false;
+          reason = "Profissional não trabalha neste dia";
+        }
+
+        // Verificar se está no intervalo do profissional
+        if (
+          available &&
+          professionalBreaks &&
+          Array.isArray(professionalBreaks)
+        ) {
+          for (const breakPeriod of professionalBreaks) {
+            const breakStartMinutes = timeToMinutes(breakPeriod.start);
+            const breakEndMinutes = timeToMinutes(breakPeriod.end);
+
+            // Verifica sobreposição com intervalo
+            if (
+              slotStartMinutes < breakEndMinutes &&
+              serviceEndMinutes > breakStartMinutes
+            ) {
+              available = false;
+              reason = "Durante intervalo do profissional";
+              break;
+            }
+          }
+        }
+
+        slots.push({
+          time,
+          available,
+        });
+
+        if (available) {
+          availableCount++;
+        } else {
+          blockedCount++;
+        }
+
+        // Incrementar por duração do slot
+        currentMinutes += slotDuration;
+      }
+
+      const availableSlotsBeforeConflicts = slots.filter((s) => s.available);
+
+      // REGRA 3: Buscar os agendamentos existentes do profissional nesta data
+      try {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+
+        const queryParams = {
+          professionalId: selectedProfessional,
+          startDate: dateStr,
+          endDate: dateStr,
+        };
+
+        const appointments = await appointmentService.list(queryParams);
+
+        // Logar detalhes de cada agendamento
+        if (appointments.data.length > 0) {
+          let blockingCount = 0;
+          let nonBlockingCount = 0;
+
+          appointments.data.forEach((apt, index) => {
+            const aptStart = new Date(apt.startTime);
+            const aptStartMinutes = utcDateToLocalMinutes(aptStart);
+
+            let aptEndMinutes;
+            if (apt.endTime) {
+              const aptEnd = new Date(apt.endTime);
+              aptEndMinutes = utcDateToLocalMinutes(aptEnd);
+            } else {
+              const duration = apt.service?.duration || apt.duration || 30;
+              aptEndMinutes = aptStartMinutes + duration;
+            }
+
+            const isNonBlocking = NON_BLOCKING_STATUSES.includes(
+              apt.status as AppointmentStatus
+            );
+
+            if (isNonBlocking) {
+              nonBlockingCount++;
+            } else {
+              blockingCount++;
+            }
+          });
+        }
+
+        // REGRA 2: Marcar slots como indisponíveis se conflitam com agendamentos existentes
+        const updatedSlots = slots.map((slot) => {
+          // Se já está indisponível, manter assim
+          if (!slot.available) {
+            return slot;
+          }
+
+          const slotStartMinutes = timeToMinutes(slot.time);
+          const slotEndMinutes = slotStartMinutes + serviceDuration;
+
+          // Verificar conflito com cada agendamento
+          const hasConflict = appointments.data.some((appointment) => {
+            // Ignorar agendamentos que NÃO bloqueiam (cancelados, concluídos, no-show)
+            if (
+              NON_BLOCKING_STATUSES.includes(
+                appointment.status as AppointmentStatus
+              )
+            ) {
+              return false;
+            }
+
+            // Calcular início e fim do agendamento existente (converter UTC para local)
+            const aptStart = new Date(appointment.startTime);
+            const aptStartMinutes = utcDateToLocalMinutes(aptStart);
+
+            let aptEndMinutes;
+            if (appointment.endTime) {
+              const aptEnd = new Date(appointment.endTime);
+              aptEndMinutes = utcDateToLocalMinutes(aptEnd);
+            } else {
+              const duration =
+                appointment.service?.duration || appointment.duration || 30;
+              aptEndMinutes = aptStartMinutes + duration;
+            }
+
+            // Verificar sobreposição
+            const overlaps =
+              (slotStartMinutes >= aptStartMinutes &&
+                slotStartMinutes < aptEndMinutes) ||
+              (slotEndMinutes > aptStartMinutes &&
+                slotEndMinutes <= aptEndMinutes) ||
+              (slotStartMinutes <= aptStartMinutes &&
+                slotEndMinutes >= aptEndMinutes) ||
+              (aptStartMinutes <= slotStartMinutes &&
+                aptEndMinutes >= slotEndMinutes);
+
+            return overlaps;
+          });
+
+          return {
+            ...slot,
+            available: slot.available && !hasConflict,
+          };
+        });
+
+        // Resumo final
+
+        setTimeSlots(updatedSlots);
+
+        // Se há um horário pré-selecionado e está disponível, selecioná-lo
+        if (
+          preSelectedTime &&
+          updatedSlots.some((s) => s.time === preSelectedTime && s.available)
+        ) {
+          setSelectedTime(preSelectedTime);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao buscar agendamentos existentes:", error);
+        // Se não conseguir buscar agendamentos, mostrar slots baseados apenas no schedule
+
+        setTimeSlots(slots);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar horários disponíveis");
+      setTimeSlots([]); // Clear slots on error
+    } finally {
+      // Reset loading flag
+      loadingSlotsRef.current = false;
+      setLoadingSlots(false);
+    }
+  }, [
+    selectedProfessional,
+    selectedService,
+    selectedDate,
+    selectedSalon?.id,
+    services,
+    professionals,
+    preSelectedTime,
+  ]);
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!selectedClient) {
+      toast.error("Selecione um cliente");
+      return;
+    }
+    if (!selectedService) {
+      toast.error("Selecione um serviço");
+      return;
+    }
+    if (!selectedProfessional) {
+      toast.error("Selecione um profissional");
+      return;
+    }
+    if (!selectedDate) {
+      toast.error("Selecione uma data");
+      return;
+    }
+    if (!selectedTime) {
+      toast.error("Selecione um horário");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Get service details for duration and price
+      const service = services.find((s) => s.id === selectedService);
+      if (!service) {
+        toast.error("Serviço não encontrado");
+        return;
+      }
+
+      // Validar data antes de criar o appointment
+      const dateToUse =
+        selectedDate &&
+          selectedDate instanceof Date &&
+          !isNaN(selectedDate.getTime())
+          ? selectedDate
+          : new Date();
+
+      // Create appointment using the correct DTO format for backend
+      // Convert local time to UTC properly
+      const [hour, minute] = selectedTime.split(":").map(Number);
+      const appointmentDateTime = new Date(
+        dateToUse.getFullYear(),
+        dateToUse.getMonth(),
+        dateToUse.getDate(),
+        hour,
+        minute,
+        0,
+        0
+      );
+      const isoDateTime = appointmentDateTime.toISOString();
+
+      const appointmentData = {
+        salonId: selectedSalon.id,
+        clientId: selectedClient,
+        serviceId: selectedService,
+        professionalId: selectedProfessional,
+        startTime: isoDateTime,
+        notes: notes || undefined,
+      };
+
+      // Usar agendaService que aceita o formato ISO com Z no final
+      await agendaService.createAppointment(appointmentData);
+
+      toast.success("Agendamento criado com sucesso!");
+      onSuccess?.();
+      handleClose();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Erro ao criar agendamento";
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClose = () => {
+    // Reset form
+    setSelectedClient("");
+    setSelectedService("");
+    setSelectedProfessional("");
+    // Mantém a data selecionada para não resetar
+    setSelectedTime("");
+    setNotes("");
+    setTimeSlots([]);
+    setCurrentStep(1);
+
+    // Clear search queries
+    setClientSearchQuery("");
+    setServiceSearchQuery("");
+    setProfessionalSearchQuery("");
+
+    // Reset refs
+    loadingSlotsRef.current = false;
+    lastLoadedKey.current = "";
+
+    onClose();
+  };
+
+  // Função auxiliar para extrair valores numéricos de forma segura
+  const extractNumericValue = (value: any): number | null => {
+    // Valores inválidos
+    if (value === null || value === undefined) return null;
+
+    // Número direto
+    if (typeof value === "number") {
+      // Rejeitar NaN, Infinity e valores negativos
+      if (isNaN(value) || !isFinite(value) || value < 0) return null;
+      return value;
+    }
+
+    // String vazia ou só espaços
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed === "" || trimmed === "0") return null;
+
+      const parsed = parseFloat(trimmed);
+      // Validar número parseado
+      if (isNaN(parsed) || !isFinite(parsed) || parsed < 0) return null;
+      return parsed;
+    }
+
+    return null;
+  };
+
+  // Usar useMemo para garantir que getServiceDetails seja recalculado apenas quando as dependências mudarem
+  const serviceDetails = useMemo(() => {
+    const service = services.find((s) => s.id === selectedService);
+    if (!service) return null;
+
+    // 1. Pegar o preço base do salão (prioridade: customPrice > price)
+    const salonCustomPrice = extractNumericValue(service.customPrice);
+    const salonBasePrice = extractNumericValue(service.price);
+    const salonPrice =
+      salonCustomPrice !== null && salonCustomPrice > 0
+        ? salonCustomPrice
+        : salonBasePrice !== null && salonBasePrice > 0
+          ? salonBasePrice
+          : null;
+
+
+    // 2. Inicializar com os valores do salão
+    let finalPrice = salonPrice;
+    let finalDuration = service.duration || 30;
+    let priceSource = salonPrice !== null ? "salão" : "não definido";
+
+    // 3. Se tem um profissional selecionado, verificar se ele tem preço customizado
+    if (selectedProfessional) {
+      const professional = professionals.find(
+        (p) => p.id === selectedProfessional
+      );
+
+      if (professional?.userServices) {
+        // Buscar o serviço do profissional por serviceId ou id
+        const userService = professional.userServices.find(
+          (us) => us.serviceId === selectedService || us.id === selectedService
+        );
+
+        if (userService) {
+          // Verificar preço customizado do profissional (prioridade: customPrice > price)
+          const professionalCustomPrice = extractNumericValue(
+            userService.customPrice
+          );
+          const professionalPrice = extractNumericValue(userService.price);
+
+          // Se o profissional tem preço customizado, usar ele (prioridade)
+          if (
+            professionalCustomPrice !== null &&
+            professionalCustomPrice > 0
+          ) {
+            finalPrice = professionalCustomPrice;
+            priceSource = "profissional (customPrice)";
+          } else if (professionalPrice !== null && professionalPrice > 0) {
+            finalPrice = professionalPrice;
+            priceSource = "profissional (price)";
+          }
+          // Se o profissional não tem preço definido, mantém o preço do salão
+
+          // Usar duração customizada se disponível
+          if (userService.customDuration && userService.customDuration > 0) {
+            finalDuration = userService.customDuration;
+          }
+        } else {
+          console.warn("⚠️ [PREÇO] Profissional não tem este serviço vinculado");
+        }
+      } else {
+        console.warn("⚠️ [PREÇO] Profissional sem userServices");
+      }
+    }
+
+    // 4. Resultado final
+    const showPrice = finalPrice !== null && finalPrice > 0;
+
+    return {
+      name: service.name,
+      duration: `${finalDuration} min`,
+      price: showPrice
+        ? `R$ ${finalPrice.toFixed(2).replace(".", ",")}`
+        : "Consultar valor",
+      priceSource, // Adicionar fonte do preço para debug
+    };
+  }, [selectedService, selectedProfessional, services, professionals]);
+
+  const formatSelectedDate = () => {
+    // Validar que selectedDate é uma data válida antes de formatar
+    if (
+      !selectedDate ||
+      !(selectedDate instanceof Date) ||
+      isNaN(selectedDate.getTime())
+    ) {
+      return format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
+    }
+    return format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
+  };
+
+  const handleNextStep = () => {
+    if (
+      currentStep === 1 &&
+      selectedClient &&
+      selectedService &&
+      selectedProfessional
+    ) {
+      setCurrentStep(2);
+    }
+  };
+
+  const handleBackStep = () => {
+    if (currentStep === 2) {
+      setCurrentStep(1);
+      setSelectedTime(""); // Reset selected time when going back
+    }
+  };
+
+  const canProceedToStep2 =
+    selectedClient && selectedService && selectedProfessional;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="w-[95vw] md:max-w-[700px] max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-lg border-none shadow-2xl overflow-hidden flex flex-col">
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 pt-4 pb-3 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-xl md:text-2xl font-semibold">
+            {currentStep === 2 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackStep}
+                className="p-1 h-auto"
+              >
+                ←
+              </Button>
+            )}
+            Novo Agendamento {currentStep === 2 ? "- Horário" : "- Seleção"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+          <div className="space-y-6">
+          {currentStep === 1 && (
+            <>
+              {/* Step 1: Client Selection */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="client"
+                  className="text-base font-semibold flex items-center gap-2"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-body">
+                    1
+                  </div>
+                  Selecione o Cliente
+                </Label>
+                <Select
+                  value={selectedClient}
+                  onValueChange={(value) => {
+                    setSelectedClient(value);
+                    setClientSearchQuery(""); // Clear search when selecting
+                  }}
+                  disabled={loading}
+                >
+                  <SelectTrigger id="client" className="w-full">
+                    <SelectValue placeholder="Escolha um cliente cadastrado" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    {/* Search field for clients */}
+                    <div className="sticky top-0 p-2 bg-background border-b z-50">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar cliente..."
+                          value={clientSearchQuery}
+                          onChange={(e) =>
+                            handleClientSearchChange(e.target.value)
+                          }
+                          className="pl-8 h-9"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter" || e.key === "Escape") {
+                              e.preventDefault();
+                            }
+                          }}
+                          autoFocus={false}
+                        />
+                      </div>
+                    </div>
+
+                    {clients.length === 0 ? (
+                      <div className="p-2 text-center text-muted-foreground">
+                        Nenhum cliente encontrado
+                      </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          const filteredClients = clients.filter(
+                            (client) =>
+                              smartSearch(clientSearchQuery, client.name) ||
+                              smartSearch(clientSearchQuery, client.phone || "")
+                          );
+
+                          if (filteredClients.length === 0) {
+                            return (
+                              <div className="p-3 text-center text-muted-foreground text-body">
+                                Nenhum cliente encontrado para "
+                                {clientSearchQuery}"
+                              </div>
+                            );
+                          }
+
+                          return filteredClients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              <div className="flex justify-between items-center w-full">
+                                <span>{client.name}</span>
+                                <span className="text-body text-muted-foreground ml-2">
+                                  {client.phone}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ));
+                        })()}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Step 2: Service Selection */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="service"
+                  className="text-base font-semibold flex items-center gap-2"
+                >
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-body",
+                      selectedClient
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    2
+                  </div>
+                  Selecione o Serviço
+                </Label>
+                <Select
+                  value={selectedService}
+                  onValueChange={(value) => {
+                    setSelectedService(value);
+                    setServiceSearchQuery(""); // Clear search when selecting
+                  }}
+                  disabled={!selectedClient || loading}
+                >
+                  <SelectTrigger id="service" className="w-full">
+                    <SelectValue
+                      placeholder={
+                        !selectedClient
+                          ? "Selecione um cliente primeiro"
+                          : "Escolha o serviço desejado"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    {/* Search field for services */}
+                    <div className="sticky top-0 p-2 bg-background border-b z-50">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar serviço..."
+                          value={serviceSearchQuery}
+                          onChange={(e) =>
+                            handleServiceSearchChange(e.target.value)
+                          }
+                          className="pl-8 h-9"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter" || e.key === "Escape") {
+                              e.preventDefault();
+                            }
+                          }}
+                          autoFocus={false}
+                        />
+                      </div>
+                    </div>
+
+                    {services.length === 0 ? (
+                      <div className="p-4 text-center text-muted-foreground">
+                        <div className="text-body font-medium mb-1">
+                          Nenhum serviço disponível
+                        </div>
+                        <div className="text-xs">
+                          Os serviços devem ter preço definido e profissionais
+                          vinculados
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          const filteredServices = services.filter((service) =>
+                            smartSearch(serviceSearchQuery, service.name)
+                          );
+
+                          if (filteredServices.length === 0) {
+                            return (
+                              <div className="p-3 text-center text-muted-foreground text-body">
+                                Nenhum serviço encontrado para "
+                                {serviceSearchQuery}"
+                              </div>
+                            );
+                          }
+
+                          return filteredServices.map((service) => {
+                            // Pegar o preço base do salão (prioridade: customPrice > price)
+                            const salonCustomPrice = extractNumericValue(
+                              service.customPrice
+                            );
+                            const salonBasePrice = extractNumericValue(
+                              service.price
+                            );
+                            const salonPrice =
+                              salonCustomPrice !== null && salonCustomPrice >= 0
+                                ? salonCustomPrice
+                                : salonBasePrice !== null && salonBasePrice >= 0
+                                  ? salonBasePrice
+                                  : null;
+
+                            // Inicializar com o preço do salão
+                            let price = salonPrice;
+
+                            // Se tem um profissional selecionado, verificar se ele tem preço customizado
+                            if (selectedProfessional) {
+                              const professional = professionals.find(
+                                (p) => p.id === selectedProfessional
+                              );
+                              const userService =
+                                professional?.userServices?.find(
+                                  (us) =>
+                                    us.serviceId === service.id ||
+                                    us.id === service.id
+                                );
+                              if (userService) {
+                                // Verificar preço customizado do profissional (prioridade: customPrice > price)
+                                const professionalCustomPrice =
+                                  extractNumericValue(userService.customPrice);
+                                const professionalPrice = extractNumericValue(
+                                  userService.price
+                                );
+
+                                // Se o profissional tem preço customizado, usar ele
+                                if (
+                                  professionalCustomPrice !== null &&
+                                  professionalCustomPrice >= 0
+                                ) {
+                                  price = professionalCustomPrice;
+                                } else if (
+                                  professionalPrice !== null &&
+                                  professionalPrice >= 0
+                                ) {
+                                  price = professionalPrice;
+                                }
+                                // Se o profissional não tem preço definido, mantém o preço do salão
+                              }
+                            }
+
+                            // Só mostra "Consultar valor" se realmente não houver nenhum preço configurado ou se for menor que zero
+                            const showPrice = price !== null && price > 0;
+
+                            return (
+                              <SelectItem key={service.id} value={service.id}>
+                                <div className="flex justify-between items-center w-full">
+                                  <span>{service.name}</span>
+                                  <div className="flex gap-2 text-body text-muted-foreground">
+                                    <span>{service.duration || 30}min</span>
+                                    <span>•</span>
+                                    <span>
+                                      {showPrice
+                                        ? `R$ ${price
+                                          .toFixed(2)
+                                          .replace(".", ",")}`
+                                        : "Consultar valor"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            );
+                          });
+                        })()}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+                {selectedService && serviceDetails && (
+                  <div className="text-body text-muted-foreground pl-10">
+                    Duração: {serviceDetails.duration}
+                    {serviceDetails.price !== "Consultar valor" &&
+                      ` | Valor: ${serviceDetails.price}`
+                    }
+                  </div>
+                )}
+              </div>
+
+              {/* Step 3: Professional Selection */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="professional"
+                  className="text-base font-semibold flex items-center gap-2"
+                >
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-body",
+                      selectedService
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    3
+                  </div>
+                  Selecione o Profissional
+                </Label>
+                <Select
+                  value={selectedProfessional}
+                  onValueChange={(value) => {
+                    setSelectedProfessional(value);
+                    setProfessionalSearchQuery(""); // Clear search when selecting
+                  }}
+                  disabled={
+                    !selectedService || loading || user?.role === "Profissional"
+                  }
+                >
+                  <SelectTrigger id="professional" className="w-full">
+                    <SelectValue
+                      placeholder={
+                        user?.role === "Profissional"
+                          ? user?.name || "Você"
+                          : !selectedService
+                            ? "Selecione um serviço primeiro"
+                            : professionals.length === 0
+                              ? "Nenhum profissional disponível para este serviço"
+                              : "Escolha o profissional"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    {/* Search field for professionals - only show if not a Professional role */}
+                    {user?.role !== "Profissional" && (
+                      <div className="sticky top-0 p-2 bg-background border-b z-50">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar profissional..."
+                            value={professionalSearchQuery}
+                            onChange={(e) =>
+                              handleProfessionalSearchChange(e.target.value)
+                            }
+                            className="pl-8 h-9"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                              if (e.key === "Enter" || e.key === "Escape") {
+                                e.preventDefault();
+                              }
+                            }}
+                            autoFocus={false}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {professionals.length === 0 ? (
+                      <div className="p-2 text-center text-muted-foreground">
+                        Nenhum profissional oferece este serviço
+                      </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          const filteredProfessionals = professionals.filter(
+                            (professional) =>
+                              smartSearch(
+                                professionalSearchQuery,
+                                getUserDisplayName(professional)
+                              ) ||
+                              smartSearch(
+                                professionalSearchQuery,
+                                professional.name
+                              )
+                          );
+
+                          if (filteredProfessionals.length === 0) {
+                            return (
+                              <div className="p-3 text-center text-muted-foreground text-body">
+                                Nenhum profissional encontrado para "
+                                {professionalSearchQuery}"
+                              </div>
+                            );
+                          }
+
+                          return filteredProfessionals.map((professional) => (
+                            <SelectItem
+                              key={professional.id}
+                              value={professional.id}
+                            >
+                              {getUserDisplayName(professional)}
+                            </SelectItem>
+                          ));
+                        })()}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
+          {currentStep === 2 && (
+            <>
+              {/* Resumo da Seleção */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-3">
+                  Resumo da Seleção
+                </h3>
+                <div className="space-y-2 text-body">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Cliente:</span>
+                    <span>
+                      {clients.find((c) => c.id === selectedClient)?.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Serviço:</span>
+                    <span>
+                      {services.find((s) => s.id === selectedService)?.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Profissional:</span>
+                    <span>
+                      {professionals.find((p) => p.id === selectedProfessional)
+                        ?.nickname ||
+                        professionals.find((p) => p.id === selectedProfessional)
+                          ?.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date and Time Selection */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-body">
+                    4
+                  </div>
+                  Selecione Data e Horário
+                </Label>
+
+                {/* Date Selector */}
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <span className="font-medium">{formatSelectedDate()}</span>
+                  <Popover
+                    open={isDatePickerOpen}
+                    onOpenChange={setIsDatePickerOpen}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <CalendarIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (
+                            date &&
+                            date instanceof Date &&
+                            !isNaN(date.getTime())
+                          ) {
+                            setSelectedDate(date);
+                            setSelectedTime(""); // Reset time when date changes
+                          }
+                          setIsDatePickerOpen(false);
+                        }}
+                        disabled={(date) => {
+                          // Disable Sundays and past dates
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date.getDay() === 0 || date < today;
+                        }}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Time Slots - Choice Chips Style */}
+                <div className="space-y-3">
+                  <Label className="text-body font-medium">
+                    <Clock className="inline-block w-4 h-4 mr-1" />
+                    Escolha um horário disponível
+                  </Label>
+                  {loadingSlots ? (
+                    <div className="flex items-center justify-center py-8">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : timeSlots.length === 0 ? (
+                    <div className="text-center py-6 bg-muted/50 rounded-lg">
+                      <Clock className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-body text-muted-foreground">
+                        {selectedDate.getDay() === 0
+                          ? "Salão fechado aos domingos"
+                          : "Salão fechado neste dia"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-muted/30 rounded-lg p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {timeSlots.map((slot) => (
+                          <button
+                            key={slot.time}
+                            type="button"
+                            onClick={() =>
+                              slot.available ? setSelectedTime(slot.time) : null
+                            }
+                            disabled={!slot.available}
+                            className={cn(
+                              "px-4 py-2 rounded-full text-body font-medium transition-all",
+                              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                              slot.available && "hover:scale-105",
+                              selectedTime === slot.time && slot.available
+                                ? "bg-primary text-primary-foreground shadow-md"
+                                : slot.available
+                                  ? "bg-background border border-input hover:bg-accent hover:text-accent-foreground"
+                                  : "bg-muted text-muted-foreground border border-muted-foreground/20 cursor-not-allowed opacity-60"
+                            )}
+                          >
+                            {slot.time}
+                          </button>
+                        ))}
+                      </div>
+                      {timeSlots.every((slot) => !slot.available) && (
+                        <p className="text-center text-body text-muted-foreground mt-4">
+                          Todos os horários estão indisponíveis neste dia
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Observações (opcional)</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value.slice(0, 200))}
+                  placeholder="Adicione observações sobre o agendamento..."
+                  maxLength={200}
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Summary Card - Shows when all selections are made in Step 1 */}
+        {currentStep === 1 &&
+          selectedClient &&
+          selectedService &&
+          selectedProfessional && (
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-3">
+              <h3 className="font-semibold text-base">Resumo do Agendamento</h3>
+              <div className="space-y-2 text-body">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cliente:</span>
+                  <span className="font-medium">
+                    {clients.find((c) => c.id === selectedClient)?.name}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Serviço:</span>
+                  <span className="font-medium">
+                    {services.find((s) => s.id === selectedService)?.name}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Profissional:</span>
+                  <span className="font-medium">
+                    {
+                      professionals.find((p) => p.id === selectedProfessional)
+                        ?.name
+                    }
+                  </span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duração:</span>
+                    <span className="font-medium">
+                      {serviceDetails?.duration}
+                    </span>
+                  </div>
+                  {serviceDetails?.price !== "Consultar valor" && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Valor:</span>
+                      <span className="font-medium text-base">
+                        {serviceDetails?.price}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 z-10 bg-background px-4 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+          {currentStep === 1 ? (
+            <>
+              <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto">
+                Cancelar
+              </Button>
+              <Button onClick={handleNextStep} disabled={!canProceedToStep2} className="w-full sm:w-auto">
+                Continuar
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleBackStep} className="w-full sm:w-auto">
+                Voltar
+              </Button>
+              <Button onClick={handleSubmit} disabled={saving || !selectedTime} className="w-full sm:w-auto">
+                {saving ? (
+                  <>
+                    <LoadingSpinner size="sm" inline className="mr-2" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Confirmar Agendamento"
+                )}
+              </Button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

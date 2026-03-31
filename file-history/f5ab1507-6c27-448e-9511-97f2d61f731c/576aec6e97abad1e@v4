@@ -1,0 +1,569 @@
+import { useState, useEffect } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Pencil as Edit, Plus as Plus, Trash2 as Trash2, UserCheck as UserCheck, UserX as UserX, Users as Users, Shield as Shield, Search as Search } from "lucide-react";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { DataTable } from "@/components/ui/data-table";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { userService } from "@/services/userService";
+import { User, UserRole } from "@/types/user";
+import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
+import { formatPhone } from "@/utils/formatters";
+import { ResponsivePagination } from "@/components/ui/responsive-pagination";
+
+export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageSize, setPageSize] = useState(16);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [isBulkOperating, setIsBulkOperating] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const navigate = useNavigate();
+  const permissions = usePermissions();
+  const { user } = useAuth();
+
+  const handleNewUser = () => {
+    navigate("/admin/users/create");
+  };
+
+  const handleEditUser = (user: User) => {
+    navigate(`/admin/users/edit/${user.id}`);
+  };
+
+  const loadUsers = async (
+    page: number = 1,
+    search?: string,
+    limit: number = pageSize
+  ) => {
+    try {
+      setIsLoading(true);
+      // Passa undefined se search for string vazia
+      const searchParam = search && search.trim() ? search.trim() : undefined;
+      const response = await userService.list({
+        page,
+        limit,
+        search: searchParam,
+        sortBy: "name",
+        sortOrder: "asc",
+      });
+
+      setUsers(response.data);
+      setTotalPages(response.totalPages || Math.ceil(response.total / limit));
+      setTotalItems(response.total || response.data.length);
+      // Não atualizar currentPage aqui - deixar o estado controlado pelos botões
+    } catch (error: any) {
+      // Não mostrar erro para o usuário quando for problema de token do super admin
+
+      const mockUsers: User[] = [
+        {
+          id: "1",
+          tenantId: "1",
+          name: "Bruno Silva",
+          email: "bruno.lsilva1508@gmail.com",
+          role: UserRole.TENANT_ADMIN,
+          active: true,
+          phone: "(11) 99999-9999",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "2",
+          tenantId: "1",
+          name: "Admin Easy Salon",
+          email: "adm@easy.com.br",
+          role: UserRole.TENANT_ADMIN,
+          active: true,
+          phone: "(11) 98765-4321",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      setUsers(mockUsers);
+      setTotalPages(1);
+      setTotalItems(mockUsers.length);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (user: User) => {
+    try {
+      if (user.active) {
+        await userService.deactivate(user.id);
+        toast.success("Usuário desativado com sucesso");
+      } else {
+        await userService.activate(user.id);
+        toast.success("Usuário ativado com sucesso");
+      }
+      loadUsers(currentPage, debouncedSearchTerm);
+    } catch (error) {
+      toast.error("Erro ao alterar status do usuário");
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    if (!permissions.canDeleteUsers) {
+      toast.error("Você não tem permissão para excluir usuários");
+      return;
+    }
+
+    try {
+      await userService.delete(userToDelete.id);
+      toast.success("Usuário excluído com sucesso");
+      loadUsers(currentPage, debouncedSearchTerm);
+      setUserToDelete(null);
+    } catch (error) {
+      toast.error("Erro ao excluir usuário");
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers([...selectedUsers, userId]);
+    } else {
+      setSelectedUsers(selectedUsers.filter((id) => id !== userId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(users.map((user) => user.id));
+    } else {
+      setSelectedUsers([]);
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    if (!permissions.canEditUsers) {
+      toast.error("Você não tem permissão para editar usuários");
+      return;
+    }
+
+    setIsBulkOperating(true);
+    try {
+      const result = await userService.bulkActivate(selectedUsers);
+      toast.success(
+        `${result.successful.length} usuários ativados com sucesso`
+      );
+      if (result.failed.length > 0) {
+        toast.error(`${result.failed.length} usuários falharam na ativação`);
+      }
+      setSelectedUsers([]);
+      loadUsers(currentPage, debouncedSearchTerm);
+    } catch (error) {
+      toast.error("Erro ao ativar usuários");
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (!permissions.canEditUsers) {
+      toast.error("Você não tem permissão para editar usuários");
+      return;
+    }
+
+    setIsBulkOperating(true);
+    try {
+      const result = await userService.bulkDeactivate(selectedUsers);
+      toast.success(
+        `${result.successful.length} usuários desativados com sucesso`
+      );
+      if (result.failed.length > 0) {
+        toast.error(`${result.failed.length} usuários falharam na desativação`);
+      }
+      setSelectedUsers([]);
+      loadUsers(currentPage, debouncedSearchTerm);
+    } catch (error) {
+      toast.error("Erro ao desativar usuários");
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!permissions.canDeleteUsers) {
+      toast.error("Você não tem permissão para excluir usuários");
+      return;
+    }
+
+    setIsBulkOperating(true);
+    try {
+      const result = await userService.bulkDelete(selectedUsers);
+      toast.success(
+        `${result.successful.length} usuários excluídos com sucesso`
+      );
+      if (result.failed.length > 0) {
+        toast.error(`${result.failed.length} usuários falharam na exclusão`);
+      }
+      setSelectedUsers([]);
+      loadUsers(currentPage, debouncedSearchTerm);
+      setShowBulkDeleteDialog(false);
+    } catch (error) {
+      toast.error("Erro ao excluir usuários");
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  const handleBulkAssignRole = async (role: UserRole) => {
+    if (!permissions.canEditUsers) {
+      toast.error("Você não tem permissão para editar usuários");
+      return;
+    }
+
+    setIsBulkOperating(true);
+    try {
+      const result = await userService.bulkAssignRole(selectedUsers, role);
+      toast.success(
+        `${result.successful.length} usuários atualizados com sucesso`
+      );
+      if (result.failed.length > 0) {
+        toast.error(`${result.failed.length} usuários falharam na atualização`);
+      }
+      setSelectedUsers([]);
+      loadUsers(currentPage, debouncedSearchTerm);
+    } catch (error) {
+      toast.error("Erro ao atualizar perfil dos usuários");
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  // Efeito principal - carrega dados quando qualquer parâmetro muda
+  useEffect(() => {
+    loadUsers(currentPage, debouncedSearchTerm, pageSize);
+  }, [currentPage, debouncedSearchTerm, pageSize]);
+
+  // Quando a busca muda, volta para página 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  // Quando o tamanho da página muda, volta para página 1
+  const handlePageSizeChange = (value: string) => {
+    const newPageSize = Number(value);
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
+  const columns = [
+    {
+      key: "select" as any,
+      header: (
+        <Checkbox
+          checked={selectedUsers.length === users.length && users.length > 0}
+          onCheckedChange={handleSelectAll}
+          disabled={!permissions.canEditUsers}
+        />
+      ),
+      render: (_: any, row: User) => (
+        <Checkbox
+          checked={selectedUsers.includes(row.id)}
+          onCheckedChange={(checked) =>
+            handleSelectUser(row.id, checked as boolean)
+          }
+          disabled={!permissions.canEditUsers}
+        />
+      ),
+    },
+    {
+      key: "name" as keyof User,
+      header: "Nome",
+      render: (value: string, row: User) => (
+        <div className="flex items-center gap-3">
+          <UserAvatar src={row.profileImage} name={row.name} size="sm" />
+          <span>{value}</span>
+        </div>
+      ),
+    },
+    {
+      key: "email" as keyof User,
+      header: "Email",
+    },
+    {
+      key: "phone" as keyof User,
+      header: "Telefone",
+      render: (value: string | undefined) => value ? formatPhone(value) : "-",
+    },
+    {
+      key: "role" as keyof User,
+      header: "Perfil",
+      render: (value: UserRole) => userService.getRoleLabel(value),
+    },
+    {
+      key: "active" as keyof User,
+      header: "Status",
+    },
+    {
+      key: "id" as keyof User,
+      header: "Ações",
+      className: "text-right",
+      render: (value: any, row: User) => (
+        <div className="flex items-center justify-end gap-1">
+          {permissions.canEditUsers && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditUser(row);
+              }}
+              className="h-8 w-8"
+              title="Editar usuário"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
+          {permissions.canEditUsers && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleStatus(row);
+              }}
+              className="h-8 w-8"
+              title={row.active ? "Desativar usuário" : "Ativar usuário"}
+            >
+              {row.active ? (
+                <UserX className="h-4 w-4" />
+              ) : (
+                <UserCheck className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          {permissions.canDeleteUsers && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setUserToDelete(row);
+              }}
+              className="h-8 w-8"
+              title="Excluir usuário"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <EasySalonLayout
+        sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle="Área Administrativa"
+      >
+        <PageHeader title="Usuários" />
+        <div className="flex items-center justify-center h-64">
+          <LoadingSpinner size="md" />
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Administrativa"
+    >
+      <PageHeader
+        title="Usuários"
+        action={
+          permissions.canCreateUsers
+            ? {
+              label: "Novo Usuário",
+              onClick: handleNewUser,
+            }
+            : undefined
+        }
+      />
+
+      {/* Barra de Ferramentas Responsiva */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="relative w-full md:max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Buscar por nome, email ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 salon-input"
+          />
+        </div>
+
+        {selectedUsers.length > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg border border-border/50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <span className="text-xs font-semibold px-2 whitespace-nowrap">
+              {selectedUsers.length} selecionado(s)
+            </span>
+            <div className="flex gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="sm" disabled={isBulkOperating}>
+                    Ações
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Status</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={handleBulkActivate}>
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Ativar Selecionados
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkDeactivate}>
+                    <UserX className="h-4 w-4 mr-2" />
+                    Desativar Selecionados
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Perfil</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleBulkAssignRole(UserRole.PROFISSIONAL)}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Definir como Profissional
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleBulkAssignRole(UserRole.RECEPCIONISTA)}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Definir como Recepcionista
+                  </DropdownMenuItem>
+                  {permissions.isAdmin && (
+                    <DropdownMenuItem onClick={() => handleBulkAssignRole(UserRole.TENANT_ADMIN)}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Definir como Administrador
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowBulkDeleteDialog(true)}
+                    className="text-destructive focus:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir Selecionados
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setSelectedUsers([])}
+              >
+                Limpar
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DataTable
+        data={users}
+        columns={columns}
+        mobileView="cards"
+        mobileCardConfig={{
+          title: "name",
+          subtitle: "email",
+          badge: "active",
+        }}
+      />
+
+      <ResponsivePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => handlePageSizeChange(String(size))}
+      />
+
+      {/* Delete User Dialog */}
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => !open && setUserToDelete(null)}
+      >
+        <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-lg p-6 gap-6"> {/* RESP: AlertDialog adaptado */}
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle className="text-section-title">Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription className="text-base pt-2">
+              Tem certeza que deseja excluir o usuário "{userToDelete?.name}"?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3"> {/* RESP: Footer empilhado no mobile */}
+            <AlertDialogCancel onClick={() => setUserToDelete(null)} className="w-full sm:w-auto mt-0">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto shadow-md transition-all active:scale-[0.98]"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+      >
+        <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-lg p-6 gap-6"> {/* RESP: AlertDialog adaptado */}
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle className="text-section-title">Excluir múltiplos usuários</AlertDialogTitle>
+            <AlertDialogDescription className="text-base pt-2">
+              Tem certeza que deseja excluir {selectedUsers.length} usuário(s)
+              selecionado(s)? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3"> {/* RESP: Footer empilhado no mobile */}
+            <AlertDialogCancel className="w-full sm:w-auto mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto shadow-md transition-all active:scale-[0.98]"
+            >
+              Excluir {selectedUsers.length} usuário(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </EasySalonLayout>
+  );
+}

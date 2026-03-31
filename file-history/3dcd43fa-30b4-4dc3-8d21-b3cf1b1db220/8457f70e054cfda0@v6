@@ -1,0 +1,76 @@
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+export interface DsAccordionItem {
+  id: string;
+  title: string;
+  badge?: React.ReactNode;
+  content: React.ReactNode;
+}
+
+export interface DsAccordionProps {
+  items: DsAccordionItem[];
+  type?: "single" | "multiple";
+  defaultValue?: string;
+  className?: string;
+}
+
+function AccordionItems({ items }: { items: DsAccordionItem[] }) {
+  return (
+    <>
+      {items.map((item) => (
+        <div key={item.id} className="bg-card border border-border rounded-lg overflow-hidden">
+          <AccordionItem value={item.id} className="border-none">
+            <AccordionTrigger className="hover:no-underline pl-4 pr-6 py-4 w-full text-left flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-[8px]">
+                  <span className="font-semibold text-[13px]">{item.title}</span>
+                </div>
+                {item.badge}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-0 pt-2">
+              <div className="pl-4 pr-6 pb-6">{item.content}</div>
+            </AccordionContent>
+          </AccordionItem>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function DsAccordion({
+  items,
+  type = "single",
+  defaultValue,
+  className,
+}: DsAccordionProps) {
+  if (type === "multiple") {
+    return (
+      <Accordion
+        type="multiple"
+        defaultValue={defaultValue ? [defaultValue] : []}
+        className={cn("w-full space-y-4", className)}
+      >
+        <AccordionItems items={items} />
+      </Accordion>
+    );
+  }
+
+  return (
+    <Accordion
+      type="single"
+      collapsible
+      defaultValue={defaultValue}
+      className={cn("w-full space-y-4", className)}
+    >
+      <AccordionItems items={items} />
+    </Accordion>
+  );
+}

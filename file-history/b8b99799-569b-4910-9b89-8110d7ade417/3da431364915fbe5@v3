@@ -1,0 +1,72 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SpecialtyForm } from "@/components/forms/SpecialtyForm";
+import { Specialty, CreateSpecialtyDto } from "@/types/specialty";
+
+interface SpecialtyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  specialty?: Specialty;
+  onSave: (data: CreateSpecialtyDto) => void;
+  isSaving?: boolean;
+}
+
+export function SpecialtyModal({
+  isOpen,
+  onClose,
+  specialty,
+  onSave,
+  isSaving,
+}: SpecialtyModalProps) {
+  const isEditing = !!specialty;
+
+  const handleSave = (data: CreateSpecialtyDto) => {
+    onSave(data);
+  };
+
+  const handleCancel = () => {
+    onClose();
+  };
+
+  const initialData = specialty
+    ? {
+        name: specialty.name,
+        description: specialty.description,
+        displayOrder: specialty.displayOrder,
+        isActive: specialty.isActive,
+        requestOnly: specialty.requestOnly,
+      }
+    : undefined;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="w-[95vw] md:max-w-lg max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-lg border-none shadow-2xl overflow-hidden flex flex-col"
+        aria-describedby="specialty-modal-description"
+      >
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-3 border-b shrink-0">
+          <DialogTitle className="text-xl font-semibold">
+            {isEditing ? "Editar Especialidade" : "Nova Especialidade"}
+          </DialogTitle>
+          <div id="specialty-modal-description" className="sr-only">
+            {isEditing
+              ? "Formulário para editar uma especialidade existente"
+              : "Formulário para criar uma nova especialidade"}
+          </div>
+        </DialogHeader>
+
+        <SpecialtyForm
+          initialData={initialData}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isEditing={isEditing}
+          isSaving={isSaving}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}

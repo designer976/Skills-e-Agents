@@ -1,0 +1,94 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { IconMapPin as MapPin, IconPhone as Phone } from "@tabler/icons-react";
+import { SalonBranding } from '@/types/booking-new';
+import { OpeningHoursDisplay } from '@/components/booking/OpeningHoursDisplay';
+
+interface BookingWelcomeProps {
+  salon: SalonBranding & {
+    openingHours?: Array<{
+      dayOfWeek: number;
+      open: string;
+      close: string;
+      isOpen: boolean;
+    }>;
+  };
+  onStart: () => void;
+}
+
+export function BookingWelcome({ salon, onStart }: BookingWelcomeProps) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header com cor do salão */}
+      <div 
+        className="h-20 flex items-center justify-center px-4"
+        style={{ backgroundColor: salon.primaryColor }}
+      >
+        {salon.logo && (
+          <img 
+            src={salon.logo} 
+            alt={`Logo ${salon.name}`}
+            className="h-12 max-w-48 object-contain"
+          />
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {salon.name}
+          </h1>
+          <p className="text-lg text-gray-600">
+            Agende seu horário online de forma rápida e fácil
+          </p>
+        </div>
+
+        {/* Salon Info Cards */}
+        <div className="grid gap-4 mb-8">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-gray-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Endereço</h3>
+                  <p className="text-gray-600">{salon.address || "Sem endereço cadastrado"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-gray-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Telefone</h3>
+                  <p className="text-gray-600">{salon.phone}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <OpeningHoursDisplay openingHours={salon.openingHours} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Call to Action */}
+        <div className="text-center">
+          <Button
+            size="lg"
+            className="text-white font-semibold py-4 px-8 text-lg"
+            style={{ backgroundColor: salon.primaryColor }}
+            onClick={onStart}
+          >
+            Agendar Horário
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

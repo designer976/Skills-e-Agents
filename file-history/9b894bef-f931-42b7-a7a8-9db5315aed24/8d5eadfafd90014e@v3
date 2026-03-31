@@ -1,0 +1,205 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { IconArrowLeft as ArrowLeft } from "@tabler/icons-react";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { Button } from "@/components/ui/button";
+
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { userService } from "@/services/userService";
+import { User } from "@/types/user";
+
+const passwordSchema = z.object({
+  password: z.string().min(8, "Senha deve ter pelo menos 8 caracteres"),
+  confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Senhas não coincidem",
+  path: ["confirmPassword"],
+});
+
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
+export default function UserPasswordPage() {
+  const navigate = useNavigate();
+  const { userId } = useParams();
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const [userData, setUserData] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  const navItems = getSalonNavItems(user?.role || 'Profissional');
+
+  const form = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const watchPassword = form.watch("password");
+  const watchConfirmPassword = form.watch("confirmPassword");
+
+  // Load user data
+  useEffect(() => {
+    if (userId) {
+      loadUserData();
+    }
+  }, [userId]);
+
+  const loadUserData = async (): Promise<void> => {
+    if (!userId) return;
+
+    try {
+      setLoadingUser(true);
+      const data = await userService.getById(userId);
+      setUserData(data);
+    } catch (error) {
+      toast.error('Erro ao carregar dados do usuário.');
+      navigate("/salon/users");
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  const handleGoBack = (): void => {
+    navigate("/salon/users");
+  };
+
+  const onSubmit = async (data: PasswordFormData): Promise<void> => {
+    if (!userId) return;
+
+    try {
+      setLoading(true);
+      await userService.resetPassword(userId, data.password);
+      toast.success("Senha alterada com sucesso!");
+      navigate("/salon/users");
+    } catch (error) {
+      const errorObj = error as { response?: { data?: { message?: string } } };
+      if (errorObj.response?.data?.message) {
+        toast.error(errorObj.response.data.message);
+      } else {
+        toast.error('Erro ao alterar senha.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleGoBack}
+            className="h-10 w-10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="page-title">Alterar Senha</h1>
+        </div>
+
+        <div className="bg-card border border-border rounded-3xl">
+          <div className="p-6">
+            {loadingUser ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-medium">Alterar Senha</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Alterando senha para: <strong>{userData?.nickname || userData?.name}</strong>
+                  </p>
+                </div>
+
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nova Senha</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              {...field}
+                              placeholder="Digite a nova senha"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirmar Nova Senha</FormLabel>
+                          <FormControl>
+                            <PasswordInput
+                              {...field}
+                              placeholder="Confirme a nova senha"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchPassword && (
+                      <div className="p-4 border rounded-md bg-muted/30">
+                        <h4 className="font-medium mb-3">Requisitos da Senha:</h4>
+                        <PasswordRequirements 
+                          password={watchPassword || ""} 
+                          confirmPassword={watchConfirmPassword || ""} 
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex justify-center">
+                      <Button 
+                        type="submit" 
+                        className="min-w-[200px]"
+                        disabled={loading || !form.formState.isValid}
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Alterando...
+                          </>
+                        ) : (
+                          "Alterar Senha"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </EasySalonLayout>
+  );
+}

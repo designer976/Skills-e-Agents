@@ -1,0 +1,460 @@
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+export type StatusPedido = "PENDENTE" | "ACEITO" | "NAO_ACEITO" | "CANCELADO"
+export type StatusPagamento = "AGUARDANDO" | "PAGO" | "FALHOU" | "ESTORNADO" | "ISENTO"
+export type TipoCliente = "PF" | "PJ"
+export type TipoVistoria = "Entrada" | "Saída" | "Saída Completa" | "Conferência" | "Transferência"
+export type CanelPedido = "Portal" | "App" | "Admin" | "API"
+
+export interface HistoricoItem {
+  dataHora: string
+  ator: string
+  acao: string
+  detalhe?: string
+}
+
+export interface Envolvido {
+  tipo: string
+  nome: string
+  cpfCnpj: string
+  telefone: string
+  email: string
+}
+
+export interface Pedido {
+  id: string
+  dataCriacao: string
+  canal: CanelPedido
+
+  // Imóvel
+  cep: string
+  logradouro: string
+  numero: string
+  complemento?: string
+  bairro: string
+  cidade: string
+  uf: string
+  referenciaAcesso?: string
+  statusImovel: "Ocupado" | "Desocupado" | "Em reforma"
+  mobilia: "Mobiliado" | "Semi-mobiliado" | "Sem mobília"
+  areaUtil: number
+  tipoImovel: string
+
+  // Vistoria
+  tipoVistoria: TipoVistoria
+  dataVistoria: string
+  horaVistoria: string
+  janelaToleranciaMins?: number
+  observacoes?: string
+
+  // Cliente / Contato
+  tipoCliente: TipoCliente
+  clienteNome: string
+  clienteId?: string
+  contatoNome: string
+  contatoEmail: string
+  contatoTelefone: string
+  temSelo: boolean
+  prioridade: "P1" | "P2" | "P3"
+
+  // Financeiro
+  valor: string
+  formaCobanca: "Avulso" | "Faturado"
+  requerPagamentoAntecipado: boolean
+  statusPagamento: StatusPagamento
+  idTransacaoNeofin?: string
+
+  // Workflow
+  status: StatusPedido
+  motivoRejeicao?: string
+  motivoCancelamento?: string
+  taxaCancelamentoAplicada?: boolean
+  quemAprovou?: string
+  quemRejeitou?: string
+  quemCancelou?: string
+
+  // Histórico
+  historico: HistoricoItem[]
+
+  // Envolvidos
+  envolvidos: Envolvido[]
+}
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
+export const PEDIDOS: Pedido[] = [
+  // ── PENDENTES ────────────────────────────────────────────────────────────────
+  {
+    id: "PV-2026-000101",
+    dataCriacao: "25/03/2026 09:12",
+    canal: "Portal",
+    cep: "01310-100",
+    logradouro: "Av. Paulista",
+    numero: "1000",
+    complemento: "Apto 42",
+    bairro: "Bela Vista",
+    cidade: "São Paulo",
+    uf: "SP",
+    referenciaAcesso: "Portaria principal, solicitar crachá",
+    statusImovel: "Desocupado",
+    mobilia: "Semi-mobiliado",
+    areaUtil: 72,
+    tipoImovel: "Apartamento",
+    tipoVistoria: "Entrada",
+    dataVistoria: "28/03/2026",
+    horaVistoria: "09:00",
+    janelaToleranciaMins: 30,
+    observacoes: "Chaves com o porteiro.",
+    tipoCliente: "PF",
+    clienteNome: "Carlos Eduardo Mendes",
+    contatoNome: "Carlos Eduardo Mendes",
+    contatoEmail: "carlos.m@gmail.com",
+    contatoTelefone: "(11) 97777-0003",
+    temSelo: false,
+    prioridade: "P2",
+    valor: "R$ 179,90",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: true,
+    statusPagamento: "AGUARDANDO",
+    status: "PENDENTE",
+    historico: [
+      { dataHora: "25/03/2026 09:12", ator: "Carlos Mendes", acao: "Pedido criado", detalhe: "Canal: Portal" },
+      { dataHora: "25/03/2026 09:13", ator: "Sistema", acao: "Recibo gerado", detalhe: "Recibo PV-2026-000101.pdf" },
+    ],
+    envolvidos: [
+      { tipo: "Locatário", nome: "Carlos Eduardo Mendes", cpfCnpj: "321.654.987-00", telefone: "(31) 97777-0003", email: "carlos.m@gmail.com" },
+    ],
+  },
+  {
+    id: "PV-2026-000102",
+    dataCriacao: "25/03/2026 14:30",
+    canal: "Admin",
+    cep: "04538-133",
+    logradouro: "Rua Funchal",
+    numero: "418",
+    complemento: "Sala 301",
+    bairro: "Vila Olímpia",
+    cidade: "São Paulo",
+    uf: "SP",
+    statusImovel: "Desocupado",
+    mobilia: "Sem mobília",
+    areaUtil: 95,
+    tipoImovel: "Sala Comercial",
+    tipoVistoria: "Saída",
+    dataVistoria: "30/03/2026",
+    horaVistoria: "14:00",
+    tipoCliente: "PJ",
+    clienteNome: "Construtora Alfa Ltda",
+    contatoNome: "Ana Paula Coordenadora",
+    contatoEmail: "ana@alfa.com.br",
+    contatoTelefone: "(11) 99999-0001",
+    temSelo: true,
+    prioridade: "P1",
+    valor: "R$ 249,90",
+    formaCobanca: "Faturado",
+    requerPagamentoAntecipado: false,
+    statusPagamento: "ISENTO",
+    status: "PENDENTE",
+    historico: [
+      { dataHora: "25/03/2026 14:30", ator: "Admin João", acao: "Pedido criado", detalhe: "Canal: Admin" },
+      { dataHora: "25/03/2026 14:31", ator: "Sistema", acao: "Recibo gerado", detalhe: "Recibo PV-2026-000102.pdf" },
+    ],
+    envolvidos: [
+      { tipo: "Locador", nome: "Construtora Alfa Ltda", cpfCnpj: "12.345.678/0001-90", telefone: "(11) 99999-0001", email: "contato@alfa.com.br" },
+      { tipo: "Locatário", nome: "Empresa Beta ME", cpfCnpj: "98.000.111/0001-22", telefone: "(11) 98888-5555", email: "beta@beta.com" },
+    ],
+  },
+  {
+    id: "PV-2026-000103",
+    dataCriacao: "26/03/2026 08:00",
+    canal: "App",
+    cep: "20040-020",
+    logradouro: "Rua da Assembleia",
+    numero: "10",
+    bairro: "Centro",
+    cidade: "Rio de Janeiro",
+    uf: "RJ",
+    statusImovel: "Ocupado",
+    mobilia: "Mobiliado",
+    areaUtil: 55,
+    tipoImovel: "Apartamento",
+    tipoVistoria: "Conferência",
+    dataVistoria: "02/04/2026",
+    horaVistoria: "10:00",
+    tipoCliente: "PF",
+    clienteNome: "Mariana Costa",
+    contatoNome: "Mariana Costa",
+    contatoEmail: "mari.costa@email.com",
+    contatoTelefone: "(11) 93333-0007",
+    temSelo: false,
+    prioridade: "P3",
+    valor: "R$ 159,90",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: true,
+    statusPagamento: "PAGO",
+    idTransacaoNeofin: "NEO-2026-88712",
+    status: "PENDENTE",
+    historico: [
+      { dataHora: "26/03/2026 08:00", ator: "Mariana Costa", acao: "Pedido criado", detalhe: "Canal: App" },
+      { dataHora: "26/03/2026 08:01", ator: "Sistema", acao: "Recibo gerado", detalhe: "Recibo PV-2026-000103.pdf" },
+      { dataHora: "26/03/2026 10:45", ator: "Neofin", acao: "Pagamento confirmado", detalhe: "Transação NEO-2026-88712" },
+    ],
+    envolvidos: [
+      { tipo: "Locatário", nome: "Mariana Costa", cpfCnpj: "999.888.777-66", telefone: "(11) 93333-0007", email: "mari.costa@email.com" },
+    ],
+  },
+
+  // ── ACEITOS ──────────────────────────────────────────────────────────────────
+  {
+    id: "PV-2026-000098",
+    dataCriacao: "22/03/2026 10:00",
+    canal: "Portal",
+    cep: "80010-020",
+    logradouro: "Rua XV de Novembro",
+    numero: "700",
+    bairro: "Centro",
+    cidade: "Curitiba",
+    uf: "PR",
+    statusImovel: "Desocupado",
+    mobilia: "Sem mobília",
+    areaUtil: 80,
+    tipoImovel: "Apartamento",
+    tipoVistoria: "Entrada",
+    dataVistoria: "27/03/2026",
+    horaVistoria: "09:00",
+    tipoCliente: "PJ",
+    clienteNome: "Imobiliária Beta S.A.",
+    contatoNome: "Roberto Gerente",
+    contatoEmail: "roberto@beta.com.br",
+    contatoTelefone: "(21) 98888-0002",
+    temSelo: true,
+    prioridade: "P1",
+    valor: "R$ 199,90",
+    formaCobanca: "Faturado",
+    requerPagamentoAntecipado: false,
+    statusPagamento: "ISENTO",
+    status: "ACEITO",
+    quemAprovou: "Admin João",
+    historico: [
+      { dataHora: "22/03/2026 10:00", ator: "Portal", acao: "Pedido criado" },
+      { dataHora: "22/03/2026 11:30", ator: "Admin João", acao: "Pedido aprovado" },
+    ],
+    envolvidos: [
+      { tipo: "Locador", nome: "Imobiliária Beta S.A.", cpfCnpj: "98.765.432/0001-10", telefone: "(21) 98888-0002", email: "admin@beta.com.br" },
+    ],
+  },
+  {
+    id: "PV-2026-000099",
+    dataCriacao: "23/03/2026 15:00",
+    canal: "Admin",
+    cep: "90010-150",
+    logradouro: "Av. Borges de Medeiros",
+    numero: "1501",
+    complemento: "Cobertura",
+    bairro: "Praia de Belas",
+    cidade: "Porto Alegre",
+    uf: "RS",
+    statusImovel: "Desocupado",
+    mobilia: "Mobiliado",
+    areaUtil: 130,
+    tipoImovel: "Cobertura",
+    tipoVistoria: "Saída Completa",
+    dataVistoria: "29/03/2026",
+    horaVistoria: "13:00",
+    tipoCliente: "PF",
+    clienteNome: "Ana Paula Ferreira",
+    contatoNome: "Ana Paula Ferreira",
+    contatoEmail: "ana.ferreira@email.com",
+    contatoTelefone: "(51) 95555-0005",
+    temSelo: false,
+    prioridade: "P2",
+    valor: "R$ 350,00",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: true,
+    statusPagamento: "PAGO",
+    idTransacaoNeofin: "NEO-2026-77001",
+    status: "ACEITO",
+    quemAprovou: "Admin Maria",
+    historico: [
+      { dataHora: "23/03/2026 15:00", ator: "Admin Maria", acao: "Pedido criado" },
+      { dataHora: "23/03/2026 16:10", ator: "Neofin", acao: "Pagamento confirmado", detalhe: "NEO-2026-77001" },
+      { dataHora: "23/03/2026 16:15", ator: "Admin Maria", acao: "Pedido aprovado" },
+    ],
+    envolvidos: [
+      { tipo: "Locatário", nome: "Ana Paula Ferreira", cpfCnpj: "111.222.333-44", telefone: "(51) 95555-0005", email: "ana.ferreira@email.com" },
+    ],
+  },
+
+  // ── NÃO ACEITOS ──────────────────────────────────────────────────────────────
+  {
+    id: "PV-2026-000090",
+    dataCriacao: "18/03/2026 09:00",
+    canal: "Portal",
+    cep: "01001-000",
+    logradouro: "Praça da Sé",
+    numero: "1",
+    bairro: "Sé",
+    cidade: "São Paulo",
+    uf: "SP",
+    statusImovel: "Ocupado",
+    mobilia: "Sem mobília",
+    areaUtil: 45,
+    tipoImovel: "Apartamento",
+    tipoVistoria: "Entrada",
+    dataVistoria: "20/03/2026",
+    horaVistoria: "08:00",
+    tipoCliente: "PF",
+    clienteNome: "João da Silva",
+    contatoNome: "João da Silva",
+    contatoEmail: "joao@email.com",
+    contatoTelefone: "(11) 91111-2222",
+    temSelo: false,
+    prioridade: "P3",
+    valor: "R$ 149,90",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: true,
+    statusPagamento: "AGUARDANDO",
+    status: "NAO_ACEITO",
+    motivoRejeicao: "Sem pagamento confirmado",
+    quemRejeitou: "Admin João",
+    historico: [
+      { dataHora: "18/03/2026 09:00", ator: "João da Silva", acao: "Pedido criado" },
+      { dataHora: "19/03/2026 10:00", ator: "Admin João", acao: "Pedido rejeitado", detalhe: "Sem pagamento confirmado — cliente PF sem pagamento via Neofin." },
+    ],
+    envolvidos: [
+      { tipo: "Locatário", nome: "João da Silva", cpfCnpj: "123.456.789-00", telefone: "(11) 91111-2222", email: "joao@email.com" },
+    ],
+  },
+  {
+    id: "PV-2026-000091",
+    dataCriacao: "19/03/2026 11:00",
+    canal: "App",
+    cep: "30130-110",
+    logradouro: "Av. do Contorno",
+    numero: "5000",
+    bairro: "Funcionários",
+    cidade: "Belo Horizonte",
+    uf: "MG",
+    statusImovel: "Desocupado",
+    mobilia: "Sem mobília",
+    areaUtil: 60,
+    tipoImovel: "Apartamento",
+    tipoVistoria: "Saída",
+    dataVistoria: "21/03/2026",
+    horaVistoria: "11:00",
+    tipoCliente: "PF",
+    clienteNome: "Pedro Lima",
+    contatoNome: "Pedro Lima",
+    contatoEmail: "pedro.lima@email.com",
+    contatoTelefone: "(31) 92222-3333",
+    temSelo: false,
+    prioridade: "P3",
+    valor: "R$ 169,90",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: true,
+    statusPagamento: "AGUARDANDO",
+    status: "NAO_ACEITO",
+    motivoRejeicao: "Agenda indisponível",
+    quemRejeitou: "Admin Maria",
+    historico: [
+      { dataHora: "19/03/2026 11:00", ator: "Pedro Lima", acao: "Pedido criado" },
+      { dataHora: "20/03/2026 09:00", ator: "Admin Maria", acao: "Pedido rejeitado", detalhe: "Agenda indisponível para a data solicitada." },
+    ],
+    envolvidos: [
+      { tipo: "Locatário", nome: "Pedro Lima", cpfCnpj: "456.789.012-33", telefone: "(31) 92222-3333", email: "pedro.lima@email.com" },
+    ],
+  },
+
+  // ── CANCELADOS ───────────────────────────────────────────────────────────────
+  {
+    id: "PV-2026-000085",
+    dataCriacao: "15/03/2026 14:00",
+    canal: "Portal",
+    cep: "69900-000",
+    logradouro: "Rua Marechal Deodoro",
+    numero: "300",
+    bairro: "Centro",
+    cidade: "Rio Branco",
+    uf: "AC",
+    statusImovel: "Ocupado",
+    mobilia: "Semi-mobiliado",
+    areaUtil: 70,
+    tipoImovel: "Casa",
+    tipoVistoria: "Transferência",
+    dataVistoria: "17/03/2026",
+    horaVistoria: "10:00",
+    tipoCliente: "PF",
+    clienteNome: "Beatriz Santos",
+    contatoNome: "Beatriz Santos",
+    contatoEmail: "beatriz@email.com",
+    contatoTelefone: "(68) 99900-0001",
+    temSelo: false,
+    prioridade: "P3",
+    valor: "R$ 189,90",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: true,
+    statusPagamento: "ESTORNADO",
+    status: "CANCELADO",
+    motivoCancelamento: "Cliente desistiu",
+    taxaCancelamentoAplicada: true,
+    quemCancelou: "Beatriz Santos",
+    historico: [
+      { dataHora: "15/03/2026 14:00", ator: "Beatriz Santos", acao: "Pedido criado" },
+      { dataHora: "15/03/2026 15:00", ator: "Neofin", acao: "Pagamento confirmado" },
+      { dataHora: "15/03/2026 15:30", ator: "Admin João", acao: "Pedido aprovado" },
+      { dataHora: "16/03/2026 22:00", ator: "Beatriz Santos", acao: "Cancelamento solicitado", detalhe: "Menos de 24h antes — taxa aplicada." },
+      { dataHora: "16/03/2026 22:05", ator: "Sistema", acao: "Taxa de cancelamento aplicada" },
+    ],
+    envolvidos: [
+      { tipo: "Locatário", nome: "Beatriz Santos", cpfCnpj: "555.666.777-88", telefone: "(68) 99900-0001", email: "beatriz@email.com" },
+    ],
+  },
+  {
+    id: "PV-2026-000086",
+    dataCriacao: "16/03/2026 08:30",
+    canal: "Admin",
+    cep: "88010-400",
+    logradouro: "Rua Felipe Schmidt",
+    numero: "100",
+    bairro: "Centro",
+    cidade: "Florianópolis",
+    uf: "SC",
+    statusImovel: "Desocupado",
+    mobilia: "Sem mobília",
+    areaUtil: 85,
+    tipoImovel: "Apartamento",
+    tipoVistoria: "Entrada",
+    dataVistoria: "18/03/2026",
+    horaVistoria: "14:00",
+    tipoCliente: "PJ",
+    clienteNome: "Delta Engenharia Ltda",
+    contatoNome: "Fernanda Coordenadora",
+    contatoEmail: "fernanda@delta.com",
+    contatoTelefone: "(48) 98000-1111",
+    temSelo: false,
+    prioridade: "P2",
+    valor: "R$ 219,90",
+    formaCobanca: "Avulso",
+    requerPagamentoAntecipado: false,
+    statusPagamento: "ISENTO",
+    status: "CANCELADO",
+    motivoCancelamento: "Pedido duplicado",
+    taxaCancelamentoAplicada: false,
+    quemCancelou: "Admin Maria",
+    historico: [
+      { dataHora: "16/03/2026 08:30", ator: "Admin Maria", acao: "Pedido criado" },
+      { dataHora: "16/03/2026 09:00", ator: "Admin Maria", acao: "Pedido cancelado", detalhe: "Pedido duplicado do PV-2026-000080." },
+    ],
+    envolvidos: [
+      { tipo: "Locador", nome: "Delta Engenharia Ltda", cpfCnpj: "22.333.444/0001-88", telefone: "(41) 92222-0008", email: "contato@deltaeng.com" },
+    ],
+  },
+]
+
+export function getPedidoById(id: string): Pedido | undefined {
+  return PEDIDOS.find((p) => p.id === id)
+}
+
+export function getPedidosByStatus(status: StatusPedido): Pedido[] {
+  return PEDIDOS.filter((p) => p.status === status)
+}

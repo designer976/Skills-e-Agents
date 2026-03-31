@@ -1,0 +1,609 @@
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { PageViewTracker, PostHogProvider } from "@/contexts/PostHogProvider";
+import { captureUTMParams } from "@/lib/utmTracker";
+import { SubscriptionAlertModal } from "@/components/modals/SubscriptionAlertModal";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SolicitacoesProvider } from "@/contexts/SolicitacoesContext";
+import { WebSocketProvider } from "@/contexts/WebSocketProvider";
+import { SalonProvider } from "@/contexts/SalonContext";
+import { subscriptionState } from "@/services/subscriptionState";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+
+// Loading component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <LoadingSpinner size="md" />
+  </div>
+);
+
+// Non-lazy loaded pages (critical path)
+import ForgotPassword from "./pages/ForgotPassword";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
+import SetPassword from "./pages/SetPassword";
+
+// Lazy loaded pages
+const Index = lazy(() => import("./pages/Index"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const SalonsPage = lazy(() => import("./pages/admin/SalonsPage"));
+const CreateSalonPage = lazy(() => import("./pages/admin/CreateSalonPage"));
+const EditSalonPage = lazy(() => import("./pages/admin/EditSalonPage"));
+const SpecialtiesPage = lazy(() => import("./pages/admin/SpecialtiesPage"));
+const SpecialtyServicesPage = lazy(
+  () => import("./pages/admin/SpecialtyServicesPage")
+);
+const UsersPage = lazy(() => import("./pages/admin/UsersPage"));
+const CreateUserPage = lazy(() => import("./pages/admin/CreateUserPage"));
+const EditUserPage = lazy(() => import("./pages/admin/EditUserPage"));
+const AgendaV2Page = lazy(() => import("./pages/salon/AgendaV2Page"));
+const SolicitacoesPage = lazy(() => import("./pages/salon/SolicitacoesPage"));
+const ClientsPage = lazy(() => import("./pages/salon/ClientsPage"));
+const ServicesPage = lazy(() => import("./pages/salon/ServicesPage"));
+const SalonSpecialtiesPage = lazy(
+  () => import("./pages/salon/SpecialtiesPage")
+);
+const SalonSpecialtyServicesPage = lazy(
+  () => import("./pages/salon/SalonSpecialtyServicesPage")
+);
+const SalonUsersPage = lazy(() => import("./pages/salon/SalonUsersPage"));
+const SalonUserFormPage = lazy(() => import("./pages/salon/SalonUserFormPage"));
+const UserSchedulePage = lazy(() => import("./pages/salon/UserSchedulePage"));
+const UserServicesPage = lazy(() => import("./pages/salon/UserServicesPage"));
+const UserPasswordPage = lazy(() => import("./pages/salon/UserPasswordPage"));
+const SettingsPage = lazy(() => import("./pages/salon/SettingsPage"));
+const SalonDataPage = lazy(
+  () => import("./pages/salon/settings/SalonDataPage")
+);
+const WorkingHoursPage = lazy(
+  () => import("./pages/salon/settings/WorkingHoursPage")
+);
+const OnlineBookingHoursPage = lazy(
+  () => import("./pages/salon/settings/OnlineBookingHoursPage")
+);
+const OnlineBookingSettingsPage = lazy(
+  () => import("./pages/salon/settings/OnlineBookingSettingsPage")
+);
+const ServiceEditPage = lazy(() => import("./pages/salon/ServiceEditPage"));
+const DashboardPage = lazy(() => import("./pages/salon/DashboardPage"));
+const AbsencesPage = lazy(() => import("./pages/salon/AbsencesPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const NewBookingPage = lazy(() => import("./pages/NewBookingPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+
+// TODO: Módulo financeiro não lançado ainda — remover comentário quando pronto
+// const FinancialPage = lazy(() => import("./pages/admin/FinancialPage"));
+const MyPlanPage = lazy(() => import("./pages/salon/MyPlanPage"));
+const DesignSystemPage = lazy(() => import("./pages/DesignSystemPage"));
+
+const queryClient = new QueryClient();
+
+// Capture UTM params from landing page URL on first visit (first-touch attribution)
+captureUTMParams();
+
+// Global Subscription Manager Component
+// Handles the modal visibility based on the singleton state
+function GlobalSubscriptionManager() {
+  const [isExpired, setIsExpired] = useState(subscriptionState.getExpired());
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth(); // Need auth to know if we should bypass
+
+  useEffect(() => {
+    // Restore subscription state from localStorage on refresh
+    const storedExpired = localStorage.getItem('subscriptionExpired');
+    if (storedExpired === 'true') {
+      subscriptionState.setExpired(true);
+    }
+
+    // Subscribe to singleton
+    const unsubscribe = subscriptionState.subscribe((expired) => {
+      setIsExpired(expired);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Whitelist Logic
+  const isWhitelisted =
+    location.pathname.startsWith("/salon/my-plan") ||
+    location.pathname.startsWith("/salon/plano") ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/register") ||
+    location.pathname.startsWith("/onboarding") ||
+    location.pathname === "/"; 
+
+  const isSalonRoute = location.pathname.startsWith("/salon/");
+
+  const handleConfirm = () => {
+    navigate("/salon/my-plan");
+  };
+
+  // Bypass logic for Super Admin (Easy Salon)
+  const isSuperAdmin = user?.role === "Easy Salon";
+
+  // Don't show if whitelisted or super admin
+  if (isWhitelisted || isSuperAdmin) {
+    return null;
+  }
+
+  return (
+    <SubscriptionAlertModal
+      isOpen={isExpired}
+      onConfirm={handleConfirm}
+    />
+  );
+}
+
+const App = () => (
+
+  <PostHogProvider>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <SalonProvider>
+          <WebSocketProvider>
+            <SolicitacoesProvider>
+            <Toaster />
+            <SonnerToaster
+              position="top-right"
+              duration={5000}
+              expand={true}
+              closeButton
+            />
+            <BrowserRouter>
+              <PageViewTracker />
+              <GlobalSubscriptionManager />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Login />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/onboarding" element={
+                    <ProtectedRoute>
+                      <OnboardingPage />
+                    </ProtectedRoute>
+                  }
+                  />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                  <Route path="/reset-password" element={<ResetPassword />} />
+
+                  <Route path="/set-password" element={<SetPassword />} />
+
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Admin Routes */}
+                  <Route
+                    path="/admin/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <AdminDashboardPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/salons"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <SalonsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/salons/create"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <CreateSalonPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/salons/:id/edit"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <EditSalonPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/specialties"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <SpecialtiesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/specialties/:specialtyId/services"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <SpecialtyServicesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/users"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <UsersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/users/create"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <CreateUserPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/users/edit/:id"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <EditUserPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  {/* TODO: Módulo financeiro não lançado ainda — remover comentário quando pronto
+                  <Route
+                    path="/admin/financial"
+                    element={
+                      <ProtectedRoute requiredRole="Easy Salon">
+                        <FinancialPage />
+                      </ProtectedRoute>
+                    }
+                  /> */}
+
+                  {/* Salon Routes */}
+                  <Route
+                    path="/salon/dashboard"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                          "Recepcionista",
+                        ]}
+                      >
+                        <DashboardPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/agenda"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                          "Profissional",
+                          "Recepcionista",
+                        ]}
+                      >
+                        <AgendaV2Page />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/absences"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                          "Profissional",
+                        ]}
+                      >
+                        <AbsencesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/solicitacoes"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SolicitacoesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/clients"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                          "Recepcionista",
+                        ]}
+                      >
+                        <ClientsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/specialties"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SalonSpecialtiesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/specialties/:specialtyId/services"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SalonSpecialtyServicesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/services"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <ServicesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/service/:serviceId/edit"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <ServiceEditPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/users"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SalonUsersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/users/create"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SalonUserFormPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/users/edit/:userId"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SalonUserFormPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/users/:userId/schedule"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <UserSchedulePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/users/:userId/services"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <UserServicesPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/users/:userId/password"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <UserPasswordPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/settings"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/my-plan"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <MyPlanPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Salon Settings Sub-routes */}
+                  <Route
+                    path="/salon/settings/salon-data"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <SalonDataPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/settings/working-hours"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <WorkingHoursPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/settings/online-booking-hours"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <OnlineBookingHoursPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/salon/settings/online-booking"
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[
+                          "Easy Salon",
+                          "Tenant Admin",
+                          "Administrador",
+                        ]}
+                      >
+                        <OnlineBookingSettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Profile Route - Available for both roles */}
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Rota pública para agendamento online */}
+                  <Route
+                    path="/agenda/:salonSlug"
+                    element={<NewBookingPage />}
+                  />
+
+                  {/* Design System — uso interno, não exibido nos menus */}
+                  <Route path="/design-system" element={<DesignSystemPage />} />
+
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+            </SolicitacoesProvider>
+          </WebSocketProvider>
+        </SalonProvider>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+  </PostHogProvider>
+);
+
+export default App;

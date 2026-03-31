@@ -1,0 +1,572 @@
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { userService } from "@/services/userService";
+import { CreateUserDto, UserRole } from "@/types/user";
+import { formatCPF, validateCPF } from "@/utils/validation";
+import { Loader2 as Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+export default function CreateUserPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [checkingSlug, setCheckingSlug] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [userData, setUserData] = useState<CreateUserDto>({
+    name: "",
+    email: "",
+    password: "Senha@123", // Senha padrão
+    role: UserRole.SUPER_ADMIN, // Na área administrativa, sempre Easy Salon
+    whatsapp: "",
+    birthDate: "",
+    cpf: "",
+    description: "",
+    active: true,
+  });
+  const [tenantData, setTenantData] = useState({
+    name: "",
+    slug: "",
+    domain: "",
+  });
+
+  const handleInputChange = (field: keyof CreateUserDto, value: any) => {
+    setUserData((prev) => ({ ...prev, [field]: value }));
+    // Clear field error when user types
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleTenantDataChange = (field: string, value: string) => {
+    setTenantData((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // Auto-generate slug from name
+      if (field === "name" && value) {
+        const slug = value
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "") // Remove accents
+          .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
+          .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+          .slice(0, 50); // Limit length
+        updated.slug = slug;
+        setSlugAvailable(null); // Reset availability check
+      }
+
+      return updated;
+    });
+
+    // Clear field error when user types
+    const tenantFieldMap = {
+      name: "tenantName",
+      slug: "tenantSlug",
+      domain: "tenantDomain",
+    };
+    const mappedField = tenantFieldMap[field as keyof typeof tenantFieldMap];
+    if (mappedField && fieldErrors[mappedField]) {
+      setFieldErrors((prev) => ({ ...prev, [mappedField]: "" }));
+    }
+  };
+
+  const checkSlugAvailability = async (slug: string) => {
+    if (!slug || slug.length < 3) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    setCheckingSlug(true);
+    try {
+      const response = await userService.checkSlugAvailability(slug);
+      setSlugAvailable(response.available);
+    } catch (error) {
+      setSlugAvailable(null);
+    } finally {
+      setCheckingSlug(false);
+    }
+  };
+
+  // Debounce slug check
+  const [slugCheckTimeout, setSlugCheckTimeout] =
+    useState<NodeJS.Timeout | null>(null);
+
+  const handleSlugChange = (value: string) => {
+    const formattedSlug = value
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "") // Only allow lowercase letters, numbers, and hyphens
+      .replace(/--+/g, "-"); // Replace multiple hyphens with single hyphen
+
+    setTenantData((prev) => ({ ...prev, slug: formattedSlug }));
+    setSlugAvailable(null);
+
+    // Clear field error when user types
+    if (fieldErrors.tenantSlug) {
+      setFieldErrors((prev) => ({ ...prev, tenantSlug: "" }));
+    }
+
+    // Clear previous timeout
+    if (slugCheckTimeout) {
+      clearTimeout(slugCheckTimeout);
+    }
+
+    // Set new timeout to check slug
+    const timeout = setTimeout(() => {
+      checkSlugAvailability(formattedSlug);
+    }, 500);
+
+    setSlugCheckTimeout(timeout);
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!userData.name.trim()) {
+      errors.name = "Nome completo é obrigatório";
+    }
+    if (!userData.email.trim()) {
+      errors.email = "Email é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+      errors.email = "Email inválido";
+    }
+    if (
+      userData.cpf &&
+      userData.cpf.trim().length > 0 &&
+      !validateCPF(userData.cpf)
+    ) {
+      errors.cpf = "CPF inválido";
+    }
+
+    // Additional validation for tenant admin
+    if (userData.role === UserRole.TENANT_ADMIN) {
+      if (!tenantData.name.trim()) {
+        errors.tenantName = "Nome do Tenant é obrigatório";
+      }
+      if (!tenantData.slug.trim()) {
+        errors.tenantSlug = "Slug do Tenant é obrigatório";
+      } else if (!/^[a-z0-9-]+$/.test(tenantData.slug)) {
+        errors.tenantSlug =
+          "Slug deve conter apenas letras minúsculas, números e hífens";
+      } else if (slugAvailable === false) {
+        errors.tenantSlug = "Slug já está em uso";
+      }
+      if (
+        tenantData.domain &&
+        !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/.test(
+          tenantData.domain
+        )
+      ) {
+        errors.tenantDomain = "Domínio inválido";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstErrorMessage = Object.values(errors)[0];
+      toast.error(firstErrorMessage);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      // Clean up empty optional fields
+      const cleanUserData: any = {
+        ...userData,
+        name: userData.name.trim(),
+        email: userData.email.trim(),
+        active: true, // Ensure user is created as active
+        whatsapp: userData.whatsapp?.trim() || undefined,
+        cpf: userData.cpf?.trim() || undefined,
+        birthDate: userData.birthDate?.trim() || undefined,
+        description: userData.description?.trim() || undefined,
+      };
+
+      // Add tenant data if creating tenant admin
+      if (userData.role === UserRole.TENANT_ADMIN) {
+        cleanUserData.tenantData = {
+          name: tenantData.name.trim(),
+          slug: tenantData.slug.trim(),
+          domain: tenantData.domain?.trim() || undefined,
+        };
+      }
+
+      await userService.create(cleanUserData);
+
+      if (userData.role === UserRole.TENANT_ADMIN) {
+        toast.success("Administrador de Rede cadastrado com sucesso!");
+      } else {
+        toast.success("Usuário cadastrado com sucesso!");
+      }
+
+      navigate("/admin/users");
+    } catch (error: any) {
+      // Extract error message from response
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Erro ao criar usuário. Por favor, tente novamente.";
+
+      // Handle specific conflict errors (409)
+      if (error?.response?.status === 409) {
+        const errors: Record<string, string> = {};
+
+        // Check for email conflict
+        if (
+          errorMessage.toLowerCase().includes("e-mail") ||
+          errorMessage.toLowerCase().includes("email")
+        ) {
+          errors.email = "Este e-mail já está cadastrado";
+        }
+        // Check for slug conflict
+        else if (errorMessage.toLowerCase().includes("slug")) {
+          errors.tenantSlug = "Este slug já está em uso";
+        }
+        // Check for domain conflict
+        else if (
+          errorMessage.toLowerCase().includes("domínio") ||
+          errorMessage.toLowerCase().includes("domain")
+        ) {
+          errors.tenantDomain = "Este domínio já está em uso";
+        }
+
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+        }
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate("/admin/users");
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Administrativa"
+    >
+      <PageHeader
+        title="Cadastrar Novo Usuário"
+        subtitle="Adicione um novo usuário à plataforma"
+      />
+
+      <div className="bg-card border border-border rounded-lg">
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Nome Completo <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={userData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                placeholder="Digite o nome completo"
+                disabled={loading}
+                maxLength={100}
+                className={fieldErrors.name ? "border-destructive" : ""}
+              />
+              {fieldErrors.name && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={userData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="usuario@email.com"
+                disabled={loading}
+                maxLength={100}
+                className={fieldErrors.email ? "border-destructive" : ""}
+              />
+              {fieldErrors.email && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">
+                Perfil <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={userData.role}
+                onValueChange={(value) => handleInputChange("role", value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UserRole.SUPER_ADMIN}>
+                    {userService.getRoleLabel(UserRole.SUPER_ADMIN)}
+                  </SelectItem>
+                  <SelectItem value={UserRole.TENANT_ADMIN}>
+                    Administrador de Rede
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {userData.role === UserRole.TENANT_ADMIN
+                  ? "Criará um novo tenant e vinculará o usuário como administrador"
+                  : "Usuário com acesso total à plataforma"}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp/Telefone</Label>
+              <Input
+                id="whatsapp"
+                value={userData.whatsapp || ""}
+                onChange={(e) => {
+                  // Remove tudo que não é número
+                  const cleaned = e.target.value.replace(/[^\d]/g, "");
+                  // Limita a 11 dígitos
+                  const limited = cleaned.slice(0, 11);
+                  // Aplica a formatação
+                  handleInputChange(
+                    "whatsapp",
+                    userService.formatPhone(limited)
+                  );
+                }}
+                onKeyPress={(e) => {
+                  // Permite apenas números
+                  if (
+                    !/[0-9]/.test(e.key) &&
+                    e.key !== "Backspace" &&
+                    e.key !== "Delete"
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                placeholder="(XX) XXXXX-XXXX"
+                disabled={loading}
+                maxLength={15}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Data de Nascimento</Label>
+              <Input
+                id="birthDate"
+                type="date"
+                value={userData.birthDate || ""}
+                onChange={(e) => handleInputChange("birthDate", e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                value={userData.cpf || ""}
+                onChange={(e) =>
+                  handleInputChange("cpf", formatCPF(e.target.value))
+                }
+                placeholder="000.000.000-00"
+                disabled={loading}
+                maxLength={14}
+                className={fieldErrors.cpf ? "border-destructive" : ""}
+              />
+              {fieldErrors.cpf && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.cpf}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Description Field */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              value={userData.description || ""}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+              placeholder="Informações adicionais sobre o usuário"
+              disabled={loading}
+              className="resize-none"
+              rows={4}
+              maxLength={500}
+            />
+          </div>
+
+          {/* Conditional Tenant Fields */}
+          {userData.role === UserRole.TENANT_ADMIN && (
+            <>
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Informações da Rede
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tenantName">
+                      Nome da Rede <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="tenantName"
+                      value={tenantData.name}
+                      onChange={(e) =>
+                        handleTenantDataChange("name", e.target.value)
+                      }
+                      placeholder="Ex: Rede Beauty Salons"
+                      disabled={loading}
+                      maxLength={100}
+                      className={fieldErrors.tenantName ? "border-destructive" : ""}
+                    />
+                    {fieldErrors.tenantName && (
+                      <p className="text-xs text-destructive mt-1">
+                        {fieldErrors.tenantName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tenantSlug">
+                      Slug da Rede <span className="text-destructive">*</span>
+                      {checkingSlug && (
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          <Loader2 className="inline w-3 h-3 animate-spin" />{" "}
+                          Verificando...
+                        </span>
+                      )}
+                      {!checkingSlug &&
+                        slugAvailable === true &&
+                        tenantData.slug && (
+                          <span className="ml-2 text-sm text-green-600">
+                            ✓ Disponível
+                          </span>
+                        )}
+                      {!checkingSlug && slugAvailable === false && (
+                        <span className="ml-2 text-sm text-destructive">
+                          ✗ Já em uso
+                        </span>
+                      )}
+                    </Label>
+                    <Input
+                      id="tenantSlug"
+                      value={tenantData.slug}
+                      onChange={(e) => handleSlugChange(e.target.value)}
+                      placeholder="ex: beauty-salons"
+                      disabled={loading}
+                      className={
+                        fieldErrors.tenantSlug || slugAvailable === false
+                          ? "border-destructive"
+                          : ""
+                      }
+                      maxLength={50}
+                    />
+                    {fieldErrors.tenantSlug ? (
+                      <p className="text-xs text-destructive mt-1">
+                        {fieldErrors.tenantSlug}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Apenas letras minúsculas, números e hífens
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tenantDomain">
+                      Domínio Personalizado (Opcional)
+                    </Label>
+                    <Input
+                      id="tenantDomain"
+                      value={tenantData.domain}
+                      onChange={(e) =>
+                        handleTenantDataChange("domain", e.target.value)
+                      }
+                      placeholder="Ex: saloes.exemplo.com.br"
+                      disabled={loading}
+                      maxLength={255}
+                      className={
+                        fieldErrors.tenantDomain ? "border-destructive" : ""
+                      }
+                    />
+                    {fieldErrors.tenantDomain ? (
+                      <p className="text-xs text-destructive mt-1">
+                        {fieldErrors.tenantDomain}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Domínio customizado para acesso ao sistema
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="p-4 bg-secondary rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground">
+              <strong>Nota:</strong> A senha padrão para novos usuários é{" "}
+              <code className="bg-muted px-1 rounded">Senha@123</code>. O
+              usuário deverá alterar a senha no primeiro acesso.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-4 pt-6 border-t">
+            <Button variant="outline" onClick={handleCancel} disabled={loading}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </EasySalonLayout>
+  );
+}

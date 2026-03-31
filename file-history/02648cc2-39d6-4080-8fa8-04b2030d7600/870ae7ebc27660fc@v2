@@ -1,0 +1,16 @@
+import { ConfigService } from '@nestjs/config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+
+export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOptions => {
+  const config: TypeOrmModuleOptions = {
+    type: 'sqlite' as const,
+    database: configService.get('NODE_ENV') === 'production' ? 'easy_salon.db' : 'easy_salon_dev.db',
+    synchronize: configService.get('NODE_ENV') === 'development', // Auto-sync in development
+    logging: configService.get('NODE_ENV') === 'development',
+    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+    namingStrategy: new SnakeNamingStrategy(),
+  };
+
+  return config;
+};

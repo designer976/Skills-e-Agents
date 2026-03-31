@@ -1,0 +1,322 @@
+"use client"
+
+import { useState, useRef } from "react"
+import { Download, Loader2, FileText, CheckCircle, Check, Link2 } from "lucide-react"
+import { toast } from "sonner"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { cn } from "@/lib/utils"
+import { MarkdownRenderer } from "@/components/markdown-renderer"
+import type { ProposalSection, ProposalStatus, ProposalInteresse, ProposalModelo } from "@/lib/proposal-types"
+import { formatDateShort } from "@/lib/proposal-types"
+import { buildProposalTokens } from "@/lib/proposal-pdf-utils"
+import { generateProposalPDF } from "@/lib/pdf-generator"
+import { ProposalTemplateWa } from "@/components/proposal-template-wa"
+
+interface ProposalDocumentProps {
+  empresa: string
+  para?: string
+  projeto?: string
+  proposalNumber: string
+  dataCriacao: number
+  sections: ProposalSection[]
+  highlightedSections: Set<string>
+  status: ProposalStatus
+  interesse?: ProposalInteresse
+  modeloTrabalho?: ProposalModelo
+  projetoGeradoId?: string
+  projetoGeradoNome?: string
+  onMarkConcluida?: () => void
+  onAprovar?: () => void
+}
+
+export function ProposalDocument({
+  empresa,
+  para,
+  projeto,
+  proposalNumber,
+  dataCriacao,
+  sections,
+  highlightedSections,
+  status,
+  interesse,
+  modeloTrabalho,
+  projetoGeradoId,
+  projetoGeradoNome,
+  onMarkConcluida,
+  onAprovar,
+}: ProposalDocumentProps) {
+  const [useWaTemplate, setUseWaTemplate] = useState(true) // Usar novo template por padrão
+  const [downloading, setDownloading] = useState(false)
+  const [approveOpen, setApproveOpen] = useState(false)
+  const documentRef = useRef<HTMLDivElement>(null)
+
+  async function handleDownloadPDF() {
+    if (sections.length === 0) return
+    setDownloading(true)
+
+    try {
+      // 1. Constrói os tokens com o sistema de mapeamento existente
+      const tokens = buildProposalTokens({ empresa, para, projeto, modeloTrabalho, dataCriacao, sections })
+      console.log("[ProposalDocument] Generated tokens:", tokens)
+      console.log("[ProposalDocument] Sections:", sections)
+
+      // 2. Gera o nome do arquivo
+      const filename = `Proposta_${empresa || 'Cliente'}_${formatDateShort(dataCriacao).replace(/\//g, '-')}.pdf`
+
+      // 3. Gera e baixa o PDF diretamente
+      generateProposalPDF({
+        tokens,
+        filename
+      })
+
+      toast.success("PDF gerado com sucesso!")
+
+    } catch (err) {
+      console.error("[ProposalDocument] PDF error:", err)
+      toast.error("Erro ao gerar o PDF. Tente novamente.")
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  function getStatusBadge() {
+    switch (status) {
+      case "Aprovada":
+        return <Badge variant="default">Aprovada</Badge>
+      case "Concluída":
+        return <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Concluída</Badge>
+      case "Rascunho":
+      default:
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">Rascunho</Badge>
+    }
+  }
+
+  // Se usar o novo template Wa Project, renderizar componente específico
+  if (useWaTemplate) {
+    return (
+      <ProposalTemplateWa
+        empresa={empresa}
+        para={para}
+        projeto={projeto}
+        proposalNumber={proposalNumber}
+        dataCriacao={dataCriacao}
+        sections={sections}
+        highlightedSections={highlightedSections}
+        modeloTrabalho={modeloTrabalho}
+        onDownload={() => {/* implementar se necessário */}}
+      />
+    )
+  }
+
+  return (
+    <div className="flex h-full flex-col rounded-lg border border-border bg-card shadow-sm">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Proposta Comercial</h2>
+          {sections.length > 0 && getStatusBadge()}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setUseWaTemplate(!useWaTemplate)}
+            className="text-xs"
+          >
+            {useWaTemplate ? "Template Clássico" : "Template Wa Project"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPDF}
+            disabled={downloading || sections.length === 0}
+            className="text-primary border-primary/30 hover:bg-secondary"
+          >
+            {downloading ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Baixar PDF
+          </Button>
+          {/* Mark as Concluida - visible when Rascunho and has content */}
+          {status === "Rascunho" && sections.length > 0 && onMarkConcluida && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onMarkConcluida}
+              className="border-[#16a34a]/30 text-[#16a34a] hover:bg-[#dcfce7]"
+            >
+              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+              Marcar como Concluída
+            </Button>
+          )}
+          {/* Aprovar Proposta - visible when Concluída */}
+          {status === "Concluída" && onAprovar && (
+            <Button
+              size="sm"
+              onClick={() => setApproveOpen(true)}
+              className="bg-[#16a34a] text-primary-foreground hover:bg-[#15803d]"
+            >
+              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+              Aprovar Proposta
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Approved info banner */}
+      {status === "Aprovada" && projetoGeradoId && (
+        <div className="flex items-center gap-3 border-b border-border bg-secondary px-4 py-3">
+          <Link2 className="h-4 w-4 shrink-0 text-primary" />
+          <p className="text-sm text-primary">
+            {"Esta proposta foi aprovada e gerou o projeto "}
+            <strong>{`"${projetoGeradoNome || ""}"`}</strong>.{" "}
+            <Link href={`/dashboard/projetos/${projetoGeradoId}`} className="font-medium underline underline-offset-2 hover:text-primary/90">
+              Ver Projeto
+            </Link>
+          </p>
+        </div>
+      )}
+
+      {/* Document content */}
+      <div ref={documentRef} className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {sections.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 text-center">
+            <FileText className="mb-3 h-12 w-12 text-muted-foreground/40" />
+            <p className="text-sm font-medium text-muted-foreground">
+              A proposta sera gerada aqui conforme voce fornecer informacoes ao assistente.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Comece a conversa ao lado!
+            </p>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-[700px] rounded-lg border border-border bg-card p-4 shadow-md lg:p-8">
+            {/* Document Header */}
+            <div className="mb-6 border-b border-border pb-6">
+              <div className="mb-4 text-center">
+                <h1 className="text-base font-extrabold uppercase tracking-widest text-primary lg:text-lg">
+                  PROPOSTA COMERCIAL — PROJETO SOB MEDIDA
+                </h1>
+                {modeloTrabalho && modeloTrabalho !== "Vazio" && (
+                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary/70">
+                    MODELO DE CONTRATAÇÃO: {modeloTrabalho.toUpperCase()}
+                  </p>
+                )}
+              </div>
+              <div className="mx-auto mb-4 h-px w-16 bg-primary/30" />
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                {[
+                  ["PARA", para || "—"],
+                  ["EMPRESA", empresa || "—"],
+                  ["PROJETO", projeto || "—"],
+                  ["DATA", formatDateShort(dataCriacao)],
+                  ["VALIDADE", "30 dias"],
+                  ["PROPOSTA Nº", `WA-${proposalNumber}`],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex gap-1.5 text-xs lg:text-sm">
+                    <span className="min-w-[90px] shrink-0 font-bold text-foreground">{label}:</span>
+                    <span className="text-foreground/70">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sections */}
+            <div className="flex flex-col gap-6">
+              {sections.map((section) => (
+                <div
+                  key={section.key}
+                  className={cn(
+                    "rounded-md px-3 py-2 transition-colors",
+                    highlightedSections.has(section.key) && "section-highlight"
+                  )}
+                >
+                  <h2 className="mb-3 border-b border-border/60 pb-1.5 text-sm font-bold text-primary lg:text-base">
+                    {section.title}
+                  </h2>
+                  <MarkdownRenderer
+                    content={section.content
+                      .split("\n")
+                      .filter((l) => {
+                        const t = l.trim()
+                        if (/^-{1,3}$/.test(t)) return false
+                        if (/^[-*•✅❌]?\s*(PARA|EMPRESA|DATA|VALIDADE|TIPO|MODELO|PROPOSTA\s*N[ºo°]?):/i.test(t)) return false
+                        return true
+                      })
+                      .join("\n")}
+                    className="prose-h3:text-primary prose-h3:font-semibold prose-h4:text-foreground/90"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Approve confirmation dialog */}
+      <AlertDialog open={approveOpen} onOpenChange={setApproveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mb-2 flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#dcfce7]">
+                <CheckCircle className="h-6 w-6 text-[#16a34a]" />
+              </div>
+            </div>
+            <AlertDialogTitle className="text-center">Aprovar Proposta</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Ao aprovar esta proposta, as seguintes acoes serao realizadas automaticamente:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2 rounded-lg bg-secondary/50 p-4">
+            <div className="flex items-start gap-2">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#16a34a]" />
+              <span className="text-sm text-foreground">
+                {`Um novo projeto sera criado com o nome "${empresa}"`}
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#16a34a]" />
+              <span className="text-sm text-foreground">
+                A proposta comercial sera adicionada a base de conhecimento do novo projeto
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#16a34a]" />
+              <span className="text-sm text-foreground">
+                {`O status da proposta sera alterado para "Aprovada"`}
+              </span>
+            </div>
+          </div>
+          <p className="text-center text-xs text-muted-foreground">Deseja prosseguir?</p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setApproveOpen(false)
+                onAprovar?.()
+              }}
+              className="bg-[#16a34a] text-primary-foreground hover:bg-[#15803d]"
+            >
+              Aprovar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
+

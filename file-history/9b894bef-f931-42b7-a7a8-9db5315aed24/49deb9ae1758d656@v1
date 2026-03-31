@@ -1,0 +1,495 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ArrowLeft, Lock } from "lucide-react";
+import { toast } from "sonner";
+
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Form } from "@/components/ui/form";
+import { UserBasicDataForm } from "@/components/forms/UserBasicDataForm";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { validateCPF, formatCPF } from "@/utils/validation";
+import { userService } from "@/services/userService";
+import {
+  UserRole,
+  CreateUserDto,
+  UpdateUserDto,
+  UserSchedule,
+} from "@/types/user";
+import { DEFAULT_USER_PASSWORD } from "@/constants/user";
+
+const userFormSchema = z.object({
+  // Dados básicos
+  fullName: z.string().min(1, "Nome completo é obrigatório"),
+  accessLevel: z.string().min(1, "Perfil é obrigatório"),
+  nickname: z.string().min(1, "Apelido é obrigatório"),
+  whatsapp: z.string().optional(),
+  email: z.string().min(1, "E-mail é obrigatório").email("E-mail inválido"),
+  cpf: z
+    .string()
+    .optional()
+    .refine((val) => !val || validateCPF(val), "CPF inválido"),
+  birthDate: z.string().optional(),
+  cnpj: z.string().optional(),
+  description: z.string().optional(),
+  admissionDate: z.string().min(1, "Data de entrada é obrigatória"),
+  dismissalDate: z.string().optional(),
+});
+
+type UserFormData = z.infer<typeof userFormSchema>;
+
+export default function SalonUserFormPage() {
+  const navigate = useNavigate();
+  const { userId } = useParams();
+  const isEditing = !!userId;
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [currentUserImage, setCurrentUserImage] = useState<string | undefined>(
+    undefined
+  );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Função para criar schedule padrão baseado nos horários do salão
+  const createDefaultSchedule = (): UserSchedule | undefined => {
+    if (!selectedSalon?.openingHours) return undefined;
+
+    const dayNames = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ] as const;
+    const schedule: Partial<UserSchedule> = {};
+
+    dayNames.forEach((day, index) => {
+      const salonHours = selectedSalon.openingHours.find(
+        (h) => h.dayOfWeek === index
+      );
+
+      if (salonHours && salonHours.isOpen) {
+        schedule[day] = {
+          isWorking: true,
+          start: salonHours.open,
+          end: salonHours.close,
+          breaks: [],
+        };
+      } else {
+        schedule[day] = {
+          isWorking: false,
+          breaks: [],
+        };
+      }
+    });
+
+    return schedule as UserSchedule;
+  };
+
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      fullName: "",
+      accessLevel: "",
+      nickname: "",
+      whatsapp: "",
+      email: "",
+      cpf: "",
+      birthDate: "",
+      cnpj: "",
+      description: "",
+      admissionDate: "",
+      dismissalDate: "",
+    },
+  });
+
+  // Clear field error when form values change
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name && fieldErrors[name]) {
+        setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, fieldErrors]);
+
+  const [loading, setLoading] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(false);
+
+  // Load user data in edit mode
+  useEffect(() => {
+    if (isEditing && userId) {
+      loadUserData();
+    }
+  }, [isEditing, userId]);
+
+  const loadUserData = async (): Promise<void> => {
+    if (!userId) return;
+
+    try {
+      setLoadingUser(true);
+      const userData = await userService.getById(userId);
+
+      // Map backend role to form role value
+      let roleValue = "";
+      switch (userData.role) {
+        case "manager":
+        case UserRole.MANAGER:
+          roleValue = "Administrador";
+          break;
+        case "professional":
+        case UserRole.PROFISSIONAL:
+          roleValue = "Profissional";
+          break;
+        case "receptionist":
+        case UserRole.RECEPCIONISTA:
+          roleValue = "Recepcionista";
+          break;
+        default:
+          roleValue = "Profissional";
+          break;
+      }
+
+      // Format birthDate for date input (expects YYYY-MM-DD)
+      let formattedBirthDate = "";
+      if (userData.birthDate) {
+        // Handle both ISO string and date-only formats
+        const dateOnly = userData.birthDate.split("T")[0];
+        formattedBirthDate = dateOnly;
+      }
+
+      // Format admissionDate for date input (expects YYYY-MM-DD)
+      let formattedAdmissionDate = "";
+      if (userData.admissionDate) {
+        const dateOnly = userData.admissionDate.split("T")[0];
+        formattedAdmissionDate = dateOnly;
+      }
+
+      // Format dismissalDate for date input (expects YYYY-MM-DD)
+      let formattedDismissalDate = "";
+      if (userData.dismissalDate) {
+        const dateOnly = userData.dismissalDate.split("T")[0];
+        formattedDismissalDate = dateOnly;
+      }
+
+      form.reset({
+        fullName: userData.name,
+        accessLevel: roleValue,
+        nickname: userData.nickname || "",
+        whatsapp: userData.whatsapp
+          ? userService.formatPhone(userData.whatsapp)
+          : "",
+        email: userData.email,
+        cpf: userData.cpf ? formatCPF(userData.cpf) : "",
+        birthDate: formattedBirthDate,
+        cnpj: userData.cnpj || "",
+        description: userData.description || "",
+        admissionDate: formattedAdmissionDate,
+        dismissalDate: formattedDismissalDate,
+      });
+
+      // Set current user image if exists (try different field names)
+      const imageUrl =
+        userData.profileImage || userData.avatarUrl || userData.avatar;
+      if (imageUrl) {
+        setCurrentUserImage(imageUrl);
+      }
+    } catch (error) {
+      toast.error("Algo deu errado. Tente novamente.");
+      navigate("/salon/users");
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  const onSubmit = async (data: UserFormData): Promise<void> => {
+    if (!selectedSalon?.id) {
+      toast.error("Salão não selecionado.");
+      return;
+    }
+
+    // Clear previous field errors
+    setFieldErrors({});
+
+    try {
+      setLoading(true);
+
+      // Map form role to backend UserRole (using actual backend values)
+      let userRole: UserRole = UserRole.PROFESSIONAL;
+      switch (data.accessLevel) {
+        case "Administrador":
+          userRole = UserRole.MANAGER;
+          break;
+        case "Profissional":
+          userRole = UserRole.PROFESSIONAL;
+          break;
+        case "Recepcionista":
+          userRole = UserRole.RECEPTIONIST;
+          break;
+        default:
+          userRole = UserRole.PROFESSIONAL;
+          break;
+      }
+
+      if (isEditing && userId) {
+        // Update existing user
+        const updateData: UpdateUserDto = {
+          name: data.fullName.trim(),
+          role: userRole,
+          nickname: data.nickname?.trim() || undefined,
+          whatsapp: data.whatsapp?.replace(/\D/g, "") || undefined,
+          cpf: data.cpf?.replace(/\D/g, "") || undefined,
+          cnpj: data.cnpj?.replace(/\D/g, "") || undefined,
+          birthDate: data.birthDate || undefined,
+          email: data.email.trim(),
+          salonId: selectedSalon.id,
+          description: data.description?.trim() || "",
+          admissionDate: data.admissionDate || undefined,
+          dismissalDate: data.dismissalDate || undefined,
+        };
+
+        await userService.update(userId, updateData);
+
+        // Upload profile image if changed
+        let imageUploadFailed = false;
+        if (profileImage) {
+          try {
+            await userService.uploadAvatar(userId, profileImage);
+          } catch (error) {
+            imageUploadFailed = true;
+          }
+        }
+
+        if (imageUploadFailed) {
+          toast.warning("Usuário atualizado, mas a foto não foi salva.");
+        } else {
+          toast.success("Usuário atualizado com sucesso!");
+        }
+      } else {
+        // Create new user with default schedule based on salon hours
+        const defaultSchedule = createDefaultSchedule();
+
+        const createData: CreateUserDto = {
+          name: data.fullName.trim(),
+          email: data.email.trim(),
+          password: DEFAULT_USER_PASSWORD,
+          role: userRole,
+          nickname: data.nickname?.trim() || undefined,
+          whatsapp: data.whatsapp?.replace(/\D/g, "") || undefined,
+          cpf: data.cpf?.replace(/\D/g, "") || undefined,
+          cnpj: data.cnpj?.replace(/\D/g, "") || undefined,
+          birthDate: data.birthDate || undefined,
+          salonId: selectedSalon.id,
+          schedule: defaultSchedule,
+          description: data.description?.trim() || "",
+          admissionDate: data.admissionDate || undefined,
+          dismissalDate: data.dismissalDate || undefined,
+        };
+
+        const newUser = await userService.create(createData);
+
+        // Upload profile image if provided
+        let imageUploadFailed = false;
+        if (profileImage && newUser.id) {
+          try {
+            await userService.uploadAvatar(newUser.id, profileImage);
+          } catch (error) {
+            imageUploadFailed = true;
+          }
+        }
+
+        if (imageUploadFailed) {
+          toast.warning(
+            `Usuário cadastrado, mas a foto não foi salva. Senha padrão: ${DEFAULT_USER_PASSWORD}`
+          );
+        } else {
+          toast.success(
+            `Usuário cadastrado com sucesso! Senha padrão: ${DEFAULT_USER_PASSWORD}`
+          );
+        }
+
+        trackSeverinoEvent('cadastro_do_profissional', { description: `Profissional: ${createData.name}` });
+      }
+
+      navigate("/salon/users");
+    } catch (error: unknown) {
+      // Extract error message from response
+      const apiError = error as {
+        response?: {
+          data?: { message?: string; error?: string };
+          status?: number;
+        };
+        message?: string;
+      };
+      const errorMessage =
+        apiError?.response?.data?.message ||
+        apiError?.response?.data?.error ||
+        apiError?.message ||
+        "Algo deu errado. Tente novamente.";
+
+      // Handle specific conflict errors (409)
+      if (apiError?.response?.status === 409) {
+        const errors: Record<string, string> = {};
+
+        // Check for email conflict
+        if (
+          errorMessage.toLowerCase().includes("e-mail") ||
+          errorMessage.toLowerCase().includes("email") ||
+          errorMessage.toLowerCase().includes("endereço")
+        ) {
+          errors.email = "Este e-mail já está cadastrado";
+        }
+
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+          // Focus on first error field
+          const firstErrorField = Object.keys(errors)[0];
+          form.setFocus(firstErrorField as keyof UserFormData);
+        }
+      }
+
+      // Handle validation errors (400)
+      if (apiError?.response?.status === 400) {
+        const errors: Record<string, string> = {};
+
+        // Check for CPF validation error
+        if (errorMessage.toLowerCase().includes("cpf")) {
+          errors.cpf = "CPF inválido";
+        }
+
+        // Check for email validation error
+        if (
+          errorMessage.toLowerCase().includes("email") ||
+          errorMessage.toLowerCase().includes("e-mail")
+        ) {
+          errors.email = "E-mail inválido";
+        }
+
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+        }
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoBack = (): void => {
+    navigate("/salon/users");
+  };
+
+  const pageTitle = isEditing
+    ? "Editar Dados Básicos"
+    : "Cadastrar Novo Usuário";
+  const submitButtonText = isEditing
+    ? "Salvar Alterações"
+    : "Cadastrar Usuário";
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleGoBack}
+            className="h-10 w-10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="page-title">{pageTitle}</h1>
+        </div>
+
+        {loadingUser ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-[calc(100vh-140px)] md:h-auto">
+              <div className="flex-1 overflow-y-auto md:overflow-visible p-1">
+                <Card className="border-none md:border md:shadow-sm">
+                  <CardContent className="p-0 md:p-6">
+                    <UserBasicDataForm
+                      control={form.control}
+                      isEditing={isEditing}
+                      profileImage={profileImage}
+                      setProfileImage={setProfileImage}
+                      currentUserImage={currentUserImage}
+                      fieldErrors={fieldErrors}
+                    />
+
+                    {/* Password info for new users */}
+                    {!isEditing && (
+                      <div className="mt-6 p-4 bg-primary/5 border border-primary/10 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5">
+                            <Lock className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-primary">Acesso Inicial</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              O usuário será criado com a senha padrão:{" "}
+                              <code className="bg-primary/10 px-1.5 py-0.5 rounded font-mono text-primary">
+                                Senha@123
+                              </code>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Sticky Footer */}
+              <div className="sticky bottom-0 left-0 right-0 p-4 bg-background border-t mt-auto flex flex-col md:flex-row justify-end gap-3 z-10 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] mx-[-1rem] md:mx-0 md:rounded-b-lg">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleGoBack}
+                  className="w-full md:w-auto order-2 md:order-1 salon-input"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="salon-button-primary w-full md:w-auto order-1 md:order-2"
+                  disabled={loading || !selectedSalon?.active}
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Salvando...
+                    </>
+                  ) : (
+                    submitButtonText
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
+      </div>
+    </EasySalonLayout>
+  );
+}

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposta Comercial — {{NOME_CLIENTE}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0047ba;
+            --text: #2e2e2e;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+            --page-padding: 56px;
+            --footer-height: 120px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        /* ── DYNAMIC DOCUMENT CONTAINER ── */
+        .document {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 24px 0;
+            position: relative;
+        }
+
+        /* ── DYNAMIC CONTENT FLOW ── */
+        .content-flow {
+            width: 210mm;
+            background: #fcfcfc;
+            margin: 0 auto;
+            position: relative;
+            overflow: visible;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+
+        /* ── BACKGROUND FOR ALL PAGES ── */
+        .content-flow::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 210mm;
+            height: 100vh;
+            background: url('fundo-center.png') center center no-repeat;
+            background-size: 602px auto;
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── PAGE STRUCTURE ── */
+        .page-content {
+            position: relative;
+            z-index: 1;
+            padding: var(--page-padding) var(--page-padding) var(--footer-height);
+            min-height: 297mm;
+            page-break-after: always;
+        }
+
+        /* ── COVER PAGE SPECIFIC ── */
+        .cover-page {
+            page-break-after: always;
+            position: relative;
+        }
+
+        .cover-page .page-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        /* ── CONTINUOUS CONTENT PAGES ── */
+        .flow-page {
+            page-break-inside: auto;
+        }
+
+        .flow-page:last-of-type {
+            page-break-after: auto;
+        }
+
+        /* ── HEADER (COVER PAGE) ── */
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            display: inline-block;
+            margin-bottom: 64px;
+        }
+        .logo img {
+            width: 100px;
+            height: 37px;
+            display: block;
+        }
+
+        .cover-title {
+            margin-bottom: 40px;
+        }
+        .cover-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            line-height: 1.2;
+            margin-bottom: 0;
+        }
+        .cover-title h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-top: 0;
+            margin-bottom: 40px;
+        }
+
+        .cover-info {
+            margin-bottom: 40px;
+        }
+        .cover-info .cover-date {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .cover-info p {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .cover-info strong {
+            font-weight: 600;
+        }
+
+        /* ── TYPOGRAPHY ── */
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--blue);
+            margin: 32px 0 16px 0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        h2:first-of-type,
+        .flow-page h2:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 24px 0 8px 0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 16px 0 8px 0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* ── BODY TEXT WITH FLOW CONTROL ── */
+        p {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            orphans: 3;
+            widows: 3;
+            break-inside: avoid-page;
+        }
+
+        strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* ── LISTS WITH FLOW CONTROL ── */
+        ul, ol {
+            margin-bottom: 16px;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+
+        ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+
+        ol {
+            list-style: decimal;
+            padding-left: 20px;
+        }
+
+        ul li, ol li {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            break-inside: avoid;
+        }
+
+        /* ── FUNCTIONAL SECTIONS WITH FLOW CONTROL ── */
+        .func-item {
+            margin-bottom: 16px;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+        .func-item strong {
+            color: var(--text);
+        }
+
+        .phase {
+            margin-bottom: 8px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+        }
+        .phase strong {
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        .team-role {
+            margin-bottom: 20px;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+        .team-role h4 {
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+
+        .investment-total {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 20px 0 16px 0;
+        }
+
+        .payment-condition {
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+        }
+
+        /* ── SECTIONS FOR BETTER FLOW CONTROL ── */
+        .content-section {
+            break-inside: avoid-page;
+            margin-bottom: 24px;
+        }
+
+        .content-section.allow-break {
+            break-inside: auto;
+        }
+
+        /* ── CLOSING SECTION ── */
+        .closing {
+            margin-top: 40px;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+        .closing-quote {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        .company-info {
+            margin-top: 24px;
+        }
+        .company-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .validity {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── FOOTER WITH AUTO PAGE NUMBERING ── */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px 0 0;
+            z-index: 10;
+            background: rgba(252, 252, 252, 0.95);
+            backdrop-filter: blur(2px);
+            counter-increment: page;
+        }
+        .footer-line {
+            height: 2px;
+            background: #e5e7eb80;
+            margin-bottom: 24px;
+        }
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-logo {
+            display: inline-block;
+        }
+        .footer-logo img {
+            width: 74px;
+            height: 27px;
+            display: block;
+        }
+        .pg-num::after {
+            content: counter(page);
+            font-size: 12.5px;
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        /* ── PRINT STYLES ── */
+        @media print {
+            body {
+                background: #fcfcfc;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                counter-reset: page;
+            }
+
+            .document {
+                padding: 0;
+            }
+
+            .content-flow {
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .page-content {
+                page-break-after: always;
+                padding: 0 0 var(--footer-height) 0;
+            }
+
+            .flow-page:last-of-type .page-content {
+                page-break-after: auto;
+            }
+
+            .footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #fcfcfc;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                z-index: 999;
+                padding: 24px 0 0;
+            }
+
+            /* Enhanced page break controls */
+            h2, h3, h4 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            .func-item, .team-role, .phase, .content-section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .closing {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            ul, ol {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            p {
+                orphans: 3;
+                widows: 3;
+            }
+
+            /* Background for print */
+            .content-flow::before {
+                position: fixed;
+                background-attachment: fixed;
+            }
+        }
+
+        @page {
+            size: A4;
+            margin: 56px;
+            /* Remove headers/footers do navegador */
+            @top-left { content: ""; }
+            @top-center { content: ""; }
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-center { content: ""; }
+            @bottom-right { content: ""; }
+        }
+
+        /* ── JAVASCRIPT FALLBACK STYLES ── */
+        .js-page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+
+        /* ── PREFERS REDUCED MOTION ── */
+        @media (prefers-reduced-motion: reduce) {
+            .content-flow::before {
+                background-attachment: scroll;
+            }
+        }
+
+        /* ── RESPONSIVE ADAPTATIONS ── */
+        @media screen and (max-width: 220mm) {
+            .document {
+                padding: 12px;
+            }
+
+            .content-flow {
+                width: 100%;
+                max-width: 210mm;
+            }
+
+            :root {
+                --page-padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document">
+    <div class="content-flow">
+
+        <!-- COVER PAGE -->
+        <div class="cover-page">
+            <div class="page-content">
+                <div class="header">
+                    <div class="logo">
+                        <img src="Logo completa.png" alt="{{NOME_EMPRESA}}">
+                    </div>
+
+                    <div class="cover-title">
+                        <h1>{{TITULO_PROPOSTA}}</h1>
+                        <h2>{{NOME_CLIENTE}}</h2>
+                    </div>
+
+                    <div class="cover-info">
+                        <div class="cover-date">{{DATA_PROPOSTA}} | Válido por {{DIAS_VALIDADE}} dias</div>
+                        <p><strong>Para:</strong> {{CLIENTE_EMPRESA}}</p>
+                        <p><strong>Tipo:</strong> {{TIPO_ESCOPO}}</p>
+                        {{INFORMACOES_ADICIONAIS_CAPA}}
+                    </div>
+                </div>
+
+                <!-- CONTEÚDO INICIAL DA CAPA (se houver) -->
+                <div class="content-section allow-break">
+                    {{CONTEUDO_INICIAL_CAPA}}
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO CONTÍNUO -->
+        <div class="flow-page">
+            <div class="page-content">
+
+                <!-- SOBRE A EMPRESA -->
+                <div class="content-section">
+                    <h2>{{TITULO_SOBRE_EMPRESA}}</h2>
+                    <p>{{DESCRICAO_EMPRESA}}</p>
+
+                    {{SECAO_SERVICOS}}
+
+                    <h2>{{TITULO_CLIENTES}}</h2>
+                    {{LISTA_CLIENTES}}
+
+                    {{INFORMACOES_ADICIONAIS_EMPRESA}}
+                </div>
+
+                <!-- SOBRE O PROJETO -->
+                <div class="content-section allow-break">
+                    <h2>{{TITULO_PROJETO}}</h2>
+                    <h3>{{SUBTITULO_PROJETO}}</h3>
+
+                    {{DESCRICAO_PROJETO}}
+                </div>
+
+                <!-- FUNCIONALIDADES -->
+                <div class="content-section allow-break">
+                    <h2>{{TITULO_FUNCIONALIDADES}}</h2>
+                    {{LISTA_FUNCIONALIDADES}}
+                    {{FUNCIONALIDADES_ADICIONAIS}}
+                </div>
+
+                <!-- INTEGRAÇÕES -->
+                <div class="content-section">
+                    <h2>{{TITULO_INTEGRACOES}}</h2>
+                    {{DESCRICAO_INTEGRACOES}}
+                </div>
+
+                <!-- MODELO DE TRABALHO -->
+                <div class="content-section allow-break">
+                    <h2>{{TITULO_MODELO_TRABALHO}}</h2>
+                    {{DESCRICAO_MODELO}}
+
+                    <h3>{{TITULO_FASES}}</h3>
+                    {{LISTA_FASES}}
+                </div>
+
+                <!-- EQUIPE -->
+                <div class="content-section allow-break">
+                    <h2>{{TITULO_EQUIPE}}</h2>
+                    {{DESCRICAO_EQUIPE}}
+                    {{LISTA_MEMBROS_EQUIPE}}
+                </div>
+
+                <!-- CRONOGRAMA -->
+                <div class="content-section">
+                    <h2>{{TITULO_CRONOGRAMA}}</h2>
+                    {{PRAZO_TOTAL}}
+                    {{CRONOGRAMA_DETALHADO}}
+                    {{OBSERVACOES_CRONOGRAMA}}
+                </div>
+
+                <!-- INVESTIMENTO -->
+                <div class="content-section">
+                    <h2>{{TITULO_INVESTIMENTO}}</h2>
+                    {{VALOR_TOTAL}}
+
+                    <h3>{{TITULO_CONDICOES_PAGAMENTO}}</h3>
+                    {{CONDICOES_PAGAMENTO}}
+                </div>
+
+                <!-- ENTREGÁVEIS -->
+                <div class="content-section">
+                    <h2>{{TITULO_ENTREGAVEIS}}</h2>
+                    {{LISTA_ENTREGAVEIS}}
+                </div>
+
+                <!-- PRÓXIMOS PASSOS -->
+                <div class="content-section">
+                    <h2>{{TITULO_PROXIMOS_PASSOS}}</h2>
+                    {{LISTA_PROXIMOS_PASSOS}}
+                    {{MENSAGEM_FINAL_PASSOS}}
+                </div>
+
+                <!-- ENCERRAMENTO -->
+                <div class="closing">
+                    {{CITACAO_ENCERRAMENTO}}
+
+                    <div class="company-info">
+                        {{INFORMACOES_EMPRESA_COMPLETA}}
+                    </div>
+
+                    <div class="validity">
+                        {{TEXTO_VALIDADE}}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- FOOTER UNIVERSAL -->
+<div class="footer">
+    <div class="footer-line"></div>
+    <div class="footer-row">
+        <div class="footer-logo">
+            <img src="Logo completa.png" alt="{{NOME_EMPRESA}}">
+        </div>
+        <span class="pg-num"></span>
+    </div>
+</div>
+
+<!-- SCRIPT PARA CONTROLE DINÂMICO DE PÁGINAS (OPCIONAL) -->
+<script>
+// Sistema opcional para controle dinâmico de quebras de página
+// Pode ser usado pelo gerador de propostas para otimizar layout
+document.addEventListener('DOMContentLoaded', function() {
+    // Função para ajustar quebras de página dinamicamente
+    function optimizePageBreaks() {
+        const sections = document.querySelectorAll('.content-section');
+        const pageHeight = 297; // mm - altura da página A4
+        const footerHeight = 120; // mm
+        const availableHeight = pageHeight - footerHeight;
+
+        let currentHeight = 0;
+
+        sections.forEach(function(section) {
+            const sectionHeight = section.offsetHeight * 0.352778; // px to mm conversion
+
+            // Se a seção não cabe na página atual, força quebra
+            if (currentHeight + sectionHeight > availableHeight) {
+                section.classList.add('js-page-break');
+                currentHeight = sectionHeight;
+            } else {
+                currentHeight += sectionHeight;
+            }
+        });
+    }
+
+    // Executar otimização após carregamento completo
+    if (window.location.search.includes('optimize=true')) {
+        setTimeout(optimizePageBreaks, 100);
+    }
+});
+
+// Função para exportar variáveis utilizadas (para debugging)
+function getTemplateVariables() {
+    const content = document.documentElement.outerHTML;
+    const variables = content.match(/\{\{[A-Z_]+\}\}/g) || [];
+    return [...new Set(variables)].sort();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,540 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { Search, Settings } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { DataTable, Column, TableAction } from "@/components/ui/data-table";
+import { Badge } from "@/components/ui/badge";
+import { ServicesAccordion } from "@/components/ui/services-accordion";
+import { ServicePricingModal, ServicePricingData, ServicePricingInput } from "@/components/modals/ServicePricingModal";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { serviceService } from "@/services/serviceService";
+import { Service, ServicePriceType } from "@/types/service";
+import { Specialty } from "@/types/specialty";
+import { toast } from "@/components/ui/use-toast";
+import { analytics } from "@/lib/analytics";
+
+interface ServiceExtended extends Service {
+  isDefaultService?: boolean;
+  isAvailableInSalon?: boolean;
+  maxPrice?: number;
+  commissionPercentage?: number;
+  administrativeCostPercentage?: number;
+  fixedCost?: number;
+  suppliesCost?: number;
+  priceType?: string;
+}
+
+interface ServiceWithAction extends ServiceExtended {
+  specialtyName?: string;
+}
+
+interface SpecialtyWithServices extends Specialty {
+  services: ServiceExtended[];
+}
+
+export default function ServicesPage() {
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [specialties, setSpecialties] = useState<SpecialtyWithServices[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [serviceToPricing, setServiceToPricing] =
+    useState<ServicePricingInput | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  useEffect(() => {
+    analytics.trackEvent("services_page_viewed", {});
+  }, []);
+
+  const loadData = useCallback(async (salonId: string, tenantId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const activeData = await serviceService.listActive(salonId, tenantId);
+
+      if (!activeData || !activeData.groupedServices) {
+        setServiceToPricing(null);
+        setSpecialties([]);
+        return;
+      }
+
+      // Transform the grouped services into the expected format
+      const specialtiesWithServices: SpecialtyWithServices[] = [];
+
+      Object.values(activeData.groupedServices).forEach((group) => {
+        const specialty = group.specialty;
+        const services = group.services.map(
+          (service) =>
+          ({
+            ...service,
+            isDefaultService: service.isStandard,
+            isAvailableInSalon: service.isActive,
+          } as ServiceExtended)
+        );
+
+        specialtiesWithServices.push({
+          ...specialty,
+          active: true,
+          salonId: selectedSalon?.id || "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          services: services.map(s => ({ ...s, specialtyName: specialty.name })),
+        } as SpecialtyWithServices);
+      });
+
+      // Sort specialties alphabetically by name
+      specialtiesWithServices.sort((a, b) => {
+        const nameA = a.name?.toLowerCase() || "";
+        const nameB = b.name?.toLowerCase() || "";
+        return nameA.localeCompare(nameB, "pt-BR");
+      });
+
+      setSpecialties(specialtiesWithServices);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao carregar dados dos serviços"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch specialties and services when salon is selected
+  useEffect(() => {
+    if (selectedSalon?.id && selectedSalon?.tenantId) {
+      loadData(selectedSalon.id, selectedSalon.tenantId);
+    }
+  }, [selectedSalon, loadData]);
+
+  // Handle reload button click with proper validation
+  const handleReload = useCallback(() => {
+    if (!selectedSalon?.id || !selectedSalon?.tenantId) {
+      setError("Nenhum salão selecionado. Por favor, selecione um salão.");
+      return;
+    }
+
+    loadData(selectedSalon.id, selectedSalon.tenantId);
+  }, [selectedSalon, loadData]);
+
+  // Filter specialties and services based on search term
+  const filteredSpecialties = useMemo(() => {
+    if (!searchTerm) {
+      return specialties; // All specialties are already active
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+
+    // Filter specialties and their services
+    return specialties
+      .map((specialty) => {
+        // Check if specialty name matches
+        const specialtyMatches = specialty.name
+          .toLowerCase()
+          .includes(searchLower);
+
+        // Filter services that match the search term
+        const filteredServices = specialty.services.filter((service) =>
+          service.name.toLowerCase().includes(searchLower)
+        );
+
+        // If specialty matches, show all its services
+        // If specialty doesn't match but has matching services, show only matching services
+        if (specialtyMatches) {
+          return specialty;
+        } else if (filteredServices.length > 0) {
+          return {
+            ...specialty,
+            services: filteredServices,
+          };
+        }
+        return null;
+      })
+      .filter((specialty) => specialty !== null) as SpecialtyWithServices[];
+  }, [specialties, searchTerm]);
+
+  const handleConfigService = (
+    service: ServiceExtended,
+    specialty: Specialty
+  ) => {
+    // Converter valores string ou decimais para números
+    const parseValueFromBackend = (
+      value: string | number | undefined | null
+    ): number => {
+      if (value === undefined || value === null) return 0;
+      if (typeof value === "string") {
+        return parseFloat(value) || 0;
+      }
+      return Number(value) || 0;
+    };
+
+    // Parse dos valores do backend
+    const priceValue = parseValueFromBackend(service.price);
+    const suppliesValue = parseValueFromBackend(service.suppliesCost);
+    const fixedCostValue = parseValueFromBackend(service.fixedCost);
+    const adminPercentValue = parseValueFromBackend(
+      service.administrativeCostPercentage
+    );
+    const maxValueNum = parseValueFromBackend(service.maxPrice);
+    const commissionValue = parseValueFromBackend(
+      service.commissionPercentage || service.commission
+    );
+
+    const pricingData = {
+      id: service.id,
+      service: service.name,
+      specialty: specialty.name,
+      duration: formatDurationToTime(service.duration || 30),
+      priceType: service.priceType || "Fixo",
+      grossValue: formatPriceToInput(priceValue),
+      maxValue: formatPriceToInput(maxValueNum),
+      adminFeeFixed: formatPriceToInput(fixedCostValue),
+      adminFeePercent: formatPercentageToInput(adminPercentValue),
+      supplies: formatPriceToInput(suppliesValue),
+      netValue: "0,00",
+      commissionFixed: "0,00",
+      commissionPercent: formatPercentageToInput(
+        commissionValue || service.commissionPercentage || 50
+      ),
+      isStandard: service.isDefaultService || false,
+    };
+
+    setServiceToPricing(pricingData);
+    setIsPricingModalOpen(true);
+  };
+
+  const handleSaveServicePricing = async (
+    data: ServicePricingData
+  ): Promise<void> => {
+    if (!selectedSalon?.id || !serviceToPricing) return;
+
+    // Converter valores de vírgula para ponto antes de enviar ao backend
+    const parseValue = (value: string): number => {
+      if (!value || value === "") return 0;
+      return parseFloat(value.replace(/\./g, "").replace(",", ".")) || 0;
+    };
+
+    // Converter duração de HH:MM para minutos
+    const parseDuration = (timeStr: string): number => {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    // Preparar dados para o backend com valores numéricos
+    const pricingPayload = {
+      duration: parseDuration(data.duration),
+      priceType: data.priceType,
+      price: parseValue(data.grossValue),
+      maxValue:
+        data.priceType === "A partir de"
+          ? parseValue(data.maxValue || "0")
+          : null,
+      fixedCost: parseValue(data.adminFeeFixed),
+      administrativeCostPercentage: parseValue(data.adminFeePercent),
+      suppliesCost: parseValue(data.supplies),
+      commission: parseValue(data.commissionPercent),
+    };
+
+    try {
+      setIsSaving(true);
+      await serviceService.updateServicePricing(
+        serviceToPricing.id,
+        pricingPayload
+      );
+
+      toast({
+        title: "Sucesso",
+        description: "Precificação do serviço salva com sucesso",
+        variant: "success",
+      });
+
+      analytics.trackEvent("service_created", {
+        price: pricingPayload.price,
+        duration: pricingPayload.duration,
+        accepts_online: true, // Adicionado para satisfazer o esquema
+      });
+
+      setIsPricingModalOpen(false);
+      setServiceToPricing(null);
+      if (selectedSalon?.id && selectedSalon?.tenantId) {
+        await loadData(selectedSalon.id, selectedSalon.tenantId);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Erro ao salvar precificação do serviço",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Format price as Brazilian currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(price);
+  };
+
+  // Format duration in minutes to readable format
+  const formatDuration = (minutes: string | number) => {
+    const mins = typeof minutes === "string" ? parseInt(minutes) : minutes;
+    if (mins < 60) {
+      return `${mins} min`;
+    }
+    const hours = Math.floor(mins / 60);
+    const remainingMinutes = mins % 60;
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h${remainingMinutes}min`;
+  };
+
+  // Format duration to HH:MM format for the form
+  const formatDurationToTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  // Format price to Brazilian currency input format
+  const formatPriceToInput = (value: number | undefined | null) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return "0,00";
+    }
+    return value.toFixed(2).replace(".", ",");
+  };
+
+  // Format percentage to Brazilian format (without dividing by 100)
+  const formatPercentageToInput = (value: number | undefined | null) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return "0,0";
+    }
+
+    return Number(value).toFixed(1).replace(".", ",");
+  };
+
+  // Check if no salon is selected - show message
+  if (!selectedSalon) {
+    return (
+      <EasySalonLayout
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle="Salão"
+        sideNavItems={navItems}
+      >
+        <PageHeader
+          title="Serviços"
+          subtitle="Gerencie os serviços oferecidos no salão"
+          disabledActions={!selectedSalon?.active}
+        />
+        <div className="flex flex-col items-center justify-center h-48 space-y-4">
+          <p className="text-lg text-muted-foreground text-center">
+            Nenhum salão selecionado
+          </p>
+          <p className="text-body text-muted-foreground text-center">
+            Por favor, selecione um salão para continuar
+          </p>
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  // Configuração das colunas para a tabela de serviços
+  const servicesColumns: Column<ServiceWithAction>[] = [
+    {
+      key: "name",
+      header: "NOME DO SERVIÇO",
+      width: "250px",
+      render: (_value: unknown, row: ServiceWithAction) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{row.name}</span>
+          {row.isDefaultService && (
+            <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
+              Padrão
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "price",
+      header: "VALOR",
+      width: "140px",
+      render: (_value: unknown, row: ServiceWithAction) => {
+        const price = formatPrice(Number(row.price));
+        if (row.priceType === ServicePriceType.FIXED || !row.maxPrice) {
+          return price;
+        }
+        const maxPrice = formatPrice(Number(row.maxPrice));
+        return `${price} - ${maxPrice}`;
+      },
+    },
+    {
+      key: "duration",
+      header: "DURAÇÃO",
+      width: "120px",
+      render: (_value: unknown, row: ServiceWithAction) =>
+        formatDuration(row.duration),
+    },
+    {
+      key: "isAvailableInSalon",
+      header: "STATUS",
+      width: "100px",
+      render: (value: unknown) => (
+        <Badge className={value ? "salon-badge-active" : "salon-badge-inactive"}>
+          {value ? "Ativo" : "Inativo"}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (loading) {
+    return (
+      <EasySalonLayout
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle={selectedSalon?.name || "Salão"}
+        sideNavItems={navItems}
+      >
+        <PageHeader
+          title="Serviços"
+          subtitle="Gerencie os serviços oferecidos no salão"
+          disabledActions={!selectedSalon?.active}
+        />
+        <div className="flex justify-center items-center h-48">
+          <LoadingSpinner size="md" text="Carregando serviços..." />
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <EasySalonLayout
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle={selectedSalon?.name || "Salão"}
+        sideNavItems={navItems}
+      >
+        <PageHeader
+          title="Serviços"
+          subtitle="Gerencie os serviços oferecidos no salão"
+          disabledActions={!selectedSalon?.active}
+        />
+        <div className="flex justify-center items-center h-48">
+          <div className="text-center">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={handleReload} variant="default">
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <PageHeader
+        title="Serviços"
+        subtitle="Gerencie os serviços oferecidos no salão"
+        disabledActions={!selectedSalon?.active}
+      />
+
+      {/* Search Field */}
+      <div className="mb-6">
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Buscar por especialidade ou serviço..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 salon-input"
+          />
+        </div>
+      </div>
+
+      {filteredSpecialties.length === 0 ? (
+        <div className="flex justify-center items-center h-48">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-4">
+              {searchTerm
+                ? "Nenhum serviço ou especialidade encontrada para a busca"
+                : "Nenhum serviço encontrado"}
+            </p>
+            <Button onClick={handleReload} variant="default">
+              Recarregar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <ServicesAccordion
+          items={filteredSpecialties.map((specialty) => ({
+            id: specialty.id,
+            title: specialty.name,
+            serviceCount: specialty.services.length,
+            content: (
+              <DataTable<ServiceWithAction>
+                data={specialty.services as ServiceWithAction[]}
+                columns={servicesColumns}
+                embedded
+                actions={[
+                  {
+                    label: "Configurar",
+                    icon: <Settings className="h-4 w-4" />,
+                    onClick: (row: ServiceWithAction): void => {
+                      handleConfigService(row, specialty);
+                    },
+                  },
+                ] satisfies TableAction<ServiceWithAction>[]}
+                mobileView="cards"
+                mobileCardConfig={{
+                  title: "name",
+                  subtitle: "specialtyName",
+                }}
+              />
+            ),
+          }))}
+          defaultOpenIndex={0}
+        />
+      )}
+
+      {/* Service Pricing Modal */}
+      {serviceToPricing && (
+        <ServicePricingModal
+          isOpen={isPricingModalOpen}
+          onClose={() => {
+            setIsPricingModalOpen(false);
+            setServiceToPricing(null);
+          }}
+          service={serviceToPricing ?? undefined}
+          onSave={handleSaveServicePricing}
+        />
+      )}
+    </EasySalonLayout>
+  );
+}

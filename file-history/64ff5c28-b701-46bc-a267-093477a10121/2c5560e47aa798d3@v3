@@ -1,0 +1,83 @@
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { X } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const alertVariants = cva(
+  "relative w-full rounded-[16px] border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg]:h-4 [&>svg]:w-4",
+  {
+    variants: {
+      variant: {
+        default: "bg-card text-foreground",
+        destructive:
+          "border-[#CE4836]/50 text-[#CE4836] bg-[#FFF4F4] [&>svg]:text-[#CE4836]",
+        success:
+          "border-[#7DBA44]/50 text-[#49870E] bg-[#F2FBE8] [&>svg]:text-[#49870E]",
+        warning:
+          "border-[#EBB33A]/50 text-[#C28604] bg-[#FEF6E4] [&>svg]:text-[#C28604]",
+        info:
+          "border-[#007AFF]/50 text-[#1166C3] bg-[#F1F4FF] [&>svg]:text-[#1166C3]",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+const Alert = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
+>(({ className, variant, ...props }, ref) => (
+  <div
+    ref={ref}
+    role="alert"
+    className={cn(alertVariants({ variant }), className)}
+    {...props}
+  />
+))
+Alert.displayName = "Alert"
+
+const AlertTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h5
+    ref={ref}
+    className={cn("mb-1 text-[13px] font-medium leading-none tracking-tight", className)}
+    {...props}
+  />
+))
+AlertTitle.displayName = "AlertTitle"
+
+const AlertDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("text-[12px] [&_p]:leading-relaxed", className)}
+    {...props}
+  />
+))
+AlertDescription.displayName = "AlertDescription"
+
+const AlertClose = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, ...props }, ref) => (
+  <button
+    ref={ref}
+    className={cn(
+      "absolute right-3 top-3 p-0.5 rounded-sm opacity-60 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      className
+    )}
+    {...props}
+  >
+    <X className="h-4 w-4" />
+  </button>
+))
+AlertClose.displayName = "AlertClose"
+
+export { Alert, AlertTitle, AlertDescription, AlertClose }

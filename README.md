@@ -71,25 +71,27 @@ Em seguida, abra qualquer projeto e rode `/setup-project` para configurar o Anal
 
 ## Como funciona
 
-Todo prompt passa por três camadas antes de qualquer arquivo ser alterado:
+### Ativação Manual de Agentes
+
+Os agentes são ativados **apenas** quando explicitamente chamados:
 
 ```
-Você envia o prompt
-       ↓
-🔍 Analista — classifica e delega ao skill correto (só lê, sem prompt)
-       ↓
-Skill ativado — lê arquivos e analisa a estrutura (sem prompt)
-       ↓
-Gate de permissão — "detectei X, vou fazer Y. Posso prosseguir?"
-       ↓
-Você aprova
-       ↓
-Para cada arquivo editado → mostra o diff → você aprova
-       ↓
-🔄 Ralph-Loop — itera automaticamente se encontrar falhas (exceto database)
+Você chama explicitamente:  /analista  ou  /designer  ou  /backend
+                                    ↓
+       🔍 Analista — classifica e delega (se /analista) 
+                         ou
+       Skill específico ativado — lê arquivos e analisa
+                                    ↓
+       Gate de permissão — "detectei X, vou fazer Y. Posso prosseguir?"
+                                    ↓
+                            Você aprova
+                                    ↓
+       Para cada arquivo editado → mostra o diff → você aprova
+                                    ↓
+       🔄 Ralph-Loop — itera automaticamente se encontrar falhas
 ```
 
-Você nunca é surpreendido por uma mudança que não viu. Tudo passa pela sua mão antes de ser salvo.
+**Controle total:** Agentes só rodam quando você decide. Use `/inactive-agents` para desabilitar completamente.
 
 ## Permissões e segurança
 
@@ -109,13 +111,15 @@ O `settings.json` global define três camadas de proteção:
 
 | Skill | Emoji | Descrição |
 |-------|-------|-----------|
+| **Core & Controle** | | |
+| `analista` | 🔍 | Classifica tarefa e aciona skill apropriado (ativação manual apenas) |
+| `inactive-agents` | 🚫 | **NEW:** Desativa sistema de agentes temporariamente, permite respostas diretas do Claude |
+| `setup-project` | ⚙️ | Configura um projeto novo para usar os agentes globais |
+| `atualizar-skill-agent` | 🔄 | Sincroniza os skills com a versão mais recente do GitHub |
 | **Projeto & Setup** | | |
 | `project-manager` | 📋 | **NEW:** Business Canvas obrigatório, tech stack selection, inception de projeto. Força investigação de negócio ANTES de sugerir tecnologia |
 | `github-integrator` | 🔗 | **NEW:** Git workflows seguros, bloqueia push direto para main, commits semânticos obrigatórios |
 | `devops` | 🚀 | **NEW:** CI/CD, production deployment, monitoring setup. Production Readiness Checklist obrigatório |
-| `analista` | 🔍 | Orquestrador central — classifica e delega ao skill correto |
-| `setup-project` | ⚙️ | Configura um projeto novo para usar os agentes globais |
-| `atualizar-skill-agent` | 🔄 | Sincroniza os skills com a versão mais recente do GitHub |
 | **Design & Frontend** | | |
 | `designer` | 🟣 | Valida specs, DS consistency, planeja implementações. **Enhanced:** Visual references (Awwwards), Pencil integration |
 | `designer-ux` | 🎨 | Auditoria UX (Nielsen), acessibilidade WCAG 2.2, design de interação e fundamentos visuais |
@@ -187,7 +191,11 @@ Ao criar um projeto novo, rode uma vez:
 /setup-project
 ```
 
-Isso injeta automaticamente o bloco do Analista no `CLAUDE.md` local do projeto.
+Isso configura o projeto para usar os agentes via `CLAUDE.md` local.
+
+**Modo de uso:**
+- **Manual:** Chame `/analista` ou skills específicos quando precisar
+- **Desativar:** Use `/inactive-agents` para respostas diretas do Claude
 
 ## Manter skills e plugins atualizados
 
@@ -237,15 +245,16 @@ O `CLAUDE.md` na raiz deste repositório já contém as regras de auto-ativaçã
 Caso queira invocar um skill diretamente:
 
 ```
+# Core & Controle
+/analista              - Classifica tarefa e aciona skill apropriado
+/inactive-agents       - Desativa sistema de agentes temporariamente
+/setup-project         - Configurar projeto novo
+/atualizar-skill-agent - Sincronizar skills com GitHub
+
 # Projeto & Setup
 /project-manager       - Setup projeto, Business Canvas, tech selection
 /github-integrator     - Git workflows seguros, PR management
 /devops                - CI/CD, production deployment, monitoring
-
-# Core
-/analista              - Orquestrador central
-/setup-project         - Configurar projeto novo
-/atualizar-skill-agent - Sincronizar skills com GitHub
 
 # Design & Frontend
 /designer              - Agente de design (Enhanced: visual refs, Pencil)

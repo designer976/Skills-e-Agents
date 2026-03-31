@@ -1,0 +1,5 @@
+---
+description: Pipeline front-end completo — redireciona para o skill global
+---
+
+Execute o skill global **all-front-end** aplicando todas as suas instruções e workflow à solicitação do usuário.

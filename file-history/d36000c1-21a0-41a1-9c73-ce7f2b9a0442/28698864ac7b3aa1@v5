@@ -1,0 +1,329 @@
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Calendar as CalendarIcon } from "lucide-react";
+import { SolicitacaoItem } from '@/types/solicitacoes';
+
+interface CreateSolicitacaoModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Partial<SolicitacaoItem>) => Promise<void>;
+}
+
+const SOURCE_OPTIONS = [
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'phone', label: 'Telefone' },
+  { value: 'walk_in', label: 'Presencial' },
+  { value: 'website', label: 'Site' },
+  { value: 'instagram', label: 'Instagram' },
+];
+
+const CATEGORIES = [
+  'Cabelo',
+  'Manicure',
+  'Pedicure',
+  'Estética',
+  'Maquiagem',
+  'Sobrancelha',
+  'Barba',
+  'Massagem',
+];
+
+const TIME_SLOTS = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+];
+
+export function CreateSolicitacaoModal({
+  isOpen,
+  onClose,
+  onSave,
+}: CreateSolicitacaoModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<Partial<SolicitacaoItem>>({
+    customerName: '',
+    customerPhone: '',
+    customerEmail: '',
+    serviceName: '',
+    serviceCategory: '',
+    preferredDate: new Date(),
+    preferredTime: '',
+    duration: 60,
+    price: 0,
+    observations: '',
+    source: 'phone',
+  });
+
+  const handleSubmit = async () => {
+    if (!formData.customerName || !formData.customerPhone || !formData.serviceName) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSave(formData);
+      // Reset form
+      setFormData({
+        customerName: '',
+        customerPhone: '',
+        customerEmail: '',
+        serviceName: '',
+        serviceCategory: '',
+        preferredDate: new Date(),
+        preferredTime: '',
+        duration: 60,
+        price: 0,
+        observations: '',
+        source: 'phone',
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error saving request:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-2xl max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-xl md:rounded-lg border-none shadow-2xl overflow-hidden flex flex-col">
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-3 border-b shrink-0">
+          <DialogTitle className="text-xl font-semibold">Nova Solicitação</DialogTitle>
+          <DialogDescription>
+            Preencha os dados da solicitação de serviço
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar">
+          <div className="grid gap-4">
+            {/* Customer Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Input
+                  id="customerName"
+                  label="Nome do Cliente*"
+                  value={formData.customerName}
+                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                  placeholder="Nome completo"
+                  required
+                  className="text-base md:text-sm sm:h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Input
+                  id="customerPhone"
+                  label="Telefone*"
+                  value={formData.customerPhone}
+                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                  placeholder="(11) 99999-9999"
+                  required
+                  className="text-base md:text-sm sm:h-9"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Input
+                  id="customerEmail"
+                  label="E-mail"
+                  type="email"
+                  value={formData.customerEmail}
+                  onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                  placeholder="email@exemplo.com"
+                  className="text-base md:text-sm sm:h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="source">Origem*</Label>
+                <Select
+                  value={formData.source}
+                  onValueChange={(value) => setFormData({ ...formData, source: value })}
+                >
+                  <SelectTrigger className="text-base md:text-sm sm:h-9">
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOURCE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Service Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Input
+                  id="serviceName"
+                  label="Serviço*"
+                  value={formData.serviceName}
+                  onChange={(e) => setFormData({ ...formData, serviceName: e.target.value })}
+                  placeholder="Nome do serviço"
+                  required
+                  className="text-base md:text-sm sm:h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="serviceCategory">Categoria*</Label>
+                <Select
+                  value={formData.serviceCategory}
+                  onValueChange={(value) => setFormData({ ...formData, serviceCategory: value })}
+                >
+                  <SelectTrigger className="text-base md:text-sm sm:h-9">
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Date and Time */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Preferida</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal text-base md:text-sm sm:h-9',
+                        !formData.preferredDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.preferredDate ? (
+                        format(formData.preferredDate, 'PPP', { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.preferredDate}
+                      onSelect={(date) => setFormData({ ...formData, preferredDate: date })}
+                      initialFocus
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preferredTime">Horário Preferido</Label>
+                <Select
+                  value={formData.preferredTime}
+                  onValueChange={(value) => setFormData({ ...formData, preferredTime: value })}
+                >
+                  <SelectTrigger className="text-base md:text-sm sm:h-9">
+                    <SelectValue placeholder="Selecione o horário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOTS.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Duration and Price */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Input
+                  id="duration"
+                  label="Duração (minutos)*"
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                  min="15"
+                  max="480"
+                  step="15"
+                  required
+                  className="text-base md:text-sm sm:h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Input
+                  id="price"
+                  label="Valor (R$)*"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  min="0"
+                  step="0.01"
+                  placeholder="0,00"
+                  required
+                  className="text-base md:text-sm sm:h-9"
+                />
+              </div>
+            </div>
+
+            {/* Observations */}
+            <div className="space-y-2">
+              <Label htmlFor="observations">Observações</Label>
+              <Textarea
+                id="observations"
+                value={formData.observations}
+                onChange={(e) => setFormData({ ...formData, observations: e.target.value.slice(0, 200) })}
+                placeholder="Informações adicionais sobre a solicitação"
+                maxLength={200}
+                rows={3}
+                className="text-base md:text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 z-10 bg-background px-4 md:px-6 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+          <Button variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto min-h-[44px]">
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading} className="w-full sm:w-auto min-h-[44px] salon-button-primary">
+            {loading ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

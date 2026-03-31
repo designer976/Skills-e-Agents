@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+import { salonService } from "@/services/salonService";
+import { CreateSalonDto } from "@/types/salon";
+import { SalonForm, SalonFormData, SALON_FORM_INITIAL_DATA } from "@/components/forms/SalonForm";
+import { trackSeverinoEvent } from "@/services/severinoService";
+
+export default function CreateSalonPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<SalonFormData>(SALON_FORM_INITIAL_DATA);
+
+  const handleCreateSalon = async (): Promise<void> => {
+    if (!formData.nomeFantasia) {
+      toast.error("Por favor, preencha o nome fantasia");
+      return;
+    }
+    if (!formData.telefoneComercial) {
+      toast.error("Por favor, preencha o telefone");
+      return;
+    }
+    if (formData.cnpj && !salonService.validateCNPJ(formData.cnpj)) {
+      toast.error("CNPJ inválido");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const userStr = localStorage.getItem("currentUser");
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+
+      const createData: CreateSalonDto = {
+        name: formData.nomeFantasia,
+        slug: salonService.generateSlug(formData.nomeFantasia),
+        phone: salonService.formatPhone(formData.telefoneComercial),
+        email: formData.emailContato || undefined,
+        responsible: formData.razaoSocial || undefined,
+        cnpj: formData.cnpj ? salonService.formatCNPJ(formData.cnpj) : undefined,
+        timezone: formData.timezone,
+        tenantId: currentUser?.tenantId,
+      };
+
+      const result = await salonService.createWithNetwork(createData);
+
+      trackSeverinoEvent("cadastro_do_salao", {
+        descricao: `Salão cadastrado: ${formData.nomeFantasia} (ID: ${result.salon.id})`,
+        nomeSalao: formData.nomeFantasia,
+        salonId: result.salon.id,
+      });
+
+      toast.success("Salão cadastrado com sucesso e adicionado à sua rede!");
+      navigate("/admin/salons");
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Erro ao criar salão";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Administrativa"
+    >
+      <PageHeader
+        title="Cadastrar Novo Salão"
+        subtitle="Crie um novo salão na plataforma"
+      />
+
+      <div className="bg-card border border-border rounded-lg">
+        <div className="p-6">
+          <SalonForm
+            data={formData}
+            onChange={setFormData}
+            disabled={isLoading}
+          />
+
+          <div className="flex justify-end mt-8 pt-6 border-t">
+            <Button
+              onClick={() => { void handleCreateSalon(); }}
+              disabled={isLoading}
+              className="px-8"
+            >
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" inline className="mr-2" />
+                  Criando...
+                </>
+              ) : (
+                "Criar Salão"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </EasySalonLayout>
+  );
+}

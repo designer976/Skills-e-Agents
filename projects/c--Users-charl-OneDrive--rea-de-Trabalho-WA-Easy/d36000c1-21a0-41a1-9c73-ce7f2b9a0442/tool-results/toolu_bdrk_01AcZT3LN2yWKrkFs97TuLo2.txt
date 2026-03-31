@@ -1,0 +1,246 @@
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx-89-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx:90:                        variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx-91-                        onClick={onRefresh}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx-342-                    <div className="flex gap-3 pt-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx:343:                        <Button variant="outline" className="flex-1 gap-2" onClick={() => window.print()}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx-344-                            <Printer className="h-4 w-4" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-695-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:696:                      variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-697-                      role="combobox"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-897-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:898:                      variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-899-                      role="combobox"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1014-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1015:                      variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1016-                      role="combobox"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1121-                  <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1122:                    variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1123-                    className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1237-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1238:                          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-1239-                          role="combobox"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-200-          <div className="flex items-center gap-2 mt-1">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:201:            <Badge variant="outline" className="font-normal text-xs bg-muted/50 border-muted-foreground/20">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx-202-              {date}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-637-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:638:                          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-639-                          className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-774-                            {availabilityData.professionalName || "Profissional"}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:775:                            <Badge variant="outline" className="ml-auto text-[10px]">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-776-                              {
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx-75-                        {actions.canCancel && !isCanceling && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:76:                            <Button variant="outline" size="sm" className="transition-all cursor-pointer gap-1.5 shadow-xs text-red-500 hover:text-red-600" onClick={onCancel}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx-77-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="tabler-icon tabler-icon-x w-4 h-4 mr-2">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx-84-                        {isCanceling && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:85:                            <Button variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed gap-1.5">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx-86-                                <Clock className="w-4 h-4 mr-2" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-224-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:225:                      variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-226-                      className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1368-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1369:                      variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1370-                      className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1591-                    <PopoverTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx:1592:                      <Button variant="outline" size="icon">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1593-                        <CalendarIcon className="h-4 w-4" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-181-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:182:                          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-183-                          className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx-74-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx:75:                            variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx-76-                            size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx-164-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx:165:                            variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx-166-                            size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx-178-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx:179:                            variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx-180-                            size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PlanSelection.tsx-46-                                <div className="absolute top-4 right-4">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PlanSelection.tsx:47:                                    <Badge variant="outline" className="text-xs bg-white/50 border-primary text-primary">Sob Consulta</Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PlanSelection.tsx-48-                                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-510-                        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:511:                            variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-512-                            size="icon"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx-1118-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx:1119:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx-1120-          role="combobox"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\SideNav.tsx-61-          <SheetTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\SideNav.tsx:62:            <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\SideNav.tsx-63-              <Menu className="h-4 w-4" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-973-                          <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:974:                            variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-975-                            size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\TimezoneCombobox.tsx-52-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\TimezoneCombobox.tsx:53:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\TimezoneCombobox.tsx-54-          role="combobox"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-665-        <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:666:          <Button variant="outline" size="sm" className={selectedSpecialty ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-667-            <Filter className="h-4 w-4 flex-shrink-0" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-753-          <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:754:            <Button variant="outline" size="sm" className={selectedProfessionals.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-755-              <span className="truncate">{getSelectedProfessionalName()}</span>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-829-        <DropdownMenuTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:830:          <Button variant="outline" size="sm" className={selectedStatus ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-831-            <span className="truncate">{selectedStatus || "Status"}</span>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-79-              <h3 className="font-semibold text-lg">{column.title}</h3>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:80:              <Badge variant="outline" className={getStatusColor(column.id)}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-81-                {column.items.length}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-198-                                    )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:199:                                    <Badge variant="outline">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-200-                                      {item.status === "cancelled" &&
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-294-                                )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:295:                                <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx-296-                                  {item.status === "cancelled" && "Cancelado"}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\date-picker-with-selects.tsx-74-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\date-picker-with-selects.tsx:75:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\date-picker-with-selects.tsx-76-          className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx-395-                                                </Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx:396:                                                <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx-397-                                                    {rec.recommendedService.duration}min
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx-399-                                                {rec.recommendedService.categoryName && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx:400:                                                    <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx-401-                                                        {rec.recommendedService.categoryName}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx-431-                                                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx:432:                                                        variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx-433-                                                        size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx-164-                                                    )}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx:165:                                                    <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx-166-                                                        <Clock className="h-3 w-3 mr-0.5" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx-196-                                            {rec.recommendedService.priceType === "A partir de" && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx:197:                                                <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx-198-                                                    A partir de{" "}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-578-                      <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:579:                        variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-580-                        className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx-91-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx:92:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx-93-          onClick={() => onPageChange(currentPage - 1)}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx-122-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx:123:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx-124-          onClick={() => onPageChange(currentPage + 1)}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-860-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:861:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-862-          size="icon"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-881-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:882:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-883-          size="icon"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-899-        <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:900:          variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-901-          size="sm"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-932-        <div className="flex items-center gap-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:933:          <Button variant="outline" size="icon" onClick={handlePreviousDay}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-934-            <ChevronLeft className="h-4 w-4" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-935-          </Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:936:          <Button variant="outline" size="icon" onClick={handleNextDay}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-937-            <ChevronRight className="h-4 w-4" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-941-            <PopoverTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:942:              <Button variant="outline" size="sm" className="font-normal">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-943-                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-385-                    <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:386:                      variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-387-                      className={cn(
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-604-                    <Button variant="destructive">Destructive</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:605:                    <Button variant="outline">Outline</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-606-                    <Button variant="secondary">Secondary</Button>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-622-                    <Button disabled>Desabilitado</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:623:                    <Button variant="outline" disabled>Outline Disabled</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-624-                  </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-633-<Button variant="destructive">Destructive</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:634:<Button variant="outline">Outline</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-635-<Button variant="secondary">Secondary</Button>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-685-                  <Badge variant="destructive">Destructive</Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:686:                  <Badge variant="outline">Outline</Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-687-                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-695-<Badge variant="destructive">Destructive</Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:696:<Badge variant="outline">Outline</Badge>`} />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-697-              </TabsContent>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1147-                      <Button size="sm">Confirmar</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:1148:                      <Button size="sm" variant="outline">Cancelar</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1149-                    </CardFooter>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1210-                      <DialogFooter>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:1211:                        <Button variant="outline">Cancelar</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1212-                        <Button>Confirmar</Button>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1218-                    <DialogTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:1219:                      <Button variant="outline">Sem botão X</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1220-                    </DialogTrigger>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1254-    <DialogFooter>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:1255:      <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1256-      <Button onClick={handleConfirm}>Confirmar</Button>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1609-                    <TooltipTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:1610:                      <Button variant="outline">Passe o mouse</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1611-                    </TooltipTrigger>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1634-  <TooltipTrigger asChild>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx:1635:    <Button variant="outline">Passe o mouse</Button>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\DesignSystemPage.tsx-1636-  </TooltipTrigger>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-235-                          </Badge>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:236:                          <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-237-                            <Clock className="h-3 w-3 mr-0.5" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-267-                      {rec.recommendedService.priceType === "A partir de" && (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:268:                        <Badge variant="outline" className="text-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-269-                          A partir de
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx-310-                <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx:311:                  variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx-312-                  disabled={allPeriods}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx-340-                <Button
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx:341:                  variant="outline"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx-342-                  disabled={allPeriods}

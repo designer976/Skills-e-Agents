@@ -1,0 +1,314 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import Link from "next/link"
+import { AdminDashboardLayout } from "@/components/admin/admin-dashboard-layout"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminTable } from "@/components/admin/admin-table"
+import { AdminModal, AdminModalHeader, AdminModalBody, AdminModalFooter } from "@/components/admin/admin-modal"
+import { AdminInput } from "@/components/admin/admin-input"
+import { vistorias, type Vistoria } from "@/lib/mock-vistorias"
+import { type ColumnDef } from "@tanstack/react-table"
+import { Eye, Plus, CheckCircle2, Copy, MapPin, FileText, Calendar, Search } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const TIPOS_VISTORIA = ["Entrada", "Saída", "Conferência", "Rescisão"] as const
+
+function gerarCodigo() {
+  const ano = new Date().getFullYear()
+  const num = Math.floor(1000 + Math.random() * 9000)
+  return `V-${ano}-${num}`
+}
+
+const columns: ColumnDef<Vistoria, unknown>[] = [
+  {
+    accessorKey: "id",
+    meta: { className: "w-[110px]" },
+    header: "Código",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span>
+    ),
+  },
+  {
+    accessorKey: "endereco",
+    meta: { className: "w-[280px]" },
+    header: "Endereço",
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-700 truncate block">{row.original.endereco}</span>
+    ),
+  },
+  {
+    accessorKey: "tipo",
+    meta: { className: "hidden lg:table-cell w-[110px]" },
+    header: "Tipo",
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-500 truncate block">{row.original.tipo}</span>
+    ),
+  },
+  {
+    id: "status",
+    meta: { className: "w-[110px]" },
+    header: "Status",
+    cell: () => (
+      <span className="px-2.5 py-1 rounded-full text-xs font-semibold text-yellow-700 bg-yellow-50">
+        Aguardando
+      </span>
+    ),
+  },
+  {
+    id: "acoes",
+    meta: { className: "w-[52px] min-w-[52px]" },
+    header: "",
+    cell: ({ row }) => (
+      <Link href={`/admin/cliente/vistorias/${row.original.id}`}>
+        <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" title="Ver" />
+      </Link>
+    ),
+  },
+]
+
+export default function VistoriasPedidosPage() {
+  const data = useMemo(() => vistorias.filter((v) => v.status === "Pedido"), [])
+  const [searchValue, setSearchValue] = useState("")
+
+  // Modal
+  const [showModal, setShowModal] = useState(false)
+  const [etapa, setEtapa] = useState<"formulario" | "sucesso">("formulario")
+  const [codigoGerado, setCodigoGerado] = useState("")
+  const [copiado, setCopiado] = useState(false)
+
+  // Campos
+  const [endereco, setEndereco] = useState("")
+  const [complemento, setComplemento] = useState("")
+  const [cidade, setCidade] = useState("")
+  const [tipo, setTipo] = useState("")
+  const [dataVistoria, setDataVistoria] = useState("")
+  const [hora, setHora] = useState("")
+  const [obs, setObs] = useState("")
+
+  const formValido = !!(endereco && cidade && tipo && dataVistoria && hora)
+
+  function abrirModal() {
+    setEtapa("formulario")
+    setCodigoGerado("")
+    setEndereco(""); setComplemento(""); setCidade("")
+    setTipo(""); setDataVistoria(""); setHora(""); setObs("")
+    setShowModal(true)
+  }
+
+  function solicitar() {
+    setCodigoGerado(gerarCodigo())
+    setEtapa("sucesso")
+  }
+
+  function copiarCodigo() {
+    navigator.clipboard.writeText(codigoGerado)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2000)
+  }
+
+  return (
+    <AdminDashboardLayout
+      profile="cliente"
+      title="Vistorias Solicitadas"
+      breadcrumbs={[{ label: "Vistorias", href: "/admin/cliente/vistorias/pedidos" }]}
+    >
+      <div className="space-y-4">
+        {/* Busca + Novo Pedido na mesma linha */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[250px]">
+            <AdminInput
+              variant="form"
+              placeholder="Buscar por código ou endereço..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              icon={<Search size={15} />}
+            />
+          </div>
+          <div>
+            <AdminButton variant="primary" icon={<Plus size={16} />} onClick={abrirModal}>
+              Nova Vistoria
+            </AdminButton>
+          </div>
+        </div>
+
+        {/* Tabela sem search interno */}
+        <AdminTable
+          data={data}
+          columns={columns}
+          filterValue={searchValue}
+          onFilterChange={setSearchValue}
+          showSearch={false}
+          emptyMessage="Nenhuma vistoria solicitada aguardando agendamento."
+        />
+      </div>
+
+      {showModal && (
+        <AdminModal onClose={() => setShowModal(false)} size="sm">
+          {etapa === "formulario" ? (
+            <>
+              <AdminModalHeader
+                title="Solicitar Nova Vistoria"
+                subtitle="Preencha os dados para registrar sua solicitação"
+                onClose={() => setShowModal(false)}
+              />
+              <AdminModalBody>
+                {/* Endereço */}
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 uppercase tracking-wide">
+                    <MapPin size={13} className="text-[#0B7A8F]" /> Endereço do Imóvel
+                  </p>
+                  <AdminInput
+                    variant="form"
+                    label="Endereço"
+                    placeholder="Rua, número..."
+                    value={endereco}
+                    onChange={(e) => setEndereco(e.target.value)}
+                  />
+                  <AdminInput
+                    variant="form"
+                    label="Complemento"
+                    placeholder="Apto, bloco... (opcional)"
+                    value={complemento}
+                    onChange={(e) => setComplemento(e.target.value)}
+                  />
+                  <AdminInput
+                    variant="form"
+                    label="Cidade / UF"
+                    placeholder="São Paulo, SP"
+                    value={cidade}
+                    onChange={(e) => setCidade(e.target.value)}
+                  />
+                </div>
+
+                {/* Tipo */}
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 uppercase tracking-wide">
+                    <FileText size={13} className="text-[#0B7A8F]" /> Tipo de Vistoria
+                  </p>
+                  <RadioGroup value={tipo} onValueChange={setTipo} className="grid grid-cols-2 gap-2">
+                    {TIPOS_VISTORIA.map((t) => (
+                      <div
+                        key={t}
+                        className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-colors ${
+                          tipo === t ? "border-[#0B7A8F] bg-[#0B7A8F]/5" : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <RadioGroupItem value={t} id={`tipo-${t}`} />
+                        <Label htmlFor={`tipo-${t}`} className="cursor-pointer text-sm">{t}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* Data e Hora */}
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 uppercase tracking-wide">
+                    <Calendar size={13} className="text-[#0B7A8F]" /> Data e Hora Desejada
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <AdminInput
+                      variant="form"
+                      label="Data"
+                      type="date"
+                      value={dataVistoria}
+                      onChange={(e) => setDataVistoria(e.target.value)}
+                    />
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">Horário</label>
+                      <Select value={hora} onValueChange={setHora}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00","17:00"].map((h) => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Observações */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">Observações (opcional)</label>
+                  <textarea
+                    className="w-full h-20 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0B7A8F]/20 focus:border-[#0B7A8F] resize-none"
+                    placeholder="Informações adicionais sobre o imóvel ou acesso..."
+                    value={obs}
+                    onChange={(e) => setObs(e.target.value)}
+                  />
+                </div>
+              </AdminModalBody>
+              <AdminModalFooter>
+                <AdminButton variant="outline" onClick={() => setShowModal(false)}>Cancelar</AdminButton>
+                <AdminButton variant="primary" onClick={solicitar} disabled={!formValido}>
+                  Solicitar Vistoria
+                </AdminButton>
+              </AdminModalFooter>
+            </>
+          ) : (
+            <>
+              <AdminModalHeader title="Solicitação Enviada" onClose={() => setShowModal(false)} />
+              <AdminModalBody>
+                <div className="flex flex-col items-center text-center py-2 gap-4">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <CheckCircle2 size={28} className="text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900">Vistoria solicitada com sucesso!</h3>
+                    <p className="text-sm text-gray-500 mt-1">Em breve entraremos em contato para confirmar o agendamento.</p>
+                  </div>
+
+                  {/* Código */}
+                  <div className="w-full p-4 bg-gray-50 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Código da solicitação</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-2xl font-bold tracking-widest text-[#0B7A8F] font-mono">{codigoGerado}</span>
+                      <button
+                        onClick={copiarCodigo}
+                        className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+                        title="Copiar código"
+                      >
+                        {copiado
+                          ? <CheckCircle2 size={16} className="text-emerald-600" />
+                          : <Copy size={16} className="text-gray-400" />
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Resumo */}
+                  <div className="w-full p-4 bg-[#0B7A8F]/5 border border-[#0B7A8F]/10 rounded-xl text-left space-y-2">
+                    <p className="text-sm text-gray-600">
+                      <span className="text-gray-400">Endereço: </span>
+                      <span className="font-medium">{endereco}{complemento ? `, ${complemento}` : ""} — {cidade}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="text-gray-400">Tipo: </span>
+                      <span className="font-medium">{tipo}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="text-gray-400">Data/Hora: </span>
+                      <span className="font-medium">
+                        {new Date(dataVistoria + "T00:00:00").toLocaleDateString("pt-BR")} às {hora}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </AdminModalBody>
+              <AdminModalFooter>
+                <AdminButton variant="primary" onClick={() => setShowModal(false)} className="w-full">
+                  Entendi
+                </AdminButton>
+              </AdminModalFooter>
+            </>
+          )}
+        </AdminModal>
+      )}
+    </AdminDashboardLayout>
+  )
+}

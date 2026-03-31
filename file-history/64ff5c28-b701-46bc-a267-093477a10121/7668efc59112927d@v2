@@ -1,0 +1,174 @@
+import { useState, useEffect } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { AuthLayout } from "@/components/AuthLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft as ArrowLeft } from "lucide-react";
+import authService from "@/services/authService";
+import { toast } from "sonner";
+
+export default function ResetPassword() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const token = searchParams.get("token");
+  
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!token) {
+        setIsValidToken(false);
+        return;
+      }
+      
+      try {
+        const isValid = await authService.validateResetToken(token);
+        setIsValidToken(isValid);
+      } catch {
+        setIsValidToken(false);
+      }
+    };
+    
+    validateToken();
+  }, [token]);
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres");
+      return;
+    }
+
+    if (!token) {
+      toast.error("Token inválido");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await authService.resetPassword(token, password);
+      toast.success("Senha redefinida com sucesso!");
+      navigate("/login");
+    } catch (error: unknown) {
+      toast.error("Ops! Algo deu errado. Por favor, tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isValidToken === null) {
+    return (
+      <AuthLayout>
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="text-muted-foreground">Validando token...</div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  if (isValidToken === false) {
+    return (
+      <AuthLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Link to="/login">
+              <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+            </Link>
+            <h1 className="text-page-title text-foreground">Token Inválido</h1>
+          </div>
+          
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <p className="text-destructive">
+              O link de redefinição de senha é inválido ou expirou. 
+              Por favor, solicite um novo link.
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            <Link to="/forgot-password">
+              <Button className="w-full">
+                Solicitar Novo Link
+              </Button>
+            </Link>
+            
+            <Link to="/login" className="block text-center text-primary hover:underline">
+              Voltar ao login
+            </Link>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link to="/login">
+            <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+          </Link>
+          <h1 className="text-page-title text-foreground">Redefinir Senha</h1>
+        </div>
+
+        <p className="text-muted-foreground">
+          Digite sua nova senha abaixo.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="password" className="text-muted-foreground">Nova Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-card border-border"
+              required
+              minLength={8}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword" className="text-muted-foreground">Confirmar Senha</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="bg-card border-border"
+              required
+              minLength={8}
+            />
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? "Redefinindo..." : "Redefinir Senha"}
+          </Button>
+        </form>
+
+        <div className="text-center">
+          <Link to="/login" className="text-primary hover:underline">
+            Voltar ao login
+          </Link>
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}

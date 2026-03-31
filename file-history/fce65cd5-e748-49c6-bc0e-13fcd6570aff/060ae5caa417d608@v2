@@ -1,0 +1,305 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Calendar as Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Absence, AbsenceType, absenceTypeLabels, CreateAbsenceDto } from "@/types/absence";
+import { toast } from "sonner";
+
+interface AbsenceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: CreateAbsenceDto) => Promise<void>;
+  absence?: Absence;
+  userId: string;
+  userName?: string;
+}
+
+export function AbsenceModal({
+  isOpen,
+  onClose,
+  onSave,
+  absence,
+  userId,
+  userName
+}: AbsenceModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<CreateAbsenceDto & { startTime?: string; endTime?: string }>({
+    userId,
+    type: AbsenceType.OTHER,
+    reason: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    startTime: "",
+    endTime: "",
+    allDay: false,
+    blockSchedule: true,
+  });
+
+  useEffect(() => {
+    if (absence) {
+      // Parse dates preserving local time
+      const startDate = new Date(absence.startDate);
+      const endDate = new Date(absence.endDate);
+      
+      // Extract time components if not all day
+      const startTime = absence.allDay ? '' : startDate.toTimeString().substring(0, 5);
+      const endTime = absence.allDay ? '' : endDate.toTimeString().substring(0, 5);
+      
+      setFormData({
+        userId: absence.userId,
+        type: absence.type,
+        reason: absence.reason,
+        description: absence.description || "",
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        startTime,
+        endTime,
+        allDay: absence.allDay,
+        blockSchedule: absence.blockSchedule,
+      });
+    } else {
+      // Reset form for new absence
+      setFormData({
+        userId,
+        type: AbsenceType.OTHER,
+        reason: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        startTime: "",
+        endTime: "",
+        allDay: false,
+        blockSchedule: true,
+      });
+    }
+  }, [absence, userId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.reason || !formData.startDate || !formData.endDate) {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.endDate);
+
+    if (endDate < startDate) {
+      toast.error("A data de término não pode ser anterior à data de início");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get user's timezone offset to preserve local time
+      const offsetMinutes = new Date().getTimezoneOffset();
+      const offsetHours = Math.abs(offsetMinutes) / 60;
+      const offsetSign = offsetMinutes > 0 ? '-' : '+';
+      const timezoneOffset = `${offsetSign}${String(Math.floor(offsetHours)).padStart(2, '0')}:${String(Math.abs(offsetMinutes) % 60).padStart(2, '0')}`;
+
+      // Format dates with time and timezone if not all day
+      const startDateTime = formData.allDay
+        ? `${formData.startDate}T00:00:00${timezoneOffset}`
+        : `${formData.startDate}T${formData.startTime || '00:00'}:00${timezoneOffset}`;
+
+      const endDateTime = formData.allDay
+        ? `${formData.endDate}T23:59:59${timezoneOffset}`
+        : `${formData.endDate}T${formData.endTime || '23:59'}:00${timezoneOffset}`;
+
+      await onSave({
+        ...formData,
+        startDate: startDateTime,
+        endDate: endDateTime,
+      });
+      
+      onClose();
+    } catch (error) {
+      // Error is handled by onSave function
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="w-[95vw] md:max-w-md max-h-[90vh] p-0 gap-0 rounded-lg border-none shadow-2xl overflow-hidden flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-3 border-b shrink-0">
+          <DialogTitle className="text-xl font-semibold">
+            {absence ? "Editar Ausência" : "Nova Ausência"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <DialogBody className="px-4 md:px-6 py-4 custom-scrollbar space-y-4">
+            {userName && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-body text-muted-foreground">Profissional</p>
+                <p className="font-medium">{userName}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Tipo de Ausência</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => setFormData({ ...formData, type: value as AbsenceType })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(absenceTypeLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reason">Motivo *</Label>
+              <Input
+                id="reason"
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                placeholder="Ex: Consulta médica"
+                required
+                className="text-base md:text-body sm:h-9"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição (opcional)</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value.slice(0, 200) })}
+                placeholder="Detalhes adicionais..."
+                maxLength={200}
+                rows={3}
+                className="text-base md:text-body"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Data Início *</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  required
+                  className="text-base md:text-body sm:h-9"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Data Fim *</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  required
+                  className="text-base md:text-body sm:h-9"
+                />
+              </div>
+            </div>
+
+            {!formData.allDay && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Hora Início</Label>
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={formData.startTime || ''}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="text-base md:text-body sm:h-9"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endTime">Hora Fim</Label>
+                  <Input
+                    id="endTime"
+                    type="time"
+                    value={formData.endTime || ''}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="text-base md:text-body sm:h-9"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="allDay" className="text-body font-medium">
+                  Dia inteiro
+                </Label>
+                <Switch
+                  id="allDay"
+                  checked={formData.allDay}
+                  onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="blockSchedule" className="text-body font-medium">
+                    Bloquear agenda
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Impede novos agendamentos neste período
+                  </p>
+                </div>
+                <Switch
+                  id="blockSchedule"
+                  checked={formData.blockSchedule}
+                  onCheckedChange={(checked) => setFormData({ ...formData, blockSchedule: checked })}
+                />
+              </div>
+            </div>
+          </DialogBody>
+
+          <div className="sticky bottom-0 z-10 bg-background px-4 md:px-6 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+              {isLoading ? "Salvando..." : absence ? "Salvar" : "Criar"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Extend the interface to include optional time fields
+declare module "@/types/absence" {
+  interface CreateAbsenceDto {
+    startTime?: string;
+    endTime?: string;
+  }
+}

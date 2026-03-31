@@ -1,0 +1,710 @@
+/**
+ * Design System — Styleguide interno da equipe de criação
+ *
+ * REGRAS:
+ * 1. Esta página é ISOLADA — sem sidebar, menu ou layout do painel.
+ * 2. Todos os componentes exibidos aqui são importados da fonte central
+ *    (components/ui e components/admin) — qualquer atualização reflete automaticamente.
+ * 3. FLUXO: Design System First — novos componentes devem ser criados e documentados
+ *    aqui ANTES de serem aplicados nas telas finais do /admin.
+ */
+
+"use client"
+
+import { useState } from "react"
+import { Copy, Check, Eye, EyeOff, Download, Search, User, Mail, Phone, Lock, Building2, MapPin } from "lucide-react"
+
+// ─── Componentes Admin (fonte central) ─────────────────────────────────────
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminInput } from "@/components/admin/admin-input"
+import { AdminRadioGroup, AdminRadioOption } from "@/components/admin/admin-radio"
+import { AdminTooltip } from "@/components/admin/admin-tooltip"
+import { AdminTable, AdminTableSortHeader } from "@/components/admin/admin-table"
+import { AdminCard } from "@/components/admin/admin-card"
+import { AdminModal, AdminModalHeader, AdminModalBody, AdminModalFooter } from "@/components/admin/admin-modal"
+import { AdminTabs, AdminTab } from "@/components/admin/admin-tabs"
+import { PasswordStrength } from "@/components/admin/password-strength"
+import { DashboardFilters, type PeriodoDashboard } from "@/components/admin/dashboard-filters"
+
+// ─── Componentes UI (shadcn) ───────────────────────────────────────────────
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { AdminSelect, AdminSelectContent, AdminSelectItem } from "@/components/admin/admin-select"
+import { type ColumnDef } from "@tanstack/react-table"
+import {
+  Breadcrumb, BreadcrumbItem, BreadcrumbLink,
+  BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-12">
+      <h2 className="text-xl font-bold text-gray-900 mb-1">{title}</h2>
+      {description && <p className="text-sm text-gray-500 mb-6">{description}</p>}
+      <div className="space-y-6">{children}</div>
+    </section>
+  )
+}
+
+function Showcase({ label, children }: { label: string; children: React.ReactNode }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(label)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+            <div className="border border-gray-200 rounded-xl">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+        <code className="text-xs text-gray-600 font-mono">{label}</code>
+        <button onClick={handleCopy} className="text-gray-400 hover:text-gray-600 transition-colors">
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+      </div>
+      <div className="p-6 bg-white">{children}</div>
+    </div>
+  )
+}
+
+type NavTab = "componentes" | "cores" | "tipografia" | "icones"
+
+// ─── Demo AdminTable ────────────────────────────────────────────────────────
+type DemoVistoria = { id: string; endereco: string; tipo: string; status: string; statusColor: string }
+const demoData: DemoVistoria[] = [
+  { id: "V-2024-1021", endereco: "Rua das Flores, 123 - São Paulo, SP", tipo: "Entrada",     status: "Em andamento", statusColor: "text-blue-600 bg-blue-50"   },
+  { id: "V-2024-1020", endereco: "Av. Paulista, 1000 - São Paulo, SP",  tipo: "Saída",       status: "Concluída",    statusColor: "text-green-700 bg-green-50" },
+  { id: "V-2024-1019", endereco: "Rua Augusta, 45 - São Paulo, SP",     tipo: "Conferência", status: "Em andamento", statusColor: "text-blue-600 bg-blue-50"   },
+  { id: "V-2024-1018", endereco: "Rua Oscar Freire, 200 - São Paulo, SP", tipo: "Entrada",   status: "Concluída",    statusColor: "text-green-700 bg-green-50" },
+  { id: "V-2024-1017", endereco: "Av. Brasil, 500 - São Paulo, SP",      tipo: "Saída",      status: "Em andamento", statusColor: "text-blue-600 bg-blue-50"   },
+  { id: "V-2024-1016", endereco: "Rua da Consolação, 300 - São Paulo, SP", tipo: "Entrada", status: "Concluída",    statusColor: "text-green-700 bg-green-50" },
+  { id: "V-2024-1015", endereco: "Av. Rebouças, 800 - São Paulo, SP",    tipo: "Conferência", status: "Pendente",   statusColor: "text-amber-600 bg-amber-50" },
+  { id: "V-2024-1014", endereco: "Rua Haddock Lobo, 150 - São Paulo, SP", tipo: "Saída",     status: "Concluída",    statusColor: "text-green-700 bg-green-50" },
+]
+const demoColumns: ColumnDef<DemoVistoria, unknown>[] = [
+  { accessorKey: "id",       meta: { className: "w-[110px]" },              header: ({ column }) => <AdminTableSortHeader column={column} label="Código" />,   cell: ({ row }) => <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span> },
+  { accessorKey: "endereco", meta: { className: "w-[260px]" },              header: "Endereço",  cell: ({ row }) => <span className="text-sm text-gray-700 truncate block">{row.original.endereco}</span> },
+  { accessorKey: "tipo",     meta: { className: "hidden lg:table-cell w-[110px]" }, header: "Tipo", cell: ({ row }) => <span className="text-sm text-gray-500 truncate block">{row.original.tipo}</span> },
+  { id: "status", meta: { className: "w-[120px]" }, header: "Status", cell: ({ row }) => <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${row.original.statusColor}`}>{row.original.status}</span> },
+  { id: "acoes",  meta: { className: "w-[52px] min-w-[52px]" }, header: "", cell: () => <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" /> },
+]
+function AdminTableDemo() {
+  return <AdminTable data={demoData} columns={demoColumns} searchPlaceholder="Buscar por código ou endereço..." />
+}
+
+// ─── Página ────────────────────────────────────────────────────────────────
+export default function DesignSystemPage() {
+  // States para demos interativos
+  const [activeTab, setActiveTab] = useState<NavTab>("componentes")
+  const [inputValue, setInputValue] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [cpf, setCpf] = useState("")
+  const [cnpj, setCnpj] = useState("")
+  const [telefone, setTelefone] = useState("")
+  const [radioValue, setRadioValue] = useState("pj")
+  const [adminTabValue, setAdminTabValue] = useState("clientes")
+  const [checkboxA, setCheckboxA] = useState(false)
+  const [checkboxB, setCheckboxB] = useState(true)
+  const [radioShadcn, setRadioShadcn] = useState("pf")
+  const [showModal, setShowModal] = useState(false)
+  const [estado, setEstado] = useState("todos")
+  const [periodo, setPeriodo] = useState<PeriodoDashboard>("mes")
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Header fixo */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between h-14">
+          {/* Logo / título */}
+          <div className="flex items-center gap-3">
+            <img src="/rios-logo.png" alt="Rios" className="h-7 w-auto" />
+            <div className="w-px h-5 bg-gray-200" />
+            <span className="text-sm font-semibold text-[#002533]">Design System</span>
+            <Badge variant="outline" className="text-[10px] h-5">v1.0</Badge>
+          </div>
+
+          {/* Nav */}
+          <nav className="flex items-center gap-1">
+            {([
+              { key: "componentes", label: "Componentes" },
+              { key: "cores",       label: "Cores" },
+              { key: "tipografia",  label: "Tipografia" },
+              { key: "icones",      label: "Ícones" },
+            ] as { key: NavTab; label: string }[]).map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveTab(item.key)}
+                className={`px-4 h-14 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === item.key
+                    ? "border-[#0B7A8F] text-[#002533]"
+                    : "border-transparent text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      {/* Conteúdo */}
+      <main className="max-w-6xl mx-auto px-6 py-10">
+
+        {/* ════════════════════════════════════════════════════════════════════
+            CORES
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "cores" && (
+        <Section title="Cores" description="Paleta de cores do sistema.">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+            {[
+              { name: "Primary", value: "#002533", text: "text-white" },
+              { name: "Accent", value: "#0B7A8F", text: "text-white" },
+              { name: "Background", value: "#F4F7F9", text: "text-gray-800" },
+              { name: "Surface", value: "#FFFFFF", text: "text-gray-800" },
+              { name: "Text Primary", value: "#1F2937", text: "text-white" },
+              { name: "Text Secondary", value: "#6B7280", text: "text-white" },
+            ].map((c) => (
+              <div key={c.name} className="text-center">
+                <div
+                  className={`h-16 rounded-lg border border-gray-200 mb-2 flex items-end justify-center pb-2 ${c.text}`}
+                  style={{ backgroundColor: c.value }}
+                >
+                  <span className="text-[10px] font-mono opacity-80">{c.value}</span>
+                </div>
+                <p className="text-xs font-medium text-gray-700">{c.name}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            TIPOGRAFIA
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "tipografia" && (
+        <Section title="Tipografia" description="Escala tipográfica com Plus Jakarta Sans.">
+          <div className="space-y-4 bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-baseline gap-4">
+              <span className="text-xs text-gray-400 w-20">text-2xl</span>
+              <span className="text-2xl font-bold text-gray-900">Título Principal</span>
+            </div>
+            <div className="flex items-baseline gap-4">
+              <span className="text-xs text-gray-400 w-20">text-xl</span>
+              <span className="text-xl font-bold text-gray-900">Título de Seção</span>
+            </div>
+            <div className="flex items-baseline gap-4">
+              <span className="text-xs text-gray-400 w-20">text-lg</span>
+              <span className="text-lg font-semibold text-gray-900">Subtítulo</span>
+            </div>
+            <div className="flex items-baseline gap-4">
+              <span className="text-xs text-gray-400 w-20">text-base</span>
+              <span className="text-base text-gray-700">Texto de corpo padrão</span>
+            </div>
+            <div className="flex items-baseline gap-4">
+              <span className="text-xs text-gray-400 w-20">text-sm</span>
+              <span className="text-sm text-gray-600">Texto secundário e labels</span>
+            </div>
+            <div className="flex items-baseline gap-4">
+              <span className="text-xs text-gray-400 w-20">text-xs</span>
+              <span className="text-xs text-gray-500">Texto auxiliar e badges</span>
+            </div>
+          </div>
+        </Section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ÍCONES
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "icones" && (
+          <Section title="Ícones" description="Ícones do Lucide React utilizados no sistema.">
+              <div className="border border-gray-200 rounded-xl">
+              <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+                <code className="text-xs text-gray-600 font-mono">import {"{"} IconName {"}"} from "lucide-react"</code>
+              </div>
+              <div className="p-6 bg-white">
+                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-6">
+                  {[
+                    { icon: <User size={20} />, name: "User" },
+                    { icon: <Mail size={20} />, name: "Mail" },
+                    { icon: <Phone size={20} />, name: "Phone" },
+                    { icon: <Lock size={20} />, name: "Lock" },
+                    { icon: <Eye size={20} />, name: "Eye" },
+                    { icon: <EyeOff size={20} />, name: "EyeOff" },
+                    { icon: <Download size={20} />, name: "Download" },
+                    { icon: <Search size={20} />, name: "Search" },
+                    { icon: <Building2 size={20} />, name: "Building2" },
+                    { icon: <MapPin size={20} />, name: "MapPin" },
+                    { icon: <Check size={20} />, name: "Check" },
+                    { icon: <Copy size={20} />, name: "Copy" },
+                  ].map(({ icon, name }) => (
+                    <div key={name} className="flex flex-col items-center gap-2 group">
+                      <div className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 group-hover:border-[#0B7A8F] group-hover:text-[#0B7A8F] transition-colors">
+                        {icon}
+                      </div>
+                      <span className="text-[10px] text-gray-500 text-center font-mono">{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════���═════════
+            COMPONENTES
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "componentes" && (<>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMIN BUTTON
+        ═══════════════════���════════════════════════════════════════════════ */}
+        <Section title="AdminButton" description="Botão padrão do painel com variantes e tamanhos.">
+          <Showcase label="<AdminButton variant='primary'>">
+            <div className="flex flex-wrap items-center gap-3">
+              <AdminButton variant="primary">Primary</AdminButton>
+              <AdminButton variant="secondary">Secondary</AdminButton>
+              <AdminButton variant="outline">Outline</AdminButton>
+              <AdminButton variant="ghost">Ghost</AdminButton>
+              <AdminButton variant="danger">Danger</AdminButton>
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminButton size='sm | md | lg'>">
+            <div className="flex flex-wrap items-center gap-3">
+              <AdminButton size="sm">Small</AdminButton>
+              <AdminButton size="md">Medium</AdminButton>
+              <AdminButton size="lg">Large</AdminButton>
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminButton icon={...}>">
+            <div className="flex flex-wrap items-center gap-3">
+              <AdminButton icon={<Search size={16} />}>Buscar</AdminButton>
+              <AdminButton variant="outline" icon={<Download size={16} />}>Download</AdminButton>
+              <AdminButton variant="ghost" icon={<Eye size={16} />} />
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminButton loading disabled>">
+            <div className="flex flex-wrap items-center gap-3">
+              <AdminButton loading>Salvando...</AdminButton>
+              <AdminButton disabled>Desabilitado</AdminButton>
+            </div>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMIN INPUT
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="AdminInput" description="Campo de entrada com variantes, ícones, máscaras e validação.">
+          <Showcase label="<AdminInput variant='default | form | auth'>">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+              <AdminInput variant="default" label="Default" placeholder="Digite aqui..." />
+              <AdminInput variant="form" label="Form" placeholder="Digite aqui..." />
+              <AdminInput variant="auth" label="Auth" placeholder="Digite aqui..." />
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminInput icon={...} iconRight={...}>">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <AdminInput label="Com ícone esquerdo" icon={<User size={15} />} placeholder="Seu nome" />
+              <AdminInput
+                label="Com ícone direito"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={<Lock size={15} />}
+                iconRight={
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                }
+                placeholder="••••••••"
+              />
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminInput mask='cpf | cnpj | phone'>">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+              <AdminInput label="CPF" mask="cpf" value={cpf} onValueChange={setCpf} placeholder="000.000.000-00" />
+              <AdminInput label="CNPJ" mask="cnpj" value={cnpj} onValueChange={setCnpj} placeholder="00.000.000/0000-00" />
+              <AdminInput label="Telefone" mask="phone" value={telefone} onValueChange={setTelefone} placeholder="(00) 00000-0000" />
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminInput validateAs='email'>">
+            <div className="max-w-sm">
+              <AdminInput label="E-mail" type="email" validateAs="email" placeholder="voce@exemplo.com" icon={<Mail size={15} />} />
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminInput error='...' disabled>">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <AdminInput label="Com erro" error="Este campo é obrigatório" placeholder="..." />
+              <AdminInput label="Desabilitado" disabled value="Valor fixo" />
+            </div>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            PASSWORD STRENGTH
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="PasswordStrength" description="Indicador de força da senha com regras visuais.">
+          <Showcase label="<PasswordStrength value={password} />">
+            <div className="max-w-sm space-y-3">
+              <AdminInput
+                label="Senha"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
+              />
+              <PasswordStrength value={password} />
+            </div>
+          </Showcase>
+        </Section>
+
+        {/* ═════════════════════════════════════════════════════════════���══════
+            ADMIN RADIO
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="AdminRadioGroup" description="Radio buttons estilizados para seleção única.">
+          <Showcase label="<AdminRadioGroup> + <AdminRadioOption>">
+            <AdminRadioGroup name="tipo" value={radioValue} onChange={setRadioValue}>
+              <AdminRadioOption value="pj" label="Pessoa Jurídica" />
+              <AdminRadioOption value="pf" label="Pessoa Física" />
+            </AdminRadioGroup>
+            <p className="text-xs text-gray-500 mt-3">Selecionado: <code className="font-mono">{radioValue}</code></p>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMIN TABS
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="AdminTabs" description="Navegação por abas do painel administrativo. Use para alternar entre seções de uma mesma página.">
+          <Showcase label="<AdminTabs value={...} onChange={...} tabs={[...]} />">
+            <AdminTabs
+              value={adminTabValue}
+              onChange={setAdminTabValue}
+              tabs={[
+                { id: "clientes",  label: "Clientes",             icon: User },
+                { id: "condicoes", label: "Condições comerciais", icon: Building2 },
+              ]}
+            />
+            <p className="text-xs text-gray-500 mt-3">Aba ativa: <code className="font-mono">{adminTabValue}</code></p>
+          </Showcase>
+
+          <Showcase label="<AdminTabs> com <AdminTab> children">
+            <AdminTabs value={adminTabValue} onChange={setAdminTabValue}>
+              <AdminTab value="clientes">Clientes</AdminTab>
+              <AdminTab value="condicoes">Condições comerciais</AdminTab>
+            </AdminTabs>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            CHECKBOX (shadcn)
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="Checkbox" description="Caixa de seleção do shadcn/ui. Use para opções independentes — não confundir com RadioGroup.">
+          <Showcase label="<Checkbox> + <Label>">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <Checkbox id="demo-a" checked={checkboxA} onCheckedChange={(v) => setCheckboxA(!!v)} />
+                <Label htmlFor="demo-a">Opção desmarcada (clique para marcar)</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Checkbox id="demo-b" checked={checkboxB} onCheckedChange={(v) => setCheckboxB(!!v)} />
+                <Label htmlFor="demo-b">Opção marcada (clique para desmarcar)</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Checkbox id="demo-c" disabled />
+                <Label htmlFor="demo-c" className="text-gray-400">Opção desabilitada</Label>
+              </div>
+            </div>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            RADIO GROUP (shadcn)
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="RadioGroup" description="Seleção exclusiva entre opções. Use quando apenas uma escolha é possível — diferente do Checkbox.">
+          <Showcase label="<RadioGroup> + <RadioGroupItem> + <Label>">
+            <RadioGroup value={radioShadcn} onValueChange={setRadioShadcn} className="flex gap-6">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="pf" id="ds-pf" />
+                <Label htmlFor="ds-pf">Pessoa Física</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="pj" id="ds-pj" />
+                <Label htmlFor="ds-pj">Pessoa Jurídica</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="franqueado" id="ds-franq" />
+                <Label htmlFor="ds-franq">Franqueado</Label>
+              </div>
+            </RadioGroup>
+            <p className="text-xs text-gray-500 mt-3">Selecionado: <code className="font-mono">{radioShadcn}</code></p>
+          </Showcase>
+
+          <Showcase label="RadioGroup com descrição">
+            <RadioGroup defaultValue="avulso" className="flex gap-6">
+              <div className="flex items-start gap-2">
+                <RadioGroupItem value="avulso" id="ds-avulso" className="mt-0.5" />
+                <div>
+                  <Label htmlFor="ds-avulso">Avulso</Label>
+                  <p className="text-xs text-gray-400">Pagamento por vistoria</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <RadioGroupItem value="faturado" id="ds-faturado" className="mt-0.5" />
+                <div>
+                  <Label htmlFor="ds-faturado">Faturado</Label>
+                  <p className="text-xs text-gray-400">Faturamento mensal</p>
+                </div>
+              </div>
+            </RadioGroup>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMIN CARD
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="AdminCard" description="Bloco de conteúdo padrão do painel. Substitui qualquer div com bg-white rounded-2xl border shadow-sm.">
+          <Showcase label="<AdminCard> — padding md (padrão)">
+            <AdminCard className="max-w-sm">
+              <p className="text-sm text-gray-700">Conteúdo do card com padding padrão <code className="font-mono text-xs">p-6</code>.</p>
+            </AdminCard>
+          </Showcase>
+
+          <Showcase label="<AdminCard padding='sm | md | lg | none'>">
+            <div className="flex flex-col gap-3 max-w-sm">
+              <AdminCard padding="sm"><p className="text-xs text-gray-500">padding sm — p-4</p></AdminCard>
+              <AdminCard padding="md"><p className="text-xs text-gray-500">padding md — p-6 (padrão)</p></AdminCard>
+              <AdminCard padding="lg"><p className="text-xs text-gray-500">padding lg — p-8</p></AdminCard>
+            </div>
+          </Showcase>
+
+          <Showcase label="<AdminCard title='...' description='...' action={...}>">
+            <AdminCard
+              title="Título do Card"
+              description="Descrição opcional do bloco"
+              action={<AdminButton size="sm" variant="outline">Ação</AdminButton>}
+              className="max-w-md"
+            >
+              <p className="text-sm text-gray-600">Conteúdo interno do card.</p>
+            </AdminCard>
+          </Showcase>
+
+          <Showcase label="<AdminCard flat> — sem sombra">
+            <AdminCard flat className="max-w-sm">
+              <p className="text-sm text-gray-700">Card sem sombra, apenas borda.</p>
+            </AdminCard>
+          </Showcase>
+
+          <Showcase label="<AdminCard overflow='hidden'> — para tabelas e listas">
+            <AdminCard overflow="hidden" padding="none" className="max-w-sm">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500">Cabeçalho interno</div>
+              <div className="p-4 text-sm text-gray-700">Conteúdo sem padding no card, controlado internamente.</div>
+            </AdminCard>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMIN MODAL
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="AdminModal" description="Modal padrão do painel com header fixo, body com scroll e footer fixo.">
+          <Showcase label="<AdminModal> + <AdminModalHeader> + <AdminModalBody> + <AdminModalFooter>">
+            <div className="flex flex-col gap-3">
+              <AdminButton variant="primary" onClick={() => setShowModal(true)}>
+                Abrir Modal Demo
+              </AdminButton>
+              <div className="text-xs text-gray-500 space-y-1">
+                <p><code className="font-mono">size=&quot;sm&quot;</code> → max-w-md</p>
+                <p><code className="font-mono">size=&quot;md&quot;</code> → max-w-2xl (padrão)</p>
+                <p><code className="font-mono">size=&quot;lg&quot;</code> → max-w-3xl</p>
+                <p><code className="font-mono">size=&quot;xl&quot;</code> → max-w-5xl</p>
+              </div>
+            </div>
+          </Showcase>
+          {showModal && (
+            <AdminModal onClose={() => setShowModal(false)} size="md">
+              <AdminModalHeader
+                title="Título do Modal"
+                subtitle="Subtítulo ou identificador contextual"
+                onClose={() => setShowModal(false)}
+              />
+              <AdminModalBody>
+                <p className="text-sm text-gray-700">Conteúdo do modal. O body tem <code className="font-mono text-xs">p-6 space-y-6</code> por padrão e scroll aparece ao passar o mouse.</p>
+                <AdminCard flat title="Card dentro do modal">
+                  <p className="text-sm text-gray-500">Cards e outros componentes funcionam normalmente dentro do modal.</p>
+                </AdminCard>
+              </AdminModalBody>
+              <AdminModalFooter>
+                <AdminButton variant="outline" onClick={() => setShowModal(false)}>Cancelar</AdminButton>
+                <AdminButton variant="primary" onClick={() => setShowModal(false)}>Confirmar</AdminButton>
+              </AdminModalFooter>
+            </AdminModal>
+          )}
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMIN TOOLTIP
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="DashboardFilters" description="Filtros de estado e período para dashboards.">
+          <Showcase label="<DashboardFilters estado={...} periodo={...} />">
+            <DashboardFilters
+              estado={estado}
+              onEstadoChange={setEstado}
+              periodo={periodo}
+              onPeriodoChange={setPeriodo}
+            />
+            <p className="text-xs text-gray-500 mt-4">
+              Estado: <code className="font-mono">{estado}</code> | Período: <code className="font-mono">{periodo}</code>
+            </p>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            BADGES
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="Badge" description="Badges para status e categorias.">
+          <Showcase label="<Badge variant='...'>">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge>Default</Badge>
+              <Badge variant="secondary">Secondary</Badge>
+              <Badge variant="outline">Outline</Badge>
+              <Badge variant="destructive">Destructive</Badge>
+              <span className="px-2 py-1 rounded-full text-xs font-semibold text-green-700 bg-green-50">Concluída</span>
+              <span className="px-2 py-1 rounded-full text-xs font-semibold text-blue-600 bg-blue-50">Em andamento</span>
+              <span className="px-2 py-1 rounded-full text-xs font-semibold text-yellow-700 bg-yellow-50">Aguardando</span>
+              <span className="px-2 py-1 rounded-full text-xs font-semibold text-red-600 bg-red-50">Divergência</span>
+            </div>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ADMINSELECT
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="AdminSelect" description="Select padrão do painel. Use AdminSelect + AdminSelectContent + AdminSelectItem em todos os formulários e filtros. Variante &quot;form&quot; para modais/formulários internos, &quot;default&quot; para filtros inline.">
+          <Showcase label='<AdminSelect label="Estado" placeholder="Selecione" variant="form">'>
+            <div className="max-w-xs">
+              <AdminSelect label="Estado" placeholder="Selecione um estado" defaultValue="sp" variant="form">
+                <AdminSelectContent>
+                  <AdminSelectItem value="sp">São Paulo</AdminSelectItem>
+                  <AdminSelectItem value="rj">Rio de Janeiro</AdminSelectItem>
+                  <AdminSelectItem value="mg">Minas Gerais</AdminSelectItem>
+                </AdminSelectContent>
+              </AdminSelect>
+            </div>
+          </Showcase>
+          <Showcase label='Filtro inline: <AdminSelect placeholder="Todos" triggerClassName="w-40">'>
+            <AdminSelect placeholder="Todos" defaultValue="all" triggerClassName="w-40">
+              <AdminSelectContent>
+                <AdminSelectItem value="all">Todos</AdminSelectItem>
+                <AdminSelectItem value="pf">Pessoa Física</AdminSelectItem>
+                <AdminSelectItem value="pj">Pessoa Jurídica</AdminSelectItem>
+              </AdminSelectContent>
+            </AdminSelect>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            TABLE (AdminTable + TanStack)
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="Table" description="Tabela do sistema usando AdminTable + @tanstack/react-table.">
+          <Showcase label="<AdminTable data={...} columns={...} />">
+            <AdminTableDemo />
+          </Showcase>
+          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+            <p className="text-sm text-blue-800 font-medium mb-2">Paginação integrada</p>
+            <p className="text-xs text-blue-600">
+              O <code className="font-mono bg-blue-100 px-1 rounded">AdminTable</code> inclui paginação automática com:
+            </p>
+            <ul className="text-xs text-blue-600 mt-2 space-y-1 ml-4 list-disc">
+              <li><strong>Itens por página:</strong> Select para escolher 5, 10, 20 ou 50 registros</li>
+              <li><strong>Navegação:</strong> Botões para primeira, anterior, próxima e última página</li>
+              <li><strong>Contador:</strong> Exibe "Página X de Y — N registro(s)"</li>
+            </ul>
+          </div>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            BREADCRUMB
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="Breadcrumb" description="Navegação hierárquica usando o componente shadcn/ui Breadcrumb.">
+          <Showcase label="<Breadcrumb> + <BreadcrumbList> + <BreadcrumbItem>">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild><a href="#">Dashboard</a></BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild><a href="#">Vistorias</a></BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>V-2024-1021</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            TABS (shadcn)
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="Tabs" description="Navegação em abas do shadcn/ui.">
+          <Showcase label="<Tabs> + <TabsList> + <TabsTrigger> + <TabsContent>">
+            <Tabs defaultValue="clientes" className="w-full">
+              <TabsList>
+                <TabsTrigger value="clientes">Clientes</TabsTrigger>
+                <TabsTrigger value="condicoes">Condições</TabsTrigger>
+              </TabsList>
+              <TabsContent value="clientes" className="mt-4">
+                <p className="text-sm text-gray-600">Conteúdo da aba Clientes.</p>
+              </TabsContent>
+              <TabsContent value="condicoes" className="mt-4">
+                <p className="text-sm text-gray-600">Conte��do da aba Condições.</p>
+              </TabsContent>
+            </Tabs>
+          </Showcase>
+        </Section>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            SKELETON
+        ════════════════════════════════════════════════════════════════════ */}
+        <Section title="Skeleton" description="Placeholder de carregamento.">
+          <Showcase label="<Skeleton className='h-4 w-[250px]' />">
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
+              <Skeleton className="h-10 w-full max-w-sm" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[150px]" />
+                  <Skeleton className="h-3 w-[100px]" />
+                </div>
+              </div>
+            </div>
+          </Showcase>
+        </Section>
+
+        {/* Footer */}
+        </>)}
+        <footer className="mt-16 pt-8 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-400">
+            Design System — Rios Vistorias © {new Date().getFullYear()}
+          </p>
+        </footer>
+
+      </main>
+    </div>
+  )
+}

@@ -1,0 +1,851 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import { AdminDashboardLayout } from "@/components/admin/admin-dashboard-layout"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminTable, AdminTableSortHeader } from "@/components/admin/admin-table"
+import { AdminTabs } from "@/components/admin/admin-tabs"
+import { AdminModal, AdminModalHeader, AdminModalBody, AdminModalFooter } from "@/components/admin/admin-modal"
+import { AdminInput } from "@/components/admin/admin-input"
+import {
+  PEDIDOS,
+  type Pedido,
+  type StatusPedido,
+} from "@/lib/mock-pedidos"
+import { type ColumnDef } from "@tanstack/react-table"
+import {
+  Eye,
+  CheckCircle2,
+  XCircle,
+  Copy,
+  Search,
+  FileText,
+  AlertCircle,
+  Clock,
+  Ban,
+  CreditCard,
+  History,
+  Paperclip,
+  RotateCcw,
+  Download,
+} from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+type AbaStatus = "PENDENTE" | "ACEITO" | "NAO_ACEITO" | "CANCELADO"
+
+const ABA_CONFIG: Record<AbaStatus, { label: string; icon: React.ElementType }> = {
+  PENDENTE:   { label: "Pendente",    icon: Clock       },
+  ACEITO:     { label: "Aceito",      icon: CheckCircle2 },
+  NAO_ACEITO: { label: "Não Aceito",  icon: XCircle     },
+  CANCELADO:  { label: "Cancelado",   icon: Ban         },
+}
+
+const PAGAMENTO_CONFIG: Record<string, { label: string; className: string }> = {
+  AGUARDANDO: { label: "Aguardando",  className: "bg-yellow-50 text-yellow-700" },
+  PAGO:       { label: "Pago",        className: "bg-green-50 text-green-700"   },
+  FALHOU:     { label: "Falhou",      className: "bg-red-50 text-red-600"       },
+  ESTORNADO:  { label: "Estornado",   className: "bg-orange-50 text-orange-600" },
+  ISENTO:     { label: "Isento",      className: "bg-gray-100 text-gray-500"    },
+}
+
+const PRIORIDADE_CONFIG: Record<string, { className: string }> = {
+  P1: { className: "bg-red-50 text-red-600"     },
+  P2: { className: "bg-orange-50 text-orange-600" },
+  P3: { className: "bg-gray-100 text-gray-500"  },
+}
+
+const MOTIVOS_REJEICAO = [
+  "Pedido duplicado",
+  "Cliente desistiu",
+  "Agenda indisponível",
+  "Endereço incompleto",
+  "Sem pagamento confirmado",
+  "Outro (descrever)",
+]
+
+// ─── Badge pagamento ──────────────────────────────────────────────────────────
+function BadgePagamento({ status }: { status: string }) {
+  const cfg = PAGAMENTO_CONFIG[status] ?? PAGAMENTO_CONFIG.AGUARDANDO
+  return (
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full", cfg.className)}>
+      <CreditCard size={11} />
+      {cfg.label}
+    </span>
+  )
+}
+
+// ─── Modal Visualizar ─────────────────────────────────────────────────────────
+type AbaDetalhe = "dados" | "historico" | "documentos"
+
+function ModalVisualizar({ pedido, onClose }: { pedido: Pedido; onClose: () => void }) {
+  const [aba, setAba] = useState<AbaDetalhe>("dados")
+
+  const abas = [
+    { id: "dados",      label: "Dados do Pedido", icon: FileText  },
+    { id: "historico",  label: "Histórico",        icon: History   },
+    { id: "documentos", label: "Documentos",       icon: Paperclip },
+  ]
+
+  return (
+    <AdminModal onClose={onClose} size="lg">
+      <AdminModalHeader
+        title={pedido.id}
+        subtitle={`${pedido.tipoVistoria} · ${pedido.logradouro}, ${pedido.numero}${pedido.complemento ? ` — ${pedido.complemento}` : ""}`}
+        onClose={onClose}
+      />
+      <AdminModalBody className="!pt-0">
+        {/* Abas internas */}
+        <div className="-mx-6 px-6 pt-4 border-b border-gray-100 mb-6">
+          <div className="flex gap-1">
+            {abas.map((a) => {
+              const Icon = a.icon
+              const active = aba === a.id
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setAba(a.id as AbaDetalhe)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px",
+                    active
+                      ? "border-[#0B7A8F] text-[#0B7A8F]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  )}
+                >
+                  <Icon size={14} />
+                  {a.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Aba Dados */}
+        {aba === "dados" && (
+          <div className="space-y-6">
+            {/* Cabeçalho do pedido */}
+            <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-xs text-gray-400">ID do Pedido</p>
+                <p className="text-sm font-semibold text-gray-900 font-mono">{pedido.id}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Data de Criação</p>
+                <p className="text-sm font-medium text-gray-700">{pedido.dataCriacao}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Canal</p>
+                <p className="text-sm font-medium text-gray-700">{pedido.canal}</p>
+              </div>
+            </div>
+
+            {/* Imóvel */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Imóvel</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Row label="Endereço" value={`${pedido.logradouro}, ${pedido.numero}${pedido.complemento ? `, ${pedido.complemento}` : ""}`} />
+                <Row label="Bairro / Cidade / UF" value={`${pedido.bairro} · ${pedido.cidade} — ${pedido.uf}`} />
+                <Row label="CEP" value={pedido.cep} />
+                <Row label="Tipo" value={pedido.tipoImovel} />
+                <Row label="Área útil" value={`${pedido.areaUtil} m²`} />
+                <Row label="Mobília" value={pedido.mobilia} />
+                <Row label="Status do imóvel" value={pedido.statusImovel} />
+                {pedido.referenciaAcesso && <Row label="Referência / Acesso" value={pedido.referenciaAcesso} cols={2} />}
+              </div>
+            </div>
+
+            {/* Vistoria */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Vistoria</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Row label="Tipo" value={pedido.tipoVistoria} />
+                <Row label="Data / Hora" value={`${pedido.dataVistoria} às ${pedido.horaVistoria}`} />
+                {pedido.janelaToleranciaMins && <Row label="Tolerância" value={`±${pedido.janelaToleranciaMins} min`} />}
+                {pedido.observacoes && <Row label="Observações" value={pedido.observacoes} cols={2} />}
+              </div>
+            </div>
+
+            {/* Cliente / Contato */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Cliente / Contato</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Row label="Cliente" value={`${pedido.clienteNome} (${pedido.tipoCliente})`} />
+                <Row label="Prioridade" value={pedido.prioridade} badge={PRIORIDADE_CONFIG[pedido.prioridade]?.className} />
+                <Row label="Contato" value={pedido.contatoNome} />
+                <Row label="E-mail" value={pedido.contatoEmail} />
+                <Row label="Telefone" value={pedido.contatoTelefone} />
+                <Row label="Selo" value={pedido.temSelo ? "Sim — liberado de pré-pagamento" : "Não"} />
+              </div>
+            </div>
+
+            {/* Financeiro */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Financeiro</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <Row label="Valor" value={pedido.valor} />
+                <Row label="Forma de cobrança" value={pedido.formaCobanca} />
+                <Row label="Pagamento antecipado" value={pedido.requerPagamentoAntecipado ? "Sim" : "Não"} />
+                <Row label="Status pagamento" value={PAGAMENTO_CONFIG[pedido.statusPagamento]?.label ?? pedido.statusPagamento} />
+                {pedido.idTransacaoNeofin && <Row label="Transação Neofin" value={pedido.idTransacaoNeofin} />}
+              </div>
+            </div>
+
+            {/* Envolvidos */}
+            {pedido.envolvidos.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Envolvidos</p>
+                <div className="space-y-3">
+                  {pedido.envolvidos.map((env, i) => (
+                    <div key={i} className="p-3 border border-gray-100 rounded-lg space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#0B7A8F] bg-[#0B7A8F]/10 px-2 py-0.5 rounded">{env.tipo}</span>
+                        <span className="text-sm font-medium text-gray-800">{env.nome}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                        <span>{env.cpfCnpj}</span>
+                        <span>{env.telefone}</span>
+                        <span>{env.email}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Motivo rejeição / cancelamento */}
+            {(pedido.motivoRejeicao || pedido.motivoCancelamento) && (
+              <div className="p-4 border border-red-100 bg-red-50 rounded-lg">
+                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">
+                  {pedido.motivoRejeicao ? "Motivo da Rejeição" : "Motivo do Cancelamento"}
+                </p>
+                <p className="text-sm text-red-700">{pedido.motivoRejeicao ?? pedido.motivoCancelamento}</p>
+                {pedido.taxaCancelamentoAplicada && (
+                  <p className="text-xs text-red-500 mt-1">Taxa de cancelamento aplicada (cancelamento &lt;24h)</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aba Histórico */}
+        {aba === "historico" && (
+          <div className="space-y-3">
+            {pedido.historico.map((h, i) => (
+              <div key={i} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#0B7A8F] mt-1 shrink-0" />
+                  {i < pedido.historico.length - 1 && <div className="w-px flex-1 bg-gray-100 mt-1" />}
+                </div>
+                <div className="pb-4">
+                  <p className="text-sm font-medium text-gray-800">{h.acao}</p>
+                  {h.detalhe && <p className="text-xs text-gray-500 mt-0.5">{h.detalhe}</p>}
+                  <p className="text-xs text-gray-400 mt-1">{h.dataHora} · {h.ator}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Aba Documentos */}
+        {aba === "documentos" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-[#0B7A8F]/10 flex items-center justify-center">
+                  <FileText size={16} className="text-[#0B7A8F]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Recibo de Solicitação</p>
+                  <p className="text-xs text-gray-400">Recibo-{pedido.id}.pdf · Gerado em {pedido.dataCriacao}</p>
+                </div>
+              </div>
+              <AdminButton variant="outline" size="sm" icon={<Download size={14} />}>
+                Baixar
+              </AdminButton>
+            </div>
+            <p className="text-xs text-gray-400 text-center py-2">Outros documentos aparecerão aqui conforme o pedido avança.</p>
+          </div>
+        )}
+      </AdminModalBody>
+      <AdminModalFooter>
+        <AdminButton variant="outline" onClick={onClose}>Fechar</AdminButton>
+        <AdminButton variant="outline" icon={<Download size={15} />} onClick={() => {}}>
+          Baixar Recibo
+        </AdminButton>
+      </AdminModalFooter>
+    </AdminModal>
+  )
+}
+
+// ─── Row helper ───────────────────────────────────────────────────────────────
+function Row({ label, value, cols, badge }: { label: string; value: string; cols?: number; badge?: string }) {
+  return (
+    <div className={cols === 2 ? "col-span-2" : ""}>
+      <p className="text-xs text-gray-400">{label}</p>
+      {badge ? (
+        <span className={cn("inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded mt-0.5", badge)}>{value}</span>
+      ) : (
+        <p className="text-sm font-medium text-gray-700">{value}</p>
+      )}
+    </div>
+  )
+}
+
+// ─── Modal Rejeitar ───────────────────────────────────────────────────────────
+function ModalRejeitar({ pedido, onClose, onConfirm }: { pedido: Pedido; onClose: () => void; onConfirm: (motivo: string) => void }) {
+  const [motivoSelecionado, setMotivoSelecionado] = useState("")
+  const [detalhe, setDetalhe] = useState("")
+
+  const textoFinal = motivoSelecionado === "Outro (descrever)" ? detalhe : `${motivoSelecionado}${detalhe ? ` — ${detalhe}` : ""}`
+  const valido = motivoSelecionado !== "" && textoFinal.length >= 10
+
+  return (
+    <AdminModal onClose={onClose} size="sm">
+      <AdminModalHeader
+        title="Rejeitar Pedido"
+        subtitle={pedido.id}
+        onClose={onClose}
+      />
+      <AdminModalBody>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Motivo da rejeição</label>
+            <Select value={motivoSelecionado} onValueChange={setMotivoSelecionado}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Selecione o motivo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {MOTIVOS_REJEICAO.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">
+              {motivoSelecionado === "Outro (descrever)" ? "Descreva o motivo" : "Detalhes adicionais"}
+              {motivoSelecionado === "Outro (descrever)" && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <textarea
+              className="w-full h-24 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B7A8F]/20 focus:border-[#0B7A8F] resize-none"
+              placeholder="Adicione detalhes para o cliente... (mín. 10 caracteres)"
+              value={detalhe}
+              onChange={(e) => setDetalhe(e.target.value)}
+            />
+            <p className="text-xs text-gray-400">{textoFinal.length} / 10 caracteres mínimos</p>
+          </div>
+
+          <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg flex items-start gap-2">
+            <AlertCircle size={15} className="text-yellow-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-yellow-700">O cliente será notificado com o motivo informado. Esta ação não pode ser desfeita.</p>
+          </div>
+        </div>
+      </AdminModalBody>
+      <AdminModalFooter>
+        <AdminButton variant="outline" onClick={onClose}>Cancelar</AdminButton>
+        <AdminButton variant="danger" onClick={() => onConfirm(textoFinal)} disabled={!valido}>
+          Confirmar Rejeição
+        </AdminButton>
+      </AdminModalFooter>
+    </AdminModal>
+  )
+}
+
+// ─── Modal Replicar ───────────────────────────────────────────────────────────
+function ModalReplicar({ pedido, onClose, onConfirm }: { pedido: Pedido; onClose: () => void; onConfirm: () => void }) {
+  const [dataVistoria, setDataVistoria] = useState("")
+  const [horaVistoria, setHoraVistoria] = useState("")
+  const [obs, setObs] = useState(pedido.observacoes ?? "")
+
+  return (
+    <AdminModal onClose={onClose} size="sm">
+      <AdminModalHeader
+        title="Replicar Pedido"
+        subtitle={`Baseado em ${pedido.id}`}
+        onClose={onClose}
+      />
+      <AdminModalBody>
+        <div className="p-3 bg-[#0B7A8F]/5 border border-[#0B7A8F]/20 rounded-lg space-y-1 text-sm mb-2">
+          <p className="font-medium text-[#0B7A8F]">Dados copiados do pedido original</p>
+          <p className="text-gray-600"><span className="text-gray-400">Imóvel:</span> {pedido.logradouro}, {pedido.numero}</p>
+          <p className="text-gray-600"><span className="text-gray-400">Tipo:</span> {pedido.tipoVistoria}</p>
+          <p className="text-gray-600"><span className="text-gray-400">Cliente:</span> {pedido.clienteNome}</p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Nova data <span className="text-red-500">*</span></label>
+              <AdminInput
+                variant="form"
+                type="date"
+                value={dataVistoria}
+                onChange={(e) => setDataVistoria(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Horário <span className="text-red-500">*</span></label>
+              <Select value={horaVistoria} onValueChange={setHoraVistoria}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00","17:00"].map((h) => (
+                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Observações</label>
+            <textarea
+              className="w-full h-20 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B7A8F]/20 focus:border-[#0B7A8F] resize-none"
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+            />
+          </div>
+        </div>
+      </AdminModalBody>
+      <AdminModalFooter>
+        <AdminButton variant="outline" onClick={onClose}>Cancelar</AdminButton>
+        <AdminButton
+          variant="primary"
+          onClick={onConfirm}
+          disabled={!dataVistoria || !horaVistoria}
+          icon={<RotateCcw size={15} />}
+        >
+          Criar Novo Pedido
+        </AdminButton>
+      </AdminModalFooter>
+    </AdminModal>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function BackofficeVistoriasPedidosPage() {
+  const [aba, setAba] = useState<AbaStatus>("PENDENTE")
+  const [busca, setBusca] = useState("")
+
+  // Modais
+  const [pedidoVisualizar, setPedidoVisualizar] = useState<Pedido | null>(null)
+  const [pedidoRejeitar, setPedidoRejeitar]     = useState<Pedido | null>(null)
+  const [pedidoReplicar, setPedidoReplicar]     = useState<Pedido | null>(null)
+
+  const abas = (Object.keys(ABA_CONFIG) as AbaStatus[]).map((id) => ({
+    id,
+    label: ABA_CONFIG[id].label,
+    icon: ABA_CONFIG[id].icon,
+  }))
+
+  const dadosAba = useMemo(
+    () => PEDIDOS.filter((p) => p.status === aba),
+    [aba]
+  )
+
+  // ─── Ações ────────────────────────────────────────────────────────────────
+  function handleAprovar(pedido: Pedido) {
+    // Em produção: chamar API
+    alert(`Pedido ${pedido.id} aprovado!`)
+  }
+
+  function handleRejeitar(motivo: string) {
+    if (!pedidoRejeitar) return
+    alert(`Pedido ${pedidoRejeitar.id} rejeitado: ${motivo}`)
+    setPedidoRejeitar(null)
+  }
+
+  function handleReplicar() {
+    if (!pedidoReplicar) return
+    const novoId = `PV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
+    alert(`Novo pedido criado: ${novoId}`)
+    setPedidoReplicar(null)
+  }
+
+  // ─── Colunas Pendente ────────────────────────────────────────────────────
+  const colunasPendente: ColumnDef<Pedido>[] = [
+    {
+      accessorKey: "id",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Pedido" />,
+      meta: { className: "w-[110px]" },
+      cell: ({ row }) => <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span>,
+    },
+    {
+      accessorKey: "dataVistoria",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Data / Hora" />,
+      meta: { className: "w-[100px]" },
+      cell: ({ row }) => (
+        <div>
+          <p className="text-sm font-medium text-gray-800">{row.original.dataVistoria}</p>
+          <p className="text-xs text-gray-400">{row.original.horaVistoria}</p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "clienteNome",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Cliente" />,
+      meta: { className: "w-[160px] max-w-[160px]" },
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">{row.original.clienteNome}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-gray-400 truncate">{row.original.tipoCliente}</span>
+            <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded shrink-0", PRIORIDADE_CONFIG[row.original.prioridade]?.className)}>
+              {row.original.prioridade}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "logradouro",
+      header: "Endereço",
+      meta: { className: "hidden lg:table-cell w-[180px] max-w-[180px]" },
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600 truncate block">
+          {row.original.logradouro}, {row.original.numero} — {row.original.cidade}/{row.original.uf}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "tipoVistoria",
+      header: "Tipo",
+      meta: { className: "w-[110px] max-w-[110px]" },
+      cell: ({ row }) => <span className="text-sm text-gray-600 truncate block">{row.original.tipoVistoria}</span>,
+    },
+    {
+      accessorKey: "areaUtil",
+      header: "Área",
+      meta: { className: "hidden xl:table-cell w-[70px]" },
+      cell: ({ row }) => <span className="text-sm text-gray-500">{row.original.areaUtil} m²</span>,
+    },
+    {
+      accessorKey: "valor",
+      header: "Valor",
+      meta: { className: "w-[90px]" },
+      cell: ({ row }) => <span className="text-sm font-semibold text-gray-800">{row.original.valor}</span>,
+    },
+    {
+      accessorKey: "statusPagamento",
+      header: "Pagamento",
+      meta: { className: "w-[110px]" },
+      cell: ({ row }) => <BadgePagamento status={row.original.statusPagamento} />,
+    },
+    {
+      id: "acoes",
+      header: "",
+      meta: { className: "w-[140px] min-w-[140px]" },
+      cell: ({ row }) => {
+        const p = row.original
+        const podeAprovar = !p.requerPagamentoAntecipado || p.temSelo || p.statusPagamento === "PAGO" || p.statusPagamento === "ISENTO"
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" title="Visualizar" onClick={() => setPedidoVisualizar(p)} />
+            <AdminButton
+              variant="ghost"
+              size="sm"
+              icon={<CheckCircle2 size={14} />}
+              className={cn("h-8 w-8 p-0", podeAprovar ? "text-green-600 hover:bg-green-50" : "opacity-40 cursor-not-allowed")}
+              title={podeAprovar ? "Aprovar" : "Pagamento pendente — necessário confirmação Neofin para aprovar"}
+              onClick={() => podeAprovar && handleAprovar(p)}
+              disabled={!podeAprovar}
+            />
+            <AdminButton variant="ghost" size="sm" icon={<XCircle size={14} />} className="h-8 w-8 p-0 text-red-500 hover:bg-red-50" title="Rejeitar" onClick={() => setPedidoRejeitar(p)} />
+            <AdminButton variant="ghost" size="sm" icon={<Download size={14} />} className="h-8 w-8 p-0" title="Baixar recibo" onClick={() => {}} />
+          </div>
+        )
+      },
+    },
+  ]
+
+  // ─── Colunas Aceito ───────────────────────────────────────────────────────
+  const colunasAceito: ColumnDef<Pedido>[] = [
+    {
+      accessorKey: "id",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Pedido" />,
+      meta: { className: "w-[110px]" },
+      cell: ({ row }) => <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span>,
+    },
+    {
+      accessorKey: "dataVistoria",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Data / Hora" />,
+      meta: { className: "w-[100px]" },
+      cell: ({ row }) => (
+        <div>
+          <p className="text-sm font-medium text-gray-800">{row.original.dataVistoria}</p>
+          <p className="text-xs text-gray-400">{row.original.horaVistoria}</p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "clienteNome",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Cliente" />,
+      meta: { className: "w-[160px] max-w-[160px]" },
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">{row.original.clienteNome}</p>
+          <span className="text-xs text-gray-400 truncate block">{row.original.tipoCliente}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "logradouro",
+      header: "Endereço",
+      meta: { className: "hidden lg:table-cell w-[180px] max-w-[180px]" },
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600 truncate block">
+          {row.original.logradouro}, {row.original.numero} — {row.original.cidade}/{row.original.uf}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "tipoVistoria",
+      header: "Tipo",
+      meta: { className: "w-[110px] max-w-[110px]" },
+      cell: ({ row }) => <span className="text-sm text-gray-600 truncate block">{row.original.tipoVistoria}</span>,
+    },
+    {
+      accessorKey: "valor",
+      header: "Valor",
+      meta: { className: "w-[90px]" },
+      cell: ({ row }) => <span className="text-sm font-semibold text-gray-800">{row.original.valor}</span>,
+    },
+    {
+      accessorKey: "statusPagamento",
+      header: "Pagamento",
+      meta: { className: "w-[110px]" },
+      cell: ({ row }) => <BadgePagamento status={row.original.statusPagamento} />,
+    },
+    {
+      accessorKey: "quemAprovou",
+      header: "Aprovado por",
+      meta: { className: "hidden xl:table-cell w-[120px] max-w-[120px]" },
+      cell: ({ row }) => <span className="text-xs text-gray-400 truncate block">{row.original.quemAprovou ?? "—"}</span>,
+    },
+    {
+      id: "acoes",
+      header: "",
+      meta: { className: "w-[52px] min-w-[52px]" },
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" title="Visualizar" onClick={() => setPedidoVisualizar(row.original)} />
+        </div>
+      ),
+    },
+  ]
+
+  // ─── Colunas Não Aceito ───────────────────────────────────────────────────
+  const colunasNaoAceito: ColumnDef<Pedido>[] = [
+    {
+      accessorKey: "id",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Pedido" />,
+      meta: { className: "w-[110px]" },
+      cell: ({ row }) => <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span>,
+    },
+    {
+      accessorKey: "clienteNome",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Cliente" />,
+      meta: { className: "w-[160px] max-w-[160px]" },
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">{row.original.clienteNome}</p>
+          <span className="text-xs text-gray-400 truncate block">{row.original.tipoCliente}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "logradouro",
+      header: "Endereço",
+      meta: { className: "hidden lg:table-cell w-[180px] max-w-[180px]" },
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600 truncate block">
+          {row.original.logradouro}, {row.original.numero} — {row.original.cidade}/{row.original.uf}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "tipoVistoria",
+      header: "Tipo",
+      meta: { className: "w-[110px] max-w-[110px]" },
+      cell: ({ row }) => <span className="text-sm text-gray-600 truncate block">{row.original.tipoVistoria}</span>,
+    },
+    {
+      accessorKey: "motivoRejeicao",
+      header: "Motivo",
+      meta: { className: "max-w-[200px]" },
+      cell: ({ row }) => (
+        <span className="text-sm text-red-600 truncate block">{row.original.motivoRejeicao ?? "—"}</span>
+      ),
+    },
+    {
+      accessorKey: "quemRejeitou",
+      header: "Rejeitado por",
+      meta: { className: "hidden xl:table-cell w-[120px] max-w-[120px]" },
+      cell: ({ row }) => <span className="text-xs text-gray-400 truncate block">{row.original.quemRejeitou ?? "—"}</span>,
+    },
+    {
+      id: "acoes",
+      header: "",
+      meta: { className: "w-[84px] min-w-[84px]" },
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" title="Visualizar" onClick={() => setPedidoVisualizar(row.original)} />
+          <AdminButton variant="ghost" size="sm" icon={<RotateCcw size={14} />} className="h-8 w-8 p-0 text-[#0B7A8F]" title="Replicar pedido" onClick={() => setPedidoReplicar(row.original)} />
+        </div>
+      ),
+    },
+  ]
+
+  // ─── Colunas Cancelado ────────────────────────────────────────────────────
+  const colunasCancelado: ColumnDef<Pedido>[] = [
+    {
+      accessorKey: "id",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Pedido" />,
+      meta: { className: "w-[110px]" },
+      cell: ({ row }) => <span className="font-mono text-xs text-gray-500 truncate block">{row.original.id}</span>,
+    },
+    {
+      accessorKey: "clienteNome",
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Cliente" />,
+      meta: { className: "w-[160px] max-w-[160px]" },
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">{row.original.clienteNome}</p>
+          <span className="text-xs text-gray-400 truncate block">{row.original.tipoCliente}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "logradouro",
+      header: "Endereço",
+      meta: { className: "hidden lg:table-cell w-[180px] max-w-[180px]" },
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600 truncate block">
+          {row.original.logradouro}, {row.original.numero} — {row.original.cidade}/{row.original.uf}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "tipoVistoria",
+      header: "Tipo",
+      meta: { className: "w-[110px] max-w-[110px]" },
+      cell: ({ row }) => <span className="text-sm text-gray-600 truncate block">{row.original.tipoVistoria}</span>,
+    },
+    {
+      accessorKey: "motivoCancelamento",
+      header: "Motivo",
+      meta: { className: "max-w-[200px]" },
+      cell: ({ row }) => <span className="text-sm text-gray-600 truncate block">{row.original.motivoCancelamento ?? "—"}</span>,
+    },
+    {
+      accessorKey: "quemCancelou",
+      header: "Cancelado por",
+      meta: { className: "hidden xl:table-cell w-[120px] max-w-[120px]" },
+      cell: ({ row }) => <span className="text-xs text-gray-400 truncate block">{row.original.quemCancelou ?? "—"}</span>,
+    },
+    {
+      id: "taxa",
+      header: "Taxa",
+      meta: { className: "hidden xl:table-cell w-[80px]" },
+      cell: ({ row }) => (
+        row.original.taxaCancelamentoAplicada
+          ? <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">Aplicada</span>
+          : <span className="text-xs text-gray-400">—</span>
+      ),
+    },
+    {
+      id: "acoes",
+      header: "",
+      meta: { className: "w-[84px] min-w-[84px]" },
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <AdminButton variant="ghost" size="sm" icon={<Eye size={14} />} className="h-8 w-8 p-0" title="Visualizar" onClick={() => setPedidoVisualizar(row.original)} />
+          <AdminButton variant="ghost" size="sm" icon={<RotateCcw size={14} />} className="h-8 w-8 p-0 text-[#0B7A8F]" title="Replicar pedido" onClick={() => setPedidoReplicar(row.original)} />
+        </div>
+      ),
+    },
+  ]
+
+  const colunasMap: Record<AbaStatus, ColumnDef<Pedido>[]> = {
+    PENDENTE:   colunasPendente,
+    ACEITO:     colunasAceito,
+    NAO_ACEITO: colunasNaoAceito,
+    CANCELADO:  colunasCancelado,
+  }
+
+  // ─── Aviso pagamento ──────────────────────────────────────────────────────
+  const pedidosPFSemPagamento = useMemo(
+    () => aba === "PENDENTE"
+      ? dadosAba.filter((p) => p.requerPagamentoAntecipado && !p.temSelo && p.statusPagamento === "AGUARDANDO").length
+      : 0,
+    [aba, dadosAba]
+  )
+
+  return (
+    <AdminDashboardLayout
+      profile="backoffice"
+      title="Pedidos de Vistoria"
+      breadcrumbs={[
+        { label: "Vistorias", href: "/admin/backoffice/vistorias/pedidos" },
+        { label: "Pedidos" },
+      ]}
+    >
+      <div className="space-y-4">
+        {/* Abas */}
+        <AdminTabs value={aba} onChange={(v) => { setAba(v as AbaStatus); setBusca("") }} tabs={abas} />
+
+        {/* Aviso PF sem pagamento */}
+        {pedidosPFSemPagamento > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+            <AlertCircle size={16} className="text-yellow-600 shrink-0" />
+            <p className="text-sm text-yellow-700">
+              <span className="font-semibold">{pedidosPFSemPagamento} pedido{pedidosPFSemPagamento > 1 ? "s" : ""}</span>{" "}
+              de cliente{pedidosPFSemPagamento > 1 ? "s" : ""} PF aguardando pagamento — aprovação bloqueada até confirmação Neofin.
+            </p>
+          </div>
+        )}
+
+        {/* Busca */}
+        <div className="flex items-end gap-3">
+          <div className="flex-1 min-w-[250px]">
+            <AdminInput
+              variant="form"
+              placeholder="Buscar por ID, endereço ou cliente..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              icon={<Search size={15} />}
+            />
+          </div>
+          <span className="text-sm text-gray-500 pb-0.5">
+            <span className="font-semibold text-gray-800">{dadosAba.length}</span> pedido{dadosAba.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {/* Tabela */}
+        <AdminTable
+          data={dadosAba}
+          columns={colunasMap[aba]}
+          filterValue={busca}
+          showSearch={false}
+          emptyMessage={`Nenhum pedido ${ABA_CONFIG[aba].label.toLowerCase()} encontrado.`}
+          emptyIcon={<Copy size={32} className="opacity-30" />}
+        />
+      </div>
+
+      {/* Modais */}
+      {pedidoVisualizar && (
+        <ModalVisualizar pedido={pedidoVisualizar} onClose={() => setPedidoVisualizar(null)} />
+      )}
+      {pedidoRejeitar && (
+        <ModalRejeitar pedido={pedidoRejeitar} onClose={() => setPedidoRejeitar(null)} onConfirm={handleRejeitar} />
+      )}
+      {pedidoReplicar && (
+        <ModalReplicar pedido={pedidoReplicar} onClose={() => setPedidoReplicar(null)} onConfirm={handleReplicar} />
+      )}
+    </AdminDashboardLayout>
+  )
+}

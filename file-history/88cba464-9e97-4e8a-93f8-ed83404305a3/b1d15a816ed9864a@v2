@@ -1,0 +1,315 @@
+/**
+ * AdminSidebar — Sidebar do painel administrativo
+ *
+ * REUSO OBRIGATÓRIO: Este componente JÁ EXISTE e deve ser usado em todas as
+ * páginas do painel admin. NÃO crie outra sidebar.
+ *
+ * Props:
+ *   profile: "backoffice" | "cliente"  — define o menu exibido
+ *   collapsed: boolean                 — estado colapsado (controle externo)
+ *   onToggle: () => void               — callback para colapsar/expandir
+ *
+ * Uso:
+ *   import { AdminSidebar } from "@/components/admin/admin-sidebar"
+ *   — Sempre via AdminDashboardLayout, que gerencia o collapsed state.
+ *
+ * Cor da sidebar: #002533 (mesma usada no app mobile)
+ * Menus definidos em: backofficeMenu / clienteMenu (neste arquivo)
+ * Para adicionar itens ao menu, edite os arrays backofficeMenu ou clienteMenu.
+ */
+
+"use client"
+
+import { useState } from "react"
+import { useRouter, usePathname } from "next/navigation"
+import {
+  LayoutDashboard,
+  CircleDollarSign,
+  Users,
+  ClipboardCheck,
+  AlertTriangle,
+  Settings,
+  LogOut,
+  Building2,
+  ChevronDown,
+  Menu,
+  User,
+} from "lucide-react"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+
+type Profile = "backoffice" | "cliente"
+
+interface MenuItem {
+  name: string
+  icon: React.ElementType
+  href?: string
+  subItems?: { name: string; href: string }[]
+}
+
+const backofficeMenu: MenuItem[] = [
+  { name: "Dashboard", icon: LayoutDashboard, href: "/admin/backoffice/dashboard" },
+  { name: "Financeiro", icon: CircleDollarSign, href: "/admin/backoffice/financeiro" },
+  { name: "Clientes", icon: Users, href: "/admin/backoffice/clientes" },
+  {
+    name: "Vistorias",
+    icon: ClipboardCheck,
+    subItems: [
+      { name: "Pedidos", href: "/admin/backoffice/vistorias/pedidos" },
+      { name: "Em andamento", href: "/admin/backoffice/vistorias/andamento" },
+      { name: "Qualidade", href: "/admin/backoffice/vistorias/qualidade" },
+      { name: "Concluídas", href: "/admin/backoffice/vistorias/concluidas" },
+    ],
+  },
+  {
+    name: "Divergências",
+    icon: AlertTriangle,
+    subItems: [
+      { name: "Aguardando parecer", href: "/admin/backoffice/divergencias/aguardando" },
+      { name: "Concluídas", href: "/admin/backoffice/divergencias/concluidas" },
+    ],
+  },
+  {
+    name: "Configurações",
+    icon: Settings,
+    subItems: [
+      { name: "Gestão de usuários", href: "/admin/backoffice/config/usuarios" },
+      { name: "Vistoriadores", href: "/admin/backoffice/config/vistoriadores" },
+      { name: "Controle de Rota", href: "/admin/backoffice/config/rotas" },
+      { name: "Base de dados", href: "/admin/backoffice/config/base" },
+    ],
+  },
+]
+
+const clienteMenu: MenuItem[] = [
+  { name: "Dashboard", icon: LayoutDashboard, href: "/admin/cliente/dashboard" },
+  {
+    name: "Vistorias",
+    icon: ClipboardCheck,
+    subItems: [
+      { name: "Pedidos", href: "/admin/cliente/vistorias/pedidos" },
+      { name: "Em andamento", href: "/admin/cliente/vistorias/andamento" },
+      { name: "Concluídas", href: "/admin/cliente/vistorias/concluidas" },
+    ],
+  },
+  {
+    name: "Divergências",
+    icon: AlertTriangle,
+    subItems: [
+      { name: "Aguardando parecer", href: "/admin/cliente/divergencias/aguardando" },
+      { name: "Concluídas", href: "/admin/cliente/divergencias/concluidas" },
+    ],
+  },
+  {
+    name: "Minha Empresa",
+    icon: Building2,
+    subItems: [
+      { name: "Dados da empresa", href: "/admin/cliente/empresa" },
+      { name: "Avaliação", href: "/admin/cliente/empresa/qualidade" },
+    ],
+  },
+  { name: "Financeiro", icon: CircleDollarSign, href: "/admin/cliente/financeiro" },
+]
+
+const users = {
+  backoffice: { name: "João Administrador", sub: "Backoffice", initials: "JA" },
+  cliente: { name: "Maria Cliente", sub: "Construtora Exemplo", initials: "MC" },
+}
+
+interface AdminSidebarProps {
+  profile: Profile
+  collapsed: boolean
+  onToggle: () => void
+}
+
+export function AdminSidebar({ profile, collapsed, onToggle }: AdminSidebarProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
+
+  const menu = profile === "backoffice" ? backofficeMenu : clienteMenu
+  const user = users[profile]
+
+  const toggleSubmenu = (name: string) => {
+    setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }))
+  }
+
+  const isActive = (href?: string) => href && pathname === href
+  const hasActiveChild = (subItems?: { name: string; href: string }[]) =>
+    subItems?.some((s) => pathname === s.href)
+
+  return (
+    <aside
+      className="flex flex-col h-full flex-shrink-0 transition-all duration-300 overflow-hidden"
+      style={{
+        width: collapsed ? "64px" : "240px",
+        backgroundColor: "#002533",
+      }}
+    >
+      {/* Logo + toggle */}
+      <div className="h-16 flex items-center justify-between px-4 flex-shrink-0 border-b border-white/10">
+        {!collapsed && (
+          <img src="/rios-logo.png" alt="Rios" className="h-7 w-auto brightness-0 invert" />
+        )}
+        <button
+          onClick={onToggle}
+          className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors ml-auto"
+          aria-label="Toggle sidebar"
+        >
+          <Menu size={18} />
+        </button>
+      </div>
+
+      {/* Label do painel */}
+      {!collapsed && (
+        <div className="px-4 pt-4 pb-1">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+            {profile === "backoffice" ? "Administrativo" : "Painel Cliente"}
+          </span>
+        </div>
+      )}
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-2">
+        {menu.map((item) => {
+          const hasChildren = !!item.subItems?.length
+          const active = isActive(item.href)
+          const childActive = hasActiveChild(item.subItems)
+          const isOpen = openMenus[item.name] ?? childActive
+
+          return (
+            <div key={item.name} className="mb-0.5">
+              {hasChildren ? (
+                <Collapsible
+                  open={!collapsed && isOpen}
+                  onOpenChange={(open) =>
+                    setOpenMenus((prev) => ({ ...prev, [item.name]: open }))
+                  }
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      title={collapsed ? item.name : undefined}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        childActive
+                          ? "bg-white/15 text-white"
+                          : "text-white/60 hover:bg-white/10 hover:text-white"
+                      } ${collapsed ? "justify-center" : "justify-between"}`}
+                    >
+                      <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
+                        <item.icon size={18} className="shrink-0" />
+                        {!collapsed && <span className="truncate">{item.name}</span>}
+                      </div>
+                      {!collapsed && (
+                        <ChevronDown
+                          size={14}
+                          className={`shrink-0 opacity-50 transition-transform duration-200 ${
+                            isOpen ? "rotate-180" : "rotate-0"
+                          }`}
+                        />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <div className="ml-7 mt-0.5 mb-1 border-l border-white/10 pl-3 space-y-0.5">
+                      {item.subItems!.map((sub) => (
+                        <button
+                          key={sub.name}
+                          onClick={() => router.push(sub.href)}
+                          className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors truncate ${
+                            pathname === sub.href
+                              ? "text-white font-semibold bg-white/10"
+                              : "text-white/50 hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : (
+                <button
+                  onClick={() => item.href && router.push(item.href)}
+                  title={collapsed ? item.name : undefined}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    active
+                      ? "bg-white/15 text-white"
+                      : "text-white/60 hover:bg-white/10 hover:text-white"
+                  } ${collapsed ? "justify-center" : ""}`}
+                >
+                  <item.icon size={18} className="shrink-0" />
+                  {!collapsed && <span className="truncate">{item.name}</span>}
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </nav>
+
+      {/* Footer — avatar + logout */}
+      <div className="border-t border-white/10 p-3 flex-shrink-0">
+        {/* Avatar row */}
+        <div className="relative">
+          <button
+            onClick={() => setAvatarMenuOpen((v) => !v)}
+            className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors ${collapsed ? "justify-center" : ""}`}
+          >
+            <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold shrink-0">
+              {user.initials}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-semibold text-white truncate leading-tight">{user.name}</p>
+                <p className="text-xs text-white/40 truncate">{user.sub}</p>
+              </div>
+            )}
+          </button>
+
+          {/* Avatar dropdown */}
+          {avatarMenuOpen && !collapsed && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setAvatarMenuOpen(false)} />
+              <div className="absolute bottom-full left-0 mb-2 w-full bg-[#001e2b] rounded-xl border border-white/10 shadow-xl z-20 py-1 overflow-hidden">
+                <button
+                  onClick={() => { router.push(`/admin/${profile === "backoffice" ? "backoffice" : "cliente"}/perfil`); setAvatarMenuOpen(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:bg-white/10 transition-colors"
+                >
+                  <User size={15} /> Meu perfil
+                </button>
+                <button
+                  onClick={() => setAvatarMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:bg-white/10 transition-colors"
+                >
+                  <Settings size={15} /> Configurações
+                </button>
+                <div className="border-t border-white/10 my-1" />
+                <button
+                  onClick={() => router.push("/admin/login")}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-white/10 transition-colors"
+                >
+                  <LogOut size={15} /> Sair
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Logout direto quando collapsed */}
+        {collapsed && (
+          <button
+            onClick={() => router.push("/admin/login")}
+            title="Sair"
+            className="w-full flex justify-center p-2 rounded-lg text-red-400 hover:bg-white/10 transition-colors mt-1"
+          >
+            <LogOut size={18} />
+          </button>
+        )}
+      </div>
+    </aside>
+  )
+}

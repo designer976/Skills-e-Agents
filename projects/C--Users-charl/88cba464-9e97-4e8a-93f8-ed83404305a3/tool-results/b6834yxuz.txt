@@ -1,0 +1,656 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   app/admin/cliente/dashboard/page.tsx
+	modified:   app/admin/cliente/empresa/qualidade/page.tsx
+	modified:   app/financeiro/page.tsx
+	modified:   components/admin/admin-sidebar.tsx
+	modified:   lib/mock-vistorias.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	app/admin/backoffice/config/
+	next-env.d.ts
+	tsconfig.tsbuildinfo
+
+no changes added to commit (use "git add" and/or "git commit -a")
+warning: in the working copy of 'app/financeiro/page.tsx', LF will be replaced by CRLF the next time Git touches it
+diff --git a/app/admin/cliente/dashboard/page.tsx b/app/admin/cliente/dashboard/page.tsx
+index c6aac69..2c92cfe 100644
+--- a/app/admin/cliente/dashboard/page.tsx
++++ b/app/admin/cliente/dashboard/page.tsx
+@@ -7,7 +7,7 @@ import { AdminButton } from "@/components/admin/admin-button"
+ import { Skeleton } from "@/components/ui/skeleton"
+ import {
+   ClipboardCheck, Clock, CheckCircle2, AlertTriangle,
+-  ArrowRight, TrendingUp, Bell, Eye, Download, Check,
++  ArrowRight, TrendingUp, Bell, Eye, Download, Check, Star,
+ } from "lucide-react"
+ import { DashboardFilters, type PeriodoDashboard } from "@/components/admin/dashboard-filters"
+ import { vistorias, ETAPAS, type Vistoria } from "@/lib/mock-vistorias"
+@@ -63,18 +63,21 @@ function DashboardSkeleton() {
+             <Skeleton className="h-4 w-16 rounded" />
+           </div>
+           <div className="px-6 py-2">
+-            <div className="py-3 grid grid-cols-5 gap-4 border-b border-gray-100">
+-              {Array.from({ length: 5 }).map((_, i) => (
++            <div className="py-3 grid grid-cols-8 gap-4 border-b border-gray-100">
++              {Array.from({ length: 8 }).map((_, i) => (
+                 <Skeleton key={i} className="h-3 w-full rounded" />
+               ))}
+             </div>
+             {Array.from({ length: 5 }).map((_, i) => (
+-              <div key={i} className="py-4 grid grid-cols-5 gap-4 border-b border-gray-50">
++              <div key={i} className="py-4 grid grid-cols-8 gap-4 border-b border-gray-50">
+                 <Skeleton className="h-3 w-full rounded" />
++                <Skeleton className="h-3 w-16 rounded" />
+                 <Skeleton className="h-3 w-full rounded" />
++                <Skeleton className="h-3 w-16 rounded" />
+                 <Skeleton className="h-3 w-3/4 rounded" />
+                 <Skeleton className="h-5 w-20 rounded-full" />
+-                <Skeleton className="h-3 w-full rounded" />
++                <Skeleton className="h-3 w-6 rounded" />
++                <Skeleton className="h-3 w-6 rounded" />
+               </div>
+             ))}
+           </div>
+@@ -110,6 +113,8 @@ function DashboardSkeleton() {
+ 
+ 
+ 
++const avaliacoesPendentes = vistorias.filter((v) => v.status === "Concluído").length - 1
++
+ export default function ClienteDashboard() {
+   const [loading, setLoading] = useState(true)
+   const [estado, setEstado] = useState("todos")
+@@ -141,6 +146,32 @@ export default function ClienteDashboard() {
+             <StatCard title="Divergências Abertas" value="2" icon={AlertTriangle} color="#EF4444" sub="Requerem atenção" />
+           </div>
+ 
++          {/* Avaliações Pendentes */}
++          {avaliacoesPendentes > 0 && (
++            <Link href="/admin/cliente/empresa/qualidade" className="block mb-6">
++              <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 hover:bg-amber-100 transition-colors cursor-pointer">
++                <div className="flex items-center gap-4">
++                  <div className="p-2.5 rounded-xl bg-amber-100">
++                    <Star size={18} className="text-amber-600" />
++                  </div>
++                  <div>
++                    <p className="text-sm font-bold text-amber-900">
++                      {avaliacoesPendentes} {avaliacoesPendentes === 1 ? "avaliação pendente" : "avaliações pendentes"}
++                    </p>
++                    <p className="text-xs text-amber-700 mt-0.5">
++                      {avaliacoesPendentes === 1
++                        ? "Você tem 1 vistoria concluída aguardando sua avaliação."
++                        : `Você tem ${avaliacoesPendentes} vistorias concluídas aguardando avaliação.`}
++                    </p>
++                  </div>
++                </div>
++                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 shrink-0">
++                  Avaliar agora <ArrowRight size={14} />
++                </div>
++              </div>
++            </Link>
++          )}
++
+           {/* Vistorias Recentes — largura total */}
+           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+               {/* Header + filtro */}
+@@ -175,13 +206,15 @@ export default function ClienteDashboard() {
+               {/* Linhas */}
+               <div className="divide-y divide-gray-100">
+                 {/* Header */}
+-                <div className="grid grid-cols-[1fr_2fr_1fr_auto_auto_auto] items-center gap-3 px-6 py-3 bg-gray-50 border-b border-gray-100">
+-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Código</span>
+-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Endereço</span>
+-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</span>
+-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
+-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide"></span>
+-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide"></span>
++                <div className="grid grid-cols-[1fr_110px_2fr_110px_1fr_130px_28px_28px] items-center gap-x-5 px-6 py-3 bg-gray-50 border-b border-gray-100">
++                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">Código</span>
++                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">Data</span>
++                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">Endereço</span>
++                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">Valor</span>
++                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">Tipo</span>
++                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">Status</span>
++                  <span className="w-7" />
++                  <span className="w-7" />
+                 </div>
+ 
+                 {vistorias
+@@ -190,11 +223,13 @@ export default function ClienteDashboard() {
+                     <div key={v.id}>
+                       {/* Linha principal */}
+                       <div
+-                        className="grid grid-cols-[1fr_2fr_1fr_auto_auto_auto] items-center gap-3 px-6 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer text-sm"
++                        className="grid grid-cols-[1fr_110px_2fr_110px_1fr_130px_28px_28px] items-center gap-x-5 px-6 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer text-sm"
+                         onClick={() => setExpandida(expandida === v.id ? null : v.id)}
+                       >
+                         <span className="font-mono text-xs text-gray-400">{v.id}</span>
+-                        <span className="text-gray-700 truncate">{v.endereco}</span>
++                        <span className="text-xs text-gray-500 text-left">{v.data}</span>
++                        <span className="text-gray-700 truncate text-left">{v.endereco}</span>
++                        <span className="text-xs font-medium text-gray-700 text-left">{v.valor}</span>
+                         <span className="text-gray-500">{v.tipo}</span>
+                         <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${v.statusColor}`}>
+                           {v.status}
+diff --git a/app/admin/cliente/empresa/qualidade/page.tsx b/app/admin/cliente/empresa/qualidade/page.tsx
+index 01470b9..b897e8b 100644
+--- a/app/admin/cliente/empresa/qualidade/page.tsx
++++ b/app/admin/cliente/empresa/qualidade/page.tsx
+@@ -432,7 +432,7 @@ export default function QualidadePage() {
+   return (
+     <AdminDashboardLayout
+       profile="cliente"
+-      title="Qualidade"
++      title="Avaliação"
+       breadcrumbs={[
+         { label: "Minha Empresa", href: "/admin/cliente/empresa" },
+       ]}
+diff --git a/app/financeiro/page.tsx b/app/financeiro/page.tsx
+index e3fbcc9..b8c80c0 100644
+--- a/app/financeiro/page.tsx
++++ b/app/financeiro/page.tsx
+@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/sidebar"
+ import {
+   IconChevronDown,
+   IconChevronUp,
++  IconChevronRight,
+   IconCurrencyReal,
+   IconKey,
+   IconGift,
+@@ -22,6 +23,7 @@ import {
+ 
+ // Tipos
+ type NivelVistoriador = "junior" | "pleno" | "senior"
++type DetalheAberto = "vistorias" | "taxaChave" | "bonus" | "descontos" | null
+ 
+ interface TabelaValores {
+   vistoriaSimples: number
+@@ -40,48 +42,42 @@ interface Vistoria {
+   status: "pendente" | "pago"
+ }
+ 
+-interface BonusDesconto {
++interface Desconto {
+   id: string
+-  tipo: "bonus" | "desconto"
+   descricao: string
+   valor: number
+   data: string
++  vistoriaId?: string
++  endereco?: string
+ }
+ 
+-// Dados mock
++// Taxa de chave é fixa em R$10,00 para todos os níveis
++const TAXA_CHAVE = 10.0
++
+ const TABELA_NIVEIS: Record<NivelVistoriador, TabelaValores> = {
+-  junior: {
+-    vistoriaSimples: 45.0,
+-    vistoriaCompleta: 75.0,
+-    vistoriaComercial: 120.0,
+-    taxaChave: 15.0,
+-  },
+-  pleno: {
+-    vistoriaSimples: 55.0,
+-    vistoriaCompleta: 90.0,
+-    vistoriaComercial: 150.0,
+-    taxaChave: 18.0,
+-  },
+-  senior: {
+-    vistoriaSimples: 70.0,
+-    vistoriaCompleta: 110.0,
+-    vistoriaComercial: 180.0,
+-    taxaChave: 22.0,
+-  },
++  junior: { vistoriaSimples: 45.0, vistoriaCompleta: 75.0,  vistoriaComercial: 120.0, taxaChave: TAXA_CHAVE },
++  pleno:  { vistoriaSimples: 55.0, vistoriaCompleta: 90.0,  vistoriaComercial: 150.0, taxaChave: TAXA_CHAVE },
++  senior: { vistoriaSimples: 70.0, vistoriaCompleta: 110.0, vistoriaComercial: 180.0, taxaChave: TAXA_CHAVE },
+ }
+ 
+ const VISTORIAS_MES: Vistoria[] = [
+-  { id: "1", tipo: "simples", endereco: "Rua das Flores, 123", data: "2026-03-01", valor: 55.0, taxaChave: 18.0, status: "pago" },
+-  { id: "2", tipo: "completa", endereco: "Av. Brasil, 456", data: "2026-03-03", valor: 90.0, taxaChave: 0, status: "pago" },
+-  { id: "3", tipo: "comercial", endereco: "Rua do Comércio, 789", data: "2026-03-05", valor: 150.0, taxaChave: 18.0, status: "pendente" },
+-  { id: "4", tipo: "simples", endereco: "Alameda Santos, 321", data: "2026-03-08", valor: 55.0, taxaChave: 0, status: "pendente" },
+-  { id: "5", tipo: "completa", endereco: "Rua Augusta, 654", data: "2026-03-10", valor: 90.0, taxaChave: 18.0, status: "pendente" },
++  { id: "1", tipo: "simples",   endereco: "Rua das Flores, 123",  data: "2026-03-01", valor: 55.0,  taxaChave: TAXA_CHAVE, status: "pago" },
++  { id: "2", tipo: "completa",  endereco: "Av. Brasil, 456",       data: "2026-03-03", valor: 90.0,  taxaChave: 0,          status: "pago" },
++  { id: "3", tipo: "comercial", endereco: "Rua do Comércio, 789",  data: "2026-03-05", valor: 150.0, taxaChave: TAXA_CHAVE, status: "pendente" },
++  { id: "4", tipo: "simples",   endereco: "Alameda Santos, 321",   data: "2026-03-08", valor: 55.0,  taxaChave: 0,          status: "pendente" },
++  { id: "5", tipo: "completa",  endereco: "Rua Augusta, 654",      data: "2026-03-10", valor: 90.0,  taxaChave: TAXA_CHAVE, status: "pendente" },
+ ]
+ 
+-const BONUS_DESCONTOS: BonusDesconto[] = [
+-  { id: "1", tipo: "bonus", descricao: "Bônus por pontualidade", valor: 50.0, data: "2026-03-01" },
+-  { id: "2", tipo: "bonus", descricao: "Meta do mês atingida", valor: 100.0, data: "2026-03-05" },
+-  { id: "3", tipo: "desconto", descricao: "Atraso em vistoria", valor: -25.0, data: "2026-03-07" },
++// Bônus de Disponibilidade: concedido se o vistoriador ficou disponível todos os dias do mês
++const BONUS_DISPONIBILIDADE = {
++  valor: 150.0,
++  periodoInicio: "01/03/2026",
++  periodoFim: "01/04/2026",
++}
++
++const DESCONTOS: Desconto[] = [
++  { id: "1", descricao: "Dano causado no imóvel", valor: 15.0, data: "2026-03-07", vistoriaId: "3", endereco: "Rua do Comércio, 789" },
++  { id: "2", descricao: "Chave perdida",           valor: 10.0, data: "2026-03-10", vistoriaId: "5", endereco: "Rua Augusta, 654" },
+ ]
+ 
+ const EMAIL_FINANCEIRO = "financeiro@riosvistorias.com.br"
+@@ -94,15 +90,16 @@ export default function FinanceiroPage() {
+   const [showDivergenciaModal, setShowDivergenciaModal] = useState(false)
+   const [divergenciaTexto, setDivergenciaTexto] = useState("")
+   const [emailCopiado, setEmailCopiado] = useState(false)
++  const [detalheAberto, setDetalheAberto] = useState<DetalheAberto>(null)
+ 
+   const tabela = TABELA_NIVEIS[nivelAtual]
+ 
+   // Cálculos
+-  const totalVistorias = VISTORIAS_MES.reduce((acc, v) => acc + v.valor, 0)
++  const totalVistorias  = VISTORIAS_MES.reduce((acc, v) => acc + v.valor, 0)
+   const totalTaxasChave = VISTORIAS_MES.reduce((acc, v) => acc + v.taxaChave, 0)
+-  const totalBonus = BONUS_DESCONTOS.filter(b => b.tipo === "bonus").reduce((acc, b) => acc + b.valor, 0)
+-  const totalDescontos = BONUS_DESCONTOS.filter(b => b.tipo === "desconto").reduce((acc, b) => acc + Math.abs(b.valor), 0)
+-  const totalGeral = totalVistorias + totalTaxasChave + totalBonus - totalDescontos
++  const totalBonus      = BONUS_DISPONIBILIDADE.valor
++  const totalDescontos  = DESCONTOS.reduce((acc, d) => acc + d.valor, 0)
++  const totalGeral      = totalVistorias + totalTaxasChave + totalBonus - totalDescontos
+ 
+   const handleCopyEmail = () => {
+     navigator.clipboard.writeText(EMAIL_FINANCEIRO)
+@@ -111,23 +108,123 @@ export default function FinanceiroPage() {
+   }
+ 
+   const handleEnviarDivergencia = () => {
+-    // Aqui seria a integração com API
+     alert("Divergência enviada com sucesso!")
+     setShowDivergenciaModal(false)
+     setDivergenciaTexto("")
+   }
+ 
+-  const formatCurrency = (value: number) => {
+-    return new Intl.NumberFormat("pt-BR", {
+-      style: "currency",
+-      currency: "BRL",
+-    }).format(value)
++  const fmt = (value: number) =>
++    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
++
++  const nivelLabel: Record<NivelVistoriador, string> = { junior: "Júnior", pleno: "Pleno", senior: "Sênior" }
++  const tipoLabel  = { simples: "Simples", completa: "Completa", comercial: "Comercial" }
++
++  // ── Detail bottom sheet ───────────────────────────────────────────────────
++  const detalheTitle: Record<NonNullable<DetalheAberto>, string> = {
++    vistorias: "Vistorias",
++    taxaChave: "Taxas de Chave",
++    bonus:     "Bônus de Disponibilidade",
++    descontos: "Descontos",
+   }
+ 
+-  const nivelLabel = {
+-    junior: "Júnior",
+-    pleno: "Pleno",
+-    senior: "Sênior",
++  const renderDetalheContent = () => {
++    switch (detalheAberto) {
++      case "vistorias":
++        return (
++          <div className="divide-y divide-gray-100">
++            {VISTORIAS_MES.map((v) => (
++              <div key={v.id} className="flex items-start justify-between py-3 gap-3">
++                <div>
++                  <p className="text-sm font-medium text-gray-900">{v.endereco}</p>
++                  <p className="text-xs text-gray-400 mt-0.5">
++                    {tipoLabel[v.tipo]} · {new Date(v.data).toLocaleDateString("pt-BR")}
++                  </p>
++                </div>
++                <p className="text-sm font-semibold text-gray-900 shrink-0">{fmt(v.valor)}</p>
++              </div>
++            ))}
++            <div className="flex items-center justify-between pt-3">
++              <p className="text-sm font-bold text-gray-900">Total</p>
++              <p className="text-sm font-bold text-gray-900">{fmt(totalVistorias)}</p>
++            </div>
++          </div>
++        )
++
++      case "taxaChave": {
++        const comTaxa = VISTORIAS_MES.filter((v) => v.taxaChave > 0)
++        return (
++          <div className="space-y-4">
++            <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl">
++              <IconKey size={16} className="text-amber-600 mt-0.5 shrink-0" />
++              <p className="text-xs text-amber-800">
++                Paga quando as chaves do imóvel estão na imobiliária e o vistoriador precisa se deslocar para buscá-las.
++                Valor fixo de <strong>R$ 10,00</strong> por deslocamento.
++              </p>
++            </div>
++            <div className="divide-y divide-gray-100">
++              {comTaxa.map((v) => (
++                <div key={v.id} className="flex items-start justify-between py-3 gap-3">
++                  <div>
++                    <p className="text-sm font-medium text-gray-900">{v.endereco}</p>
++                    <p className="text-xs text-gray-400 mt-0.5">{new Date(v.data).toLocaleDateString("pt-BR")}</p>
++                  </div>
++                  <p className="text-sm font-semibold text-gray-900 shrink-0">{fmt(v.taxaChave)}</p>
++                </div>
++              ))}
++              <div className="flex items-center justify-between pt-3">
++                <p className="text-sm font-bold text-gray-900">Total</p>
++                <p className="text-sm font-bold text-gray-900">{fmt(totalTaxasChave)}</p>
++              </div>
++            </div>
++          </div>
++        )
++      }
++
++      case "bonus":
++        return (
++          <div className="space-y-4">
++            <div className="flex items-start gap-3 p-3 bg-emerald-50 rounded-xl">
++              <IconGift size={16} className="text-emerald-600 mt-0.5 shrink-0" />
++              <p className="text-xs text-emerald-800">
++                Concedido ao vistoriador que mantém disponibilidade em <strong>todos os dias do mês</strong>.
++                Qualquer dia de indisponibilidade registrado cancela o bônus.
++              </p>
++            </div>
++            <div className="flex items-center justify-between py-3 border-y border-gray-100">
++              <div>
++                <p className="text-sm font-medium text-gray-900">Período de referência</p>
++                <p className="text-xs text-gray-400 mt-0.5">
++                  {BONUS_DISPONIBILIDADE.periodoInicio} a {BONUS_DISPONIBILIDADE.periodoFim}
++                </p>
++              </div>
++              <p className="text-sm font-bold text-emerald-600">+{fmt(BONUS_DISPONIBILIDADE.valor)}</p>
++            </div>
++          </div>
++        )
++
++      case "descontos":
++        return (
++          <div className="divide-y divide-gray-100">
++            {DESCONTOS.map((d) => (
++              <div key={d.id} className="flex items-start justify-between py-3 gap-3">
++                <div>
++                  <p className="text-sm font-medium text-gray-900">{d.descricao}</p>
++                  {d.endereco && <p className="text-xs text-gray-500 mt-0.5">{d.endereco}</p>}
++                  <p className="text-xs text-gray-400 mt-0.5">{new Date(d.data).toLocaleDateString("pt-BR")}</p>
++                </div>
++                <p className="text-sm font-semibold text-red-600 shrink-0">-{fmt(d.valor)}</p>
++              </div>
++            ))}
++            <div className="flex items-center justify-between pt-3">
++              <p className="text-sm font-bold text-gray-900">Total</p>
++              <p className="text-sm font-bold text-red-600">-{fmt(totalDescontos)}</p>
++            </div>
++          </div>
++        )
++
++      default:
++        return null
++    }
+   }
+ 
+   return (
+@@ -143,24 +240,51 @@ export default function FinanceiroPage() {
+         {/* Resumo Financeiro */}
+         <div className="bg-[#002533] rounded-2xl p-5 text-white">
+           <p className="text-sm text-white/70 mb-1">Previsão do mês</p>
+-          <p className="text-3xl font-bold">{formatCurrency(totalGeral)}</p>
++          <p className="text-3xl font-bold">{fmt(totalGeral)}</p>
+           <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+-            <div className="bg-white/10 rounded-xl p-3">
+-              <p className="text-white/60 text-xs">Vistorias</p>
+-              <p className="font-semibold">{formatCurrency(totalVistorias)}</p>
+-            </div>
+-            <div className="bg-white/10 rounded-xl p-3">
+-              <p className="text-white/60 text-xs">Taxas de Chave</p>
+-              <p className="font-semibold">{formatCurrency(totalTaxasChave)}</p>
+-            </div>
+-            <div className="bg-emerald-500/20 rounded-xl p-3">
+-              <p className="text-emerald-300 text-xs">Bônus</p>
+-              <p className="font-semibold text-emerald-300">+{formatCurrency(totalBonus)}</p>
+-            </div>
+-            <div className="bg-red-500/20 rounded-xl p-3">
+-              <p className="text-red-300 text-xs">Descontos</p>
+-              <p className="font-semibold text-red-300">-{formatCurrency(totalDescontos)}</p>
+-            </div>
++            {/* Vistorias */}
++            <button
++              onClick={() => setDetalheAberto("vistorias")}
++              className="bg-white/10 rounded-xl p-3 text-left hover:bg-white/20 transition-colors active:scale-[.98]"
++            >
++              <p className="text-white/60 text-xs flex items-center justify-between">
++                Vistorias <IconChevronRight size={12} className="opacity-60" />
++              </p>
++              <p className="font-semibold mt-1">{fmt(totalVistorias)}</p>
++            </button>
++
++            {/* Taxa de Chave */}
++            <button
++              onClick={() => setDetalheAberto("taxaChave")}
++              className="bg-white/10 rounded-xl p-3 text-left hover:bg-white/20 transition-colors active:scale-[.98]"
++            >
++              <p className="text-white/60 text-xs flex items-center justify-between">
++                Taxas de Chave <IconChevronRight size={12} className="opacity-60" />
++              </p>
++              <p className="font-semibold mt-1">{fmt(totalTaxasChave)}</p>
++            </button>
++
++            {/* Bônus de Disponibilidade */}
++            <button
++              onClick={() => setDetalheAberto("bonus")}
++              className="bg-emerald-500/20 rounded-xl p-3 text-left hover:bg-emerald-500/30 transition-colors active:scale-[.98]"
++            >
++              <p className="text-emerald-300 text-xs flex items-center justify-between">
++                Bônus de Disponib. <IconChevronRight size={12} className="opacity-60" />
++              </p>
++              <p className="font-semibold text-emerald-300 mt-1">+{fmt(totalBonus)}</p>
++            </button>
++
++            {/* Descontos */}
++            <button
++              onClick={() => setDetalheAberto("descontos")}
++              className="bg-red-500/20 rounded-xl p-3 text-left hover:bg-red-500/30 transition-colors active:scale-[.98]"
++            >
++              <p className="text-red-300 text-xs flex items-center justify-between">
++                Descontos <IconChevronRight size={12} className="opacity-60" />
++              </p>
++              <p className="font-semibold text-red-300 mt-1">-{fmt(totalDescontos)}</p>
++            </button>
+           </div>
+         </div>
+ 
+@@ -190,11 +314,9 @@ export default function FinanceiroPage() {
+                 </p>
+               </div>
+             </div>
+-            {tabelaExpanded ? (
+-              <IconChevronUp size={20} className="text-gray-400" />
+-            ) : (
+-              <IconChevronDown size={20} className="text-gray-400" />
+-            )}
++            {tabelaExpanded
++              ? <IconChevronUp size={20} className="text-gray-400" />
++              : <IconChevronDown size={20} className="text-gray-400" />}
+           </button>
+           {tabelaExpanded && (
+             <div className="border-t border-gray-100 p-4 space-y-4">
+@@ -213,22 +335,22 @@ export default function FinanceiroPage() {
+               <div className="space-y-3">
+                 <div className="flex justify-between py-2 border-b border-gray-100">
+                   <span className="text-gray-600">Vistoria Simples</span>
+-                  <span className="font-semibold">{formatCurrency(tabela.vistoriaSimples)}</span>
++                  <span className="font-semibold">{fmt(tabela.vistoriaSimples)}</span>
+                 </div>
+                 <div className="flex justify-between py-2 border-b border-gray-100">
+                   <span className="text-gray-600">Vistoria Completa</span>
+-                  <span className="font-semibold">{formatCurrency(tabela.vistoriaCompleta)}</span>
++                  <span className="font-semibold">{fmt(tabela.vistoriaCompleta)}</span>
+                 </div>
+                 <div className="flex justify-between py-2 border-b border-gray-100">
+                   <span className="text-gray-600">Vistoria Comercial</span>
+-                  <span className="font-semibold">{formatCurrency(tabela.vistoriaComercial)}</span>
++                  <span className="font-semibold">{fmt(tabela.vistoriaComercial)}</span>
+                 </div>
+                 <div className="flex justify-between py-2">
+                   <div className="flex items-center gap-2">
+                     <IconKey size={16} className="text-amber-500" />
+                     <span className="text-gray-600">Taxa de Chave</span>
+                   </div>
+-                  <span className="font-semibold">{formatCurrency(tabela.taxaChave)}</span>
++                  <span className="font-semibold">{fmt(tabela.taxaChave)}</span>
+                 </div>
+               </div>
+             </div>
+@@ -264,52 +386,34 @@ export default function FinanceiroPage() {
+               <IconMail size={18} className="text-gray-400" />
+               <span className="flex-1 text-sm text-gray-700 truncate">{EMAIL_FINANCEIRO}</span>
+               <button onClick={handleCopyEmail} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+-                {emailCopiado ? <IconCheck size={18} className="text-emerald-600" /> : <IconCopy size={18} className="text-gray-500" />}
++                {emailCopiado
++                  ? <IconCheck size={18} className="text-emerald-600" />
++                  : <IconCopy size={18} className="text-gray-500" />}
+               </button>
+             </div>
+           </div>
+         </div>
++      </main>
+ 
+-        {/* Bônus e Descontos */}
+-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+-          <div className="p-4 border-b border-gray-100">
+-            <h2 className="font-semibold text-gray-900">Bônus e Descontos</h2>
+-          </div>
+-          <div className="divide-y divide-gray-100">
+-            {BONUS_DESCONTOS.map((item) => (
+-              <div key={item.id} className="p-4 flex items-center justify-between">
+-                <div className="flex items-center gap-3">
+-                  <div
+-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+-                      item.tipo === "bonus" ? "bg-emerald-100" : "bg-red-100"
+-                    }`}
+-                  >
+-                    {item.tipo === "bonus" ? (
+-                      <IconGift size={16} className="text-emerald-600" />
+-                    ) : (
+-                      <IconDiscount size={16} className="text-red-600" />
+-                    )}
+-                  </div>
+-                  <div>
+-                    <p className="font-medium text-gray-900">{item.descricao}</p>
+-                    <p className="text-xs text-gray-400">
+-                      {new Date(item.data).toLocaleDateString("pt-BR")}
+-                    </p>
+-                  </div>
+-                </div>
+-                <p
+-                  className={`font-semibold ${
+-                    item.tipo === "bonus" ? "text-emerald-600" : "text-red-600"
+-                  }`}
+-                >
+-                  {item.tipo === "bonus" ? "+" : ""}
+-                  {formatCurrency(item.valor)}
+-                </p>
+-              </div>
+-            ))}
++      {/* Detail Bottom Sheet */}
++      {detalheAberto && (
++        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
++          <div className="bg-white w-full max-w-lg rounded-t-2xl overflow-hidden max-h-[80vh] flex flex-col">
++            <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
++              <h3 className="font-semibold text-gray-900">{detalheTitle[detalheAberto]}</h3>
++              <button
++                onClick={() => setDetalheAberto(null)}
++                className="p-1 hover:bg-gray-100 rounded-lg"
++              >
++                <IconX size={20} className="text-gray-500" />
++              </button>
++            </div>
++            <div className="p-4 overflow-y-auto">
++              {renderDetalheContent()}
++            </div>
+           </div>
+         </div>
+-      </main>
++      )}
+ 
+       {/* Modal Divergência */}
+       {showDivergenciaModal && (
+diff --git a/components/admin/admin-sidebar.tsx b/components/admin/admin-sidebar.tsx
+index 44e677f..ef10106 100644
+--- a/components/admin/admin-sidebar.tsx
++++ b/components/admin/admin-sidebar.tsx
+@@ -108,7 +108,7 @@ const clienteMenu: MenuItem[] = [
+     icon: Building2,
+     subItems: [
+       { name: "Dados da empresa", href: "/admin/cliente/empresa" },
+-      { name: "Qualidade", href: "/admin/cliente/empresa/qualidade" },
++      { name: "Avaliação", href: "/admin/cliente/empresa/qualidade" },
+     ],
+   },
+   { name: "Financeiro", icon: CircleDollarSign, href: "/admin/cliente/financeiro" },
+diff --git a/lib/mock-vistorias.ts b/lib/mock-vistorias.ts
+index 41f21b8..4bf414c 100644
+--- a/lib/mock-vistorias.ts
++++ b/lib/mock-vistorias.ts
+@@ -13,6 +13,7 @@ export const vistorias = [
+   {
+     id: "V-2024-1021", endereco: "Rua das Flores, 123 - São Paulo, SP", tipo: "Entrada",
+     status: "Em andamento" as StatusVistoria, statusColor: "text-blue-600 bg-blue-50", data: "12/07/2025",
++    valor: "R$ 179,90",
+     etapa: 2, temRelatorio: false,
+     dataHora: "12/07/2025 às 09:00", responsavel: "Carlos Mendonça",
+     historico: [
+@@ -23,6 +24,7 @@ export const vistorias = [
+   {
+     id: "V-2024-1020", endereco: "Av. Paulista, 1000 - São Paulo, SP", tipo: "Saída",
+     status: "Concluído" as StatusVistoria, statusColor: "text-green-700 bg-green-50", data: "10/07/2025",
++    valor: "R$ 210,00",
+     etapa: 5, temRelatorio: true,
+     dataHora: "10/07/2025 às 14:00", responsavel: "Ana Ferreira",
+     historico: [
+@@ -34,6 +36,7 @@ export const vistorias = [
+   {
+     id: "V-2024-1019", endereco: "Rua Augusta, 45 - São Paulo, SP", tipo: "Conferência",
+     status: "Em andamento" as StatusVistoria, statusColor: "text-blue-600 bg-blue-50", data: "08/07/2025",
++    valor: "R$ 195,00",
+     etapa: 3, temRelatorio: false,
+     dataHora: "08/07/2025 às 11:30", responsavel: "Roberto Lima",
+     historico: [
+@@ -44,6 +47,7 @@ export const vistorias = [
+   {
+     id: "V-2024-1018", endereco: "Alameda Santos, 800 - São Paulo, SP", tipo: "Entrada",
+     status: "Concluído" as StatusVistoria, statusColor: "text-green-700 bg-green-50", data: "05/07/2025",
++    valor: "R$ 179,90",
+     etapa: 5, temRelatorio: true,
+     dataHora: "05/07/2025 às 10:00", responsavel: "Patrícia Souza",
+     historico: [
+@@ -55,6 +59,7 @@ export const vistorias = [
+   {
+     id: "V-2024-1017", endereco: "Rua Vergueiro, 200 - São Paulo, SP", tipo: "Saída",
+     status: "Pedido" as StatusVistoria, statusColor: "text-yellow-700 bg-yellow-50", data: "03/07/2025",
++    valor: "R$ 210,00",
+     etapa: 0, temRelatorio: false,
+     dataHora: "A definir", responsavel: "Aguardando atribuição",
+     historico: [
+@@ -64,6 +69,7 @@ export const vistorias = [
+   {
+     id: "V-2024-1016", endereco: "Rua Oscar Freire, 500 - São Paulo, SP", tipo: "Entrada",
+     status: "Pedido" as StatusVistoria, statusColor: "text-yellow-700 bg-yellow-50", data: "02/07/2025",
++    valor: "R$ 179,90",
+     etapa: 0, temRelatorio: false,
+     dataHora: "A definir", responsavel: "Aguardando atribuição",
+     historico: [
+40d2eec chore: atualiza components/ui, hooks e utils (versão radix-nova shadcn)
+8ba6b2a fix: radius padrão em Badge e paginação, sintaxe Tailwind v3 no Select, nomenclatura laudo→relatório
+242644d feat: filtro de cliente na agenda do dia e padronização do Select dropdown
+deccf26 fix: restaura cores da marca, remove conflito Tailwind v4 e reposiciona grupo Casas
+859ac57 Remove node_modules file incorretamente commitado

@@ -1,0 +1,316 @@
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import { Badge } from "@/components/ui/badge";
+import { Calendar as Calendar, Clock as Clock, Phone as Phone, User as User, Mail as Mail } from "lucide-react";
+import { SolicitacaoColumn, SolicitacaoItem } from "@/types/solicitacoes";
+import { formatDateByTz, formatTimeByTz } from "@/utils/formatters";
+import { cn } from "@/lib/utils";
+
+interface SolicitacaoKanbanProps {
+  columns: SolicitacaoColumn[];
+  onMoveItem: (itemId: string, fromColumn: string, toColumn: string) => void;
+  onItemClick: (item: SolicitacaoItem) => void;
+}
+
+export function SolicitacaoKanban({
+  columns,
+  onMoveItem,
+  onItemClick,
+}: SolicitacaoKanbanProps) {
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceColumn = result.source.droppableId;
+    const destinationColumn = result.destination.droppableId;
+
+    if (sourceColumn !== destinationColumn) {
+      onMoveItem(result.draggableId, sourceColumn, destinationColumn);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "scheduled":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled":
+      case "cancelado":
+      case "cancelados":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
+  };
+
+  const getColumnHeaderColor = (status: string) => {
+    switch (status) {
+      case "open":
+        return "text-red-700 border-red-200";
+      case "scheduled":
+        return "text-green-700 border-green-200";
+      case "cancelled":
+      case "cancelado":
+      case "cancelados":
+        return "text-orange-700 border-orange-200";
+      default:
+        return "text-foreground border-border";
+    }
+  };
+
+  return (
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-full">
+        {columns.map((column) => (
+          <div
+            key={column.id}
+            className="flex  max-h-[920px] overflow-y-auto flex-col"
+          >
+            <div
+              className={cn(
+                "flex items-center   justify-between p-4 border-b-2 mb-4",
+                getColumnHeaderColor(column.id)
+              )}
+            >
+              <h3 className="font-semibold text-lg">{column.title}</h3>
+              <Badge variant="outline" className={getStatusColor(column.id)}>
+                {column.items.length}
+              </Badge>
+            </div>
+
+            <Droppable droppableId={column.id}>
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={cn(
+                    "flex-1 space-y-3 p-2 rounded-lg min-h-[400px] transition-colors",
+                    snapshot.isDraggingOver && "bg-muted/30"
+                  )}
+                >
+                  {column.items.map((item, index) => {
+                    // Permitir arrastar apenas itens com status 'open'
+                    const isDraggable = item.status === "open";
+                    const isClickable = item.status === "open";
+
+                    if (isDraggable) {
+                      return (
+                        <Draggable
+                          key={item.id}
+                          draggableId={item.id}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={cn(
+                                "bg-card border border-border rounded-lg transition-all hover:shadow-md",
+                                snapshot.isDragging && "rotate-2 shadow-lg",
+                                isClickable
+                                  ? "cursor-pointer"
+                                  : "cursor-default"
+                              )}
+                              onClick={() => isClickable && onItemClick(item)}
+                            >
+                              <div className="p-4 pb-2">
+                                <div className="flex items-start justify-between ">
+                                  <div className="space-y-2">
+                                    <div>
+                                      <h4 className="text-body font-medium text-foreground">
+                                        {item.customerName || item.client?.name}
+                                      </h4>
+                                      <p className="text-xs text-muted-foreground">
+                                        {item.serviceName || item.service?.name}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Calendar className="h-3 w-3" />
+                                      <span>
+                                        {(() => {
+                                          // Tratar data baseado no tipo de item
+                                          if (item.finalDate) {
+                                            return formatDateByTz(
+                                              new Date(item.finalDate)
+                                            );
+                                          } else if (item.preferredDate) {
+                                            return formatDateByTz(
+                                              new Date(item.preferredDate)
+                                            );
+                                          } else if (item.startTime) {
+                                            // Para appointments cancelados
+                                            return formatDateByTz(
+                                              new Date(item.startTime)
+                                            );
+                                          }
+                                          return "Sem data";
+                                        })()}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Clock className="h-3 w-3" />
+                                      <span>
+                                        {(() => {
+                                          // Tratar horário baseado no tipo de item
+                                          if (item.finalTime) {
+                                            return item.finalTime;
+                                          } else if (item.preferredTime) {
+                                            return item.preferredTime;
+                                          } else if (item.startTime) {
+                                            // Para appointments cancelados
+                                            return formatTimeByTz(
+                                              new Date(item.startTime)
+                                            );
+                                          }
+                                          return "Sem horário";
+                                        })()}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Phone className="h-3 w-3" />
+                                      <span>
+                                        {item.customerPhone ||
+                                          item.client?.phone}
+                                      </span>
+                                    </div>
+                                    {item.assignedProfessionalName && (
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <User className="h-3 w-3" />
+                                        <span>
+                                          {item.assignedProfessionalName}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1 flex-col items-end">
+                                    {item.source === "online" && (
+                                      <Badge
+                                        variant="default"
+                                        className="text-xs bg-primary hover:bg-primary/90"
+                                      >
+                                        Online
+                                      </Badge>
+                                    )}
+                                    <Badge variant="outline">
+                                      {item.status === "cancelled" &&
+                                        "Cancelado"}
+                                      {item.status === "scheduled" &&
+                                        "Agendado"}
+                                      {item.status === "open" && "Aberto"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      );
+                    } else {
+                      // Non-draggable card for cancelled appointments
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-card border border-border rounded-lg transition-all opacity-75"
+                        >
+                          <div className="p-4 pb-2">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-2">
+                                <div>
+                                  <h4 className="text-body font-medium text-foreground">
+                                    {item.customerName || item.client?.name}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.serviceName || item.service?.name}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>
+                                    {(() => {
+                                      // Tratar data baseado no tipo de item
+                                      if (item.finalDate) {
+                                        return formatDateByTz(
+                                          new Date(item.finalDate)
+                                        );
+                                      } else if (item.preferredDate) {
+                                        return formatDateByTz(
+                                          new Date(item.preferredDate)
+                                        );
+                                      } else if (item.startTime) {
+                                        // Para appointments cancelados
+                                        return formatDateByTz(
+                                          new Date(item.startTime)
+                                        );
+                                      }
+                                      return "Sem data";
+                                    })()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  <span>
+                                    {(() => {
+                                      // Tratar horário baseado no tipo de item
+                                      if (item.finalTime) {
+                                        return item.finalTime;
+                                      } else if (item.preferredTime) {
+                                        return item.preferredTime;
+                                      } else if (item.startTime) {
+                                        // Para appointments cancelados
+                                        return formatTimeByTz(
+                                          new Date(item.startTime)
+                                        );
+                                      }
+                                      return "Sem horário";
+                                    })()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Phone className="h-3 w-3" />
+                                  <span>
+                                    {item.customerPhone || item.client?.phone}
+                                  </span>
+                                </div>
+                                {item.assignedProfessionalName && (
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <User className="h-3 w-3" />
+                                    <span>{item.assignedProfessionalName}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex gap-1 flex-col items-end">
+                                {item.source === "online" && (
+                                  <Badge
+                                    variant="default"
+                                    className="text-xs bg-primary hover:bg-primary/90"
+                                  >
+                                    Online
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="text-xs">
+                                  {item.status === "cancelled" && "Cancelado"}
+                                  {item.status === "scheduled" && "Agendado"}
+                                  {item.status === "open" && "Aberto"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </div>
+        ))}
+      </div>
+    </DragDropContext>
+  );
+}

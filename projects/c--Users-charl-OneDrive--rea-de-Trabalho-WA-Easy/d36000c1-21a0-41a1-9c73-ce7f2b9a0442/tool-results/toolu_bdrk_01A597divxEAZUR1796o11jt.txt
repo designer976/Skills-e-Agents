@@ -1,0 +1,174 @@
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\types\appointment.ts:142:    color: 'text-blue-700',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\types\appointment.ts:143:    bgColor: 'bg-blue-100',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\types\absence.ts:55:  [AbsenceType.VACATION]: 'bg-blue-500',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\types\absence.ts:56:  [AbsenceType.MEDICAL]: 'bg-red-500',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\toast.tsx:78:      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\SetPassword.tsx:123:              Nova Senha <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\SetPassword.tsx:139:              Confirmar Senha <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\utils\appointmentHelpers.ts:55:    'Atendendo': 'text-blue-500',       // UserCheck - azul
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\utils\appointmentHelpers.ts:58:    'Cancelado': 'text-red-500',        // XCircle - vermelho
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\sonner.tsx:20:            "group-[.toast]:bg-blue-600 group-[.toast]:text-white",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\sonner.tsx:24:            "group-[.toast]:bg-red-50 group-[.toast]:border-red-200 group-[.toast]:text-red-900",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:157:                          Nome Completo <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:163:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:176:                          WhatsApp <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:187:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:203:                          E-mail <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:210:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:232:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:248:                          Nome da rede <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:254:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:270:                          Senha <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:276:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:289:                          Confirmar Senha <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Register.tsx:295:                            className={cn(fieldState.error && "border-red-500 focus-visible:ring-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\UserSchedulePage.tsx:430:                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\UserSchedulePage.tsx:431:                    <p className="text-sm text-blue-700">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\alert.tsx:19:          "border-blue-500/50 text-blue-700 bg-blue-50 [&>svg]:text-blue-600",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NotFound.tsx:21:        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:76:                            <Button variant="outline" size="sm" className="transition-all cursor-pointer gap-1.5 shadow-xs text-red-500 hover:text-red-600" onClick={onCancel}>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:101:        past_due: 'bg-red-100 text-red-700 hover:bg-red-100',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:102:        trialing: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:103:        unpaid: 'bg-red-100 text-red-800 hover:bg-red-100',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\TimeGrid.tsx:32:          className="absolute left-0 border-t-2 border-red-500 pointer-events-none"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\TimeGrid.tsx:39:          <div className="absolute -left-1 -top-1 w-2 h-2 bg-red-500 rounded-full" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:499:                className="relative rounded-xl data-[state=active]:bg-red-50 data-[state=active]:text-red-700 data-[state=active]:border-red-200 data-[state=active]:shadow-sm border border-transparent transition-all"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:576:            <StatsCard label="Abertas" value={stats.abertas} icon={null} color="text-red-600" badgeColor="bg-red-100 text-red-800" badgeValue={stats.abertas} />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:692:    open: "border-l-red-500 bg-red-50/10",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx:598:            <p className="text-red-600 mb-4">{error}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PlanSelection.tsx:59:                                ? "border-primary bg-red-50/30"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\DashboardPage.tsx:135:          <div className="bg-red-50 border border-red-200 rounded-3xl p-4 flex items-center justify-between">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\DashboardPage.tsx:136:            <span className="text-red-800">{error}</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\DashboardPage.tsx:139:              className="ml-4 text-sm text-red-700 underline hover:text-red-900"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentMethodCard.tsx:80:                                    className="gap-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 shadow-none border-none"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentMethodCard.tsx:83:                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="tabler-icon tabler-icon-trash w-4 h-4 text-red-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx:218:        <span className="px-2 py-1 text-xs font-medium text-red-700 bg-red-50 flex items-center gap-1 w-fit rounded-full">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx:31:      bgColor: "bg-red-50",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx:33:      textColor: "text-red-900",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx:49:      bgColor: "bg-blue-50",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx:51:      textColor: "text-blue-900",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:976:                            className="text-red-600 border-red-600 hover:bg-red-50 mt-2"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:38:        return "bg-red-100 text-red-800 border-red-200";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:53:        return "text-red-700 border-red-200";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx:296:                          ? "bg-red-100 text-red-800"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\PasswordRequirements.tsx:60:            iconColor = "text-red-500"; // Erro
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:269:                        ? "border-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:306:                        ? "border-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:347:                      ? "border-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\data-table.tsx:82:                  "text-red-600 hover:text-red-700 hover:bg-red-50"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:288:                className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:471:            <p className="text-red-600 mb-4">{error}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:286:                Nome Completo <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:295:                className={fieldErrors.name ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:298:                <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:304:                Email <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:314:                className={fieldErrors.email ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:317:                <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:325:                Perfil <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:407:                className={fieldErrors.cpf ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:410:                <p className="text-xs text-red-500 mt-1">{fieldErrors.cpf}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:441:                      Nome da Rede <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:452:                      className={fieldErrors.tenantName ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:455:                      <p className="text-xs text-red-500 mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:463:                      Slug da Rede <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:478:                        <span className="ml-2 text-sm text-red-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:491:                          ? "border-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:497:                      <p className="text-xs text-red-500 mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:523:                        fieldErrors.tenantDomain ? "border-red-500" : ""
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:527:                      <p className="text-xs text-red-500 mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:541:          <div className="p-4 bg-blue-50 rounded-lg">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:542:            <p className="text-sm text-blue-700">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:544:              <code className="bg-blue-100 px-1 rounded">Senha@123</code>. O
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:238:                        <XCircle className="h-4 w-4 text-red-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:239:                        <span className="text-sm font-medium text-red-600">Inativo</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:273:            <div className="p-4 bg-blue-50 rounded-lg">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:274:              <p className="text-sm text-blue-700">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:282:              <Label htmlFor="name">Nome Completo <span className="text-red-500">*</span></Label>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:332:              <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ConnectionStatus.tsx:46:    color: 'text-red-600',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ConnectionStatus.tsx:47:    bgColor: 'bg-red-100',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepServices.tsx:75:                <p className="text-red-500 text-sm text-center font-medium animate-pulse">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepServices.tsx:80:                <p className="text-red-500 text-sm text-center font-medium animate-pulse">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepSchedule.tsx:47:                            <p className="text-red-500 text-xs mt-1">{errors.startTime.message}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepSchedule.tsx:59:                            <p className="text-red-500 text-xs mt-1">{errors.endTime.message}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepSchedule.tsx:72:                        <p className="text-red-500 text-xs mt-1 text-center">{errors.daysOpen.message}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx:162:                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx:232:            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx:240:            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:141:        } ${expired ? "bg-red-50/50" : ""}`}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:143:        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${expired ? "bg-red-100/50" : "bg-primary/10"}`}>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:144:          <Building2 className={`w-4 h-4 ${expired ? "text-red-500" : "text-primary"}`} />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:149:            {expired && <AlertCircle className="w-3 h-3 text-red-500" />}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepProfessional.tsx:97:                            <p className="text-red-500 text-xs mt-1">{form.formState.errors.name.message}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepProfessional.tsx:116:                            <p className="text-red-500 text-xs mt-1">{form.formState.errors.phone.message}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\onboarding\StepProfessional.tsx:138:                            <p className="text-red-500 text-xs mt-1">{form.formState.errors.services.message}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx:101:            className={errors.name ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx:104:            <p className="text-sm text-red-500">{errors.name}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\EventCard.tsx:40:                return 'bg-red-500';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\EventCard.tsx:55:                return 'bg-red-50';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingErrorBoundary.tsx:49:                <AlertCircle className="h-6 w-6 text-red-500" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:842:                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:844:                        <span className="text-sm font-medium text-blue-900">Duração</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:845:                        <span className="font-semibold text-blue-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:850:                        <span className="text-sm font-medium text-blue-900">Valor</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:851:                        <span className="font-semibold text-blue-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:170:            className={errors.name ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:172:          {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:191:                  className={errors.price ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:208:                  className={errors.duration ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:211:                  <p className="text-sm text-red-500">{errors.duration}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:225:                className={errors.commission ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:228:                <p className="text-sm text-red-500">{errors.commission}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx:112:            className={cn(errors.name ? "border-red-500" : "")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx:114:          {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:77:          bgColor: "bg-blue-50",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:78:          textColor: "text-blue-700",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:79:          iconColor: "text-blue-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:105:          bgColor: "bg-red-50",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:106:          textColor: "text-red-700",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:107:          iconColor: "text-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:371:      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:372:        <p className="text-sm text-blue-800 text-center">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1373:                        getDateValidationMessage() && "border-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1443:                  <p className="text-[10px] text-red-500 font-medium">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1661:                  <p className="text-[10px] text-red-500 font-medium">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:293:              className={errors.customerName ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:296:              <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:306:              className={errors.customerLastName ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:309:              <p className="text-red-500 text-sm mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:323:              className={errors.customerPhone ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:326:              <p className="text-red-500 text-sm mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:340:              className={errors.customerCpf ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:343:              <p className="text-red-500 text-sm mt-1">{errors.customerCpf}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:372:                  className={errors.customerEmail ? "border-red-500" : ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:375:                  <p className="text-red-500 text-sm mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:461:              <p className="text-red-500 text-sm mt-2">{errors.terms}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:347:                    Nome Completo <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:356:                    className={cn("salon-input w-full", errors.fullName && "border-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:359:                    <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:375:                        className={cn("salon-input w-full", errors.cpf && "border-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:382:                      <p className="text-red-500 text-xs mt-1">{errors.cpf}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:429:                      Celular com DDD <span className="text-red-500">*</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:439:                      className={cn("salon-input w-full", errors.phone && "border-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:442:                      <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:458:                      className={cn("salon-input w-full", errors.email && "border-red-500")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:461:                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:612:                  className="text-red-500 hover:text-red-600 hover:bg-red-50 h-11 w-full sm:w-auto order-3 sm:order-1"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:197:                  className={cn(errors.price ? "border-red-500" : "")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:200:                  <p className="text-sm text-red-500">{errors.price}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:222:                  className={cn(errors.duration ? "border-red-500" : "")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:226:                  <p className="text-sm text-red-500">{errors.duration}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:244:                className={cn(errors.commission ? "border-red-500" : "")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:247:                <p className="text-sm text-red-500">{errors.commission}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:133:            <div className="border rounded-lg p-4 bg-blue-50">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:206:                                        <span className="text-xs text-red-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:763:                                        <span className="text-red-500 text-xs">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:791:                <div className="mt-4 p-3 rounded-md bg-blue-50 border border-blue-200">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:806:                                        ? "bg-red-50 text-red-800 border-red-200 cursor-not-allowed opacity-75"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx:430:              className={`min-h-[72px] resize-none ${motivoError ? "border-red-500" : ""}`}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovaAusencia.tsx:433:              <p className="text-sm text-red-500">{motivoError}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:831:                                className="text-blue-600 font-medium gap-2 cursor-pointer"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1126:                      getDateValidationMessage() && "border-red-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1204:                <p className="text-sm text-red-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:1348:                              <span className="text-xs text-blue-600 ml-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\SalonOperatingHours.tsx:74:          <CardTitle className="text-sm font-medium text-red-600">

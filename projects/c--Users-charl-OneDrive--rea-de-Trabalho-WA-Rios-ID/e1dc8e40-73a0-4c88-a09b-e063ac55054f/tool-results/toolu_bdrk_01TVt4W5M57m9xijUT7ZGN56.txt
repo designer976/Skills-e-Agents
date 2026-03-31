@@ -1,0 +1,252 @@
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-36-import {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-37-  Select,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:38:  SelectContent,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:39:  SelectItem,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:40:  SelectTrigger,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:41:  SelectValue,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-42-} from "@/components/ui/select"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-43-import { type ColumnDef } from "@tanstack/react-table"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-597-            SELECT (shadcn)
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-598-        ════════════════════════════════════════════════════════════════════ */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:599:        <Section title="Select" description="Select dropdown do shadcn/ui. Sempre use position=&quot;popper&quot; side=&quot;bottom&quot; sideOffset={4} no SelectContent para abrir abaixo do trigger com largura igual ao campo.">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:600:          <Showcase label='<Select> + <SelectTrigger> + <SelectContent position="popper" side="bottom" sideOffset={4}>'>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-601-            <div className="max-w-xs">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-602-              <Select defaultValue="sp">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:603:                <SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:604:                  <SelectValue placeholder="Selecione um estado" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:605:                </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:606:                <SelectContent position="popper" side="bottom" sideOffset={4}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:607:                  <SelectItem value="sp">São Paulo</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:608:                  <SelectItem value="rj">Rio de Janeiro</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:609:                  <SelectItem value="mg">Minas Gerais</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx:610:                </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-611-              </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\design-system\page.tsx-612-            </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-12-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-13-import { Label } from "@/components/ui/label"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:14:import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-15-import {
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-16-  Users, Briefcase, Building2, User, Mail, MapPin,
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-658-                <label className="text-xs font-medium text-gray-500">Tipo</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-659-                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:660:                  <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todos" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:661:                  <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:662:                    <SelectItem value="all">Todos</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:663:                    <SelectItem value="pf">Pessoa Física</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:664:                    <SelectItem value="pj">Pessoa Jurídica</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:665:                  </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-666-                </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-667-              </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-670-                <label className="text-xs font-medium text-gray-500">Financeiro</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-671-                <Select value={filtroFinanceiro} onValueChange={setFiltroFinanceiro}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:672:                  <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todos" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:673:                  <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:674:                    <SelectItem value="all">Todos</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:675:                    <SelectItem value="em_dia">Em dia</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:676:                    <SelectItem value="vencido">Vencido</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:677:                    <SelectItem value="bloqueado">Bloqueado</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:678:                  </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-679-                </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-680-              </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-776-                  <label className="text-xs font-medium text-gray-500">Condição</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-777-                  <Select value={filtroCondicaoTipo} onValueChange={setFiltroCondicaoTipo}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:778:                    <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todas" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:779:                    <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:780:                      <SelectItem value="all">Todas</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:781:                      <SelectItem value="funcoes_pj">Funções PJ</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:782:                      <SelectItem value="desconto">Desconto</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:783:                      <SelectItem value="prazo_especial">Prazo Especial</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:784:                    </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-785-                  </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-786-                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-788-                  <label className="text-xs font-medium text-gray-500">Desconto</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-789-                  <Select value={filtroCondicaoDesconto} onValueChange={setFiltroCondicaoDesconto}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:790:                    <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todos" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:791:                    <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:792:                      <SelectItem value="all">Todos</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:793:                      <SelectItem value="com">Com desconto</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:794:                      <SelectItem value="sem">Sem desconto</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:795:                    </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-796-                  </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-797-                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-799-                  <label className="text-xs font-medium text-gray-500">Prazo pgto.</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-800-                  <Select value={filtroCondicaoPrazo} onValueChange={setFiltroCondicaoPrazo}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:801:                    <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todos" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:802:                    <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:803:                      <SelectItem value="all">Todos</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:804:                      <SelectItem value="curto">Até 15 dias</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:805:                      <SelectItem value="medio">16 a 30 dias</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:806:                      <SelectItem value="longo">Acima de 30 dias</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:807:                    </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-808-                  </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-809-                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-811-                  <label className="text-xs font-medium text-gray-500">Vigência</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-812-                  <Select value={filtroCondicaoVigencia} onValueChange={setFiltroCondicaoVigencia}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:813:                    <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todas" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:814:                    <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:815:                      <SelectItem value="all">Todas</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:816:                      <SelectItem value="vigente">Vigente</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:817:                      <SelectItem value="vence30">Vence em 30 dias</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:818:                      <SelectItem value="expirado">Expirado</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:819:                    </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-820-                  </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-821-                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-823-                  <label className="text-xs font-medium text-gray-500">Status</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-824-                  <Select value={filtroCondicaoStatus} onValueChange={setFiltroCondicaoStatus}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:825:                    <SelectTrigger className="h-10 w-36 px-3"><SelectValue placeholder="Todos" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:826:                    <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:827:                      <SelectItem value="all">Todos</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:828:                      <SelectItem value="ativo">Ativo</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:829:                      <SelectItem value="expirado">Expirado</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:830:                    </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-831-                  </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-832-                </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-932-                <label className="text-sm font-medium text-gray-700">Estado</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-933-                <Select value={novoCliente.estado} onValueChange={(v) => setNovoCliente((p) => ({ ...p, estado: v }))}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:934:                  <SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:935:                  <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:936:                    <SelectItem value="SP">São Paulo</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:937:                    <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:938:                    <SelectItem value="MG">Minas Gerais</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:939:                    <SelectItem value="PR">Paraná</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:940:                    <SelectItem value="RS">Rio Grande do Sul</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:941:                    <SelectItem value="SC">Santa Catarina</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:942:                    <SelectItem value="BA">Bahia</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:943:                    <SelectItem value="DF">Distrito Federal</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:944:                  </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-945-                </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-946-              </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-948-                <label className="text-sm font-medium text-gray-700">Unidade</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-949-                <Select value={novoCliente.unidade} onValueChange={(v) => setNovoCliente((p) => ({ ...p, unidade: v }))}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:950:                  <SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:951:                  <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:952:                    <SelectItem value="matriz">Matriz</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:953:                    <SelectItem value="filial-sp">Filial SP</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:954:                    <SelectItem value="filial-rj">Filial RJ</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:955:                    <SelectItem value="filial-mg">Filial MG</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx:956:                  </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-957-                </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\clientes\page.tsx-958-              </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-30-  Download,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-31-} from "lucide-react"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:32:import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-33-import { cn } from "@/lib/utils"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-34-
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-314-            <label className="text-sm font-medium text-gray-700">Motivo da rejeição</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-315-            <Select value={motivoSelecionado} onValueChange={setMotivoSelecionado}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:316:              <SelectTrigger className="h-10">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:317:                <SelectValue placeholder="Selecione o motivo..." />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:318:              </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:319:              <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-320-                {MOTIVOS_REJEICAO.map((m) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:321:                  <SelectItem key={m} value={m}>{m}</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-322-                ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:323:              </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-324-            </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-325-          </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-390-              <label className="text-sm font-medium text-gray-700">Horário <span className="text-red-500">*</span></label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-391-              <Select value={horaVistoria} onValueChange={setHoraVistoria}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:392:                <SelectTrigger className="h-10">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:393:                  <SelectValue placeholder="Selecione" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:394:                </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:395:                <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-396-                  {["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00","17:00"].map((h) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:397:                    <SelectItem key={h} value={h}>{h}</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-398-                  ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx:399:                </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-400-              </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\backoffice\vistorias\pedidos\page.tsx-401-            </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-14-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-15-import { Label } from "@/components/ui/label"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:16:import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-17-
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-18-type TipoCategoria = "Entrada" | "Saída"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-230-                      <label className="text-sm font-medium text-foreground">Modelo</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-231-                      <Select value={modelo} onValueChange={setModelo}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:232:                        <SelectTrigger className="h-10">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:233:                          <SelectValue placeholder="Selecione o modelo..." />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:234:                        </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:235:                        <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-236-                          {modelos.map((m) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:237:                            <SelectItem key={m} value={m}>{m}</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-238-                          ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:239:                        </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-240-                      </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-241-                    </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-259-                      <label className="text-sm font-medium text-foreground">Horário</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-260-                      <Select value={hora} onValueChange={setHora}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:261:                        <SelectTrigger className="h-10">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:262:                          <SelectValue placeholder="Selecione" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:263:                        </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:264:                        <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-265-                          {["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00","17:00"].map((h) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:266:                            <SelectItem key={h} value={h}>{h}</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-267-                          ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx:268:                        </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-269-                      </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\pedidos\page.tsx-270-                    </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-21-  Eye,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-22-} from "lucide-react"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:23:import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-24-import { AdminButton } from "@/components/admin/admin-button"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-25-import { cn } from "@/lib/utils"
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-226-            <label className="text-xs font-medium text-gray-500">Fase</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-227-            <Select value={filtroFase} onValueChange={setFiltroFase}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:228:              <SelectTrigger className="h-10 w-48 px-3">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:229:                <SelectValue placeholder="Todas as fases" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:230:              </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:231:              <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:232:                <SelectItem value="all">Todas as fases</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-233-                {FASES_ORDERED.map((f) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:234:                  <SelectItem key={f} value={f}>{f}</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-235-                ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:236:              </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-237-            </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-238-          </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-241-            <label className="text-xs font-medium text-gray-500">Vistoriador</label>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-242-            <Select value={filtroVistoriador} onValueChange={setFiltroVistoriador}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:243:              <SelectTrigger className="h-10 w-44 px-3">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:244:                <SelectValue placeholder="Todos" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:245:              </SelectTrigger>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:246:              <SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:247:                <SelectItem value="all">Todos</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-248-                {vistoriadores.map((v) => (
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:249:                  <SelectItem key={v} value={v}>{v}</SelectItem>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-250-                ))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx:251:              </SelectContent>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-252-            </Select>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\page.tsx-253-          </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx-32-  History,
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx-33-} from "lucide-react"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx:34:import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx-35-import { cn } from "@/lib/utils"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx-36-
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx-262-        <div className="flex items-center gap-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx-263-          <Select value={tag} onValueChange={(v) => setTag(v as Anotacao["tag"])}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx:264:            <SelectTrigger className="h-8 w-36 text-xs px-2">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx:265:              <SelectValue placeholder="Tag" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Rios ID\app\admin\cliente\vistorias\andamento\[id]\page.tsx:266:            </SelectTrigger>
+
+[Showing results with pagination = limit: 250]

@@ -1,0 +1,1137 @@
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { format } from "date-fns";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarIcon, ChevronLeft as ChevronLeft, ChevronRight as ChevronRight, Filter as Filter, X as IconX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+import { AgendaFilters, FilterRemoveSignal, ProfessionalChip } from "@/components/agenda/AgendaFilters";
+import { ModalComanda } from "@/components/agenda/ModalComanda";
+import { ModalEditarAgendamento } from "@/components/agenda/ModalEditarAgendamento";
+import { ModalNovaAusencia } from "@/components/agenda/ModalNovaAusencia";
+import { ModalNovoAgendamento } from "@/components/agenda/ModalNovoAgendamento";
+import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { FirstAppointmentModal } from "@/components/onboarding/FirstAppointmentModal";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { AbsenceBlockData, CalendarEvent, EasyCalendar, EventStatus, ProfessionalColumn } from "@/components/ui/EasyCalendar";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { useRealtimeAbsences } from "@/hooks/useRealtimeAbsences";
+import { useRealtimeAppointments } from "@/hooks/useRealtimeAppointments";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { useWowMoment } from "@/hooks/useWowMoment";
+import { agendaService, OperatingHours } from "@/services/agendaService";
+import { serviceService } from "@/services/serviceService";
+import { userService } from "@/services/userService";
+import { Absence } from "@/types/absence";
+import { Appointment, AppointmentStatus } from "@/types/appointment";
+import { User, UserRole } from "@/types/user";
+import { parseDateTz } from "@/utils/formatters";
+import { normalizeSchedule } from "@/utils/scheduleHelpers";
+import { appointmentService } from "@/services/appointmentService";
+import { analytics } from "@/lib/analytics";
+
+type AppointmentWithExtras = Appointment & {
+  clientName?: string;
+  serviceName?: string;
+  professionalName?: string;
+  isOnlineBooking?: boolean;
+};
+
+const mapAppointmentStatusToEventStatus = (
+  status: AppointmentStatus,
+  paymentStatus?: string
+): EventStatus => {
+  // PRIORIDADE: Se paymentStatus é "paid", sempre retornar "Pago"
+  // independente do status do agendamento
+  if (paymentStatus === "paid") {
+    return "Pago";
+  }
+
+  const statusMap: Record<AppointmentStatus, EventStatus> = {
+    [AppointmentStatus.SCHEDULED]: "Agendado",
+    [AppointmentStatus.CONFIRMED]: "Agendado",
+    [AppointmentStatus.IN_PROGRESS]: "Atendendo",
+    [AppointmentStatus.COMPLETED]: "Pgto Pendente",
+    [AppointmentStatus.PAID]: "Pago",
+    [AppointmentStatus.CANCELLED]: "Cancelado",
+    [AppointmentStatus.NO_SHOW]: "Cancelado",
+  };
+
+  return statusMap[status] || "Agendado";
+};
+
+const transformAppointmentToEvent = (
+  appointment: AppointmentWithExtras
+): CalendarEvent => {
+  // Obter os nomes reais do cliente e serviço
+  const rawClientName = appointment.clientName || appointment.client?.name;
+  const rawServiceName = appointment.serviceName || appointment.service?.name;
+
+
+  // Detectar se é uma reserva (quando ambos são null, undefined, string vazia, ou "Unknown")
+  // Reservas são bloqueios feitos pelo profissional sem cliente/serviço definido
+  const isReserva =
+    (!rawClientName || rawClientName === "Unknown") &&
+    (!rawServiceName || rawServiceName === "Unknown");
+
+  // Definir nomes de exibição com fallbacks apropriados
+  // Para reservas, usar texto especial
+  const clientName = isReserva ? "Reserva feita pelo profissional" : (rawClientName || "Cliente não definido");
+  const serviceName = isReserva ? "" : (rawServiceName || "Serviço não definido");
+  const professionalId = appointment.professionalId;
+
+  // Verifica se é um agendamento online pelo campo source
+  const isOnlineBooking = appointment.source === 'online';
+
+  return {
+    id: appointment.id,
+    clientName,
+    serviceName,
+    professionalId,
+    start:
+      typeof appointment.startTime === "string"
+        ? appointment.startTime
+        : appointment.startTime.toISOString(),
+    end:
+      typeof appointment.endTime === "string"
+        ? appointment.endTime
+        : appointment.endTime.toISOString(),
+    status: mapAppointmentStatusToEventStatus(appointment.status, appointment.paymentStatus),
+    variant: isReserva ? "reserva" : (isOnlineBooking ? "online" : "default"),
+    price: appointment.service?.price || appointment.price,
+    isOnlineBooking,
+    source: appointment.source,
+    rawData: appointment,
+  };
+};
+
+const transformAbsenceToBreak = (
+  absence: Absence
+): {
+  id: string;
+  start: string;
+  end: string;
+  type: "ausencia" | "indisponibilidade";
+  reason?: string;
+} => {
+  return {
+    id: absence.id,
+    start: absence.startDate,
+    end: absence.endDate,
+    type: "ausencia",
+    reason: absence.reason,
+  };
+};
+
+type GetScheduleBreaksParams = {
+  professional: User;
+  selectedDate: Date;
+  salonTimezone: string;
+};
+
+type ScheduleBreakResult = {
+  id: string;
+  start: string;
+  end: string;
+  type: "ausencia" | "indisponibilidade";
+  reason?: string;
+};
+
+const getScheduleBreaksForDate = ({
+  professional,
+  selectedDate,
+  salonTimezone,
+}: GetScheduleBreaksParams): ScheduleBreakResult[] => {
+  if (!professional.schedule) {
+    return [];
+  }
+
+  // Normalize schedule to handle both numeric keys and day names
+  const normalizedSchedule = normalizeSchedule(professional.schedule);
+  if (!normalizedSchedule) {
+    return [];
+  }
+
+  const dayOfWeek = selectedDate.getUTCDay();
+  const dayMap: Record<number, keyof typeof normalizedSchedule> = {
+    0: "sunday",
+    1: "monday",
+    2: "tuesday",
+    3: "wednesday",
+    4: "thursday",
+    5: "friday",
+    6: "saturday",
+  };
+
+  const dayName = dayMap[dayOfWeek];
+  const daySchedule = normalizedSchedule[dayName];
+
+  if (!daySchedule?.breaks || daySchedule.breaks.length === 0) {
+    return [];
+  }
+
+  const dateString = format(selectedDate, "yyyy-MM-dd");
+  const breaks = daySchedule.breaks.map(
+    (breakPeriod: { start: string; end: string }, index: number) => {
+      const startLocal = `${dateString}T${breakPeriod.start}:00`;
+      const endLocal = `${dateString}T${breakPeriod.end}:00`;
+
+      const startUTC = fromZonedTime(startLocal, salonTimezone);
+      const endUTC = fromZonedTime(endLocal, salonTimezone);
+
+      return {
+        id: `schedule-break-${professional.id}-${dayOfWeek}-${index}`,
+        start: startUTC.toISOString(),
+        end: endUTC.toISOString(),
+        type: "indisponibilidade" as const,
+        reason: "Intervalo de descanso",
+      };
+    }
+  );
+
+  return breaks;
+};
+
+export default function AgendaV2Page(): JSX.Element {
+  const { selectedSalon } = useSelectedSalon();
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [professionals, setProfessionals] = useState<User[]>([]);
+
+  const [filteredProfessionals, setFilteredProfessionals] = useState<User[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [operatingHours, setOperatingHours] = useState<OperatingHours | null>(
+    null
+  );
+  const [salonServices, setSalonServices] = useState<any[]>([]);
+
+  // Filter states
+  const [professionalFilter, setProfessionalFilter] = useState<string[] | null>(null);
+  const [serviceFilter, setServiceFilter] = useState<string[] | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [mobileFilterDrawerOpen, setMobileFilterDrawerOpen] = useState(false);
+  const [removeSignal, setRemoveSignal] = useState<FilterRemoveSignal | undefined>(undefined);
+  const [specialtyLabel, setSpecialtyLabel] = useState<string | null>(null);
+  const [professionalChips, setProfessionalChips] = useState<ProfessionalChip[]>([]);
+
+  const mobileFilterCount = [professionalFilter, statusFilter, serviceFilter].filter(Boolean).length;
+
+  const activeFilterChips = useMemo(() => {
+    type ChipType = 'specialty' | 'professional' | 'status';
+    const chips: Array<{ id: string; label: string; type: ChipType }> = [];
+    if (specialtyLabel) chips.push({ id: 'specialty', label: specialtyLabel, type: 'specialty' });
+    professionalChips.forEach(p => chips.push({ id: p.id, label: p.label.split(' ')[0], type: 'professional' }));
+    if (statusFilter) chips.push({ id: statusFilter, label: statusFilter, type: 'status' });
+    return chips;
+  }, [specialtyLabel, professionalChips, statusFilter]);
+
+  const handleRemoveChip = (chip: { id: string; type: 'specialty' | 'professional' | 'status' }): void => {
+    setRemoveSignal(prev => ({ version: (prev?.version ?? 0) + 1, type: chip.type, id: chip.id }));
+    if (chip.type === 'specialty') { setServiceFilter(null); setSpecialtyLabel(null); }
+    else if (chip.type === 'professional') setProfessionalFilter(prev => { const next = (prev ?? []).filter(id => id !== chip.id); return next.length > 0 ? next : null; });
+    else if (chip.type === 'status') setStatusFilter(null);
+  };
+
+  const handleClearAllFilters = (): void => {
+    setRemoveSignal(prev => ({ version: (prev?.version ?? 0) + 1, type: 'all' }));
+    setProfessionalFilter(null);
+    setServiceFilter(null);
+    setStatusFilter(null);
+    setSpecialtyLabel(null);
+    setProfessionalChips([]);
+  };
+
+  // Modal states
+  const [modalNovoAgendamento, setModalNovoAgendamento] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
+  const [modalEditarAgendamento, setModalEditarAgendamento] = useState(false);
+  const [modalNovaAusencia, setModalNovaAusencia] = useState(false);
+  const [modalComanda, setModalComanda] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
+  const [selectedProfessionalId, setSelectedProfessionalId] =
+    useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [isEditingAbsence, setIsEditingAbsence] = useState(false);
+  const [selectedAbsenceId, setSelectedAbsenceId] = useState<string>("");
+  const [selectedAbsenceEndTime, setSelectedAbsenceEndTime] = useState<string>("");
+  const [selectedAbsenceReason, setSelectedAbsenceReason] = useState<string>("");
+  const [initialClientId, setInitialClientId] = useState<string>("");
+  const [showFirstAppointmentModal, setShowFirstAppointmentModal] = useState(false);
+  const [testClientOnboarding, setTestClientOnboarding] = useState<{ id: string; name: string; phone: string } | null>(null);
+  const [professionalIdOnboarding, setProfessionalIdOnboarding] = useState<string | null>(null);
+  const [calendarDrawerOpen, setCalendarDrawerOpen] = useState(false);
+  const [focusAppointment, setFocusAppointment] = useState<{ id: string; time: string; professionalId: string } | null>(null);
+  const [isFirstOnboardingAppointment, setIsFirstOnboardingAppointment] = useState(false);
+
+  // Comanda modal data
+  type ComandaService = {
+    id: string;
+    serviceName: string;
+    startTime: string;
+    endTime: string;
+    professional: string;
+    price: number;
+    status: "Agendado" | "Atendendo" | "Pgto Pendente" | "Pago" | "Cancelado";
+  };
+
+  type ComandaData = {
+    clientName: string;
+    date: string;
+    services: ComandaService[];
+  };
+
+  const [comandaData, setComandaData] = useState<ComandaData>({
+    clientName: "",
+    date: "",
+    services: [],
+  });
+
+  const dateString = format(selectedDate, "yyyy-MM-dd");
+  const isSelectedToday = dateString === format(new Date(), "yyyy-MM-dd");
+
+  const { appointments, refresh: refreshAppointments } = useRealtimeAppointments({
+    date: selectedDate,
+    professionalIds: professionalFilter || undefined,
+    specialtyServiceIds: serviceFilter || undefined,
+    suppressCreatedToast: location.state?.mode === 'awaiting_ai',
+  });
+
+  useEffect(() => {
+    analytics.trackEvent("agenda_viewed", { view_type: isMobile ? "daily" : "weekly" });
+  }, [isMobile]);
+
+  const handleAppointmentCreated = (appointment?: { id: string; date: string; time: string; professionalId: string }): void => {
+    analytics.trackEvent("agendamento_realizado_internal", { booking_source: "salon" });
+    refreshAppointments();
+
+    if (isFirstOnboardingAppointment && appointment) {
+      // Navegar para a data do agendamento (garantir que format bate com o esperado)
+      setSelectedDate(new Date(appointment.date + 'T12:00:00')); // T12 para evitar problemas de timezone na data
+      
+      // Setar o foco
+      setFocusAppointment(appointment);
+      
+      // Consumir o flag
+      setIsFirstOnboardingAppointment(false);
+    }
+  };
+
+
+  useWowMoment({
+    setSelectedDate,
+    refreshAppointments,
+  });
+
+  const { absences, refresh: refreshAbsences } = useRealtimeAbsences({
+    date: selectedDate,
+  });
+
+  // Next Appointment Date Logic
+  useEffect(() => {
+    const fetchNextAppointment = async () => {
+      if (!selectedSalon?.id) return;
+      try {
+        // Get start of today in ISO format to include appointments that started earlier today
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const response = await appointmentService.list({
+          startDate: startOfToday.toISOString(),
+          limit: 20,
+          sortBy: "startTime",
+          sortOrder: "ASC",
+        });
+
+        if (response.data && response.data.length > 0) {
+          const validApt = response.data.find(
+            (apt) => apt.status !== "cancelled" && apt.status !== "no_show"
+          );
+          
+          if (validApt) {
+            const firstAptDate = new Date(validApt.startTime);
+            
+            // Se estivermos na data padrão (hoje), e houver um agendamento futuro (ou hoje), pular para ele
+            // Pular apenas se a data for diferente do hoje absoluto para evitar loops, 
+            // e se a data selecionada ainda for o "hoje" inicial.
+            const today = new Date();
+            if (firstAptDate.toDateString() !== today.toDateString() && 
+                selectedDate.toDateString() === today.toDateString()) {
+              setSelectedDate(firstAptDate);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching next appointment:", error);
+      }
+    };
+
+    fetchNextAppointment();
+  }, [selectedSalon?.id]);
+
+  // Extract timezone into dedicated memo for reactivity
+  const salonTimezone = useMemo(
+    () => selectedSalon?.timezone || "America/Sao_Paulo",
+    [selectedSalon?.timezone]
+  );
+
+  useEffect(() => {
+    const loadSalonData = async (): Promise<void> => {
+      if (!selectedSalon?.id) return;
+
+      // STRICT CHECK: Ensure the selectedSalon matches the persisted one to avoid race conditions
+      // This prevents the "old" salon from being used just before the new one loads
+      const storedSalonId = localStorage.getItem("selectedSalonId");
+      if (storedSalonId && selectedSalon.id !== storedSalonId) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const [professionalsResponse, operatingHoursData, servicesResponse] = await Promise.all([
+          userService.list({
+            salonId: selectedSalon.id,
+            role: UserRole.PROFISSIONAL,
+            status: "active",
+          }),
+          agendaService.getSalonOperatingHours(selectedSalon.id),
+          serviceService.getAll({ salonId: selectedSalon.id, active: true }),
+        ]);
+
+        setProfessionals(professionalsResponse.data);
+        setFilteredProfessionals(professionalsResponse.data);
+        setOperatingHours(operatingHoursData);
+
+        // Process services
+        let allServices = [];
+        if (servicesResponse.customServices || servicesResponse.standardServices) {
+          allServices = [
+            ...(servicesResponse.customServices || []),
+            ...(servicesResponse.standardServices || []),
+          ];
+        } else if (Array.isArray(servicesResponse)) {
+          allServices = servicesResponse;
+        }
+        setSalonServices(allServices);
+      } catch (error) {
+        console.error("Error loading salon data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedSalon?.id) {
+      loadSalonData();
+    } else {
+      setLoading(false);
+    }
+  }, [selectedSalon?.id]);
+
+
+
+  // Calculate operating hours for selected date
+  const salonDaySchedule = useMemo(() => {
+    if (!operatingHours) {
+      return { startHour: 8, endHour: 20, isOpen: true };
+    }
+
+    const dayOfWeek = selectedDate.getDay();
+    const daySchedule = operatingHours.openingHours.find(
+      (h) => h.dayOfWeek === dayOfWeek
+    );
+
+    if (!daySchedule) {
+      return { startHour: 8, endHour: 20, isOpen: false };
+    }
+
+    if (!daySchedule.isOpen) {
+      return { startHour: 8, endHour: 20, isOpen: false };
+    }
+
+    const [openHour] = daySchedule.open.split(":").map(Number);
+    const [closeHour] = daySchedule.close.split(":").map(Number);
+
+    return {
+      startHour: openHour,
+      endHour: closeHour,
+      isOpen: true,
+    };
+  }, [operatingHours, selectedDate]);
+
+  // Calcular slotMinutes baseado nas configurações do salão e durações dos serviços
+  const slotMinutes = useMemo(() => {
+    // Obter slotInterval das configurações do salão (padrão: 15)
+    const salonSlotInterval = operatingHours?.settings?.slotInterval || 15;
+
+    // Se não tiver serviços carregados, usar o slotInterval do salão
+    if (!salonServices || salonServices.length === 0) {
+      return salonSlotInterval;
+    }
+
+    // Verificar se algum serviço tem duração menor que 30 minutos
+    const hasShortService = salonServices.some((service) => {
+      const duration = typeof service.duration === 'number'
+        ? service.duration
+        : parseInt(service.duration || '30', 10);
+      return duration < 30;
+    });
+
+    // Verificar se algum profissional tem configuração customizada com duração < 30
+    const hasProfessionalShortService = filteredProfessionals.some((professional) => {
+      // Verificar se algum serviço tem customDuration para este profissional
+      return salonServices.some((service) => {
+        if (!service.professionals || service.professionals.length === 0) {
+          return false;
+        }
+
+        // Buscar configuração customizada do profissional para este serviço
+        const professionalConfig = service.professionals.find(
+          (p) => p.professionalId === professional.id
+        );
+
+        if (professionalConfig?.customDuration) {
+          return professionalConfig.customDuration < 30;
+        }
+
+        return false;
+      });
+    });
+
+    // Se algum serviço ou configuração de profissional tiver < 15 minutos, usar slotInterval do salão
+    // Caso contrário, otimizar para slots de 15 minutos
+    return hasShortService || hasProfessionalShortService ? salonSlotInterval : 15;
+  }, [salonServices, filteredProfessionals, operatingHours?.settings?.slotInterval]);
+
+  // Filter professionals
+  const displayedProfessionals = useMemo(() => {
+    if (!professionalFilter || professionalFilter.length === 0) {
+      return filteredProfessionals;
+    }
+    return filteredProfessionals.filter((prof) =>
+      professionalFilter.includes(prof.id)
+    );
+  }, [filteredProfessionals, professionalFilter]);
+
+  const columns: ProfessionalColumn[] = useMemo(() => {
+    const selectedDateString = format(selectedDate, "yyyy-MM-dd");
+
+    return displayedProfessionals.map((prof) => {
+      const registeredAbsences = absences
+        .filter((absence) => {
+          if (absence.userId !== prof.id) return false;
+
+          // Filter absences by date in salon timezone
+          // formatInTimeZone handles the timezone conversion internally
+          const absenceStartDate = formatInTimeZone(
+            new Date(absence.startDate),
+            salonTimezone,
+            "yyyy-MM-dd"
+          );
+          const absenceEndDate = formatInTimeZone(
+            new Date(absence.endDate),
+            salonTimezone,
+            "yyyy-MM-dd"
+          );
+
+          // Only include absences that start and end on the same selected date
+          return (
+            absenceStartDate === selectedDateString &&
+            absenceEndDate === selectedDateString
+          );
+        })
+        .map(transformAbsenceToBreak);
+
+      const scheduleBreaks = getScheduleBreaksForDate({
+        professional: prof,
+        selectedDate,
+        salonTimezone,
+      });
+
+      const allBreaks = [...registeredAbsences, ...scheduleBreaks];
+
+      // Normalize schedule to ensure consistent format
+      const normalizedSchedule = normalizeSchedule(prof.schedule);
+
+      return {
+        id: prof.id,
+        name: prof.name,
+        nickname: prof.nickname,
+        avatar: prof.avatar,
+        breaks: allBreaks,
+        schedule: normalizedSchedule as any,
+        salonDaySchedule: salonDaySchedule,
+        salonTimezone,
+      };
+    });
+  }, [
+    displayedProfessionals,
+    absences,
+    salonDaySchedule,
+    salonTimezone,
+    selectedDate,
+  ]);
+
+  // Filter events by status (service filtering is done by the hook)
+  const filteredEvents = useMemo(() => {
+    let filtered = appointments;
+
+    if (statusFilter) {
+      filtered = filtered.filter((apt) => {
+        const eventStatus = mapAppointmentStatusToEventStatus(apt.status, apt.paymentStatus);
+        return eventStatus === statusFilter;
+      });
+    }
+
+    return filtered.map(transformAppointmentToEvent);
+  }, [appointments, statusFilter]);
+
+  const handleEventClick = (event: CalendarEvent): void => {
+    const appointment = event.rawData as Appointment;
+
+    // Verificar se é um agendamento futuro
+    const now = new Date();
+    const appointmentStart = new Date(appointment.startTime);
+    const isFuture = appointmentStart > now;
+
+    if (isFuture) {
+      // Para agendamentos futuros, abrir modal de edição
+      setSelectedAppointment(appointment);
+      setModalEditarAgendamento(true);
+    } else {
+      // Para agendamentos passados ou em andamento, abrir comanda para gerenciar pagamento
+      openComandaModal(event);
+    }
+  };
+
+  const handleSlotClick = (professionalId: string, startTime: string): void => {
+    if (!professionalId || !startTime) {
+      console.error("[handleSlotClick] Missing professionalId or startTime", {
+        professionalId,
+        startTime,
+      });
+      return;
+    }
+
+    setSelectedProfessionalId(professionalId);
+    setSelectedTime(startTime);
+    setInitialClientId(""); // Limpar client ID de onboarding ao clicar num slot normal
+    setModalKey((prev) => prev + 1); // Forçar remount para resetar estado interno do modal
+    setModalNovoAgendamento(true);
+  };
+
+  const handleAbsenceClick = (
+    professionalId: string,
+    startTime: string
+  ): void => {
+    if (!professionalId || !startTime) {
+      console.error(
+        "[handleAbsenceClick] Missing professionalId or startTime",
+        {
+          professionalId,
+          startTime,
+        }
+      );
+      return;
+    }
+
+    setSelectedProfessionalId(professionalId);
+    setSelectedTime(startTime);
+    setIsEditingAbsence(false);
+    setSelectedAbsenceId("");
+    setSelectedAbsenceEndTime("");
+    setSelectedAbsenceReason("");
+    setModalNovaAusencia(true);
+  };
+
+  const handleAbsenceBlockClick = (absenceData: AbsenceBlockData): void => {
+    const professional = displayedProfessionals.find(
+      (p) => p.id === absenceData.professionalId
+    );
+
+    if (!professional) {
+      console.error("[handleAbsenceBlockClick] Professional not found");
+      return;
+    }
+
+    setSelectedProfessionalId(absenceData.professionalId);
+    setSelectedTime(absenceData.startTime);
+    setIsEditingAbsence(true);
+    setSelectedAbsenceId(absenceData.id);
+    setSelectedAbsenceEndTime(absenceData.endTime);
+    setSelectedAbsenceReason(absenceData.reason || "");
+    setModalNovaAusencia(true);
+  };
+
+  const handleNewAppointment = (args?: { clientId?: string; professionalId?: string }): void => {
+    // Define valores padrão quando criar agendamento sem clicar em slot específico
+    const today = parseDateTz(new Date(), salonTimezone);
+    let hour = today.getHours();
+    const minutes = today.getMinutes();
+
+    setSelectedAppointment(null);
+    setInitialClientId(args?.clientId || "");
+    setSelectedProfessionalId(args?.professionalId || "");
+
+    const endHour = salonDaySchedule.endHour;
+    const startHour = salonDaySchedule.startHour;
+
+    // Regras de arredondamento:
+    // ... (rest of rounding logic)
+    let defaultMinutes: string;
+
+    if (minutes < 15) {
+      defaultMinutes = "00";
+    } else if (minutes < 30) {
+      defaultMinutes = "30";
+    } else if (minutes < 45) {
+      hour = hour + 1;
+      defaultMinutes = "00";
+    } else {
+      hour = hour + 1;
+      defaultMinutes = "30";
+    }
+
+    if (hour < startHour) {
+      hour = startHour;
+      defaultMinutes = "00";
+    } else if (hour > endHour) {
+      hour = endHour;
+      defaultMinutes = "00";
+    } else if (hour === endHour) {
+      defaultMinutes = "00";
+    }
+
+    const defaultTime = `${hour}:${defaultMinutes}`;
+
+    setSelectedTime(defaultTime);
+    setSelectedProfessionalId(""); // Empty when clicking "Novo Agendamento" button
+    
+    if (args?.clientId) {
+      setInitialClientId(args.clientId);
+    } else {
+      setInitialClientId("");
+    }
+    
+    setModalKey((prev) => prev + 1); // Forçar remount para resetar estado interno do modal
+    setModalNovoAgendamento(true);
+  };
+  // Onboarding Redirection Logic
+  useEffect(() => {
+    if (location.state?.fromOnboarding) {
+      setTestClientOnboarding(location.state.testClient || null);
+      setProfessionalIdOnboarding(location.state.professionalId || null);
+      setShowFirstAppointmentModal(true);
+      
+      // Cleanup state to avoid re-opening on refresh
+      navigate(location.pathname, { replace: true, state: null });
+    } else if (location.state?.source === 'onboarding') {
+      const clientId = location.state.testClientId;
+      const professionalId = location.state.professionalId;
+      setShowFirstAppointmentModal(false); // Fechar o modal de sucesso
+      
+      handleNewAppointment({ clientId, professionalId });
+
+      // Marcar que o próximo agendamento deve ser focado
+      setIsFirstOnboardingAppointment(true);
+      
+      // Cleanup state to avoid re-opening on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname, isMobile]);
+
+  const handlePreviousDay = (): void => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleNextDay = (): void => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleToday = (): void => {
+    setSelectedDate(new Date());
+  };
+
+  const handleAbsenceChange = (): void => {
+    // Atualiza tanto ausências quanto agendamentos
+    // pois ausências podem afetar a disponibilidade da agenda
+    refreshAbsences();
+    refreshAppointments();
+  };
+
+  const openComandaModal = (event: CalendarEvent): void => {
+    const appointment = event.rawData as Appointment;
+
+    // Buscar todos os agendamentos do cliente na data selecionada
+    const clientServices = appointments
+      .filter((apt) => {
+        const clientName = apt.client?.name || "";
+        const appointmentClientName = appointment.client?.name || "";
+        return clientName === appointmentClientName;
+      })
+      .map((apt) => {
+        // Garantir que price seja um número
+        let priceValue = 0;
+        const service = apt.service;
+        if (service?.price !== undefined) {
+          if (typeof service.price === "number") {
+            priceValue = service.price;
+          } else if (typeof service.price === "string") {
+            priceValue = parseFloat(service.price) || 0;
+          }
+        } else if (apt.price !== undefined) {
+          if (typeof apt.price === "number") {
+            priceValue = apt.price;
+          } else if (typeof apt.price === "string") {
+            priceValue = parseFloat(apt.price) || 0;
+          }
+        }
+
+        // Formatar horários
+        const startTime = formatInTimeZone(
+          new Date(apt.startTime),
+          salonTimezone,
+          "HH:mm"
+        );
+        const endTime = formatInTimeZone(
+          new Date(apt.endTime),
+          salonTimezone,
+          "HH:mm"
+        );
+
+        return {
+          id: apt.id,
+          serviceName: apt.service?.name || "Serviço",
+          startTime,
+          endTime,
+          professional: apt.professional?.name || "Profissional",
+          price: priceValue,
+          status: mapAppointmentStatusToEventStatus(apt.status, apt.paymentStatus),
+        };
+      });
+
+    setComandaData({
+      clientName: appointment.client?.name || "Cliente",
+      date: format(selectedDate, "dd/MM/yyyy"),
+      services: clientServices,
+    });
+
+    setModalComanda(true);
+  };
+
+  const handleComandaStatusUpdate = async (): Promise<void> => {
+    // Atualizar a lista de agendamentos após mudança de status
+    await refreshAppointments();
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavTitle={selectedSalon?.name || "Salão"}
+      sideNavSubtitle="Sistema de Agendamentos"
+    >
+
+      {/* Header — título + botão responsivo (mobile e desktop) */}
+      <PageHeader
+        title={user?.role === "Profissional" ? "Minha Agenda" : "Agenda"}
+        subtitle="Gerencie os agendamentos do salão"
+        disabledActions={!selectedSalon?.active}
+        action={{
+          label: "Novo Agendamento",
+          onClick: handleNewAppointment,
+          className: "h-10",
+        }}
+      />
+
+      {/* Mobile: Compact date navigation */}
+      <div className="md:hidden flex items-center gap-2 mb-3">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handlePreviousDay}
+          className="flex-shrink-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setCalendarDrawerOpen(true)}
+          className="flex-1 min-w-0 font-normal justify-center"
+        >
+          <CalendarIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <span className="text-body font-medium truncate">
+            {format(selectedDate, "d 'de' MMM", { locale: ptBR })}
+          </span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleNextDay}
+          className="flex-shrink-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleToday}
+          className="flex-shrink-0"
+        >
+          Hoje
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setMobileFilterDrawerOpen(true)}
+          className={`flex-shrink-0 gap-1.5${mobileFilterCount > 0 ? " bg-primary/10 border-primary/40 text-primary" : ""}`}
+        >
+          <Filter className="w-4 h-4" />
+          {mobileFilterCount > 0 && <span className="font-medium">{mobileFilterCount}</span>}
+        </Button>
+      </div>
+
+      {/* Mobile: Active filter chips */}
+      {activeFilterChips.length > 0 && (
+        <div className="md:hidden flex items-center gap-2 flex-wrap mb-3">
+          {activeFilterChips.map((chip) => (
+            <span
+              key={chip.id}
+              className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-button text-foreground"
+            >
+              {chip.label}
+              <button onClick={() => handleRemoveChip(chip)} className="hover:text-destructive">
+                <IconX className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <button onClick={handleClearAllFilters} className="text-button text-muted-foreground hover:text-foreground underline">
+            Limpar
+          </button>
+        </div>
+      )}
+
+      {/* Desktop: Date navigation and filters */}
+      <div className="hidden md:flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={handlePreviousDay}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleNextDay}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="font-normal group">
+                <CalendarIcon className="w-4 h-4 text-foreground group-hover:text-primary transition-colors" />
+                <span className="text-body">
+                  {format(selectedDate, "EEEE (d 'de' MMMM)", {
+                    locale: ptBR,
+                  })}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button variant={isSelectedToday ? "outline" : "default"} size="sm" onClick={handleToday}>
+            Hoje
+          </Button>
+        </div>
+
+        <AgendaFilters
+          onProfessionalFilter={setProfessionalFilter}
+          onServiceFilter={setServiceFilter}
+          onStatusFilter={setStatusFilter}
+          onFilteredProfessionalsChange={(profs) => {
+            const userProfs = profs
+              .map((p) => professionals.find((prof) => prof.id === p.id))
+              .filter(Boolean) as User[];
+            setFilteredProfessionals(userProfs);
+          }}
+          onSpecialtyLabelChange={setSpecialtyLabel}
+          onProfessionalChipsChange={(chips) => setProfessionalChips(chips ?? [])}
+          userRole={user?.role as "Easy Salon" | "Profissional" | "Recepcionista"}
+          removeSignal={removeSignal}
+        />
+      </div>
+
+      {/* Calendar — both mobile and desktop */}
+      <EasyCalendar
+        date={dateString}
+        columns={columns}
+        events={filteredEvents}
+        startHour={salonDaySchedule.startHour}
+        endHour={salonDaySchedule.endHour}
+        slotMinutes={slotMinutes}
+        primaryColor={selectedSalon?.primaryColor}
+        salonTimezone={salonTimezone}
+        onEventClick={handleEventClick}
+        onSlotClick={handleSlotClick}
+        onAbsenceClick={handleAbsenceClick}
+        onAbsenceBlockClick={handleAbsenceBlockClick}
+        loading={loading}
+        isSalonClosed={!salonDaySchedule.isOpen}
+        focusAppointment={focusAppointment}
+        onFocusConsumed={() => setFocusAppointment(null)}
+        containerClassName="border border-border bg-card rounded-lg h-[calc(100dvh-260px)] md:h-[calc(100vh-280px)] w-full"
+      />
+
+      {/* Mobile: Calendar date picker drawer */}
+      <Drawer open={calendarDrawerOpen} onOpenChange={setCalendarDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader className="text-left pb-5 border-b border-border">
+            <DrawerTitle className="text-left">Selecionar data</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex justify-center px-4 pt-5 pb-8">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                if (date) {
+                  setSelectedDate(date);
+                  setCalendarDrawerOpen(false);
+                }
+              }}
+              initialFocus
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Mobile: Filter Drawer */}
+      <Drawer open={mobileFilterDrawerOpen} onOpenChange={setMobileFilterDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader className="text-left pb-5 border-b border-border">
+            <div className="flex items-center justify-between w-full">
+              <DrawerTitle className="text-left">Filtros</DrawerTitle>
+              {mobileFilterCount > 0 && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={handleClearAllFilters}
+                  className="text-button h-auto p-0 text-primary"
+                >
+                  Limpar tudo
+                </Button>
+              )}
+            </div>
+          </DrawerHeader>
+          <div className="px-4 pb-8 pt-5">
+            <AgendaFilters
+              onProfessionalFilter={setProfessionalFilter}
+              onStatusFilter={setStatusFilter}
+              onServiceFilter={setServiceFilter}
+              onFilteredProfessionalsChange={(filtered) => {
+                const ids = filtered.map((p) => p.id);
+                setFilteredProfessionals(
+                  professionals.filter((p) => ids.includes(p.id))
+                );
+              }}
+              onSpecialtyLabelChange={setSpecialtyLabel}
+              onProfessionalChipsChange={(chips) => setProfessionalChips(chips ?? [])}
+              userRole={user?.role as 'Easy Salon' | 'Profissional' | 'Recepcionista'}
+              variant="mobile"
+              removeSignal={removeSignal}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <ModalNovoAgendamento
+        key={modalKey}
+        isOpen={modalNovoAgendamento}
+        onClose={() => setModalNovoAgendamento(false)}
+        profissionalId={selectedProfessionalId}
+        data={format(selectedDate, "yyyy-MM-dd")}
+        horarioInicio={selectedTime}
+        initialClientId={initialClientId}
+        onAppointmentCreated={handleAppointmentCreated}
+      />
+
+      <ModalEditarAgendamento
+        isOpen={modalEditarAgendamento}
+        onClose={() => {
+          setModalEditarAgendamento(false);
+          setSelectedAppointment(null);
+        }}
+        appointment={selectedAppointment}
+        onAppointmentUpdated={refreshAppointments}
+      />
+
+      <ModalNovaAusencia
+        isOpen={modalNovaAusencia}
+        onClose={() => {
+          setModalNovaAusencia(false);
+          setIsEditingAbsence(false);
+          setSelectedAbsenceId("");
+          setSelectedAbsenceEndTime("");
+          setSelectedAbsenceReason("");
+        }}
+        profissional={
+          displayedProfessionals.find((p) => p.id === selectedProfessionalId)
+            ?.name || ""
+        }
+        profissionalId={selectedProfessionalId}
+        data={format(selectedDate, "dd/MM/yyyy")}
+        selectedDate={selectedDate}
+        horarioInicio={selectedTime}
+        isEditing={isEditingAbsence}
+        ausenciaId={selectedAbsenceId}
+        horarioFimInicial={selectedAbsenceEndTime}
+        motivoInicial={selectedAbsenceReason}
+        onAbsenceCreated={handleAbsenceChange}
+        onAbsenceUpdated={handleAbsenceChange}
+        onAbsenceDeleted={handleAbsenceChange}
+      />
+
+
+      <ModalComanda
+        isOpen={modalComanda}
+        onClose={() => setModalComanda(false)}
+        clientName={comandaData.clientName}
+        date={comandaData.date}
+        services={comandaData.services}
+        onStatusUpdate={handleComandaStatusUpdate}
+      />
+
+      {showFirstAppointmentModal && (
+        <FirstAppointmentModal 
+          testClient={testClientOnboarding} 
+          professionalId={professionalIdOnboarding || undefined}
+          onClose={() => setShowFirstAppointmentModal(false)}
+        />
+      )}
+    </EasySalonLayout>
+  );
+}

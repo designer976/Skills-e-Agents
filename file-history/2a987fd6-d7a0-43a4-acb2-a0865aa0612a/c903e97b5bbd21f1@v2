@@ -1,0 +1,24 @@
+"use client"
+
+import { PageHeader } from "@/components/ui/page-header"
+import { ProposalTemplateManager } from "@/components/proposta/ProposalTemplateManager"
+import { criarPropostaExemplo } from "@/lib/proposta-pdf-generator"
+
+export default function TemplatePropostaPage() {
+  const exemploData = criarPropostaExemplo()
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="Template de Proposta"
+        description="PREVIEW DO NOVO SISTEMA DE PROPOSTAS REFATORADO"
+      />
+
+      <ProposalTemplateManager
+        data={exemploData}
+        showControls={true}
+        previewMode="full"
+      />
+    </div>
+  )
+}

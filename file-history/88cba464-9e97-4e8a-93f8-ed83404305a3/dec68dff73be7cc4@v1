@@ -1,0 +1,358 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Header } from "@/components/header"
+import { Sidebar } from "@/components/sidebar"
+import {
+  IconChevronDown,
+  IconChevronUp,
+  IconCurrencyReal,
+  IconKey,
+  IconGift,
+  IconDiscount,
+  IconAlertTriangle,
+  IconUpload,
+  IconMail,
+  IconCopy,
+  IconCheck,
+  IconX,
+  IconFileInvoice,
+} from "@tabler/icons-react"
+
+// Tipos
+type NivelVistoriador = "junior" | "pleno" | "senior"
+
+interface TabelaValores {
+  vistoriaSimples: number
+  vistoriaCompleta: number
+  vistoriaComercial: number
+  taxaChave: number
+}
+
+interface Vistoria {
+  id: string
+  tipo: "simples" | "completa" | "comercial"
+  endereco: string
+  data: string
+  valor: number
+  taxaChave: number
+  status: "pendente" | "pago"
+}
+
+interface BonusDesconto {
+  id: string
+  tipo: "bonus" | "desconto"
+  descricao: string
+  valor: number
+  data: string
+}
+
+// Dados mock
+const TABELA_NIVEIS: Record<NivelVistoriador, TabelaValores> = {
+  junior: {
+    vistoriaSimples: 45.0,
+    vistoriaCompleta: 75.0,
+    vistoriaComercial: 120.0,
+    taxaChave: 15.0,
+  },
+  pleno: {
+    vistoriaSimples: 55.0,
+    vistoriaCompleta: 90.0,
+    vistoriaComercial: 150.0,
+    taxaChave: 18.0,
+  },
+  senior: {
+    vistoriaSimples: 70.0,
+    vistoriaCompleta: 110.0,
+    vistoriaComercial: 180.0,
+    taxaChave: 22.0,
+  },
+}
+
+const VISTORIAS_MES: Vistoria[] = [
+  { id: "1", tipo: "simples", endereco: "Rua das Flores, 123", data: "2026-03-01", valor: 55.0, taxaChave: 18.0, status: "pago" },
+  { id: "2", tipo: "completa", endereco: "Av. Brasil, 456", data: "2026-03-03", valor: 90.0, taxaChave: 0, status: "pago" },
+  { id: "3", tipo: "comercial", endereco: "Rua do Comércio, 789", data: "2026-03-05", valor: 150.0, taxaChave: 18.0, status: "pendente" },
+  { id: "4", tipo: "simples", endereco: "Alameda Santos, 321", data: "2026-03-08", valor: 55.0, taxaChave: 0, status: "pendente" },
+  { id: "5", tipo: "completa", endereco: "Rua Augusta, 654", data: "2026-03-10", valor: 90.0, taxaChave: 18.0, status: "pendente" },
+]
+
+const BONUS_DESCONTOS: BonusDesconto[] = [
+  { id: "1", tipo: "bonus", descricao: "Bônus por pontualidade", valor: 50.0, data: "2026-03-01" },
+  { id: "2", tipo: "bonus", descricao: "Meta do mês atingida", valor: 100.0, data: "2026-03-05" },
+  { id: "3", tipo: "desconto", descricao: "Atraso em vistoria", valor: -25.0, data: "2026-03-07" },
+]
+
+const EMAIL_FINANCEIRO = "financeiro@riosvistorias.com.br"
+
+export default function FinanceiroPage() {
+  const router = useRouter()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [nivelAtual] = useState<NivelVistoriador>("pleno")
+  const [tabelaExpanded, setTabelaExpanded] = useState(false)
+  const [showDivergenciaModal, setShowDivergenciaModal] = useState(false)
+  const [divergenciaTexto, setDivergenciaTexto] = useState("")
+  const [emailCopiado, setEmailCopiado] = useState(false)
+
+  const tabela = TABELA_NIVEIS[nivelAtual]
+
+  // Cálculos
+  const totalVistorias = VISTORIAS_MES.reduce((acc, v) => acc + v.valor, 0)
+  const totalTaxasChave = VISTORIAS_MES.reduce((acc, v) => acc + v.taxaChave, 0)
+  const totalBonus = BONUS_DESCONTOS.filter(b => b.tipo === "bonus").reduce((acc, b) => acc + b.valor, 0)
+  const totalDescontos = BONUS_DESCONTOS.filter(b => b.tipo === "desconto").reduce((acc, b) => acc + Math.abs(b.valor), 0)
+  const totalGeral = totalVistorias + totalTaxasChave + totalBonus - totalDescontos
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText(EMAIL_FINANCEIRO)
+    setEmailCopiado(true)
+    setTimeout(() => setEmailCopiado(false), 2000)
+  }
+
+  const handleEnviarDivergencia = () => {
+    // Aqui seria a integração com API
+    alert("Divergência enviada com sucesso!")
+    setShowDivergenciaModal(false)
+    setDivergenciaTexto("")
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value)
+  }
+
+  const nivelLabel = {
+    junior: "Júnior",
+    pleno: "Pleno",
+    senior: "Sênior",
+  }
+
+  return (
+    <div className="flex flex-col min-h-dvh bg-gray-50">
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onLogout={() => router.push("/")}
+      />
+      <Header onMenuClick={() => setSidebarOpen(true)} title="Financeiro" />
+
+      <main className="flex-1 px-4 py-5 max-w-2xl w-full mx-auto space-y-4">
+        {/* Resumo Financeiro */}
+        <div className="bg-[#002533] rounded-2xl p-5 text-white">
+          <p className="text-sm text-white/70 mb-1">Previsão do mês</p>
+          <p className="text-3xl font-bold">{formatCurrency(totalGeral)}</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="text-white/60 text-xs">Vistorias</p>
+              <p className="font-semibold">{formatCurrency(totalVistorias)}</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="text-white/60 text-xs">Taxas de Chave</p>
+              <p className="font-semibold">{formatCurrency(totalTaxasChave)}</p>
+            </div>
+            <div className="bg-emerald-500/20 rounded-xl p-3">
+              <p className="text-emerald-300 text-xs">Bônus</p>
+              <p className="font-semibold text-emerald-300">+{formatCurrency(totalBonus)}</p>
+            </div>
+            <div className="bg-red-500/20 rounded-xl p-3">
+              <p className="text-red-300 text-xs">Descontos</p>
+              <p className="font-semibold text-red-300">-{formatCurrency(totalDescontos)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Relatar Divergência */}
+        <button
+          onClick={() => setShowDivergenciaModal(true)}
+          className="w-full flex items-center justify-center gap-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 font-medium hover:bg-amber-100 transition-colors"
+        >
+          <IconAlertTriangle size={20} />
+          Relatar Divergência Financeira
+        </button>
+
+        {/* Tabela de Valores por Nível */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <button
+            onClick={() => setTabelaExpanded(!tabelaExpanded)}
+            className="w-full flex items-center justify-between p-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center">
+                <IconCurrencyReal size={20} className="text-[#0B7A8F]" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Tabela de Valores</p>
+                <p className="text-sm text-gray-500">
+                  Seu nível: <span className="text-[#0B7A8F] font-medium">{nivelLabel[nivelAtual]}</span>
+                </p>
+              </div>
+            </div>
+            {tabelaExpanded ? (
+              <IconChevronUp size={20} className="text-gray-400" />
+            ) : (
+              <IconChevronDown size={20} className="text-gray-400" />
+            )}
+          </button>
+          {tabelaExpanded && (
+            <div className="border-t border-gray-100 p-4 space-y-4">
+              <div className="flex gap-2">
+                {(["junior", "pleno", "senior"] as NivelVistoriador[]).map((nivel) => (
+                  <div
+                    key={nivel}
+                    className={`flex-1 text-center py-2 rounded-lg text-sm font-medium ${
+                      nivel === nivelAtual ? "bg-[#0B7A8F] text-white" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {nivelLabel[nivel]}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Vistoria Simples</span>
+                  <span className="font-semibold">{formatCurrency(tabela.vistoriaSimples)}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Vistoria Completa</span>
+                  <span className="font-semibold">{formatCurrency(tabela.vistoriaCompleta)}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Vistoria Comercial</span>
+                  <span className="font-semibold">{formatCurrency(tabela.vistoriaComercial)}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <IconKey size={16} className="text-amber-500" />
+                    <span className="text-gray-600">Taxa de Chave</span>
+                  </div>
+                  <span className="font-semibold">{formatCurrency(tabela.taxaChave)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Envio de Notas Fiscais */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <IconFileInvoice size={20} className="text-purple-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-900">Envio de Notas Fiscais</h2>
+                <p className="text-sm text-gray-500">Envie suas NFs para pagamento</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#0B7A8F] hover:bg-[#0B7A8F]/5 transition-colors">
+              <IconUpload size={28} className="text-gray-400" />
+              <span className="text-sm text-gray-600">Clique para enviar documento</span>
+              <span className="text-xs text-gray-400">PDF, JPG ou PNG até 10MB</span>
+              <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">ou envie por e-mail</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
+              <IconMail size={18} className="text-gray-400" />
+              <span className="flex-1 text-sm text-gray-700 truncate">{EMAIL_FINANCEIRO}</span>
+              <button onClick={handleCopyEmail} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                {emailCopiado ? <IconCheck size={18} className="text-emerald-600" /> : <IconCopy size={18} className="text-gray-500" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bônus e Descontos */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Bônus e Descontos</h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {BONUS_DESCONTOS.map((item) => (
+              <div key={item.id} className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      item.tipo === "bonus" ? "bg-emerald-100" : "bg-red-100"
+                    }`}
+                  >
+                    {item.tipo === "bonus" ? (
+                      <IconGift size={16} className="text-emerald-600" />
+                    ) : (
+                      <IconDiscount size={16} className="text-red-600" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{item.descricao}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(item.data).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className={`font-semibold ${
+                    item.tipo === "bonus" ? "text-emerald-600" : "text-red-600"
+                  }`}
+                >
+                  {item.tipo === "bonus" ? "+" : ""}
+                  {formatCurrency(item.valor)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* Modal Divergência */}
+      {showDivergenciaModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Relatar Divergência</h3>
+              <button
+                onClick={() => setShowDivergenciaModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg"
+              >
+                <IconX size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4">
+              <label className="block text-sm text-gray-600 mb-2">
+                Descreva a divergência encontrada
+              </label>
+              <textarea
+                value={divergenciaTexto}
+                onChange={(e) => setDivergenciaTexto(e.target.value)}
+                placeholder="Ex: O valor da vistoria do dia 05/03 está incorreto. O correto seria R$ 90,00..."
+                className="w-full h-32 p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#0B7A8F]/20 focus:border-[#0B7A8F]"
+              />
+            </div>
+            <div className="p-4 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowDivergenciaModal(false)}
+                className="flex-1 py-3 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEnviarDivergencia}
+                disabled={!divergenciaTexto.trim()}
+                className="flex-1 py-3 bg-[#0B7A8F] text-white rounded-xl font-medium hover:bg-[#0B7A8F]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

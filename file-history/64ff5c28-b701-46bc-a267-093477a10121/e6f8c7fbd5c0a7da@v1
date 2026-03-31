@@ -1,0 +1,67 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plan } from "@/types/subscription";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+
+interface PurchaseSummaryProps {
+    selectedPlan: Plan | undefined;
+    onActivate: () => void;
+    loading?: boolean;
+    disabled?: boolean;
+}
+
+export function PurchaseSummary({ selectedPlan, onActivate, loading, disabled }: PurchaseSummaryProps) {
+    const [termsAccepted, setTermsAccepted] = useState(false);
+
+    if (!selectedPlan) return null;
+
+    const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedPlan.amount);
+
+    return (
+        <Card>
+            <CardContent className="p-6 space-y-4">
+                <h3 className="text-lg font-semibold">Resumo da compra</h3>
+
+                <div className="flex justify-between items-center text-sm">
+                    <span>{selectedPlan.name}</span>
+                    <span className="font-medium">{price}/mês</span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Primeira cobrança</span>
+                    <span>Hoje</span>
+                </div>
+
+                <div className="border-t pt-4 flex justify-between items-center font-bold">
+                    <span>Total</span>
+                    <span className="text-primary">{price}</span>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                        id="terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                    />
+                    <label
+                        htmlFor="terms"
+                        className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground"
+                    >
+                        Li e concordo com os <Link to="/terms" className="text-primary hover:underline">termos de uso</Link> e <Link to="/privacy" className="text-primary hover:underline">política de privacidade</Link>.
+                    </label>
+                </div>
+
+                <Button
+                    className="w-full bg-[#dd4227] hover:bg-[#c93b22] h-12 text-lg font-medium"
+                    onClick={onActivate}
+                    disabled={loading || disabled || !termsAccepted}
+                >
+                    {loading ? "Processando..." : "Ativar Plano"}
+                </Button>
+
+            </CardContent>
+        </Card>
+    );
+}

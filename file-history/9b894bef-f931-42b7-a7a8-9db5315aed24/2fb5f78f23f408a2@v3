@@ -1,0 +1,75 @@
+import { ReactNode, useState } from "react";
+import { EasySalonSidebar } from "./EasySalonSidebar";
+import { Header } from "./Header";
+import { NavItem, NavSection } from "@/types/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSalonNavItems } from "@/config/navigation";
+import { useSolicitacoes } from "@/contexts/SolicitacoesContext";
+
+interface EasySalonLayoutProps {
+  children: ReactNode;
+  sideNavItems?: NavItem[] | NavSection[];
+  sideNavTitle: string;
+  sideNavSubtitle?: string;
+}
+
+export function EasySalonLayout({
+  children,
+  sideNavItems,
+  sideNavTitle,
+  sideNavSubtitle,
+}: EasySalonLayoutProps) {
+  const { user } = useAuth();
+  const { hasPendingSolicitacoes } = useSolicitacoes();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // RESP: Estado do menu mobile
+
+  // Se não foram fornecidos items específicos, usar os baseados no perfil do usuário
+  const navItems =
+    sideNavItems ||
+    getSalonNavItems(
+      user?.role || "Easy Salon",
+      hasPendingSolicitacoes ? 1 : undefined
+    );
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden bg-background w-full max-w-full">
+      {/* Header in-flow */}
+      <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
+
+      <div className="flex flex-1 min-h-0 w-full max-w-full">
+        {/* Sidebar Desktop */}
+        <EasySalonSidebar
+          title={sideNavTitle}
+          subtitle={sideNavSubtitle}
+          items={navItems}
+          variant="sidebar"
+        />
+
+        {/* Mobile backdrop overlay */}
+        {isMobileMenuOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Sidebar Mobile: slide-in drawer */}
+        <EasySalonSidebar
+          title={sideNavTitle}
+          subtitle={sideNavSubtitle}
+          items={navItems}
+          variant="drawer"
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+        />
+
+        {/* Main content area */}
+        <div className="flex-1 min-w-0 overflow-auto w-full max-w-full">
+          <main className="p-4 md:p-6 md:mt-3 w-full max-w-full">
+            {children}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}

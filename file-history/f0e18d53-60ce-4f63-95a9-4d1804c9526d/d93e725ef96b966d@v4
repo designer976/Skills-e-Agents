@@ -1,0 +1,763 @@
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { ConfirmCancelModal } from "@/components/modals/ConfirmCancelModal";
+import { CreateSolicitacaoModal } from "@/components/modals/CreateSolicitacaoModal";
+import { TransformarSolicitacaoModal } from "@/components/modals/TransformarSolicitacaoModal";
+import { SolicitacaoKanban } from "@/components/solicitacoes/SolicitacaoKanban";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { cn } from "@/lib/utils";
+import {
+  ConvertToAppointmentDto,
+  KanbanDataResponse,
+  requestsService,
+  UpdateStatusDto,
+} from "@/services/requestsService";
+import { websocketService } from "@/services/websocketService";
+import {
+  SolicitacaoColumn,
+  SolicitacaoItem,
+  SolicitacaoStatus,
+} from "@/types/solicitacoes";
+import { addMonths, endOfDay, format, startOfDay, subDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarIcon, ClipboardList as ClipboardList, RefreshCw as RefreshCw, X as X, Phone as Phone, User as UserIcon, Clock as Clock } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
+import { useEffect, useState } from "react";
+import { analytics } from "@/lib/analytics";
+
+interface ConvertToAppointmentData {
+  appointmentDate: string;
+  appointmentTime: string;
+  professionalId: string;
+  serviceId: string;
+  clientId: string;
+  duration: number;
+  price: number;
+  observations?: string;
+}
+
+interface UpdateStatusData {
+  status: SolicitacaoStatus;
+  finalDate?: string;
+  finalTime?: string;
+}
+
+interface ErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+export default function SolicitacoesPage(): JSX.Element {
+  const { selectedSalon } = useSelectedSalon();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [kanbanData, setKanbanData] = useState<KanbanDataResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Estados para filtro de data
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(addMonths(new Date(), 3));
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  useEffect(() => {
+    analytics.trackEvent("requests_page_viewed", { booking_source: 'dashboard' as any });
+  }, []);
+  const [selectedSolicitacao, setSelectedSolicitacao] =
+    useState<SolicitacaoItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [itemToCancel, setItemToCancel] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const loadData = async (): Promise<void> => {
+    try {
+      setRefreshing(true);
+
+      // Preparar parâmetros de filtro
+      const params: { startDate?: string; endDate?: string } = {};
+
+      if (startDate) {
+        params.startDate = format(startOfDay(startDate), "yyyy-MM-dd");
+      }
+      if (endDate) {
+        params.endDate = format(endOfDay(endDate), "yyyy-MM-dd");
+      }
+
+      const data = await requestsService.getKanbanData(params);
+      setKanbanData(data);
+    } catch (error) {
+      toast({
+        title: "Erro ao carregar solicitações",
+        description:
+          "Não foi possível carregar as solicitações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setStartDate(subDays(new Date(), 7));
+    setEndDate(new Date());
+  };
+
+  const handleStartDateSelect = (date: Date | undefined) => {
+    setStartDate(date);
+    setStartDateOpen(false);
+    if (date) {
+      toast({ title: "Filtro aplicado", description: `A partir de ${format(date, "dd/MM/yyyy")}`, variant: "success" });
+    }
+  };
+
+  const handleEndDateSelect = (date: Date | undefined) => {
+    setEndDate(date);
+    setEndDateOpen(false);
+    if (date) {
+      toast({ title: "Filtro aplicado", description: `Até ${format(date, "dd/MM/yyyy")}`, variant: "success" });
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+
+    const handleRequestCreated = (): void => {
+      loadData();
+      toast({
+        title: "Nova solicitação",
+        description: "Uma nova solicitação foi criada.",
+        variant: "info",
+      });
+    };
+
+    const handleRequestUpdated = (): void => {
+      loadData();
+    };
+
+    const handleRequestDeleted = (): void => {
+      loadData();
+    };
+
+    const handleRequestStatusChanged = (): void => {
+      loadData();
+    };
+
+    const unsubscribeCreated = websocketService.on(
+      "request:created",
+      handleRequestCreated
+    );
+    const unsubscribeUpdated = websocketService.on(
+      "request:updated",
+      handleRequestUpdated
+    );
+    const unsubscribeDeleted = websocketService.on(
+      "request:deleted",
+      handleRequestDeleted
+    );
+    const unsubscribeStatusUpdated = websocketService.on(
+      "request:status_updated",
+      handleRequestStatusChanged
+    );
+    const unsubscribeConverted = websocketService.on(
+      "request:converted",
+      handleRequestUpdated
+    );
+    const unsubscribeAssigned = websocketService.on(
+      "request:assigned",
+      handleRequestUpdated
+    );
+
+    return (): void => {
+      unsubscribeCreated();
+      unsubscribeUpdated();
+      unsubscribeDeleted();
+      unsubscribeStatusUpdated();
+      unsubscribeConverted();
+      unsubscribeAssigned();
+    };
+  }, [startDate, endDate]); // Recarregar quando as datas mudarem
+
+  const columns: SolicitacaoColumn[] =
+    kanbanData?.columns.map((col) => ({
+      id: col.id as SolicitacaoStatus,
+      title: col.title,
+      items: col.items,
+    })) || [];
+
+  // Estatísticas
+  const stats = kanbanData?.stats || {
+    total: 0,
+    abertas: 0,
+    agendadas: 0,
+  };
+
+  const handleMoveItem = async (
+    itemId: string,
+    fromColumn: string,
+    toColumn: string
+  ): Promise<void> => {
+    // Se está movendo de "open" para "scheduled", abrir modal de agendamento
+    if (fromColumn === "open" && toColumn === "scheduled") {
+      // Encontrar o item sendo movido
+      const movedItem = kanbanData?.columns
+        .find((c) => c.id === fromColumn)
+        ?.items.find((item) => item.id === itemId);
+
+      if (movedItem) {
+        // Abrir modal para transformar em agendamento
+        setSelectedSolicitacao(movedItem);
+        setIsModalOpen(true);
+      }
+      return;
+    }
+
+    // Se está movendo para "cancelled" ou variações em português, abrir modal de confirmação
+    if (
+      (toColumn === "cancelled" ||
+        toColumn === "cancelado" ||
+        toColumn === "cancelados") &&
+      (fromColumn === "open" || fromColumn === "scheduled")
+    ) {
+      const movedItem = kanbanData?.columns
+        .find((c) => c.id === fromColumn)
+        ?.items.find((item) => item.id === itemId);
+
+      if (movedItem) {
+        // Configurar item para cancelar e abrir modal de confirmação
+        setItemToCancel({
+          id: itemId,
+          name:
+            movedItem.customerName ||
+            movedItem.serviceName ||
+            "esta solicitação",
+        });
+        setIsCancelModalOpen(true);
+      }
+      return;
+    }
+
+    // Para outros movimentos, não permitir
+    toast({
+      title: "Ação não permitida",
+      description: "Esta operação não é permitida.",
+      variant: "destructive",
+    });
+  };
+
+  const handleItemClick = (item: SolicitacaoItem): void => {
+    if (item.status === "open") {
+      setSelectedSolicitacao(item);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleSaveSolicitacao = async (
+    updatedSolicitacao: SolicitacaoItem
+  ): Promise<void> => {
+    try {
+      if (
+        updatedSolicitacao.status === "scheduled" &&
+        updatedSolicitacao.assignedProfessionalId &&
+        updatedSolicitacao.finalDate &&
+        updatedSolicitacao.finalTime
+      ) {
+        try {
+          const appointmentDateStr = updatedSolicitacao.finalDate
+            ? format(new Date(updatedSolicitacao.finalDate), "yyyy-MM-dd")
+            : "";
+
+          const convertData: ConvertToAppointmentDto = {
+            appointmentDate: appointmentDateStr,
+            appointmentTime: updatedSolicitacao.finalTime,
+            professionalId: updatedSolicitacao.assignedProfessionalId,
+            serviceId: updatedSolicitacao.serviceId,
+            clientId: updatedSolicitacao.clientId,
+            duration: updatedSolicitacao.duration,
+            price: updatedSolicitacao.price,
+            observations: updatedSolicitacao.observations,
+          };
+
+          await requestsService.convertToAppointment(
+            updatedSolicitacao.id,
+            convertData
+          );
+
+          await loadData();
+
+          toast({
+            title: "Agendamento criado",
+            description: `Solicitação convertida em agendamento com sucesso.`,
+            variant: "success",
+          });
+
+          analytics.trackEvent("request_approved", { booking_source: 'dashboard' as any });
+        } catch (error) {
+          const errorResponse = error as ErrorResponse;
+
+          if (errorResponse?.response?.data?.message?.includes("performedBy")) {
+            // eslint-disable-next-line no-useless-catch
+            try {
+              const statusData: UpdateStatusDto = {
+                status: "scheduled",
+                finalDate: updatedSolicitacao.finalDate,
+                finalTime: updatedSolicitacao.finalTime,
+              };
+
+              await requestsService.updateStatus(
+                updatedSolicitacao.id,
+                statusData
+              );
+
+              await loadData();
+
+              toast({
+                title: "Status atualizado",
+                description: `Solicitação marcada como agendada. Por favor, crie o agendamento manualmente na agenda.`,
+                variant: "info",
+              });
+            } catch (statusError) {
+              throw statusError;
+            }
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        await requestsService.update(updatedSolicitacao.id, updatedSolicitacao);
+        await loadData();
+
+        toast({
+          title: "Solicitação atualizada",
+          description: "As informações foram salvas com sucesso.",
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateSolicitacao = async (
+    data: Partial<SolicitacaoItem>
+  ): Promise<void> => {
+    try {
+      await requestsService.create(data);
+      await loadData();
+
+      toast({
+        title: "Solicitação criada",
+        description: "A solicitação foi criada com sucesso.",
+        variant: "success",
+      });
+
+      trackSeverinoEvent('solicitacao_de_agendamento', { description: 'Solicitação de agendamento criada' });
+    } catch (error) {
+      toast({
+        title: "Erro ao criar",
+        description: "Não foi possível criar a solicitação. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <EasySalonLayout
+        sideNavTitle={selectedSalon?.name || "Meu Salão"}
+        sideNavSubtitle={selectedSalon?.name || "Meu Salão"}
+        sideNavItems={navItems}
+      >
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-lg p-4">
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavTitle={selectedSalon?.name || "Meu Salão"}
+      sideNavSubtitle={selectedSalon?.name || "Meu Salão"}
+      sideNavItems={navItems}
+    >
+      <div className="space-y-4 md:space-y-6">
+        {/* Header */}
+        <h1 className="text-page-title text-foreground">Solicitações</h1>
+
+        {/* Filtros de Data */}
+        <div className="bg-card border border-border rounded-lg p-4 md:bg-transparent md:border-0 md:p-0">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-2">
+            {/* Campos de data */}
+            <div className="flex items-center gap-2 text-body">
+              <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-10 font-normal group flex-1 md:flex-none md:w-auto">
+                    <CalendarIcon className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                    {startDate ? format(startDate, "dd/MM/yy") : "Início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={handleStartDateSelect}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span className="text-muted-foreground font-light text-[13px] shrink-0">até</span>
+
+              <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-10 font-normal group flex-1 md:flex-none md:w-auto">
+                    <CalendarIcon className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                    {endDate ? format(endDate, "dd/MM/yy") : "Fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={handleEndDateSelect}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Ações: Limpar + Atualizar */}
+            <div className="flex items-center justify-between gap-2 md:contents">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-10 w-full md:w-auto"
+                onClick={handleClearFilters}
+              >
+                Limpar
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadData}
+                disabled={refreshing}
+                className="h-10 w-full md:w-auto md:ml-auto"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+                Atualizar
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile View: Tabs + Lista */}
+        <div className="block md:hidden">
+          <Tabs defaultValue="open" className="w-full">
+            <TabsList className="w-full grid grid-cols-3 h-14 p-1.5 bg-muted/20 rounded-lg border border-border/50">
+              <TabsTrigger
+                value="open"
+                className="relative rounded-lg data-[state=active]:bg-red-50 data-[state=active]:text-red-700 data-[state=active]:border-red-200 data-[state=active]:shadow-sm border border-transparent transition-all"
+              >
+                Abertas
+                {stats.abertas > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-5 min-w-5 flex items-center justify-center p-0.5 text-[10px] font-bold border-2 border-background">
+                    {stats.abertas}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="scheduled"
+                className="relative rounded-lg data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200 data-[state=active]:shadow-sm border border-transparent transition-all"
+              >
+                Agendadas
+                {stats.agendadas > 0 && (
+                  <Badge className="absolute -top-1.5 -right-1.5 h-5 min-w-5 flex items-center justify-center p-0.5 text-[10px] font-bold bg-green-500 text-white border-2 border-background">
+                    {stats.agendadas}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="cancelled"
+                className="rounded-lg data-[state=active]:bg-muted data-[state=active]:text-muted-foreground data-[state=active]:border-border data-[state=active]:shadow-sm border border-transparent transition-all"
+              >
+                Canceladas
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="open" className="mt-4 space-y-3">
+              {columns.find(c => c.id === 'open')?.items.map(item => (
+                <RequestMobileCard
+                  key={item.id}
+                  item={item}
+                  status="open"
+                  onClick={() => handleItemClick(item)}
+                />
+              ))}
+              {columns.find(c => c.id === 'open')?.items.length === 0 && (
+                <EmptyState message="Nenhuma solicitação aberta." />
+              )}
+            </TabsContent>
+
+            <TabsContent value="scheduled" className="mt-4 space-y-3">
+              {columns.find(c => c.id === 'scheduled')?.items.map(item => (
+                <RequestMobileCard
+                  key={item.id}
+                  item={item}
+                  status="scheduled"
+                  onClick={() => handleItemClick(item)}
+                />
+              ))}
+              {columns.find(c => c.id === 'scheduled')?.items.length === 0 && (
+                <EmptyState message="Nenhuma solicitação agendada." />
+              )}
+            </TabsContent>
+
+            <TabsContent value="cancelled" className="mt-4 space-y-3">
+              {columns.find(c => c.id === 'cancelled' || c.id === 'cancelado')?.items.map(item => (
+                <RequestMobileCard
+                  key={item.id}
+                  item={item}
+                  status="cancelled"
+                  onClick={() => { }}
+                />
+              ))}
+              {(columns.find(c => c.id === 'cancelled' || c.id === 'cancelado')?.items.length || 0) === 0 && (
+                <EmptyState message="Nenhuma solicitação cancelada." />
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Desktop View: Stats + Kanban */}
+        <div className="hidden md:block space-y-6">
+          {/* Estatísticas */}
+          <div className="grid grid-cols-3 gap-4">
+            <StatsCard label="Total" value={stats.total} icon={ClipboardList} color="text-muted-foreground" />
+            <StatsCard label="Abertas" value={stats.abertas} icon={null} color="text-primary" badgeColor="bg-red-100 text-red-800" badgeValue={stats.abertas} />
+            <StatsCard label="Agendadas" value={stats.agendadas} icon={null} color="text-success" badgeColor="bg-green-100 text-green-800" badgeValue={stats.agendadas} />
+          </div>
+
+          {/* Kanban Board */}
+          <div className="min-h-[600px] bg-card border border-border rounded-lg overflow-hidden shadow-sm p-6">
+            <SolicitacaoKanban
+              columns={columns}
+              onMoveItem={handleMoveItem}
+              onItemClick={handleItemClick}
+            />
+          </div>
+        </div>
+
+        {/* Modal de Transformar Solicitação */}
+        <TransformarSolicitacaoModal
+          isOpen={isModalOpen}
+          selectedSalon={selectedSalon}
+          onClose={() => {
+            setIsModalOpen(false);
+            // Recarregar dados para garantir que o kanban esteja sincronizado
+            // (caso o usuário tenha arrastado mas cancelado o modal)
+            loadData();
+          }}
+          solicitacao={selectedSolicitacao}
+          onSave={handleSaveSolicitacao}
+        />
+
+        {/* Modal de Criar Solicitação */}
+        <CreateSolicitacaoModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSave={handleCreateSolicitacao}
+        />
+
+        {/* Modal de Confirmação de Cancelamento */}
+        <ConfirmCancelModal
+          isOpen={isCancelModalOpen}
+          onClose={() => {
+            setIsCancelModalOpen(false);
+            setItemToCancel(null);
+            // Recarregar para garantir sincronização
+            loadData();
+          }}
+          onConfirm={async (): Promise<void> => {
+            if (itemToCancel) {
+              try {
+                const statusData: UpdateStatusDto = {
+                  status: "cancelled",
+                };
+                await requestsService.updateStatus(itemToCancel.id, statusData);
+
+                await loadData();
+
+                toast({
+                  title: "Solicitação cancelada",
+                  description: "A solicitação foi cancelada com sucesso.",
+                  variant: "success",
+                });
+
+                analytics.trackEvent("request_rejected", { booking_source: 'dashboard' as any });
+              } catch (error) {
+                const errorResponse = error as ErrorResponse;
+
+                let errorMessage =
+                  "Não foi possível cancelar a solicitação. Tente novamente.";
+                if (
+                  errorResponse.response?.data?.message?.includes("performedBy")
+                ) {
+                  errorMessage =
+                    "Erro no servidor: problema com o histórico de alterações. Entre em contato com o suporte.";
+                } else if (errorResponse.response?.data?.message) {
+                  errorMessage = errorResponse.response.data.message;
+                }
+
+                toast({
+                  title: "Erro ao cancelar",
+                  description: errorMessage,
+                  variant: "destructive",
+                });
+              }
+            }
+          }}
+          itemName={itemToCancel?.name}
+        />
+      </div>
+    </EasySalonLayout>
+  );
+}
+// --- Componentes Auxiliares ---
+
+function StatsCard({ label, value, icon: Icon, color, badgeColor, badgeValue }: any) {
+  return (
+    <div className="bg-card border border-border rounded-lg">
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
+            <p className={cn("text-2xl font-black mt-1", color)}>{value}</p>
+          </div>
+          {Icon ? (
+            <Icon className="h-8 w-8 text-muted-foreground/30" />
+          ) : (
+            badgeValue !== undefined && (
+              <Badge className={cn("h-7 min-w-7 flex items-center justify-center font-bold text-xs p-1", badgeColor)}>
+                {badgeValue}
+              </Badge>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RequestMobileCard({ item, status, onClick }: { item: SolicitacaoItem, status: 'open' | 'scheduled' | 'cancelled', onClick: () => void }) {
+  const statusColors = {
+    open: "border-l-red-500 bg-red-50/10",
+    scheduled: "border-l-green-500 bg-green-50/10",
+    cancelled: "border-l-border bg-muted/20"
+  };
+
+  const handlePhoneClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (item.customerPhone) {
+      window.open(`tel:${item.customerPhone}`, '_self');
+    }
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "relative flex flex-col p-4 rounded-lg border border-border shadow-sm transition-all active:scale-[0.98]",
+        "border-l-4",
+        statusColors[status] || "border-l-border bg-card"
+      )}
+    >
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex-1 space-y-1">
+          <h3 className="text-body font-bold text-foreground leading-tight">{item.customerName || "Cliente não identificado"}</h3>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ClipboardList className="h-3 w-3" />
+            <span className="truncate">{item.serviceName}</span>
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+              <CalendarIcon className="h-3 w-3" />
+              {item.finalDate ? format(new Date(item.finalDate), "dd/MM/yy") : "A definir"}
+            </div>
+            {item.finalTime && (
+              <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {item.finalTime}
+              </div>
+            )}
+            {item.assignedProfessionalName && (
+              <div className="flex items-center gap-1 text-[10px] font-medium text-primary">
+                <UserIcon className="h-3 w-3" />
+                {item.assignedProfessionalName}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {item.customerPhone && (
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handlePhoneClick}
+            className="h-11 w-11 rounded-full bg-muted/50 hover:bg-primary/20 hover:text-primary transition-colors flex-shrink-0"
+          >
+            <Phone className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/10 rounded-lg border border-dashed border-border/60">
+      <div className="h-12 w-12 rounded-full bg-muted/20 flex items-center justify-center mb-4">
+        <ClipboardList className="h-6 w-6 text-muted-foreground/40" />
+      </div>
+      <p className="text-body text-muted-foreground font-medium">{message}</p>
+    </div>
+  );
+}

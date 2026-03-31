@@ -1,0 +1,238 @@
+C:\Users\charl\.claude\skills\atualizar-skill-agent\SKILL.md-1----
+C:\Users\charl\.claude\skills\atualizar-skill-agent\SKILL.md-2-name: atualizar-skill-agent
+C:\Users\charl\.claude\skills\atualizar-skill-agent\SKILL.md:3:description: Atualiza todos os skills e agentes globais fazendo pull do repositório remoto. Invoque quando quiser sincronizar as últimas versões dos skills com o que está no GitHub.
+C:\Users\charl\.claude\skills\atualizar-skill-agent\SKILL.md-4----
+C:\Users\charl\.claude\skills\atualizar-skill-agent\SKILL.md-5-
+--
+C:\Users\charl\.claude\skills\README.md-19-|-------|-----------|
+C:\Users\charl\.claude\skills\README.md-20-| `designer` | Valida specs, garante consistência com Design System e planeja implementações |
+C:\Users\charl\.claude\skills\README.md:21:| `front-end-ui` | Implementa componentes visuais e UI com tokens do Design System |
+C:\Users\charl\.claude\skills\README.md-22-| `front-end-code` | Revisa código frontend: performance, TypeScript, acessibilidade |
+C:\Users\charl\.claude\skills\README.md-23-| `all-agents` | Pipeline completo: Designer → Front-end-UI → Front-end-Code → Designer |
+--
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-26-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-27-- **Quando invocado após implementação**: revise apenas os arquivos alterados na tarefa atual
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:28:- **Quando invocado para auditoria geral**: revise os arquivos especificados pelo usuário, ou toda a pasta `src/components/ui/` se nenhum arquivo for indicado
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-29-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-30-## O que revisar
+--
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-65-> ⚠️ **ATENÇÃO — Código existente pode ser legado pré-DS**
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-66->
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:67:> Este projeto pode ter sido desenvolvido **antes** do Design System existir. Nesse caso, o código existente nos arquivos revisados pode conter tokens hardcoded, componentes inline e padrões que violam o DS — não porque foram descuidos recentes, mas porque são código legado que nunca foi migrado.
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-68->
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-69-> Sua responsabilidade é identificar essas divergências com a mesma severidade de qualquer outro problema: **código que não segue o DS é um defeito**, independente de quando foi escrito.
+--
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-90-- Use **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/` para localizar a página de documentação
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-91-- **Se encontrou** → use **Read** para abrir e ler a página — ela é a referência obrigatória para cada componente verificado abaixo
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:92:- **Se não encontrou** → avise o usuário: "Não encontrei página de documentação do DS. Validando fidelidade apenas pelos props e tokens em `src/components/ui/`." e use **Read** nos arquivos de componentes relevantes em `src/components/ui/`
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-93-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-94-> ⚠️ **Afirmar "verifiquei fidelidade ao DS" sem ter aberto os arquivos com Read é inválido.**
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-95-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:96:Para cada componente do DS (`src/components/ui/`) utilizado nos arquivos revisados, verificar:
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-97-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-98-- 🔴 **Casing de texto**: props de texto (headers, labels, placeholders) devem usar o mesmo casing do demo — `"Nome do Serviço"` não `"NOME DO SERVIÇO"`
+--
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-195-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-196-#### Sem proliferação de boolean props
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:197:Componentes com muitos booleans são sinal de que precisam de variantes ou compound components:
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-198-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-199-```tsx
+--
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-227-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-228-// ✅ BOM — import direto do arquivo
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:229:import { Button } from '../components/ui/button'
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:230:import { Input } from '../components/ui/input'
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-231-```
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-232-
+--
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-311-
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-312-```
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md:313:ARQUIVO: src/components/ui/exemplo.tsx:42
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-314-SEVERIDADE: 🔴 Crítico
+C:\Users\charl\.claude\skills\front-end-code\SKILL.md-315-PROBLEMA: useMemo ausente em cálculo pesado executado a cada render
+--
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-1----
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-2-name: all-agents
+C:\Users\charl\.claude\skills\all-agents\SKILL.md:3:description: Pipeline completo com todos os agentes. Ative para novas telas, componentes ou ajustes visuais do zero — ou quando detectar pedido de feature visual sem spec definida. Executa Designer (validação e plano) → Front-end-UI (implementação) → Front-end-Code (revisão) → Designer (aprovação final).
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-4----
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-5-
+--
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-38-   > **Skip de validação:** se o usuário incluir a spec completa na mesma mensagem, ou disser "spec completa, pode avançar" / "pule a validação", vá direto para a análise do DS sem perguntar.
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-39-3. **LEIA o DS com as ferramentas** (obrigatório — use Read/Glob):
+C:\Users\charl\.claude\skills\all-agents\SKILL.md:40:   - **Glob** → liste `src/components/ui/**` para ver todos os componentes disponíveis
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-41-   - **Read** → abra `tailwind.config.ts` e `src/index.css` para identificar os tokens reais do projeto
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-42-   - **Glob + Read** → localize e leia a página de documentação do DS (`*DesignSystem*`, `*design-system*`) para ver exemplos de uso, casing, variantes e ícones de cada componente
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-43-4. **Audite os arquivos relevantes existentes** — compare o código atual com o DS e documente divergências encontradas (tokens hardcoded, componentes inline, libs de ícones erradas)
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-44-5. Verifique se existe padrão similar antes de propor criação de novo componente
+C:\Users\charl\.claude\skills\all-agents\SKILL.md:45:6. Monte o **plano de implementação**: componentes, tokens, arquivos, comportamentos esperados — **incluindo correção das divergências encontradas no passo 4**
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-46-7. Apresente o plano — prossiga somente quando estiver claro
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-47-
+--
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-54-Adote o papel do **Agente Front-end-UI**. Inicie esta fase com `🔵 **Front-end-UI**` na primeira linha da resposta.
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-55-
+C:\Users\charl\.claude\skills\all-agents\SKILL.md:56:**Entrada:** use o plano aprovado na Fase 1 — componentes, tokens, arquivos e comportamentos definidos são a spec de implementação.
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-57-
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-58-**Tokens obrigatórios:**
+--
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-71-
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-72-**Regras**:
+C:\Users\charl\.claude\skills\all-agents\SKILL.md:73:- Se novo componente DS → **antes de criar**, abrir 2-3 componentes similares em `src/components/ui/` e replicar exatamente o mesmo padrão estrutural (exportação, tipagem, uso de `cn()`, variantes com `cva`). Criar em `src/components/ui/` e registrar na documentação do DS
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-74-- TypeScript: todas as props tipadas, sem `any`, union types para variantes
+C:\Users\charl\.claude\skills\all-agents\SKILL.md-75-- Nunca alterar lógica de negócio ou hooks
+--
+C:\Users\charl\.claude\skills\tester\SKILL.md-14-Antes de criar qualquer teste, apresente ao usuário:
+C:\Users\charl\.claude\skills\tester\SKILL.md-15-
+C:\Users\charl\.claude\skills\tester\SKILL.md:16:1. O que será testado (lista de arquivos/componentes/endpoints)
+C:\Users\charl\.claude\skills\tester\SKILL.md-17-2. Tipo de teste (unitário, integração, E2E)
+C:\Users\charl\.claude\skills\tester\SKILL.md-18-3. Quantos casos de teste aproximadamente serão criados
+--
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-27-2. **Antes de implementar:** leia os arquivos que serão modificados e audite divergências vs DS (tokens hardcoded, componentes inline, libs erradas de ícones) — liste-as e corrija durante a implementação
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-28-3. **LEIA o DS com as ferramentas** (obrigatório):
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md:29:   - **Glob** → liste `src/components/ui/**`
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-30-   - **Read** → `tailwind.config.ts` e `src/index.css` para tokens reais
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-31-   - **Glob + Read** → localize e leia a página de documentação do DS (`*DesignSystem*`, `*design-system*`)
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-32-4. Se o componente já existe no DS → use-o sem modificar
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md:33:5. Se precisa criar → **antes de criar**, abrir 2-3 componentes similares em `src/components/ui/` e replicar exatamente o mesmo padrão estrutural (exportação, tipagem, uso de `cn()`, variantes com `cva`). Criar em `src/components/ui/` e registrar na documentação do DS
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-34-6. Aplique os tokens obrigatórios:
+C:\Users\charl\.claude\skills\all-front-end\SKILL.md-35-
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-60-**1. Detectar o DS:**
+C:\Users\charl\.claude\skills\designer\SKILL.md-61-- Use **Glob** para `components.json` ou `shadcn.json` na raiz
+C:\Users\charl\.claude\skills\designer\SKILL.md:62:- Use **Glob** para listar todos os arquivos em `src/components/ui/`
+C:\Users\charl\.claude\skills\designer\SKILL.md-63-- Use **Glob** com padrão `**/*DesignSystem* ` ou `**/*design-system*` ou `**/*design_system*` em `src/`
+C:\Users\charl\.claude\skills\designer\SKILL.md-64-
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-66-- Use **Read** para abrir `src/index.css` (ou `src/styles/globals.css`) — identifique todos os tokens CSS disponíveis (variáveis `--`, classes customizadas)
+C:\Users\charl\.claude\skills\designer\SKILL.md-67-- Use **Read** para abrir `tailwind.config.ts` — identifique o `theme.extend` com cores, radius, fontes e demais tokens
+C:\Users\charl\.claude\skills\designer\SKILL.md:68:- Use **Glob** + **Read** para listar e abrir a página de documentação do DS (`DesignSystemPage.tsx` ou equivalente) — leia os exemplos de uso de cada componente
+C:\Users\charl\.claude\skills\designer\SKILL.md:69:- Use **Glob** + **Read** para abrir os componentes relevantes de `src/components/ui/` — entenda quais existem e como são usados
+C:\Users\charl\.claude\skills\designer\SKILL.md-70-
+C:\Users\charl\.claude\skills\designer\SKILL.md-71-**Somente após ter lido esses arquivos** você poderá:
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-74-- Verificar fidelidade: casing, variantes, ícones, estados visuais
+C:\Users\charl\.claude\skills\designer\SKILL.md-75-
+C:\Users\charl\.claude\skills\designer\SKILL.md:76:**Se não encontrou página de documentação do DS** → avise o usuário: "Não encontrei página de documentação do DS. Deseja que eu crie uma antes de prosseguir, ou continuo consultando apenas `src/components/ui/`?"
+C:\Users\charl\.claude\skills\designer\SKILL.md-77-- **Criar** → inclua criação da página no plano de implementação (Fase 3)
+C:\Users\charl\.claude\skills\designer\SKILL.md:78:- **Continuar** → leia os componentes diretamente pelos arquivos de `src/components/ui/`
+C:\Users\charl\.claude\skills\designer\SKILL.md-79-
+C:\Users\charl\.claude\skills\designer\SKILL.md-80-#### Passo 1b — Auditoria Obrigatória de Divergência DS vs Sistema
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-86-   - Os tokens usados no código existente correspondem aos tokens definidos no DS?
+C:\Users\charl\.claude\skills\designer\SKILL.md-87-   - Há `bg-gray-*`, `rounded-xl`, `text-zinc-*` ou outros valores hardcoded que deveriam ser tokens?
+C:\Users\charl\.claude\skills\designer\SKILL.md:88:   - Os componentes de `src/components/ui/` estão sendo usados ou foram reescritos inline?
+C:\Users\charl\.claude\skills\designer\SKILL.md-89-   - Há importações de libs de ícones diferentes de `lucide-react`?
+C:\Users\charl\.claude\skills\designer\SKILL.md-90-3. **Documente as divergências encontradas** antes de apresentar o plano:
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-103-- **Sim** → apresente as opções:
+C:\Users\charl\.claude\skills\designer\SKILL.md-104-  - **Shadcn/ui** — componentes acessíveis com Tailwind, altamente customizável
+C:\Users\charl\.claude\skills\designer\SKILL.md:105:  - **Diceui** — componentes modernos baseados em Radix UI
+C:\Users\charl\.claude\skills\designer\SKILL.md-106-  - **Radix UI** — primitivos headless, controle total de estilo
+C:\Users\charl\.claude\skills\designer\SKILL.md-107-  - **Custom** — tokens e componentes próprios do zero
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-152-Ao analisar o DS existente ou propor um novo, verifique:
+C:\Users\charl\.claude\skills\designer\SKILL.md-153-
+C:\Users\charl\.claude\skills\designer\SKILL.md:154:- **Contraste WCAG AA**: texto sobre fundo deve ter contraste ≥ 4.5:1; componentes UI (bordas, ícones) ≥ 3:1. Se não atender → alerte o usuário antes de prosseguir.
+C:\Users\charl\.claude\skills\designer\SKILL.md-155-- **Escala de espaçamento**: valores de padding/gap/margin devem seguir múltiplos de 4px (4, 8, 12, 16, 24, 32…). Nunca propor valores arbitrários como 7px, 13px, 22px.
+C:\Users\charl\.claude\skills\designer\SKILL.md-156-- **Escala tipográfica**: tamanhos de fonte devem seguir escala definida no DS (ex: `text-sm`, `text-base`, `text-lg`). Nunca propor tamanhos fora da escala sem justificativa.
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-158-### Fase 3 — Plano de Implementação
+C:\Users\charl\.claude\skills\designer\SKILL.md-159-
+C:\Users\charl\.claude\skills\designer\SKILL.md:160:Antes de propor criação de novo componente, verifique se existe padrão similar em `src/components/ui/` ou nas páginas do projeto.
+C:\Users\charl\.claude\skills\designer\SKILL.md-161-
+C:\Users\charl\.claude\skills\designer\SKILL.md-162-> ⚠️ **Se for criar um componente novo, o plano DEVE incluir:**
+C:\Users\charl\.claude\skills\designer\SKILL.md-163->
+C:\Users\charl\.claude\skills\designer\SKILL.md:164:> 1. **Análise de componentes existentes similares** — indicar quais arquivos de `src/components/ui/` serão estudados como referência de padrão
+C:\Users\charl\.claude\skills\designer\SKILL.md-165-> 2. **Padrão estrutural a seguir** — confirmar que o novo componente usará a mesma estrutura dos existentes:
+C:\Users\charl\.claude\skills\designer\SKILL.md-166->    - Mesma forma de exportação (named export com `forwardRef` se aplicável)
+--
+C:\Users\charl\.claude\skills\designer\SKILL.md-213-4. Componentes seguem o padrão visual dos existentes no projeto
+C:\Users\charl\.claude\skills\designer\SKILL.md-214-5. Estrutura HTML/JSX é semântica e acessível
+C:\Users\charl\.claude\skills\designer\SKILL.md:215:6. **Fidelidade ao DS**: para cada componente de `src/components/ui/` utilizado, localizar o demo em `DesignSystemPage.tsx` e confirmar que o resultado renderizado é visualmente idêntico — mesmo casing de texto, mesmos ícones, mesmas variantes, mesmos estados visuais. Qualquer divergência é bloqueante.
+C:\Users\charl\.claude\skills\designer\SKILL.md-216-
+C:\Users\charl\.claude\skills\designer\SKILL.md-217-Se houver inconsistência → **avise o usuário com detalhes** antes de finalizar.
+--
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-13-
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-14-- **Antes de qualquer implementação**, consulte o Design System:
+C:\Users\charl\.claude\skills\project-rules\SKILL.md:15:  - Componentes disponíveis: `src/components/ui/`
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-16-  - Documentação visual: `src/pages/DesignSystemPage.tsx`
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-17-  - Tokens de cor e espaçamento: `tailwind.config.ts` e `src/index.css`
+--
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-19-- O DS é o componente **Mestre / Pai**. Toda tela, modal, form e elemento visual do sistema deve herdar seus padrões.
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-20-
+C:\Users\charl\.claude\skills\project-rules\SKILL.md:21:- **Nunca reimplemente** o que já existe no DS. Se o componente existe em `src/components/ui/`, use-o sem modificar.
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-22-
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-23-### Fidelidade visual obrigatória
+--
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-43-   > "O componente `XYZ` não existe no DS. Deseja que eu o crie?"
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-44-2. Se o usuário confirmar, **ativar o agente `/front-end-ui`** para criar o componente.
+C:\Users\charl\.claude\skills\project-rules\SKILL.md:45:3. O novo componente deve ser criado **primeiro** em `src/components/ui/`.
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-46-4. Depois registrar na documentação em `src/pages/DesignSystemPage.tsx`.
+C:\Users\charl\.claude\skills\project-rules\SKILL.md-47-5. Só então usar na feature/tela destino.
+--
+C:\Users\charl\.claude\skills\reviewer\SKILL.md-34-#### Frontend
+C:\Users\charl\.claude\skills\reviewer\SKILL.md-35-
+C:\Users\charl\.claude\skills\reviewer\SKILL.md:36:- Delegar para `front-end-code` se a revisão for exclusivamente de componentes UI
+C:\Users\charl\.claude\skills\reviewer\SKILL.md-37-- Verificar: separação de responsabilidades, patterns consistentes
+C:\Users\charl\.claude\skills\reviewer\SKILL.md-38-
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-1----
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-2-name: front-end-ui
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:3:description: Agente Front-end-UI. Ative quando precisar implementar componentes visuais, telas ou UI com tokens do Design System — ou quando a spec já estiver validada e o usuário pedir implementação direta. Foca exclusivamente no visual e estrutura JSX, sem alterar lógica de negócio.
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-4----
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-5-
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-8-> **Identidade visual:** Sempre inicie CADA resposta com `🔵 **Front-end-UI**` na primeira linha, para que o usuário saiba qual agente está ativo.
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-9-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:10:Você é o **Front-end-UI** — especialista em implementação de interface. Constrói componentes e telas aplicando exclusivamente os tokens e componentes do Design System.
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-11-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-12-## Gate de Permissão (OBRIGATÓRIO — executar PRIMEIRO)
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-55-#### Detectar e LER o DS (OBRIGATÓRIO — use as ferramentas)
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-56-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:57:> ⚠️ **"Consultar o DS" significa ABRIR E LER os arquivos com Read/Glob/Grep. Frases como "verifiquei o DS" sem ter chamado as ferramentas são inválidas. Nunca tome decisão visual sem ter lido os arquivos.**
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-58-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-59-Execute com as ferramentas disponíveis:
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-61-**1. Detectar:**
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-62-- **Glob** `components.json` ou `shadcn.json` na raiz
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:63:- **Glob** para listar `src/components/ui/**`
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-64-- **Glob** com `**/*DesignSystem*`, `**/*design-system*`, `**/*design_system*` em `src/`
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-65-
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-68-- **Read** → `tailwind.config.ts` — identifique `theme.extend` com cores, radius, fontes
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-69-- **Read** → página de documentação do DS (ex: `DesignSystemPage.tsx`) — veja os exemplos de uso de cada componente, casing de texto, variantes e ícones usados
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:70:- **Read** → componentes de `src/components/ui/` relevantes para a tarefa — entenda props, variantes e estrutura
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-71-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-72-**Somente após ter lido** você poderá:
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-75-- Garantir fidelidade visual: casing, props, variantes, ícones, estados
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-76-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:77:**Se não encontrou página de documentação do DS** → avise: "Não encontrei página de documentação do DS. Prossigo validando apenas `src/components/ui/`, ou prefere criar a página primeiro?"
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-78-- **Criar** → crie antes de implementar
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:79:- **Prosseguir** → leia os componentes diretamente em `src/components/ui/`
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-80-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-81-**Se não encontrou DS:**
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-108-> ⚠️ **ANTES de criar, estude o padrão dos componentes existentes do DS**
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-109->
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:110:> Abra de 2 a 3 componentes similares em `src/components/ui/` e observe:
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-111-> - **Estrutura do arquivo**: usa `cva`? `forwardRef`? como exporta (named ou default)?
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-112-> - **Tipagem de props**: usa `interface` com `React.HTMLAttributes`? `VariantProps`?
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-117-> O novo componente **deve ser estruturalmente idêntico** aos existentes — mesmo padrão de exportação, mesma forma de tipar, mesma forma de compor classes. Um componente que foge do padrão do DS quebra a consistência da base inteira.
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-118-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:119:- Crie em `src/components/ui/` (ou equivalente do projeto) seguindo o padrão acima
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-120-- Registre na página de documentação do DS com exemplo de uso
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-121-- Depois use no destino
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-178-### Passo 6 — Lazy Loading
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-179-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:180:Para componentes pesados (gráficos, editores, tabelas com muitos dados, modais complexos), usar `React.lazy` + `Suspense` para não impactar o bundle inicial:
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-181-
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-182-```tsx
+--
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-254-- **Nunca** modificar arquivos fora do escopo da tarefa
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-255-- Foco exclusivo em visual e estrutura HTML/JSX
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md:256:- Componentes base: shadcn/ui com class-variance-authority para variantes
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-257-- **Conflito spec vs DS:** se a spec solicitar algo que viola o DS (ex: `rounded-2xl`, cor hardcoded) → alerte o usuário explicitamente e aplique o token canônico do DS, não o pedido literal
+C:\Users\charl\.claude\skills\front-end-ui\SKILL.md-258-

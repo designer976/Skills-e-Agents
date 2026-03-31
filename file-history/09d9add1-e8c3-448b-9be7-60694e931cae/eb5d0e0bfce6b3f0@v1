@@ -1,0 +1,155 @@
+import { useEffect } from "react";
+import { UseFormReturn, useFieldArray } from "react-hook-form";
+import { StepServicesData } from "./schemas";
+import { onboardingService } from "@/services/onboardingService";
+import { toast } from "sonner";
+import { IconCheck as Check, IconClock as Clock, IconCurrencyDollar as DollarSign } from "@tabler/icons-react";
+
+interface StepServicesProps {
+    form: UseFormReturn<StepServicesData>;
+}
+
+export function StepServices({ form }: StepServicesProps) {
+    const { control, register, watch } = form;
+
+    // Use useFieldArray for better performance when handling list of items
+    const { fields, replace, update } = useFieldArray({
+        control,
+        name: "services",
+    });
+
+    // Load services only if form is empty (persistence check)
+    useEffect(() => {
+        if (fields.length > 0) return;
+
+        const loadServices = async () => {
+            try {
+                const services = await onboardingService.getSuggestedServices();
+                const formattedServices = services.map((s) => ({
+                    serviceId: s.id,
+                    name: s.name,
+                    selected: false,
+                    price: s.defaultPrice,
+                    duration: s.defaultDuration,
+                }));
+                replace(formattedServices);
+            } catch (error) {
+                toast.error("Erro ao carregar serviços sugeridos");
+            }
+        };
+        loadServices();
+    }, [replace, fields.length]);
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <div className="text-center mb-8">
+                <h1 className="font-semibold text-foreground mb-2 text-lg">
+                    Selecione os serviços que o seu salão executa
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                    Você pode adicionar mais serviços posteriormente nas configurações do salão.
+                </p>
+            </div>
+
+            <div className="space-y-4 max-w-lg mx-auto">
+
+                {fields.map((field, index) => {
+                    // We use watch inside the map? 
+                    // Better performance: The inputs inside use 'register' which handles changes.
+                    // But we need to conditionally render the expanded part.
+                    // Using a separate component for each Item is the best way to isolate re-renders with useWatch/watch.
+                    return (
+                        <ServiceItem
+                            key={field.id}
+                            index={index}
+                            form={form}
+                            field={field}
+                        />
+                    )
+                })}
+            </div>
+
+            {/* Validation Error Display */}
+            {(form.formState.errors.services as any)?.root?.message && (
+                <p className="text-red-500 text-sm text-center font-medium animate-pulse">
+                    {(form.formState.errors.services as any).root.message}
+                </p>
+            )}
+            {form.formState.errors.services?.message && (
+                <p className="text-red-500 text-sm text-center font-medium animate-pulse">
+                    {form.formState.errors.services.message}
+                </p>
+            )}
+
+
+        </div>
+    );
+}
+
+// Extracted for performance (isolates watch scope)
+function ServiceItem({ index, form, field }: { index: number; form: UseFormReturn<StepServicesData>; field: any }) {
+    const isSelected = form.watch(`services.${index}.selected`);
+
+    return (
+        <div className="border border-border overflow-hidden rounded-3xl transition-all duration-200">
+            <button
+                type="button"
+                onClick={async () => {
+                    form.setValue(`services.${index}.selected`, !isSelected);
+                    await form.trigger();
+                }}
+                className={`w-full flex items-center justify-between p-4 transition-colors ${isSelected ? "bg-[#dd4227]/5" : "hover:bg-muted/50"
+                    }`}
+            >
+                <span className="font-medium text-foreground">{field.name}</span>
+                <div
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                        ? "border-[#dd4227] bg-[#dd4227]"
+                        : "border-border"
+                        }`}
+                >
+                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                </div>
+                {/* Hidden input to register the boolean value */}
+                <input type="hidden" {...form.register(`services.${index}.selected`)} />
+            </button>
+
+            {isSelected && (
+                <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/30 animate-in slide-in-from-top-2">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                                <DollarSign className="w-3 h-3" /> Valor (R$)
+                            </label>
+                            <input
+                                className="w-full h-9 px-3 text-base border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#dd4227]/20 focus:border-[#dd4227]"
+                                placeholder="0,00"
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                {...form.register(`services.${index}.price`, { valueAsNumber: true })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Duração (min)
+                            </label>
+                            <input
+                                className="w-full h-9 px-3 text-base border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#dd4227]/20 focus:border-[#dd4227]"
+                                placeholder="30"
+                                type="number"
+                                inputMode="numeric"
+                                {...form.register(`services.${index}.duration`, { valueAsNumber: true })}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Register hidden fields to keep ID and Name in form state */}
+            <input type="hidden" value={field.serviceId} {...form.register(`services.${index}.serviceId`)} />
+            <input type="hidden" value={field.name} {...form.register(`services.${index}.name`)} />
+
+        </div>
+    )
+}

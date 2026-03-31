@@ -1,0 +1,187 @@
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Salon, UpdateSalonDto } from "@/types/salon";
+
+interface SalonEditFormData {
+  name: string;
+  responsible: string;
+  phone: string;
+  email: string;
+  active: boolean;
+}
+
+interface SalonEditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  salon: Salon | null;
+  onSave: (id: string, data: UpdateSalonDto) => Promise<void>;
+  isSaving: boolean;
+}
+
+function buildInitialFormData(salon: Salon | null): SalonEditFormData {
+  return {
+    name: salon?.name ?? "",
+    responsible: salon?.responsible ?? "",
+    phone: salon?.phone ?? "",
+    email: salon?.email ?? "",
+    active: salon?.active ?? true,
+  };
+}
+
+export function SalonEditModal({
+  isOpen,
+  onClose,
+  salon,
+  onSave,
+  isSaving,
+}: SalonEditModalProps) {
+  const [formData, setFormData] = useState<SalonEditFormData>(
+    () => buildInitialFormData(salon)
+  );
+  const [errors, setErrors] = useState<Partial<Record<keyof SalonEditFormData, string>>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(buildInitialFormData(salon));
+      setErrors({});
+    }
+  }, [isOpen, salon]);
+
+  const handleFieldChange = (field: keyof SalonEditFormData, value: string | boolean): void => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Partial<Record<keyof SalonEditFormData, string>> = {};
+    if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
+    if (!formData.phone.trim()) newErrors.phone = "Telefone é obrigatório";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async (): Promise<void> => {
+    if (!validate() || !salon) return;
+    await onSave(salon.id, {
+      name: formData.name.trim(),
+      responsible: formData.responsible.trim() || undefined,
+      phone: formData.phone.trim(),
+      email: formData.email.trim() || undefined,
+      active: formData.active,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-lg flex flex-col gap-0">
+        <DialogHeader className="border-b pb-3 shrink-0">
+          <DialogTitle>Editar Salão</DialogTitle>
+          <DialogDescription>
+            Edite as informações do salão abaixo.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogBody>
+          <div className="space-y-4">
+            {/* Nome */}
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="salon-name">
+                Nome do salão <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="salon-name"
+                value={formData.name}
+                onChange={(e) => handleFieldChange("name", e.target.value)}
+                placeholder="Nome do salão"
+                className={errors.name ? "border-destructive" : ""}
+              />
+              {errors.name && (
+                <p className="text-destructive text-xs">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Responsável */}
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="salon-responsible">Responsável</Label>
+              <Input
+                id="salon-responsible"
+                value={formData.responsible}
+                onChange={(e) => handleFieldChange("responsible", e.target.value)}
+                placeholder="Nome do responsável"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Telefone */}
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="salon-phone">
+                  Telefone <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="salon-phone"
+                  value={formData.phone}
+                  onChange={(e) => handleFieldChange("phone", e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className={errors.phone ? "border-destructive" : ""}
+                />
+                {errors.phone && (
+                  <p className="text-destructive text-xs">{errors.phone}</p>
+                )}
+              </div>
+
+              {/* E-mail */}
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="salon-email">E-mail</Label>
+                <Input
+                  id="salon-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleFieldChange("email", e.target.value)}
+                  placeholder="contato@salao.com"
+                />
+              </div>
+            </div>
+          </div>
+        </DialogBody>
+
+        <DialogFooter className="border-t pt-6 shrink-0">
+          {/* Status switch — lado esquerdo, alinhado com os botões */}
+          <div className="flex items-center gap-2 mr-auto">
+            <Switch
+              id="salon-active"
+              checked={formData.active}
+              onCheckedChange={(checked) => handleFieldChange("active", checked)}
+              disabled={isSaving}
+            />
+            <Label htmlFor="salon-active" className="cursor-pointer select-none">
+              {formData.active ? "Ativo" : "Inativo"}
+            </Label>
+          </div>
+
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button onClick={() => { void handleSave(); }} disabled={isSaving}>
+            {isSaving && <LoadingSpinner size="sm" inline className="mr-2" />}
+            Salvar alterações
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

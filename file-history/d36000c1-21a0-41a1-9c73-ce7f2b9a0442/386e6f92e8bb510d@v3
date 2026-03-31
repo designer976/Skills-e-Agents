@@ -1,0 +1,32 @@
+import { Clock as Clock } from "lucide-react";
+import { formatOpeningHours } from '@/utils/formatOpeningHours';
+
+interface OpeningHours {
+  dayOfWeek: number;
+  open: string;
+  close: string;
+  isOpen: boolean;
+}
+
+interface OpeningHoursDisplayProps {
+  openingHours?: OpeningHours[];
+  className?: string;
+}
+
+export function OpeningHoursDisplay({ openingHours, className = '' }: OpeningHoursDisplayProps) {
+  return (
+    <div className={`flex items-start gap-3 ${className}`}>
+      <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
+      <div className="flex-1">
+        <h3 className="font-medium text-gray-900 mb-2">Horário de Funcionamento</h3>
+        <div className="space-y-1">
+          {formatOpeningHours(openingHours).map((hours, index) => (
+            <p key={index} className="text-gray-600 text-sm">
+              {hours}
+            </p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

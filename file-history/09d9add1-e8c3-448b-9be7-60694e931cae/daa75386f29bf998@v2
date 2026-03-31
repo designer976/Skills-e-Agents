@@ -1,0 +1,62 @@
+---
+name: design-system
+description: Regras visuais do Easy Salon Design System. Use automaticamente ao criar, editar ou revisar qualquer componente de UI no frontend. Garante reaproveitamento de componentes existentes e consistência visual.
+---
+
+# Easy Salon — Design System Rules
+
+O Design System do Easy Salon vive em:
+- **Página de referência**: `frontend/src/pages/DesignSystemPage.tsx`
+- **Componentes base**: `frontend/src/components/ui/`
+- **Layout base**: `frontend/src/components/layout/`
+
+## Fluxo obrigatório antes de qualquer trabalho visual
+
+1. **Leia o Design System primeiro**
+   - Antes de criar qualquer elemento visual, leia `frontend/src/pages/DesignSystemPage.tsx`
+   - Identifique se o componente necessário já existe em `frontend/src/components/ui/` ou `frontend/src/components/layout/`
+
+2. **Reaproveitamento é obrigatório**
+   - Se o componente já existe no DS, use-o diretamente — nunca reimplemente o que já existe
+   - Herde sempre os tokens de cor, tipografia, espaçamento e border-radius definidos no DS (`index.css` e `tailwind.config.ts`)
+
+3. **Componente inexistente no DS — pergunte antes de criar**
+   - Se o componente necessário **não existir** no DS, **pare e pergunte ao usuário**:
+     - Qual o novo componente a ser criado
+     - Se a estrutura base deve vir do **Shadcn/ui** ou de outra fonte
+   - Aguarde a resposta antes de escrever qualquer código
+
+4. **Criar no DS primeiro, depois no destino**
+   - Somente após aprovação do usuário, crie o componente **primeiro** em `frontend/src/components/ui/` (ou `layout/` conforme o caso)
+   - Registre-o visualmente em `frontend/src/pages/DesignSystemPage.tsx`
+   - Apenas então use-o na página/feature da demanda (task)
+
+## Tokens visuais obrigatórios
+
+| Token | Valor | Onde usar |
+|---|---|---|
+| Border radius nav items | `rounded-[10px]` | Sidebar, menus, nav links |
+| Border radius cards | `rounded-[10px]` | Cards, modais, painéis |
+| Cor primária | `bg-primary` / `text-primary-foreground` | Botões, itens ativos |
+| Cor accent | `bg-accent` / `text-accent-foreground` | Hover states, selecionados |
+| Muted foreground | `text-muted-foreground` | Labels, subtítulos, ícones inativos |
+| Ações em tabela | `className: "text-right"` + `justify-end` no flex | Coluna Ações de todo DataTable |
+
+## Regras de herança visual
+
+- Qualquer alteração de estilo em um componente do DS **deve ser propagada** para todas as instâncias que o utilizam
+- Nunca aplique estilos inline ou classes ad-hoc que conflitem com os tokens do DS
+- Variantes de componentes (`variant`, `size`) devem seguir o padrão do `class-variance-authority` já adotado no projeto
+
+## Componentes existentes no DS (não recriar)
+
+- `Button` — variantes: `default`, `outline`, `ghost`, `destructive`, `secondary`, `link`
+- `Input`, `Textarea`, `Select`, `Checkbox`, `Switch`, `RadioGroup`
+- `DataTable` — uso obrigatório para todas as listagens tabulares
+- `Dialog`, `Sheet` — modais e drawers
+- `Card` — containers de conteúdo
+- `Badge`, `Avatar`, `Tooltip`, `Dropdown`, `Tabs`
+- `EasySalonSidebar` — sidebar principal (não use SideNav em novas features)
+- `EasySalonLayout` — layout wrapper para todas as páginas autenticadas
+- `PageHeader`, `Header`
+- `ResponsivePagination` — paginação em todas as listagens

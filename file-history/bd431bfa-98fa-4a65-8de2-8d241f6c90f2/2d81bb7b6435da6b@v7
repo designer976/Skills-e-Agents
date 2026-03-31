@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposta Comercial — {{NOME_CLIENTE}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0047ba;
+            --text: #2e2e2e;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 13.5px;
+            line-height: 1.75;
+        }
+
+        /* ── PAGES ── */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fcfcfc;
+            margin: 0 auto 24px;
+            padding: 46px 56px 90px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('fundo-center.png') center center no-repeat;
+            background-size: 602px auto;
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .page-cover {
+            background: #FAFBFC;
+            padding-bottom: 0;
+        }
+        .page-cover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('fundo-center.png') center center no-repeat;
+            background-size: 602px auto;
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── LOGO ── */
+        .logo {
+            display: inline-block;
+        }
+        .logo img {
+            width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        /* ── COVER ── */
+        .cover-logo { position: relative; z-index: 1; margin-bottom: 64px; }
+
+        .cover-title {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 60px;
+        }
+        .cover-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+        .cover-title h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 40px;
+        }
+        .cover-date {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .cover-info p {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .cover-info strong {
+            font-weight: 600;
+        }
+
+        /* ── CONTENT AREA ── */
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── HEADINGS ── */
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--blue);
+            margin: 32px 0 16px 0;
+        }
+        h2:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 24px 0 8px 0;
+        }
+
+        h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 16px 0 8px 0;
+        }
+
+        /* ── BODY TEXT ── */
+        p {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* ── LISTS ── */
+        ul {
+            list-style: disc;
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+        ul li {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        ol {
+            list-style: decimal;
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+        ol li {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        /* ── FUNCTIONAL LISTS ── */
+        .func-list {
+            margin-bottom: 20px;
+        }
+        .func-item {
+            margin-bottom: 16px;
+        }
+        .func-item strong {
+            color: var(--text);
+        }
+
+        /* ── PHASES ── */
+        .phase {
+            margin-bottom: 8px;
+        }
+        .phase strong {
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        /* ── TEAM SECTIONS ── */
+        .team-role {
+            margin-bottom: 20px;
+        }
+        .team-role h4 {
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+
+        /* ── INVESTMENT ── */
+        .investment-total {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 20px 0 16px 0;
+        }
+
+        .payment-condition {
+            margin-bottom: 8px;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0 56px 32px;
+            z-index: 2;
+        }
+        .footer-line {
+            height: 2px;
+            background: #e5e7eb80;
+            margin-bottom: 24px;
+        }
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-logo {
+            display: inline-block;
+        }
+        .footer-logo img {
+            width: 74px;
+            height: auto;
+            display: block;
+        }
+        .pg-num {
+            font-size: 12.5px;
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        /* ── CLOSING SECTION ── */
+        .closing {
+            margin-top: 40px;
+        }
+        .closing-quote {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        .company-info {
+            margin-top: 24px;
+        }
+        .company-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .validity {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── PRINT ── */
+        @media print {
+            body { background: #fcfcfc; }
+            .page { margin: 0; box-shadow: none; page-break-after: always; }
+            .page:last-child { page-break-after: auto; }
+        }
+        @page { size: A4; margin: 0; }
+    </style>
+</head>
+<body>
+
+<!-- PÁGINA 1 - CAPA -->
+<section class="page page-cover">
+    <div class="cover-logo">
+        <div class="logo">
+            <img src="Logo completa.png" alt="Wa Project">
+        </div>
+    </div>
+
+    <div class="cover-title">
+        <h1>Proposta Comercial</h1>
+        <h2>Easy Salon</h2>
+
+        <div class="cover-date">27/03/2026 | Válido por 30 dias</div>
+
+        <div class="cover-info">
+            <p><strong>Para:</strong> Agência XPTO</p>
+            <p><strong>Tipo:</strong> Escopo fechado</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Sobre a Wa Project</h2>
+        <p>A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.</p>
+
+        <h3>Nossos serviços:</h3>
+        <ul>
+            <li>Desenvolvimento de Software.</li>
+            <li>Desenvolvimento de Aplicativos.</li>
+            <li>Soluções de Inteligência Artificial.</li>
+            <li>Alocação de Profissionais.</li>
+        </ul>
+
+        <h2>Nossos Clientes</h2>
+        <ul>
+            <li>PepsiCo</li>
+            <li>Vtex</li>
+            <li>Santillana</li>
+            <li>Dasa</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="footer-logo">
+                <img src="Logo completa.png" alt="Wa Project">
+            </div>
+            <span class="pg-num">1</span>
+        </div>
+    </div>
+</section>
+
+<!-- PÁGINA 2 - CONTINUAÇÃO -->
+<section class="page">
+    <div class="content">
+        <ul>
+            <li>WideLabs</li>
+            <li>Confederação Brasileira de Hipismo</li>
+            <li>Forbes</li>
+            <li>Easy Salon</li>
+            <li>InstaCarro</li>
+            <li>Antilhas</li>
+            <li>Fundação Carlos Chagas</li>
+            <li>Funarbe</li>
+        </ul>
+
+        <p>Cases completos: waproject.com.br/cases</p>
+
+        <h2>Sobre o Projeto</h2>
+        <h3>Quiz Interativo Easy Salon — Coleta de Leads em TV Touch</h3>
+
+        <p>O Easy Salon participará de um evento no dia 20 de abril e deseja aumentar sua base de contatos de forma engajante e eficiente. Para isso, será desenvolvido um quiz interativo instalado em uma TV touch dentro do stand da marca.</p>
+
+        <p>A solução consiste em uma aplicação web responsiva, otimizada para interação por toque, que guia o visitante por um fluxo simples: Preenchimento de dados de contato, resposta a 3 perguntas e exibição de uma tela de agradecimento.</p>
+
+        <p>Ao final do evento, todos os leads coletados serão exportados em arquivo Excel e entregues ao cliente.</p>
+
+        <h2>Funcionalidades</h2>
+        <div class="func-list">
+            <div class="func-item">
+                <p><strong>1. Formulário de Captura de Leads</strong> - Tela inicial do quiz com campos para preenchimento de Nome, E-mail e Telefone, com validação básica de dados e visual alinhado ao Key Visual (KV) fornecido pelo cliente. Garante a coleta estruturada de informações dos visitantes antes do início do quiz.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="footer-logo">
+                <img src="Logo completa.png" alt="Wa Project">
+            </div>
+            <span class="pg-num">2</span>
+        </div>
+    </div>
+</section>
+
+<!-- PÁGINA 3 - CONTINUAÇÃO -->
+<section class="page">
+    <div class="content">
+        <div class="func-list">
+            <div class="func-item">
+                <p><strong>2. Quiz com 3 Perguntas</strong> - Interface otimizada para toque em TV, exibindo uma pergunta por vez com alternativas em formato de botões grandes e responsivos. Navegação clara entre perguntas e design visual consistente com o branding do Easy Salon. Torna a experiência de coleta de dados engajante e interativa para o visitante.</p>
+            </div>
+
+            <div class="func-item">
+                <p><strong>3. Tela de Agradecimento</strong> - Mensagem de encerramento exibida ao visitante após a conclusão do quiz, com retorno automático à tela inicial após um intervalo de tempo configurável. Encerra a experiência de forma positiva e reinicia o fluxo para o próximo participante.</p>
+            </div>
+        </div>
+
+        <p><strong>Exportação de Dados</strong> - Geração automática de arquivo Excel com todos os leads coletados durante o evento, contendo os campos: Nome, E-mail, Telefone e Data/Hora do preenchimento. Entregue ao final do evento, permitindo que o Easy Salon utilize os dados imediatamente para ações de follow-up.</p>
+
+        <h2>Integrações Previstas</h2>
+        <p><strong>AWS (Hospedagem)</strong> - Armazenamento seguro dos dados coletados e disponibilização da aplicação web durante o período do evento, gerenciada pela Wa Project.</p>
+
+        <h2>Modelo de Trabalho</h2>
+        <p><strong>Escopo Fechado</strong> - Prazo e valor definidos previamente.</p>
+        <p>Processo orientado a entregas contínuas, previsibilidade e colaboração.</p>
+
+        <h3>Fases do Projeto:</h3>
+        <div class="phase"><strong>Fase 1:</strong> Planejamento - Priorização de demandas e alinhamento de objetivos e escopo.</div>
+        <div class="phase"><strong>Fase 2:</strong> Levantamento de Requisitos - Detalhamento funcional e técnico validado com stakeholders.</div>
+        <div class="phase"><strong>Fase 3:</strong> Protótipo - Criação de protótipos navegáveis de alta fidelidade validados antes do desenvolvimento.</div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="footer-logo">
+                <img src="Logo completa.png" alt="Wa Project">
+            </div>
+            <span class="pg-num">3</span>
+        </div>
+    </div>
+</section>
+
+<!-- PÁGINA 4 - CONTINUAÇÃO -->
+<section class="page">
+    <div class="content">
+        <div class="phase"><strong>Fase 4:</strong> Desenvolvimento - Implementação técnica com boas práticas, testes e code review.</div>
+        <div class="phase"><strong>Fase 5:</strong> Homologação - Testes completos e validação do cliente em ambiente de homologação.</div>
+        <div class="phase"><strong>Fase 6:</strong> Go-Live - Publicação em produção com monitoramento e acompanhamento inicial.</div>
+        <div class="phase"><strong>Fase 7:</strong> Garantia - 90 dias de suporte técnico gratuito após o go-live.</div>
+
+        <h2>Equipe</h2>
+        <p>O projeto contará com uma equipe multidisciplinar de especialistas:</p>
+
+        <div class="team-role">
+            <h4>UX e UI Designer</h4>
+            <p>Responsável pelo design de interfaces, prototipagem navegável e validação de usabilidade. Cria o design system e acompanha a implementação para garantir fidelidade ao design aprovado.</p>
+        </div>
+
+        <div class="team-role">
+            <h4>Desenvolvedor(es)</h4>
+            <p>Realiza a implementação técnica completa (frontend e backend), integrações com APIs e sistemas externos. Garante qualidade através de testes, code review e boas práticas de desenvolvimento.</p>
+        </div>
+
+        <div class="team-role">
+            <h4>Product Owner</h4>
+            <p>Atua como ponte entre cliente e equipe técnica, gerenciando backlog e priorização. Garante alinhamento estratégico, planeja sprints e acompanha prazos e entregas do projeto.</p>
+        </div>
+
+        <div class="team-role">
+            <h4>Tester (QA)</h4>
+            <p>Executa testes funcionais e de regressão para validar qualidade de cada funcionalidade. Documenta bugs, realiza homologação com o cliente e garante critérios de aceite.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="footer-logo">
+                <img src="Logo completa.png" alt="Wa Project">
+            </div>
+            <span class="pg-num">4</span>
+        </div>
+    </div>
+</section>
+
+<!-- PÁGINA 5 - CONTINUAÇÃO -->
+<section class="page">
+    <div class="content">
+        <h2>Cronograma</h2>
+        <p class="investment-total">Prazo total estimado: 4,5 semanas</p>
+
+        <div class="phase"><strong>Fase 1:</strong> Concepção do produto: Semanas 1-2</div>
+        <div class="phase"><strong>Fase 2:</strong> Validação do produto: Semanas 3-4</div>
+        <div class="phase"><strong>Fase 3:</strong> Desenvolvimento: Semanas 5-11</div>
+        <div class="phase"><strong>Fase 4:</strong> Lançamento: Semanas 12-13</div>
+
+        <p>O cronograma acima é uma estimativa inicial e poderá ser ajustado após o planejamento detalhado, conforme validações e fornecimento de informações pelo cliente.</p>
+
+        <h2>Investimento</h2>
+        <p class="investment-total">Investimento total: R$ 20.000</p>
+
+        <h3>Condições de Pagamento:</h3>
+        <div class="payment-condition"><strong>1ª Parcela:</strong> Na assinatura do contrato: R$ 6.667</div>
+        <div class="payment-condition"><strong>2ª Parcela:</strong> 30 dias após a assinatura: R$ 6.667</div>
+        <div class="payment-condition"><strong>3ª Parcela:</strong> Pós-homologação: R$ 6.666</div>
+
+        <h2>Entregáveis</h2>
+        <ul>
+            <li>Protótipos de Alta Fidelidade (Figma).</li>
+            <li>Documentação Funcional.</li>
+            <li>Documentação Técnica.</li>
+            <li>Código Fonte Completo (repositório Git).</li>
+            <li>Sistema em Produção.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="footer-logo">
+                <img src="Logo completa.png" alt="Wa Project">
+            </div>
+            <span class="pg-num">5</span>
+        </div>
+    </div>
+</section>
+
+<!-- PÁGINA 6 - FINAL -->
+<section class="page">
+    <div class="content">
+        <h2>Próximos Passos</h2>
+        <ol>
+            <li>Alinhamento Final.</li>
+            <li>Aprovação da Proposta.</li>
+            <li>Assinatura do Contrato.</li>
+            <li>Kickoff do Projeto.</li>
+            <li>Início do desenvolvimento.</li>
+        </ol>
+
+        <p>Estamos à disposição para qualquer esclarecimento e ansiosos para iniciar esta parceria.</p>
+
+        <div class="closing">
+            <p class="closing-quote">Não é sobre desenvolvimento, é sobre envolvimento.</p>
+            <p class="closing-quote">Obrigado por confiar na Wa Project!</p>
+
+            <div class="company-info">
+                <p><strong>Wa Project Soluções Tecnológicas LTDA.</strong></p>
+                <p><strong>CNPJ:</strong> 19.317.018/0001-40</p>
+                <p><strong>Website:</strong> waproject.com.br</p>
+                <p><strong>Email:</strong> comercial@waproject.com.br</p>
+                <p><strong>Telefone/WhatsApp:</strong> (11) 5028-2010</p>
+            </div>
+
+            <div class="validity">
+                <p>Proposta válida por 30 dias a partir da data de emissão</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="footer-logo">
+                <img src="Logo completa.png" alt="Wa Project">
+            </div>
+            <span class="pg-num">6</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

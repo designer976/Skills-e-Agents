@@ -1,0 +1,12 @@
+# Project Memory
+
+## Alias
+Este projeto é chamado de **"Easy"**. Quando o usuário disser "Continue o projeto - Easy", é este projeto.
+
+## Working Directory
+The correct project directory is:
+`C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo`
+
+## Localhost URLs
+- Frontend (Vite + React): http://localhost:8084
+- Backend (NestJS): http://localhost:3000

@@ -1,0 +1,140 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { BookingTimeSlot } from '@/types/booking';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface DateTimeSelectionProps {
+  selectedDate: Date | null;
+  selectedTime: string | null;
+  timeSlots: BookingTimeSlot[];
+  primaryColor: string;
+  onDateChange: (date: Date | null) => void;
+  onTimeChange: (time: string | null) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+export function DateTimeSelection({
+  selectedDate,
+  selectedTime,
+  timeSlots,
+  primaryColor,
+  onDateChange,
+  onTimeChange,
+  onNext,
+  onBack,
+}: DateTimeSelectionProps) {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Escolha a data e o horário
+        </h2>
+        <p className="text-gray-600">
+          Selecione quando você gostaria de ser atendido
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Calendário */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Selecione a Data</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={selectedDate || undefined}
+              onSelect={onDateChange}
+              disabled={(date) => date < new Date() || date.getDay() === 0} // Desabilita domingos e datas passadas
+              locale={ptBR}
+              className="w-full"
+              modifiersStyles={{
+                selected: {
+                  backgroundColor: primaryColor,
+                  color: 'white',
+                },
+                today: {
+                  borderColor: primaryColor,
+                },
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Horários */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {selectedDate 
+                ? `Horários para ${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}`
+                : 'Selecione uma data primeiro'
+              }
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!selectedDate ? (
+              <p className="text-gray-500 text-center py-8">
+                Escolha uma data para ver os horários disponíveis
+              </p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {timeSlots.map((slot) => {
+                  // Verificar se é hoje e se o horário já passou
+                  const isToday = selectedDate && selectedDate.toDateString() === new Date().toDateString();
+                  const isPastTime = isToday && (() => {
+                    const now = new Date();
+                    const [hours, minutes] = slot.time.split(':').map(Number);
+                    const slotTime = new Date();
+                    slotTime.setHours(hours, minutes, 0, 0);
+                    return slotTime <= now;
+                  })();
+
+                  return (
+                    <Button
+                      key={slot.time}
+                      variant={selectedTime === slot.time ? "default" : "outline"}
+                      disabled={!slot.available || isPastTime}
+                      className={cn(
+                        "h-12",
+                        selectedTime === slot.time && "text-white",
+                        isPastTime && "opacity-40"
+                      )}
+                      style={{
+                        backgroundColor: selectedTime === slot.time ? primaryColor : undefined,
+                        borderColor: selectedTime === slot.time ? primaryColor : undefined,
+                      }}
+                      onClick={() => onTimeChange(slot.time)}
+                    >
+                      {slot.time}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8">
+        <Button variant="outline" onClick={onBack}>
+          Voltar
+        </Button>
+        
+        <Button
+          disabled={!selectedDate || !selectedTime}
+          style={{ backgroundColor: primaryColor }}
+          className="text-white"
+          onClick={onNext}
+        >
+          Continuar
+        </Button>
+      </div>
+    </div>
+  );
+}

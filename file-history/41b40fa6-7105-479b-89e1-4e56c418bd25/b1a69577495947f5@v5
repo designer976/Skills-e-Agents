@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-page text-fg font-sans;
+  }
+
+  ::selection {
+    background: rgba(196, 75, 58, 0.3);
+    color: #F0ECE4;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-primary text-fg font-semibold px-6 py-3 rounded-full
+           transition-all duration-200 hover:brightness-110 active:scale-95
+           shadow-[0_0_20px_rgba(196,75,58,0.3)];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 text-fg font-semibold px-6 py-3 rounded-full
+           border border-tan/20 transition-all duration-200
+           hover:border-tan/40 hover:bg-surface-2;
+  }
+
+  .btn-outline-primary {
+    @apply inline-flex items-center gap-2 text-primary font-semibold px-6 py-3 rounded-full
+           border border-primary/40 transition-all duration-200
+           hover:border-primary hover:bg-primary/10;
+  }
+
+  /* Labels */
+  .section-label {
+    @apply text-xs font-semibold tracking-[0.2em] uppercase text-gold;
+  }
+
+  /* Typography */
+  .display-title {
+    @apply font-display font-bold leading-tight tracking-tight;
+  }
+
+  /* Glass card */
+  .glass-card {
+    @apply backdrop-blur-sm border border-tan/10 rounded-2xl transition-all duration-300;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+  }
+
+  .glass-card:hover {
+    @apply border-tan/25;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(212,184,150,0.1);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #F0ECE4 0%, #D4B896 50%, #C44B3A 100%);
+  }
+
+  .gradient-text-red {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #C44B3A 0%, #6B2016 100%);
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-tan/10;
+  }
+
+  /* Pill badge */
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-tan/20
+           bg-surface-2 px-4 py-1.5 text-xs font-medium text-fg-muted;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glow utilities */
+  .glow-primary {
+    box-shadow: 0 0 40px rgba(196,75,58,0.2);
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 16px rgba(196,75,58,0.15);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 30px rgba(196,75,58,0.4);
+  }
+}

@@ -1,0 +1,273 @@
+import { useState, useEffect, useCallback } from "react";
+import { format, startOfMonth } from "date-fns";
+import { Calendar as CalendarIconLucide, ClipboardList as ClipboardList, Users as Users, AlertTriangle as AlertTriangle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell } from "recharts";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { dashboardService, type DashboardStats } from "@/services/dashboardService";
+import { analytics } from "@/lib/analytics";
+
+const defaultChartConfig = {
+  value: {
+    label: "Agendamentos",
+  },
+};
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const { selectedSalon } = useSelectedSalon();
+
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+
+  const [dateFrom, setDateFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [dateTo, setDateTo] = useState(format(tomorrow, "yyyy-MM-dd"));
+
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  useEffect(() => {
+    analytics.trackEvent("dashboard_viewed", {});
+  }, []);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await dashboardService.getStats({
+        startDate: dateFrom,
+        endDate: dateTo,
+      });
+
+      setDashboardData(data);
+    } catch {
+      setError("Erro ao carregar dados do dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedSalon, dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (selectedSalon?.id) {
+      fetchDashboardData();
+    }
+  }, [dateFrom, dateTo, selectedSalon?.id]);
+
+  const chartConfig =
+    dashboardData?.topServices.reduce(
+      (acc, service) => {
+        acc[service.name] = {
+          label: service.name,
+          color: service.color,
+        };
+        return acc;
+      },
+      { ...defaultChartConfig }
+    ) || defaultChartConfig;
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Easy Salon"
+      sideNavItems={navItems}
+    >
+      {/* Header row: title + date filters */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+        <h1 className="text-xl md:text-2xl font-semibold text-foreground">Dashboard</h1>
+
+        <div className="flex items-center gap-2 min-w-0 w-full md:w-auto">
+          <div className="relative min-w-0 flex-1 md:flex-none">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">
+              De:
+            </span>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="pl-9 w-full md:w-auto"
+            />
+          </div>
+          <div className="relative min-w-0 flex-1 md:flex-none">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none select-none">
+              Até:
+            </span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="pl-10 w-full md:w-auto"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* No salon selected */}
+        {!selectedSalon && !loading && (
+          <Card>
+            <CardContent className="p-6 flex flex-col items-center justify-center py-8">
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum salão selecionado</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                Para visualizar os dados do dashboard, você precisa selecionar um salão.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading state */}
+        {loading && (
+          <div className="flex justify-center items-center py-16">
+            <LoadingSpinner size="md" text="Carregando dados..." />
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4 flex items-center justify-between">
+            <span className="text-destructive">{error}</span>
+            <button
+              onClick={fetchDashboardData}
+              className="ml-4 text-body text-destructive underline hover:text-destructive/80"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && dashboardData && selectedSalon && (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-body text-muted-foreground">Agendamentos no Período</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">
+                        {dashboardData.appointments.total}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData.appointments.thisWeek} esta semana
+                      </p>
+                    </div>
+                    <CalendarIconLucide className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-body text-muted-foreground">Solicitações Totais</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">
+                        {dashboardData.requests.total}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData.requests.pending} pendentes
+                      </p>
+                    </div>
+                    <ClipboardList className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-body text-muted-foreground">Total de Clientes</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">
+                        {dashboardData.clients.total}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData.clients.new} novos este mês
+                      </p>
+                    </div>
+                    <Users className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Services Chart */}
+            <Card>
+              <CardContent className="p-4 md:p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Serviços Mais Agendados
+                  </h3>
+                  <p className="text-body text-muted-foreground">
+                    Distribuição dos agendamentos por tipo de serviço no período selecionado
+                  </p>
+                </div>
+
+                {dashboardData.topServices.length > 0 ? (
+                  <>
+                    <ChartContainer
+                      config={chartConfig}
+                      className="mx-auto aspect-square max-h-[350px]"
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Pie
+                          data={dashboardData.topServices}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={120}
+                          innerRadius={60}
+                          strokeWidth={2}
+                        >
+                          {dashboardData.topServices.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-6">
+                      {dashboardData.topServices.map((item, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="text-body text-muted-foreground truncate">
+                            {item.name}: {item.value} agendamentos
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center">
+                    <p className="text-muted-foreground">
+                      Nenhum agendamento encontrado para o período selecionado
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+    </EasySalonLayout>
+  );
+}

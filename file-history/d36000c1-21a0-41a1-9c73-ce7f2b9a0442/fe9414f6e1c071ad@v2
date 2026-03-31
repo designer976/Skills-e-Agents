@@ -1,0 +1,876 @@
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useDebounce } from "@/hooks/useDebounce";
+import { cn } from "@/lib/utils";
+import { bookingService } from "@/services/bookingService";
+import type {
+  BookingAvailability,
+  BookingProfessionalInfo,
+} from "@/types/booking-api";
+import {
+  BookingProfessional,
+  BookingTimeSlot,
+  ServiceBookingConfig,
+} from "@/types/booking-new";
+import { getUserDisplayName } from "@/utils/userHelpers";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarIcon, Clock, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+interface ServiceConfigurationProps {
+  serviceConfigs: ServiceBookingConfig[];
+  professionals: BookingProfessional[];
+  timeSlots: BookingTimeSlot[];
+  primaryColor: string;
+  salonSlug: string;
+  services?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    priceType?: string;
+    maxValue?: number;
+  }>;
+  onConfigUpdate: (
+    serviceId: string,
+    config: Partial<ServiceBookingConfig>
+  ) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+export function ServiceConfiguration({
+  serviceConfigs,
+  professionals,
+  timeSlots,
+  primaryColor,
+  salonSlug,
+  services = [],
+  onConfigUpdate,
+  onNext,
+  onBack,
+}: ServiceConfigurationProps) {
+  const [availabilityByService, setAvailabilityByService] = useState<
+    Record<string, BookingAvailability>
+  >({});
+  const [professionalsByService, setProfessionalsByService] = useState<
+    Record<string, BookingProfessionalInfo[]>
+  >({});
+  const [loadingAvailability, setLoadingAvailability] = useState<
+    Record<string, boolean>
+  >({});
+  const [loadingProfessionals, setLoadingProfessionals] = useState<
+    Record<string, boolean>
+  >({});
+  const isAllConfigured = serviceConfigs.every((config) => {
+    // Todos os serviços precisam de data e hora
+    // Profissional pode ser "any" (null) ou um ID específico
+    return config.date && config.time;
+  });
+
+  const fetchProfessionalsForService = useCallback(
+    async (serviceId: string) => {
+      setLoadingProfessionals((prev) => ({ ...prev, [serviceId]: true }));
+      try {
+        const response = await bookingService.getProfessionals(
+          salonSlug,
+          serviceId
+        );
+        // Extract the professionals array from the response
+        setProfessionalsByService((prev) => ({
+          ...prev,
+          [serviceId]: response.professionals || [],
+        }));
+      } catch (error) {
+        console.error("Erro ao carregar profissionais:", error);
+        setProfessionalsByService((prev) => ({ ...prev, [serviceId]: [] }));
+      } finally {
+        setLoadingProfessionals((prev) => ({ ...prev, [serviceId]: false }));
+      }
+    },
+    [salonSlug]
+  );
+
+  const fetchAvailability = useCallback(
+    async (
+      serviceId: string,
+      professionalId: string | null,
+      date: Date | null
+    ) => {
+      if (!date) return;
+
+      const dateStr = format(date, "yyyy-MM-dd");
+      const key = `${serviceId}-${professionalId || "any"}-${dateStr}`;
+
+      setLoadingAvailability((prev) => ({ ...prev, [key]: true }));
+      try {
+        const availability = await bookingService.getAvailability(
+          salonSlug,
+          serviceId,
+          professionalId || undefined,
+          dateStr
+        );
+        setAvailabilityByService((prev) => ({ ...prev, [key]: availability }));
+      } catch (error) {
+        console.error("Erro ao carregar disponibilidade:", error);
+        setAvailabilityByService((prev) => ({
+          ...prev,
+          [key]: {
+            salonId: "",
+            salonName: "",
+            serviceId: "",
+            serviceName: "",
+            serviceDuration: 0,
+            date: dateStr,
+            professionals: [],
+            slotInterval: 0,
+          },
+        }));
+      } finally {
+        setLoadingAvailability((prev) => ({ ...prev, [key]: false }));
+      }
+    },
+    [salonSlug]
+  );
+
+  useEffect(() => {
+    // Use a Set to track unique service IDs to prevent duplicate fetches
+    const uniqueServiceIds = new Set(
+      serviceConfigs.map((config) => config.serviceId)
+    );
+
+    uniqueServiceIds.forEach((serviceId) => {
+      // Only fetch if we haven't already fetched or are not currently fetching
+      if (
+        !professionalsByService[serviceId] &&
+        !loadingProfessionals[serviceId]
+      ) {
+        fetchProfessionalsForService(serviceId);
+      }
+    });
+  }, [
+    serviceConfigs.length,
+    fetchProfessionalsForService,
+    professionalsByService,
+    loadingProfessionals,
+  ]);
+
+  // Track auto-selection attempts to prevent overwriting user choice
+  const autoSelectionAttempted = useRef<Set<string>>(new Set());
+
+  // Auto-select professional when there's only one available for the service
+  useEffect(() => {
+    serviceConfigs.forEach((config) => {
+      // Skip if already attempted for this service
+      if (autoSelectionAttempted.current.has(config.serviceId)) {
+        return;
+      }
+
+      // Skip if still loading
+      if (loadingProfessionals[config.serviceId]) {
+        return;
+      }
+
+      const professionals = professionalsByService[config.serviceId];
+
+      // Only proceed if we have professionals loaded
+      if (professionals) {
+        const validProfessionals = professionals.filter((p) => p.id !== null);
+
+        // Only auto-select if:
+        // 1. Professional is not already selected (professionalId is null)
+        // 2. There's exactly 1 professional available
+        if (
+          !config.professionalId &&
+          validProfessionals.length === 1
+        ) {
+          const professional = validProfessionals[0];
+          const originalService = services.find((s) => s.id === config.serviceId);
+
+          // Auto-select the single professional
+          onConfigUpdate(config.serviceId, {
+            professionalId: professional.id,
+            professionalName: getUserDisplayName(professional),
+            price: professional.customPrice ?? originalService?.price,
+            priceType: professional.priceType ?? originalService?.priceType,
+            maxValue: professional.customMaxValue ?? originalService?.maxValue,
+            duration: professional.customDuration ?? config.duration,
+          });
+        }
+
+        // Mark as attempted for this service so we don't run this logic again
+        // even if the user manually changes selection (e.g. back to "Any")
+        autoSelectionAttempted.current.add(config.serviceId);
+      }
+    });
+  }, [
+    serviceConfigs,
+    professionalsByService,
+    loadingProfessionals,
+    onConfigUpdate,
+    services,
+  ]);
+
+  const debouncedFetchAvailability = useDebounce(fetchAvailability, 500);
+
+  // Track the previous configs to detect changes
+  const prevConfigsRef = useRef<ServiceBookingConfig[]>([]);
+  // Removed initialFetchDone ref to allow re-fetching after clearing data
+
+  useEffect(() => {
+    serviceConfigs.forEach((config, index) => {
+      if (config.date) {
+        const prevConfig = prevConfigsRef.current[index];
+        const dateStr = format(config.date, "yyyy-MM-dd");
+        const key = `${config.serviceId}-${config.professionalId || "any"
+          }-${dateStr}`;
+
+        // Check if we need to fetch this combination
+        const hasData = availabilityByService[key];
+        const isLoading = loadingAvailability[key];
+
+        // Fetch if:
+        // 1. We don't have data for this key
+        // 2. Not currently loading
+        // 3. AND either:
+        //    - This is a new config (no previous config)
+        //    - The date changed
+        //    - The professionalId changed
+        //    - The professionalId just switched (e.g. from "any" to specific or vice versa)
+        //      Note: explicit check needed because React batching might mean we don't have data yet but configs match?
+        //      Actually !hasData is the primary driver.
+        const shouldFetch =
+          !hasData &&
+          !isLoading &&
+          (!prevConfig ||
+            prevConfig.date?.getTime() !== config.date?.getTime() ||
+            prevConfig.professionalId !== config.professionalId);
+
+        if (shouldFetch) {
+          // Fetch availability without debounce for initial load
+          // This ensures immediate loading when date is already set
+          if (!prevConfig) {
+            // First time this config appears with a date - fetch immediately
+            fetchAvailability(
+              config.serviceId,
+              config.professionalId || null,
+              config.date
+            );
+          } else {
+            // Date or professional changed - use debounced version
+            debouncedFetchAvailability(
+              config.serviceId,
+              config.professionalId || null,
+              config.date
+            );
+          }
+        }
+      }
+    });
+
+    // Update the previous configs reference
+    prevConfigsRef.current = [...serviceConfigs];
+  }, [
+    serviceConfigs,
+    fetchAvailability,
+    debouncedFetchAvailability,
+    loadingAvailability,
+    availabilityByService,
+  ]);
+
+  // Memoize the time slots calculation to prevent unnecessary re-renders
+  const getTimeSlotsForConfig = useCallback(
+    (config: ServiceBookingConfig): BookingTimeSlot[] => {
+      const dateStr = config.date ? format(config.date, "yyyy-MM-dd") : "";
+      if (!dateStr) return [];
+
+      const key = `${config.serviceId}-${config.professionalId || "any"
+        }-${dateStr}`;
+      const availability = availabilityByService[key];
+
+      // If no availability data yet, return empty array to avoid showing incorrect default slots
+      if (!availability) {
+        return [];
+      }
+
+      // Check if this is a request service (APENAS SOLICITAÇÃO)
+      const isRequestService =
+        availability.isRequestService || config.isRequest;
+
+      // For request services or "Qualquer Profissional", consolidate slots from all professionals
+      if (
+        isRequestService ||
+        !config.professionalId
+      ) {
+        // Get all unique time slots from all professionals
+        const allSlotsMap = new Map<string, BookingTimeSlot>();
+
+        if (availability.professionals && availability.professionals.length > 0) {
+          availability.professionals.forEach((prof) => {
+            if (prof.slots && Array.isArray(prof.slots)) {
+              prof.slots.forEach((slot) => {
+                const existingSlot = allSlotsMap.get(slot.time);
+
+                // If time doesn't exist or current slot is more available, update it
+                if (!existingSlot) {
+                  // For "any" professional, show slot as available if at least one professional has it available
+                  allSlotsMap.set(slot.time, {
+                    ...slot,
+                    available: slot.available,
+                    locked: slot.locked,
+                    isPast: slot.isPast,
+                  });
+                } else {
+                  // Update to show available if any professional can do it
+                  allSlotsMap.set(slot.time, {
+                    ...existingSlot,
+                    available: existingSlot.available || slot.available,
+                    locked: existingSlot.locked && slot.locked, // Only locked if all are locked
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // Convert map to array and sort by time
+        return Array.from(allSlotsMap.values()).sort((a, b) =>
+          a.time.localeCompare(b.time)
+        );
+      }
+
+      // For regular services with specific professionals
+      if (availability.professionals && config.professionalId) {
+        const professional = availability.professionals.find(
+          (p) => p.id === config.professionalId
+        );
+        return professional?.slots || [];
+      }
+
+      // If availability exists but no slots found, return empty array
+      return [];
+    },
+    [availabilityByService]
+  );
+
+  // Function to check if a time slot is blocked by other services
+  const isTimeSlotBlockedByOtherServices = useCallback(
+    (
+      currentServiceId: string,
+      slotTime: string,
+      date: Date,
+      serviceDuration: number
+    ): boolean => {
+      // Check each other configured service
+      return serviceConfigs.some((otherConfig) => {
+        // Skip if it's the same service or doesn't have time configured
+        if (
+          otherConfig.serviceId === currentServiceId ||
+          !otherConfig.time ||
+          !otherConfig.date
+        ) {
+          return false;
+        }
+
+        // Skip if different date
+        if (otherConfig.date.toDateString() !== date.toDateString()) {
+          return false;
+        }
+
+        // Convert times to minutes for comparison
+        const [slotHours, slotMinutes] = slotTime.split(":").map(Number);
+        const slotStartMinutes = slotHours * 60 + slotMinutes;
+        const slotEndMinutes = slotStartMinutes + serviceDuration;
+
+        const [otherHours, otherMinutes] = otherConfig.time
+          .split(":")
+          .map(Number);
+        const otherStartMinutes = otherHours * 60 + otherMinutes;
+        const otherEndMinutes = otherStartMinutes + otherConfig.duration;
+
+        // Check for overlap
+        return (
+          (slotStartMinutes >= otherStartMinutes &&
+            slotStartMinutes < otherEndMinutes) ||
+          (slotEndMinutes > otherStartMinutes &&
+            slotEndMinutes <= otherEndMinutes) ||
+          (slotStartMinutes <= otherStartMinutes &&
+            slotEndMinutes >= otherEndMinutes)
+        );
+      });
+    },
+    [serviceConfigs]
+  );
+
+  const getProfessionalsForService = (
+    serviceId: string
+  ): BookingProfessionalInfo[] => {
+    return professionalsByService[serviceId] || [];
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Configure cada serviço
+        </h2>
+        <p className="text-gray-600">
+          Escolha profissional, data e horário para cada serviço
+        </p>
+      </div>
+
+      {/* Aviso para serviços de solicitação */}
+      {serviceConfigs.some((config) => config.isRequest) && (
+        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-start">
+            <svg
+              className="w-5 h-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div className="text-sm">
+              <p className="font-medium text-orange-800 mb-1">
+                Serviços de Solicitação
+              </p>
+              <p className="text-orange-700">
+                Os serviços marcados como "Apenas Solicitação" serão
+                encaminhados para análise. O salão entrará em contato para
+                confirmar a disponibilidade e o profissional. Os horários
+                selecionados são apenas uma preferência.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {serviceConfigs.map((config) => (
+          <Card key={config.serviceId}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{config.serviceName}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {config.duration} min
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Seleção de Profissional - sempre aparece */}
+                <div className="space-y-2">
+                  <Label>Profissional</Label>
+                  {loadingProfessionals[config.serviceId] ? (
+                    <div className="flex items-center justify-center h-10 px-3 py-2 border border-gray-200 rounded-md">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Select
+                        value={config.professionalId || "any"}
+                        onValueChange={(value) => {
+                          // Clear cached availability when professional changes
+                          const dateStr = config.date
+                            ? format(config.date, "yyyy-MM-dd")
+                            : "";
+                          if (dateStr) {
+                            // Clear old key availability
+                            const oldKey = `${config.serviceId}-${config.professionalId || "any"
+                              }-${dateStr}`;
+                            setAvailabilityByService((prev) => {
+                              const newState = { ...prev };
+                              delete newState[oldKey];
+                              return newState;
+                            });
+                          }
+
+                          if (value === "any") {
+                            // Get salon price from original service
+                            const originalService = services.find(s => s.id === config.serviceId);
+                            onConfigUpdate(config.serviceId, {
+                              professionalId: null,
+                              professionalName: "Qualquer Profissional",
+                              time: null, // Reset time when professional changes
+                              price: originalService?.price,
+                              priceType: originalService?.priceType,
+                              maxValue: originalService?.maxValue,
+                              duration: config.duration,
+                            });
+                          } else {
+                            const professional = getProfessionalsForService(
+                              config.serviceId
+                            ).find((p) => p.id === value);
+
+                            // Get original service for fallback
+                            const originalService = services.find(s => s.id === config.serviceId);
+
+                            onConfigUpdate(config.serviceId, {
+                              professionalId: value,
+                              professionalName: professional ? getUserDisplayName(professional) : null,
+                              time: null, // Reset time when professional changes
+                              price: professional?.customPrice ?? originalService?.price,
+                              priceType: professional?.priceType ?? originalService?.priceType,
+                              maxValue: professional?.customMaxValue ?? originalService?.maxValue,
+                              duration: professional?.customDuration ?? config.duration,
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          className={config.isRequest ? "pr-32" : ""}
+                        >
+                          <SelectValue placeholder="Selecione um profissional" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {/* Primeiro, sempre mostrar "Qualquer Profissional" */}
+                          <SelectItem value="any">
+                            Qualquer Profissional
+                          </SelectItem>
+                          {/* Depois, mostrar os profissionais, filtrando o "Qualquer Profissional" que vem do backend */}
+                          {getProfessionalsForService(config.serviceId)
+                            .filter((p) => p.id !== null) // Filtrar "Qualquer Profissional" duplicado (id=null) que vem do backend
+                            .map((professional) => (
+                              <SelectItem
+                                key={professional.id}
+                                value={professional.id}
+                              >
+                                {getUserDisplayName(professional)}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {/* Label amarela para serviços "Apenas Solicitação" */}
+                      {config.isRequest && (
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded pointer-events-none z-10">
+                          Apenas Solicitação
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Seleção de Data */}
+                <div className="space-y-2">
+                  <Label>
+                    {config.isRequest ? "Data de preferência" : "Data"}
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !config.date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {config.date
+                          ? format(config.date, "PPP", { locale: ptBR })
+                          : "Selecione uma data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={config.date || undefined}
+                        onSelect={(date) => {
+                          // Clear cached availability when date changes
+                          if (config.date && date) {
+                            const oldDateStr = format(
+                              config.date,
+                              "yyyy-MM-dd"
+                            );
+                            const oldKey = `${config.serviceId}-${config.professionalId || "any"
+                              }-${oldDateStr}`;
+                            setAvailabilityByService((prev) => {
+                              const newState = { ...prev };
+                              delete newState[oldKey];
+                              return newState;
+                            });
+                          }
+
+                          // Atualizar o serviço atual
+                          onConfigUpdate(config.serviceId, {
+                            date,
+                            time: null, // Reset time when date changes
+                          });
+
+                          // Se este é o primeiro serviço e outros ainda não têm data,
+                          // pré-configurar a mesma data nos próximos serviços
+                          const isFirstService = serviceConfigs.findIndex(sc => sc.serviceId === config.serviceId) === 0;
+                          if (isFirstService && date) {
+                            serviceConfigs.forEach((otherConfig, index) => {
+                              // Pular o primeiro serviço (atual) e aplicar nos demais que não têm data
+                              if (index > 0 && !otherConfig.date) {
+                                onConfigUpdate(otherConfig.serviceId, {
+                                  date,
+                                  time: null,
+                                });
+                              }
+                            });
+                          }
+                        }}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today || date.getDay() === 0;
+                        }}
+                        locale={ptBR}
+                        modifiersStyles={{
+                          selected: {
+                            backgroundColor: primaryColor,
+                            color: "white",
+                          },
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Seleção de Horário */}
+                <div className="space-y-2">
+                  <Label>
+                    {config.isRequest ? "Horário de preferência" : "Horário"}
+                  </Label>
+                  {(() => {
+                    const dateStr = config.date
+                      ? format(config.date, "yyyy-MM-dd")
+                      : "";
+                    const key = `${config.serviceId}-${config.professionalId || "any"
+                      }-${dateStr}`;
+                    const isLoading = loadingAvailability[key];
+                    const slots = getTimeSlotsForConfig(config);
+
+                    if (isLoading) {
+                      return (
+                        <div className="flex items-center justify-center h-10 px-3 py-2 border border-gray-200 rounded-md">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="ml-2 text-sm">
+                            Carregando horários...
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <Select
+                        value={config.time || ""}
+                        onValueChange={(value) =>
+                          onConfigUpdate(config.serviceId, { time: value })
+                        }
+                        disabled={!config.date}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !config.date
+                                ? "Escolha uma data primeiro"
+                                : "Selecione um horário"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {slots.length === 0 ? (
+                            <div className="px-2 py-4 text-center text-sm text-gray-500">
+                              Nenhum horário disponível
+                            </div>
+                          ) : (
+                            slots.map((slot) => {
+                              // Verificar se é hoje e se o horário já passou
+                              const isToday =
+                                config.date &&
+                                config.date.toDateString() ===
+                                new Date().toDateString();
+                              const isPastTime =
+                                isToday &&
+                                (() => {
+                                  const now = new Date();
+                                  const [hours, minutes] = slot.time
+                                    .split(":")
+                                    .map(Number);
+                                  const slotTime = new Date();
+                                  slotTime.setHours(hours, minutes, 0, 0);
+                                  return slotTime <= now;
+                                })();
+
+                              // Use the isPast flag from backend if available
+                              const isPast = slot.isPast || isPastTime;
+
+                              // Check if slot is blocked by other services
+                              const isBlockedByOtherService =
+                                serviceConfigs.length > 1 &&
+                                config.date &&
+                                isTimeSlotBlockedByOtherServices(
+                                  config.serviceId,
+                                  slot.time,
+                                  config.date,
+                                  config.duration
+                                );
+
+                              // Determine if slot should be disabled based on service type
+                              // For request services (APENAS SOLICITAÇÃO): only disable if past
+                              // For regular services: disable if past, occupied, or locked
+                              const shouldDisableSlot = config.isRequest
+                                ? isPast || isBlockedByOtherService
+                                : isPast ||
+                                !slot.available ||
+                                slot.locked ||
+                                isBlockedByOtherService;
+
+                              return (
+                                <SelectItem
+                                  key={slot.time}
+                                  value={slot.time}
+                                  disabled={shouldDisableSlot}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4" />
+                                    <span
+                                      className={
+                                        isPastTime ? "text-gray-400" : ""
+                                      }
+                                    >
+                                      {slot.time}
+                                    </span>
+                                    {/* Show status indicators based on why slot is disabled */}
+                                    {isPast && (
+                                      <span className="text-gray-400 text-xs">
+                                        (Horário passou)
+                                      </span>
+                                    )}
+                                    {!isPast &&
+                                      !slot.available &&
+                                      !config.isRequest && (
+                                        <span className="text-red-500 text-xs">
+                                          (Ocupado)
+                                        </span>
+                                      )}
+                                    {!isPast && slot.locked && (
+                                      <span className="text-orange-500 text-xs">
+                                        (Reservado)
+                                      </span>
+                                    )}
+                                    {!isPast && isBlockedByOtherService && (
+                                      <span className="text-yellow-600 text-xs">
+                                        (Conflito)
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Preço do serviço */}
+              {config.price !== undefined && config.price !== null && (
+                <div className="mt-4 p-3 rounded-md bg-blue-50 border border-blue-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 font-medium">Preço:</span>
+                    <span className="font-bold text-gray-900">
+                      {config.priceType === 'A partir de' && config.maxValue
+                        ? `R$ ${config.price.toFixed(2)} - R$ ${config.maxValue.toFixed(2)}`
+                        : `R$ ${config.price.toFixed(2)}`
+                      }
+                    </span>
+                  </div>
+                  {config.priceType === 'A partir de' && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      Preço pode variar conforme complexidade do serviço
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Status de configuração */}
+              <div className="mt-4 p-3 rounded-md bg-gray-50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Status:</span>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      (() => {
+                        if (config.isRequest) {
+                          return config.date && config.time
+                            ? "text-green-600"
+                            : "text-orange-600";
+                        }
+                        return config.professionalId &&
+                          config.date &&
+                          config.time
+                          ? "text-green-600"
+                          : "text-orange-600";
+                      })()
+                    )}
+                  >
+                    {(() => {
+                      if (config.date && config.time) {
+                        return config.isRequest
+                          ? "✓ Solicitação Configurada"
+                          : "✓ Configurado";
+                      }
+                      return config.isRequest
+                        ? "⚠ Solicitação Pendente"
+                        : "⚠ Pendente";
+                    })()}
+                  </span>
+                </div>
+                {config.date && config.time && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    {config.professionalName || "Qualquer Profissional"} •{" "}
+                    {format(config.date, "dd/MM/yyyy")} • {config.time}
+                    {config.isRequest && (
+                      <span className="ml-2 text-orange-600">
+                        (Horários sujeitos à disponibilidade)
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8">
+        <Button variant="outline" onClick={onBack}>
+          Voltar
+        </Button>
+
+        <Button
+          disabled={!isAllConfigured}
+          style={{ backgroundColor: primaryColor }}
+          className="text-white"
+          onClick={onNext}
+        >
+          Continuar
+        </Button>
+      </div>
+    </div>
+  );
+}

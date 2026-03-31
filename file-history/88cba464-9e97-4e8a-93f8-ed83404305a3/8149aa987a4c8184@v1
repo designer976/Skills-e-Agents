@@ -1,0 +1,79 @@
+export const ETAPAS = [
+  "Solicitação recebida",
+  "Agendamento confirmado",
+  "Vistoria realizada",
+  "Laudo em elaboração",
+  "Laudo finalizado",
+  "Laudo disponível para download",
+]
+
+export type StatusVistoria = "Pedido" | "Em andamento" | "Concluído"
+
+export const vistorias = [
+  {
+    id: "V-2024-1021", endereco: "Rua das Flores, 123 - São Paulo, SP", tipo: "Entrada",
+    status: "Em andamento" as StatusVistoria, statusColor: "text-blue-600 bg-blue-50", data: "12/07/2025",
+    etapa: 2, temRelatorio: false,
+    dataHora: "12/07/2025 às 09:00", responsavel: "Carlos Mendonça",
+    historico: [
+      { data: "10/07/2025 14:32", texto: "Vistoria agendada para 12/07/2025 às 09:00." },
+      { data: "11/07/2025 09:10", texto: "Confirmação de presença do vistoriador Carlos Mendonça." },
+    ],
+  },
+  {
+    id: "V-2024-1020", endereco: "Av. Paulista, 1000 - São Paulo, SP", tipo: "Saída",
+    status: "Concluído" as StatusVistoria, statusColor: "text-green-700 bg-green-50", data: "10/07/2025",
+    etapa: 5, temRelatorio: true,
+    dataHora: "10/07/2025 às 14:00", responsavel: "Ana Ferreira",
+    historico: [
+      { data: "08/07/2025 10:00", texto: "Solicitação recebida pelo sistema." },
+      { data: "09/07/2025 11:45", texto: "Agenda alterada de 09/07 para 10/07 a pedido do cliente." },
+      { data: "10/07/2025 16:30", texto: "Laudo finalizado e disponível para download." },
+    ],
+  },
+  {
+    id: "V-2024-1019", endereco: "Rua Augusta, 45 - São Paulo, SP", tipo: "Conferência",
+    status: "Em andamento" as StatusVistoria, statusColor: "text-blue-600 bg-blue-50", data: "08/07/2025",
+    etapa: 3, temRelatorio: false,
+    dataHora: "08/07/2025 às 11:30", responsavel: "Roberto Lima",
+    historico: [
+      { data: "06/07/2025 09:00", texto: "Solicitação recebida." },
+      { data: "07/07/2025 15:00", texto: "Divergência registrada: fotos do quarto 2 inconsistentes." },
+    ],
+  },
+  {
+    id: "V-2024-1018", endereco: "Alameda Santos, 800 - São Paulo, SP", tipo: "Entrada",
+    status: "Concluído" as StatusVistoria, statusColor: "text-green-700 bg-green-50", data: "05/07/2025",
+    etapa: 5, temRelatorio: true,
+    dataHora: "05/07/2025 às 10:00", responsavel: "Patrícia Souza",
+    historico: [
+      { data: "03/07/2025 08:00", texto: "Agendamento confirmado." },
+      { data: "05/07/2025 12:00", texto: "Vistoria concluída sem divergências." },
+      { data: "05/07/2025 18:00", texto: "Laudo disponibilizado para download." },
+    ],
+  },
+  {
+    id: "V-2024-1017", endereco: "Rua Vergueiro, 200 - São Paulo, SP", tipo: "Saída",
+    status: "Pedido" as StatusVistoria, statusColor: "text-yellow-700 bg-yellow-50", data: "03/07/2025",
+    etapa: 0, temRelatorio: false,
+    dataHora: "A definir", responsavel: "Aguardando atribuição",
+    historico: [
+      { data: "01/07/2025 17:00", texto: "Solicitação recebida pelo sistema." },
+    ],
+  },
+  {
+    id: "V-2024-1016", endereco: "Rua Oscar Freire, 500 - São Paulo, SP", tipo: "Entrada",
+    status: "Pedido" as StatusVistoria, statusColor: "text-yellow-700 bg-yellow-50", data: "02/07/2025",
+    etapa: 0, temRelatorio: false,
+    dataHora: "A definir", responsavel: "Aguardando atribuição",
+    historico: [
+      { data: "02/07/2025 10:00", texto: "Solicitação recebida pelo sistema." },
+    ],
+  },
+]
+
+export type Vistoria = typeof vistorias[number]
+
+export function getVistoriaById(id: string): Vistoria | undefined {
+  return vistorias.find((v) => v.id === id)
+}

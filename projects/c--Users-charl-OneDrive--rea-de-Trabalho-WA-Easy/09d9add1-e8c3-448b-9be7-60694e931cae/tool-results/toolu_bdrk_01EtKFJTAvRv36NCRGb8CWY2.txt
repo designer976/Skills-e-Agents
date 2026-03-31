@@ -1,0 +1,175 @@
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\SalonsPage.tsx-246-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\SalonsPage.tsx:247:              <SelectTrigger className="w-full sm:w-[150px] h-9 salon-input">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\SalonsPage.tsx-248-                <SelectValue placeholder="Status" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-860-          onClick={handlePreviousDay}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:861:          className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-862-        >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-877-          onClick={handleNextDay}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:878:          className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-879-        >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-927-            onClick={handlePreviousDay}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:928:            className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-929-          >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-933-            onClick={handleNextDay}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:934:            className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-935-          >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-349-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:350:              <SelectTrigger className="w-full sm:w-[150px] h-9 salon-input">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-351-                <SelectValue placeholder="Status" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-417-              disabled={refreshing}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:418:              className="salon-input h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-419-            >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-476-                  onClick={handleClearFilters}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:477:                  className="h-9 px-2 text-muted-foreground hover:text-destructive"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-478-                >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-738-                                  onChange={(e) => setNovoCliente(prev => ({ ...prev, nome: e.target.value }))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:739:                                  className="h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-740-                                  autoFocus
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-749-                                  onChange={(e) => setNovoCliente(prev => ({ ...prev, telefone: formatPhone(e.target.value) }))}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:750:                                  className="h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx-751-                                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-179-                required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:180:                className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-181-              />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-205-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:206:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-207-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-217-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:218:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-219-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-231-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:232:                    className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-233-                  />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-242-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:243:                    className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx-244-                  />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1203-                          }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx:1204:                          className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1205-                          onClick={(e) => e.stopPropagation()}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1301-                          }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx:1302:                          className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1303-                          onClick={(e) => e.stopPropagation()}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1483-                            }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx:1484:                            className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx-1485-                            onClick={(e) => e.stopPropagation()}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-163-                    >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:164:                      <SelectTrigger className="text-base md:text-sm sm:h-9">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-165-                        <SelectValue placeholder="Selecione um profissional" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-215-                    >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:216:                      <SelectTrigger className="text-base md:text-sm sm:h-9">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx-217-                        <SelectValue placeholder="Selecione um horário" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1499-                          }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1500:                          className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1501-                          onClick={(e) => e.stopPropagation()}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1586-                          }
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:1587:                          className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx-1588-                          onClick={(e) => e.stopPropagation()}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-605-                    >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:606:                      <SelectTrigger className="min-h-[44px] text-base md:text-sm sm:h-9"> {/* RESP: Touch target */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-607-                        <SelectValue placeholder="Selecione um profissional" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-678-                    >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:679:                      <SelectTrigger className="min-h-[44px] text-base md:text-sm sm:h-9"> {/* RESP: Touch target */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx-680-                        <SelectValue
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-136-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:137:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-138-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-147-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:148:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-149-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-161-                  placeholder="email@exemplo.com"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:162:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-163-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-170-                >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:171:                  <SelectTrigger className="text-base md:text-sm sm:h-9">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-172-                    <SelectValue placeholder="Selecione a origem" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-194-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:195:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-196-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-203-                >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:204:                  <SelectTrigger className="text-base md:text-sm sm:h-9">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-205-                    <SelectValue placeholder="Selecione a categoria" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-255-                >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:256:                  <SelectTrigger className="text-base md:text-sm sm:h-9">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-257-                    <SelectValue placeholder="Selecione o horário" />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-282-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:283:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-284-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-296-                  required
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:297:                  className="text-base md:text-sm sm:h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx-298-                />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-873-                            disabled={currentStep === 1}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:874:                            className="h-9 w-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-875-                        >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-886-                        {/* Espaço vazio para manter simetria */}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:887:                        <div className="h-9 w-9" />
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx-888-                    </div>
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-215-                        onClick={onPreviousDay}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx:216:                        className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-217-                    >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-235-                        onClick={onNextDay}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx:236:                        className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx-237-                    >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-187-                aria-label="Minha página web"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:188:                className="hidden md:flex w-9 h-9 items-center justify-center border border-[#dd4227] rounded-lg hover:bg-[#dd4227]/10 transition-colors"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-189-              >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-194-                aria-label="Agendamento IA"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:195:                className="hidden md:flex w-9 h-9 items-center justify-center border border-[#dd4227] rounded-lg hover:bg-[#dd4227]/10 transition-colors"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-196-              >
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-256-            >
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:257:              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-258-                <span className="text-primary-foreground text-xs font-semibold">
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-582-              onChange={(e) => setSearchQuery(e.target.value)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:583:              className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-584-            />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-618-                onChange={(e) => setProfessionalSearchQuery(e.target.value)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:619:                className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-620-              />
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-679-                onChange={(e) => setSearchQuery(e.target.value)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:680:                className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-681-                onClick={(e) => e.stopPropagation()}
+--
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-766-                  onChange={(e) => setProfessionalSearchQuery(e.target.value)}
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:767:                  className="pl-8 h-9"
+c:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx-768-                  onClick={(e) => e.stopPropagation()}

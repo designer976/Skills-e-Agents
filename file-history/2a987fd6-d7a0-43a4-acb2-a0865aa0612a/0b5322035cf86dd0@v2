@@ -1,0 +1,61 @@
+"use client"
+
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
+import { criarPropostaExemplo } from "@/lib/proposta-pdf-generator"
+import type { PropostaTemplateData } from "@/lib/proposta-template-types"
+
+export function TesteTemplate() {
+  const exemploData = criarPropostaExemplo()
+
+  return (
+    <div className="space-y-4 p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>🚀 Novo Template de Proposta - REFATORADO</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Info do exemplo */}
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><strong>Cliente:</strong> {exemploData.capa.cliente.empresa}</div>
+              <div><strong>Projeto:</strong> {exemploData.projeto.nome}</div>
+              <div><strong>Valor:</strong> {exemploData.investimento.valorTotal}</div>
+              <div><strong>Prazo:</strong> {exemploData.cronograma.prazoTotal}</div>
+            </div>
+
+            {/* Preview das funcionalidades */}
+            <div>
+              <strong>Funcionalidades:</strong>
+              <ul className="list-disc ml-4 mt-1">
+                {exemploData.funcionalidades.itens.map((func) => (
+                  <li key={func.numero} className="text-sm text-muted-foreground">
+                    {func.numero}. {func.titulo} - {func.descricao.substring(0, 80)}...
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Comparação */}
+            <div className="bg-muted p-3 rounded">
+              <strong>✨ Diferença vs Template Antigo:</strong>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 text-sm">
+                <div className="text-red-600">❌ Antes: template.replace('{{CLIENTE}}', cliente)</div>
+                <div className="text-green-600">✅ Agora: data.capa.cliente.empresa</div>
+                <div className="text-red-600">❌ Placeholders confusos para IA</div>
+                <div className="text-green-600">✅ Interface TypeScript estruturada</div>
+              </div>
+            </div>
+
+            <Button className="w-full">
+              <Download className="mr-2 h-4 w-4" />
+              Gerar PDF (Funcional no componente completo)
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -1,0 +1,441 @@
+"use client"
+
+import React, { useState, useRef, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Progress } from '@/components/ui/progress'
+import { Download, Eye, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { ProposalTemplateRenderer } from './ProposalTemplateRenderer'
+import { gerarPDFProposta, validarDadosParaPDF, criarPropostaExemplo } from '@/lib/proposta-pdf-generator'
+import { validateProposalData, sanitizeProposalData } from '@/lib/wa-project-pdf-generator'
+import type { PropostaTemplateData } from '@/lib/proposta-template-types'
+
+interface ProposalTemplateManagerProps {
+  data?: PropostaTemplateData
+  onDataChange?: (data: PropostaTemplateData) => void
+  className?: string
+  showControls?: boolean // controla se mostra botões de ação
+  previewMode?: 'full' | 'compact' // modo de preview
+}
+
+interface ValidationResult {
+  valido: boolean
+  erros: string[]
+}
+
+export function ProposalTemplateManager({
+  data: initialData,
+  onDataChange,
+  className,
+  showControls = true,
+  previewMode = 'full'
+}: ProposalTemplateManagerProps) {
+  const [data, setData] = useState<PropostaTemplateData>(
+    initialData || criarPropostaExemplo()
+  )
+  const [isLoading, setIsLoading] = useState(!initialData) // Se não há dados iniciais, está carregando
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [pdfProgress, setPdfProgress] = useState(0)
+  const [progressStatus, setProgressStatus] = useState<string>('')
+  const [validation, setValidation] = useState<ValidationResult | null>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+
+  // Controlar loading quando dados externos mudam
+  React.useEffect(() => {
+    if (initialData && initialData !== data) {
+      setIsLoading(true)
+      // Simular um pequeno delay para mostrar skeleton
+      const timer = setTimeout(() => {
+        setData(initialData)
+        setIsLoading(false)
+        onDataChange?.(initialData)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [initialData, data, onDataChange])
+
+  // Atualiza dados e notifica parent component
+  const handleDataChange = (newData: PropostaTemplateData) => {
+    setData(newData)
+    onDataChange?.(newData)
+    // Revalidar quando dados mudam
+    if (validation) {
+      setValidation(validarDadosParaPDF(newData))
+    }
+  }
+
+  // Validar dados para PDF
+  const handleValidate = useCallback(() => {
+    // Usar validação mais robusta
+    const enhancedValidation = validateProposalData(data as any)
+
+    // Converter formato para compatibilidade com sistema existente
+    const result = {
+      valido: enhancedValidation.valid,
+      erros: enhancedValidation.errors.map(e => `${e.field}: ${e.message}`)
+    }
+
+    setValidation(result)
+
+    if (result.valido) {
+      if (enhancedValidation.warnings.length > 0) {
+        toast.success(`Dados válidos! ${enhancedValidation.warnings.length} aviso(s) encontrado(s).`)
+        console.warn('Avisos de validação:', enhancedValidation.warnings)
+      } else {
+        toast.success("Dados válidos! Pronto para gerar PDF.")
+      }
+    } else {
+      toast.error(`${result.erros.length} erro(s) encontrado(s). Corrija antes de gerar o PDF.`)
+    }
+
+    return result.valido
+  }, [data])
+
+  // Callback de progresso para PDF
+  const handleProgressUpdate = useCallback((progress: number) => {
+    setPdfProgress(progress)
+
+    // Atualizar status baseado no progresso
+    if (progress <= 5) {
+      setProgressStatus('Inicializando geração...')
+    } else if (progress <= 15) {
+      setProgressStatus('Criando capa...')
+    } else if (progress <= 40) {
+      setProgressStatus('Adicionando informações da empresa...')
+    } else if (progress <= 80) {
+      setProgressStatus('Processando seções do projeto...')
+    } else if (progress <= 90) {
+      setProgressStatus('Finalizando próximos passos...')
+    } else if (progress <= 95) {
+      setProgressStatus('Salvando arquivo PDF...')
+    } else {
+      setProgressStatus('Concluído!')
+    }
+  }, [])
+
+  // Gerar PDF
+  const handleGeneratePDF = useCallback(async () => {
+    try {
+      // Validar dados primeiro
+      const validationResult = validarDadosParaPDF(data)
+      if (!validationResult.valido) {
+        setValidation(validationResult)
+        toast.error("Dados inválidos. Corrija os erros antes de gerar o PDF.")
+        return
+      }
+
+      setIsGeneratingPDF(true)
+      setPdfProgress(0)
+      setProgressStatus('Preparando...')
+
+      // Gerar PDF com callback de progresso
+      await gerarPDFProposta(data, {
+        download: true,
+        filename: `proposta_${data.capa.cliente.empresa.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().slice(0, 10)}`,
+        progressCallback: handleProgressUpdate
+      })
+
+      toast.success("PDF gerado e baixado com sucesso!")
+    } catch (error) {
+      toast.error("Erro ao gerar PDF. Verifique os dados e tente novamente.")
+      console.error('Erro na geração do PDF:', error)
+    } finally {
+      setIsGeneratingPDF(false)
+      setPdfProgress(0)
+      setProgressStatus('')
+    }
+  }, [data, handleProgressUpdate])
+
+  // Scroll para seção específica do preview
+  const scrollToSection = useCallback((sectionId: string) => {
+    if (previewRef.current) {
+      const section = previewRef.current.querySelector(`[data-section="${sectionId}"]`)
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+  }, [])
+
+  // Renderizar preview compacto
+  if (previewMode === 'compact') {
+    return (
+      <div className={className}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Preview da Proposta
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Info resumida */}
+              {isLoading ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>Cliente:</strong> {data.capa.cliente.empresa}
+                  </div>
+                  <div>
+                    <strong>Projeto:</strong> {data.projeto.nome}
+                  </div>
+                  <div>
+                    <strong>Valor:</strong> {data.investimento.valorTotal}
+                  </div>
+                  <div>
+                    <strong>Prazo:</strong> {data.cronograma.prazoTotal}
+                  </div>
+                </div>
+              )}
+
+              {/* Progress Bar */}
+              {isGeneratingPDF && (
+                <div className="space-y-2">
+                  <Progress value={pdfProgress} className="h-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{progressStatus}</span>
+                    <span>{pdfProgress}%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Controles */}
+              {showControls && (
+                <div className="flex items-center gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleValidate}
+                    disabled={isGeneratingPDF}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Validar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleGeneratePDF}
+                    disabled={isGeneratingPDF}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {isGeneratingPDF ? (
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        Gerando...
+                      </div>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-1" />
+                        Gerar PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Renderizar preview completo
+  return (
+    <div className={className}>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        {/* CONTROLES LATERAIS */}
+        {showControls && (
+          <div className="xl:col-span-1 space-y-4">
+            {/* Controles de Ação */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Controles</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleValidate}
+                  disabled={isGeneratingPDF}
+                  className="w-full justify-start"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Validar Dados
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handleGeneratePDF}
+                  disabled={isGeneratingPDF}
+                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {isGeneratingPDF ? (
+                    <div className="flex items-center">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Gerando PDF...
+                    </div>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Gerar PDF
+                    </>
+                  )}
+                </Button>
+
+                {/* Progress Bar para modo full */}
+                {isGeneratingPDF && (
+                  <div className="space-y-2 pt-2">
+                    <Progress value={pdfProgress} className="h-2" />
+                    <div className="text-xs text-muted-foreground">
+                      <div>{progressStatus}</div>
+                      <div className="text-right">{pdfProgress}%</div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Status de Validação */}
+            {validation && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {validation.valido ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                    )}
+                    Validação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {validation.valido ? (
+                    <p className="text-sm text-green-600">
+                      ✓ Todos os dados estão válidos para geração de PDF
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-red-600 font-medium">
+                        {validation.erros.length} erro(s) encontrado(s):
+                      </p>
+                      <ul className="text-sm text-red-600 space-y-1">
+                        {validation.erros.map((erro, index) => (
+                          <li key={index} className="flex items-start gap-1">
+                            <span>•</span>
+                            <span>{erro}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Navegação por Seções */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Navegação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <nav className="space-y-1">
+                  {[
+                    { id: 'capa', label: 'Capa' },
+                    { id: 'empresa', label: 'Sobre a Empresa' },
+                    { id: 'projeto', label: 'Projeto' },
+                    { id: 'funcionalidades', label: 'Funcionalidades' },
+                    { id: 'cronograma', label: 'Cronograma' },
+                    { id: 'investimento', label: 'Investimento' },
+                    { id: 'encerramento', label: 'Encerramento' }
+                  ].map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => scrollToSection(section.id)}
+                      className="w-full text-left text-sm text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </nav>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* PREVIEW DA PROPOSTA */}
+        <div className={`${showControls ? 'xl:col-span-3' : 'col-span-1'}`}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Preview da Proposta - {data.capa.cliente.empresa}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div
+                ref={previewRef}
+                className="max-h-[800px] overflow-y-auto border rounded-lg bg-gray-50 p-4"
+              >
+                <ProposalTemplateRenderer data={data} isLoading={isLoading} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// === COMPONENTE DE LOADING ===
+export function ProposalTemplateManagerSkeleton() {
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      <div className="xl:col-span-1 space-y-4">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-24" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+      <div className="xl:col-span-3">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+export default ProposalTemplateManager

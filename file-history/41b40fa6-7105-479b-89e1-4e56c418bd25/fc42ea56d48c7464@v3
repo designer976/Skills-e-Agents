@@ -1,0 +1,88 @@
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { ArrowRight, MessageCircle } from 'lucide-react'
+
+export default function CTA() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  return (
+    <section className="py-16 lg:py-20 px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          ref={ref}
+          className="relative rounded-3xl overflow-hidden"
+          initial={{ opacity: 0, y: 32 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7 }}
+        >
+          {/* Background */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(135deg, #C44B3A 0%, #8B2E20 50%, #6B2016 100%)',
+            }}
+          />
+
+          {/* Decorative elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20"
+              style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}
+            />
+            <div
+              className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full opacity-15"
+              style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)' }}
+            />
+            {/* Grid */}
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+                backgroundSize: '60px 60px',
+              }}
+            />
+          </div>
+
+          {/* Content */}
+          <div className="relative z-10 px-8 py-16 lg:px-16 lg:py-20 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/80 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              Comece hoje mesmo
+            </span>
+
+            <h2 className="font-display font-bold text-3xl lg:text-5xl text-white mb-5 max-w-2xl mx-auto leading-tight">
+              Profissionalize seu negócio da beleza com a Easy Salon
+            </h2>
+            <p className="text-white/75 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+              A Easy Salon ajuda donos de salão, barbearia e estúdios de beleza a organizarem
+              sua agenda e evoluírem para uma gestão simples e inteligente.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href="#"
+                className="inline-flex items-center justify-center gap-2 bg-white text-primary-dark font-semibold px-8 py-3.5 rounded-full hover:bg-white/90 transition-all duration-200 active:scale-95 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+              >
+                Começar grátis
+                <ArrowRight size={18} />
+              </a>
+              <a
+                href="#"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white font-semibold px-8 py-3.5 rounded-full border border-white/25 hover:bg-white/20 transition-all duration-200"
+              >
+                <MessageCircle size={16} />
+                Falar com especialista
+              </a>
+            </div>
+
+            <p className="text-white/50 text-sm mt-8">
+              3 meses grátis, depois R$ 299,00/mês — sem fidelidade
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}

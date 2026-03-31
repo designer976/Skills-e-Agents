@@ -1,0 +1,2119 @@
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectPopover,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { DataTable, TableAction } from "@/components/ui/data-table";
+import {
+  // ── Em uso no projeto ──────────────────────────────────────────────────────
+  Activity as IconActivity, AlertCircle as IconAlertCircle, AlertTriangle as IconAlertTriangle, AppWindow as IconAppWindow,
+  ArrowLeft as IconArrowLeft, ArrowRight as IconArrowRight, ArrowUpRight as IconArrowUpRight,
+  Briefcase as IconBriefcase, Building2 as IconBuilding, Calendar as IconCalendar, Camera as IconCamera, BarChart3 as IconChartBar,
+  Check as IconCheck, ChevronDown as IconChevronDown, ChevronLeft as IconChevronLeft, ChevronRight as IconChevronRight, ChevronUp as IconChevronUp,
+  Circle as IconCircle, CircleCheck as IconCircleCheck, CircleX as IconCircleX, ClipboardList as IconClipboardList, Clock as IconClock,
+  Coffee as IconCoffee, CreditCard as IconCreditCard, DollarSign as IconCurrencyDollar, Save as IconDeviceFloppy, MoreHorizontal as IconDots,
+  Download as IconDownload, Pencil as IconEdit, ExternalLink as IconExternalLink, Eye as IconEye, EyeOff as IconEyeOff, Filter as IconFilter,
+  Globe as IconGlobe, GripVertical as IconGripVertical, History as IconHistory, Info as IconInfoCircle, LayoutDashboard as IconLayoutDashboard,
+  PanelLeft as IconLayoutSidebar, Loader2 as IconLoader2, Lock as IconLock, LogOut as IconLogout, Mail as IconMail, MapPin as IconMapPin,
+  Menu as IconMenu2, MessageSquare as IconMessage, MessageCircle as IconMessageCircle, MessagesSquare as IconMessageDots, Package as IconPackage,
+  Palette as IconPalette, PenLine as IconPencil, Phone as IconPhone, Plus as IconPlus, Dot as IconPoint, Printer as IconPrinter,
+  ReceiptText as IconReceipt2, RefreshCw as IconRefresh, Bot as IconRobot, Scissors as IconScissors, Search as IconSearch, ChevronsUpDown as IconSelector,
+  Settings as IconSettings, Shield as IconShield, Sparkles as IconSparkles, Wrench as IconTool, TrendingUp as IconTrendingUp, Trash2 as IconTrash,
+  Upload as IconUpload, User as IconUser, UserCheck as IconUserCheck, UserCircle as IconUserCircle, UserPlus as IconUserPlus, UserX as IconUserX,
+  Users as IconUsers, Wifi as IconWifi, WifiOff as IconWifiOff, X as IconX,
+  // ── Disponíveis (não usados ainda) ────────────────────────────────────────
+  AlarmClock as IconAlarm, AtSign as IconAt, Ban as IconBan, Bell as IconBell, BellOff as IconBellOff, Bookmark as IconBookmark,
+  Instagram as IconBrandInstagram, PhoneCall as IconBrandWhatsapp, CalendarDays as IconCalendarEvent, CalendarOff as IconCalendarOff,
+  Code2 as IconCode, Coins as IconCoin, Copy as IconCopy, Database as IconDatabase, File as IconFile, FileText as IconFileText,
+  Flag as IconFlag, Heart as IconHeart, Home as IconHome, Hourglass as IconHourglass, Key as IconKey, Link as IconLink,
+  List as IconList, Map as IconMap, Minus as IconMinus, Moon as IconMoon, StickyNote as IconNotes, Percent as IconPercentage,
+  Image as IconPhoto, Pin as IconPin, Power as IconPower, QrCode as IconQrcode, Receipt as IconReceipt, Send as IconSend,
+  Share2 as IconShare, Star as IconStar, Sun as IconSun, Tag as IconTag, ThumbsUp as IconThumbUp,
+  UserPen as IconUserEdit, UserMinus as IconUserMinus, Wallet as IconWallet,
+} from "lucide-react";
+
+// ─── Helper: Code Snippet Block ────────────────────────────────────────────────
+function CodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="relative">
+      <pre className="rounded-md bg-muted p-4 text-xs overflow-x-auto text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">
+        {code}
+      </pre>
+      <button
+        onClick={copy}
+        className="absolute top-2 right-2 text-[10px] bg-background border border-border rounded px-2 py-0.5 hover:bg-muted transition-colors"
+      >
+        {copied ? "Copiado!" : "Copiar"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Helper: Props Table ────────────────────────────────────────────────────────
+interface PropRow {
+  name: string;
+  type: string;
+  default?: string;
+  description: string;
+}
+function PropsTable({ props }: { props: PropRow[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="border-b bg-muted/50">
+            <th className="text-left p-2 font-semibold text-foreground w-32">Prop</th>
+            <th className="text-left p-2 font-semibold text-foreground w-48">Tipo</th>
+            <th className="text-left p-2 font-semibold text-foreground w-24">Default</th>
+            <th className="text-left p-2 font-semibold text-foreground">Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.map((p) => (
+            <tr key={p.name} className="border-b hover:bg-muted/30 transition-colors">
+              <td className="p-2 font-mono text-primary">{p.name}</td>
+              <td className="p-2 font-mono text-muted-foreground">{p.type}</td>
+              <td className="p-2 font-mono text-muted-foreground">{p.default ?? "—"}</td>
+              <td className="p-2 text-muted-foreground">{p.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Helper: Section wrapper ────────────────────────────────────────────────────
+function Section({ id, title, description, installCommand, children }: {
+  id: string;
+  title: string;
+  description: string;
+  installCommand?: string;
+  children: React.ReactNode;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(installCommand ?? "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <section id={id} className="scroll-mt-20 space-y-4">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+        {installCommand && (
+          <div className="relative mt-2 inline-flex items-center gap-2 rounded-md bg-muted px-3 py-1.5 font-mono text-xs text-muted-foreground border">
+            <span className="select-all whitespace-pre">{installCommand}</span>
+            <button
+              onClick={copy}
+              className="ml-1 text-[10px] bg-background border border-border rounded px-1.5 py-0.5 hover:bg-muted transition-colors shrink-0"
+            >
+              {copied ? "Copiado!" : "Copiar"}
+            </button>
+          </div>
+        )}
+      </div>
+      <Separator />
+      {children}
+    </section>
+  );
+}
+
+// ─── Helper: Preview + Code side-by-side ───────────────────────────────────────
+function PreviewAndCode({ preview, code }: { preview: React.ReactNode; code: string }) {
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="rounded-lg border bg-background p-6 flex flex-wrap gap-3 items-center justify-start min-h-[80px]">
+        {preview}
+      </div>
+      <CodeBlock code={code} />
+    </div>
+  );
+}
+
+// ─── Nav items ──────────────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+  { id: "button", label: "Button" },
+  { id: "badge", label: "Badge" },
+  { id: "input", label: "Input" },
+  { id: "textarea", label: "Textarea" },
+  { id: "select", label: "Select" },
+  { id: "select-popover", label: "SelectPopover" },
+  { id: "checkbox", label: "Checkbox" },
+  { id: "switch", label: "Switch" },
+  { id: "card", label: "Card" },
+  { id: "dialog", label: "Dialog" },
+  { id: "alert", label: "Alert" },
+  { id: "avatar", label: "Avatar" },
+  { id: "skeleton", label: "Skeleton" },
+  { id: "separator", label: "Separator" },
+  { id: "tabs", label: "Tabs" },
+  { id: "tooltip", label: "Tooltip" },
+  { id: "table", label: "Table" },
+  { id: "data-table", label: "DataTable" },
+  { id: "loading-spinner", label: "LoadingSpinner" },
+  { id: "empty", label: "Empty" },
+  { id: "colors", label: "Cores" },
+  { id: "icons", label: "Ícones" },
+];
+
+// ─── Sample data for DataTable demo ────────────────────────────────────────────
+interface SampleRow {
+  name: string;
+  role: string;
+  status: string;
+}
+const SAMPLE_DATA: SampleRow[] = [
+  { name: "Ana Silva", role: "Administrador", status: "Ativo" },
+  { name: "Carlos Lima", role: "Profissional", status: "Inativo" },
+  { name: "Mariana Costa", role: "Recepcionista", status: "Ativo" },
+  { name: "Pedro Souza", role: "Profissional", status: "Ativo" },
+  { name: "Juliana Ferreira", role: "Recepcionista", status: "Inativo" },
+  { name: "Rafael Mendes", role: "Administrador", status: "Ativo" },
+  { name: "Beatriz Oliveira", role: "Profissional", status: "Ativo" },
+  { name: "Lucas Rocha", role: "Recepcionista", status: "Inativo" },
+];
+
+// ─── Color tokens ───────────────────────────────────────────────────────────
+interface ColorToken {
+  label: string;
+  cssVar: string;
+  tailwind: string;
+  hex: string;
+  description: string;
+  category: string;
+  textColor?: string; // para contraste no swatch
+}
+const COLOR_TOKENS: ColorToken[] = [
+  // Brand
+  { label: "primary", cssVar: "--primary", tailwind: "bg-primary", hex: "#dd4227", description: "Easy Salon Red — cor de marca principal", category: "Brand", textColor: "#fff" },
+  { label: "primary-foreground", cssVar: "--primary-foreground", tailwind: "bg-primary-foreground", hex: "#ffffff", description: "Texto/ícone sobre primary", category: "Brand", textColor: "#414141" },
+  { label: "alternate", cssVar: "--alternate", tailwind: "bg-alternate", hex: "#732a1d", description: "Vermelho escuro — hover e estados ativos", category: "Brand", textColor: "#fff" },
+  // Backgrounds
+  { label: "background", cssVar: "--background", tailwind: "bg-background", hex: "#fafafa", description: "Fundo principal da aplicação", category: "Backgrounds", textColor: "#414141" },
+  { label: "card", cssVar: "--card", tailwind: "bg-card", hex: "#ffffff", description: "Fundo de cards e painéis", category: "Backgrounds", textColor: "#414141" },
+  { label: "secondary", cssVar: "--secondary", tailwind: "bg-secondary", hex: "#f5f2ed", description: "Fundo secundário — hover suave, badges", category: "Backgrounds", textColor: "#414141" },
+  { label: "tertiary", cssVar: "--tertiary", tailwind: "bg-tertiary", hex: "#ede7d9", description: "Fundo terciário — destaque suave", category: "Backgrounds", textColor: "#414141" },
+  { label: "muted", cssVar: "--muted", tailwind: "bg-muted", hex: "#f3f3f3", description: "Fundo para áreas silenciadas / code blocks", category: "Backgrounds", textColor: "#414141" },
+  { label: "accent", cssVar: "--accent", tailwind: "bg-accent", hex: "#f5f2ed", description: "Fundo de item ativo em nav/menus", category: "Backgrounds", textColor: "#414141" },
+  // Texto
+  { label: "foreground", cssVar: "--foreground", tailwind: "text-foreground", hex: "#414141", description: "Texto primário", category: "Texto", textColor: "#fff" },
+  { label: "muted-foreground", cssVar: "--muted-foreground", tailwind: "text-muted-foreground", hex: "#757575", description: "Texto secundário / labels", category: "Texto", textColor: "#fff" },
+  { label: "accent-foreground", cssVar: "--accent-foreground", tailwind: "text-accent-foreground", hex: "#dd4227", description: "Texto ativo em nav (usa primary)", category: "Texto", textColor: "#fff" },
+  // Estados
+  { label: "destructive", cssVar: "--destructive", tailwind: "bg-destructive", hex: "#ef4444", description: "Erro e ações destrutivas", category: "Estados", textColor: "#fff" },
+  { label: "success", cssVar: "--success", tailwind: "bg-success", hex: "#10b981", description: "Sucesso e confirmações", category: "Estados", textColor: "#fff" },
+  // Bordas
+  { label: "border", cssVar: "--border", tailwind: "border-border", hex: "#e0e0e0", description: "Borda padrão de cards e inputs", category: "Bordas", textColor: "#414141" },
+  { label: "ring", cssVar: "--ring", tailwind: "ring", hex: "#dd4227", description: "Outline de foco — usa primary", category: "Bordas", textColor: "#fff" },
+];
+
+// Grupos para a seção de cores
+const COLOR_CATEGORIES = ["Brand", "Backgrounds", "Texto", "Estados", "Bordas"];
+
+// ─── Utility classes de cor personalizadas ──────────────────────────────────
+const CUSTOM_COLOR_CLASSES = [
+  { label: ".salon-badge-active", bg: "#EAF3DE", color: "#3B6D11", description: "Badge de status ativo (verde)" },
+  { label: ".salon-badge-inactive", bg: "rgba(221,66,39,0.1)", color: "#dd4227", description: "Badge de status inativo (vermelho suave)" },
+  { label: ".salon-table-header", bg: "#f5ebe6", color: "#414141", description: "Cabeçalho de tabela" },
+  { label: ".salon-button-primary", bg: "#dd4227", color: "#ffffff", description: "Botão primário (hardcoded brand red)" },
+];
+
+// ─── Icons em uso ────────────────────────────────────────────────────────────
+const ICONS_IN_USE = [
+  { name: "IconActivity", Icon: IconActivity },
+  { name: "IconAlertCircle", Icon: IconAlertCircle },
+  { name: "IconAlertTriangle", Icon: IconAlertTriangle },
+  { name: "IconAppWindow", Icon: IconAppWindow },
+  { name: "IconArrowLeft", Icon: IconArrowLeft },
+  { name: "IconArrowRight", Icon: IconArrowRight },
+  { name: "IconArrowUpRight", Icon: IconArrowUpRight },
+  { name: "IconBriefcase", Icon: IconBriefcase },
+  { name: "IconBuilding", Icon: IconBuilding },
+  { name: "IconCalendar", Icon: IconCalendar },
+  { name: "IconCamera", Icon: IconCamera },
+  { name: "IconChartBar", Icon: IconChartBar },
+  { name: "IconCheck", Icon: IconCheck },
+  { name: "IconChevronDown", Icon: IconChevronDown },
+  { name: "IconChevronLeft", Icon: IconChevronLeft },
+  { name: "IconChevronRight", Icon: IconChevronRight },
+  { name: "IconChevronUp", Icon: IconChevronUp },
+  { name: "IconCircle", Icon: IconCircle },
+  { name: "IconCircleCheck", Icon: IconCircleCheck },
+  { name: "IconCircleX", Icon: IconCircleX },
+  { name: "IconClipboardList", Icon: IconClipboardList },
+  { name: "IconClock", Icon: IconClock },
+  { name: "IconCoffee", Icon: IconCoffee },
+  { name: "IconCreditCard", Icon: IconCreditCard },
+  { name: "IconCurrencyDollar", Icon: IconCurrencyDollar },
+  { name: "IconDeviceFloppy", Icon: IconDeviceFloppy },
+  { name: "IconDots", Icon: IconDots },
+  { name: "IconDownload", Icon: IconDownload },
+  { name: "IconEdit", Icon: IconEdit },
+  { name: "IconExternalLink", Icon: IconExternalLink },
+  { name: "IconEye", Icon: IconEye },
+  { name: "IconEyeOff", Icon: IconEyeOff },
+  { name: "IconFilter", Icon: IconFilter },
+  { name: "IconGlobe", Icon: IconGlobe },
+  { name: "IconGripVertical", Icon: IconGripVertical },
+  { name: "IconHistory", Icon: IconHistory },
+  { name: "IconInfoCircle", Icon: IconInfoCircle },
+  { name: "IconLayoutDashboard", Icon: IconLayoutDashboard },
+  { name: "IconLayoutSidebar", Icon: IconLayoutSidebar },
+  { name: "IconLoader2", Icon: IconLoader2 },
+  { name: "IconLock", Icon: IconLock },
+  { name: "IconLogout", Icon: IconLogout },
+  { name: "IconMail", Icon: IconMail },
+  { name: "IconMapPin", Icon: IconMapPin },
+  { name: "IconMenu2", Icon: IconMenu2 },
+  { name: "IconMessage", Icon: IconMessage },
+  { name: "IconMessageCircle", Icon: IconMessageCircle },
+  { name: "IconMessageDots", Icon: IconMessageDots },
+  { name: "IconPackage", Icon: IconPackage },
+  { name: "IconPalette", Icon: IconPalette },
+  { name: "IconPencil", Icon: IconPencil },
+  { name: "IconPhone", Icon: IconPhone },
+  { name: "IconPlus", Icon: IconPlus },
+  { name: "IconPoint", Icon: IconPoint },
+  { name: "IconPrinter", Icon: IconPrinter },
+  { name: "IconReceipt2", Icon: IconReceipt2 },
+  { name: "IconRefresh", Icon: IconRefresh },
+  { name: "IconRobot", Icon: IconRobot },
+  { name: "IconScissors", Icon: IconScissors },
+  { name: "IconSearch", Icon: IconSearch },
+  { name: "IconSelector", Icon: IconSelector },
+  { name: "IconSettings", Icon: IconSettings },
+  { name: "IconShield", Icon: IconShield },
+  { name: "IconSparkles", Icon: IconSparkles },
+  { name: "IconTool", Icon: IconTool },
+  { name: "IconTrendingUp", Icon: IconTrendingUp },
+  { name: "IconTrash", Icon: IconTrash },
+  { name: "IconUpload", Icon: IconUpload },
+  { name: "IconUser", Icon: IconUser },
+  { name: "IconUserCheck", Icon: IconUserCheck },
+  { name: "IconUserCircle", Icon: IconUserCircle },
+  { name: "IconUserPlus", Icon: IconUserPlus },
+  { name: "IconUserX", Icon: IconUserX },
+  { name: "IconUsers", Icon: IconUsers },
+  { name: "IconWifi", Icon: IconWifi },
+  { name: "IconWifiOff", Icon: IconWifiOff },
+  { name: "IconX", Icon: IconX },
+] as const;
+
+// ─── Icons disponíveis (não usados no projeto ainda) ─────────────────────────
+const ICONS_AVAILABLE: { category: string; icons: { name: string; Icon: React.ComponentType<{ size?: number }> }[] }[] = [
+  {
+    category: "Navegação",
+    icons: [
+      { name: "IconHome", Icon: IconHome },
+      { name: "IconMap", Icon: IconMap },
+      { name: "IconPin", Icon: IconPin },
+      { name: "IconFlag", Icon: IconFlag },
+      { name: "IconLink", Icon: IconLink },
+      { name: "IconList", Icon: IconList },
+    ],
+  },
+  {
+    category: "Ações",
+    icons: [
+      { name: "IconCopy", Icon: IconCopy },
+      { name: "IconShare", Icon: IconShare },
+      { name: "IconBookmark", Icon: IconBookmark },
+      { name: "IconStar", Icon: IconStar },
+      { name: "IconHeart", Icon: IconHeart },
+      { name: "IconThumbUp", Icon: IconThumbUp },
+      { name: "IconMinus", Icon: IconMinus },
+      { name: "IconBan", Icon: IconBan },
+    ],
+  },
+  {
+    category: "Comunicação",
+    icons: [
+      { name: "IconBell", Icon: IconBell },
+      { name: "IconBellOff", Icon: IconBellOff },
+      { name: "IconSend", Icon: IconSend },
+      { name: "IconAt", Icon: IconAt },
+      { name: "IconBrandWhatsapp", Icon: IconBrandWhatsapp },
+      { name: "IconBrandInstagram", Icon: IconBrandInstagram },
+    ],
+  },
+  {
+    category: "Financeiro",
+    icons: [
+      { name: "IconCoin", Icon: IconCoin },
+      { name: "IconWallet", Icon: IconWallet },
+      { name: "IconReceipt", Icon: IconReceipt },
+      { name: "IconTag", Icon: IconTag },
+      { name: "IconPercentage", Icon: IconPercentage },
+    ],
+  },
+  {
+    category: "Arquivos & Dados",
+    icons: [
+      { name: "IconFile", Icon: IconFile },
+      { name: "IconFileText", Icon: IconFileText },
+      { name: "IconPhoto", Icon: IconPhoto },
+      { name: "IconCode", Icon: IconCode },
+      { name: "IconDatabase", Icon: IconDatabase },
+      { name: "IconNotes", Icon: IconNotes },
+    ],
+  },
+  {
+    category: "Tempo",
+    icons: [
+      { name: "IconCalendarEvent", Icon: IconCalendarEvent },
+      { name: "IconCalendarOff", Icon: IconCalendarOff },
+      { name: "IconAlarm", Icon: IconAlarm },
+      { name: "IconHourglass", Icon: IconHourglass },
+    ],
+  },
+  {
+    category: "Usuários",
+    icons: [
+      { name: "IconUserEdit", Icon: IconUserEdit },
+      { name: "IconUserMinus", Icon: IconUserMinus },
+    ],
+  },
+  {
+    category: "Sistema",
+    icons: [
+      { name: "IconKey", Icon: IconKey },
+      { name: "IconPower", Icon: IconPower },
+      { name: "IconQrcode", Icon: IconQrcode },
+      { name: "IconMoon", Icon: IconMoon },
+      { name: "IconSun", Icon: IconSun },
+    ],
+  },
+];
+
+// ─── Helper: Icon card ───────────────────────────────────────────────────────
+function IconCard({ name, Icon }: { name: string; Icon: React.ComponentType<{ size?: number }> }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(name);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+  return (
+    <button
+      onClick={copy}
+      title={copied ? "Copiado!" : `Copiar: ${name}`}
+      className="flex flex-col items-center gap-1.5 p-3 rounded-lg border bg-background hover:bg-muted/60 hover:border-primary/30 transition-all group text-center"
+    >
+      <Icon size={20} />
+      <span className={cn("text-[9px] font-mono leading-tight break-all", copied ? "text-primary font-semibold" : "text-muted-foreground")}>
+        {copied ? "copiado!" : name.replace("Icon", "")}
+      </span>
+    </button>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+export default function DesignSystemPage() {
+  const [switchOn, setSwitchOn] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  return (
+    <TooltipProvider>
+      <div className="flex min-h-screen bg-background">
+        {/* ── Sidebar nav ── */}
+        <aside className="hidden lg:flex w-52 shrink-0 flex-col border-r bg-muted/30 p-4 sticky top-0 h-screen overflow-y-auto">
+          <div className="mb-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Design System
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Uso interno</p>
+          </div>
+          <nav className="space-y-0.5">
+            {NAV_ITEMS.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="block text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </aside>
+
+        {/* ── Main content ── */}
+        <main className="flex-1 px-6 py-10 max-w-5xl space-y-16">
+          {/* Header */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                Uso Interno
+              </span>
+              <span className="text-xs text-muted-foreground">Não exibido nos menus</span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
+            <p className="text-muted-foreground mt-1 max-w-2xl">
+              Fonte Única de Verdade dos componentes shadcn/ui ativos no projeto.
+              Cada componente exibido aqui é o componente real — alterações em{" "}
+              <code className="text-xs bg-muted px-1 rounded">src/components/ui</code>{" "}
+              refletem automaticamente nesta página.
+            </p>
+            <div className="mt-4 p-3 rounded-lg bg-muted/60 border text-xs text-muted-foreground">
+              <strong className="text-foreground">Princípio de Separação:</strong> Os componentes
+              gerenciam apenas o <strong>visual</strong>. Os dados são sempre injetados
+              externamente pelas páginas de consumo via props.
+            </div>
+          </div>
+
+          {/* ── BUTTON ─────────────────────────────────────────────────────── */}
+          <Section
+            id="button"
+            title="Button"
+            description="Botão de ação principal. Suporta 6 variantes e 4 tamanhos."
+            installCommand="pnpm dlx shadcn@latest add button"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview" className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Variantes</p>
+                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
+                    <Button variant="default">Default</Button>
+                    <Button variant="destructive">Destructive</Button>
+                    <Button variant="outline">Outline</Button>
+                    <Button variant="secondary">Secondary</Button>
+                    <Button variant="ghost">Ghost</Button>
+                    <Button variant="link">Link</Button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Tamanhos</p>
+                  <div className="flex flex-wrap gap-3 items-center p-4 border rounded-lg bg-background">
+                    <Button size="sm">Small</Button>
+                    <Button size="default">Default</Button>
+                    <Button size="lg">Large</Button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Estado Disabled</p>
+                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
+                    <Button disabled>Desabilitado</Button>
+                    <Button variant="outline" disabled>Outline Disabled</Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Button } from "@/components/ui/button"
+
+// Variantes
+<Button variant="default">Default</Button>
+<Button variant="destructive">Destructive</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+
+// Tamanhos
+<Button size="sm">Small</Button>
+<Button size="default">Default</Button>
+<Button size="lg">Large</Button>
+<Button size="icon"><IconPlus /></Button>
+
+// Disabled
+<Button disabled>Desabilitado</Button>
+
+// Como outro elemento (Link)
+<Button asChild>
+  <a href="/pagina">Navegar</a>
+</Button>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "variant", type: "'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'", default: "'default'", description: "Estilo visual do botão" },
+                  { name: "size", type: "'default' | 'sm' | 'lg' | 'icon'", default: "'default'", description: "Tamanho do botão" },
+                  { name: "asChild", type: "boolean", default: "false", description: "Repassa o comportamento para o elemento filho (ex: Link)" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o botão" },
+                  { name: "onClick", type: "() => void", description: "Callback de clique" },
+                  { name: "className", type: "string", description: "Classes CSS extras via Tailwind" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── BADGE ──────────────────────────────────────────────────────── */}
+          <Section
+            id="badge"
+            title="Badge"
+            description="Etiqueta inline para status, categorias ou contagens."
+            installCommand="pnpm dlx shadcn@latest add badge"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
+                  <Badge variant="default">Default</Badge>
+                  <Badge variant="secondary">Secondary</Badge>
+                  <Badge variant="destructive">Destructive</Badge>
+                  <Badge variant="outline">Outline</Badge>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Badge } from "@/components/ui/badge"
+
+<Badge variant="default">Default</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="destructive">Destructive</Badge>
+<Badge variant="outline">Outline</Badge>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "variant", type: "'default' | 'secondary' | 'destructive' | 'outline'", default: "'default'", description: "Estilo visual da badge" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                  { name: "children", type: "ReactNode", description: "Conteúdo da badge" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── INPUT ──────────────────────────────────────────────────────── */}
+          <Section
+            id="input"
+            title="Input"
+            description="Campo de texto de linha única. Suporta todos os atributos HTML nativos."
+            installCommand="pnpm dlx shadcn@latest add input"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-sm">
+                  <Input placeholder="Placeholder padrão" />
+                  <Input type="email" placeholder="email@exemplo.com" />
+                  <Input type="password" placeholder="Senha" />
+                  <Input disabled placeholder="Desabilitado" />
+                  <div className="space-y-1.5">
+                    <Label>Com Label</Label>
+                    <Input placeholder="Campo com label" />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+<Input placeholder="Texto livre" />
+<Input type="email" placeholder="email@exemplo.com" />
+<Input type="password" placeholder="Senha" />
+<Input disabled placeholder="Desabilitado" />
+
+// Com Label (React Hook Form)
+<div className="space-y-1.5">
+  <Label htmlFor="nome">Nome</Label>
+  <Input id="nome" placeholder="Seu nome" />
+</div>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "type", type: "string", default: "'text'", description: "Tipo HTML: text, email, password, number, etc." },
+                  { name: "placeholder", type: "string", description: "Texto de dica" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o campo" },
+                  { name: "value", type: "string", description: "Valor controlado" },
+                  { name: "onChange", type: "(e: ChangeEvent) => void", description: "Callback de mudança de valor" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TEXTAREA ───────────────────────────────────────────────────── */}
+          <Section
+            id="textarea"
+            title="Textarea"
+            description="Campo de texto multilinha."
+            installCommand="pnpm dlx shadcn@latest add textarea"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-sm">
+                  <Textarea placeholder="Escreva uma observação..." />
+                  <Textarea disabled placeholder="Desabilitado" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Textarea } from "@/components/ui/textarea"
+
+<Textarea placeholder="Escreva aqui..." />
+<Textarea disabled placeholder="Desabilitado" />
+<Textarea rows={6} placeholder="6 linhas de altura" />`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "placeholder", type: "string", description: "Texto de dica" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o campo" },
+                  { name: "rows", type: "number", description: "Altura em linhas" },
+                  { name: "value", type: "string", description: "Valor controlado" },
+                  { name: "onChange", type: "(e: ChangeEvent) => void", description: "Callback de mudança de valor" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SELECT ─────────────────────────────────────────────────────── */}
+          <Section
+            id="select"
+            title="Select"
+            description="Dropdown de seleção única com suporte a grupos e labels."
+            installCommand="pnpm dlx shadcn@latest add select"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-xs">
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um cargo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="professional">Profissional</SelectItem>
+                      <SelectItem value="receptionist">Recepcionista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select disabled>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Desabilitado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="a">Opção A</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue, SelectLabel, SelectGroup
+} from "@/components/ui/select"
+
+<Select value={value} onValueChange={setValue}>
+  <SelectTrigger>
+    <SelectValue placeholder="Selecione..." />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectLabel>Cargos</SelectLabel>
+      <SelectItem value="admin">Administrador</SelectItem>
+      <SelectItem value="professional">Profissional</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "value", type: "string", description: "Valor selecionado (controlado)" },
+                  { name: "onValueChange", type: "(value: string) => void", description: "Callback ao selecionar opção" },
+                  { name: "defaultValue", type: "string", description: "Valor inicial (não controlado)" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o select" },
+                  { name: "placeholder", type: "string", description: "Texto do SelectValue quando vazio" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SELECT POPOVER ──────────────────────────────────────────────── */}
+          <Section
+            id="select-popover"
+            title="SelectPopover"
+            description="Select baseado em Popover — ideal para uso dentro de outros overlays (Popover, Dialog). Aceita um array de opções via prop. Suporta busca integrada com a prop searchable."
+            installCommand="pnpm dlx shadcn@latest add select"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 border rounded-lg bg-background">
+                  {/* Sem busca */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sem busca</p>
+                    <SelectPopover
+                      value="professional"
+                      onValueChange={() => {}}
+                      options={[
+                        { value: "admin", label: "Administrador" },
+                        { value: "professional", label: "Profissional" },
+                        { value: "receptionist", label: "Recepcionista" },
+                      ]}
+                      placeholder="Selecione um cargo"
+                    />
+                    <SelectPopover
+                      value=""
+                      onValueChange={() => {}}
+                      options={[{ value: "a", label: "Opção A" }]}
+                      placeholder="Desabilitado"
+                      disabled
+                    />
+                  </div>
+                  {/* Com busca */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Com busca</p>
+                    <SelectPopover
+                      value="sp"
+                      onValueChange={() => {}}
+                      searchable
+                      searchPlaceholder="Buscar estado..."
+                      options={[
+                        { value: "ac", label: "Acre" },
+                        { value: "al", label: "Alagoas" },
+                        { value: "am", label: "Amazonas" },
+                        { value: "ba", label: "Bahia" },
+                        { value: "ce", label: "Ceará" },
+                        { value: "df", label: "Distrito Federal" },
+                        { value: "es", label: "Espírito Santo" },
+                        { value: "go", label: "Goiás" },
+                        { value: "ma", label: "Maranhão" },
+                        { value: "mg", label: "Minas Gerais" },
+                        { value: "ms", label: "Mato Grosso do Sul" },
+                        { value: "mt", label: "Mato Grosso" },
+                        { value: "pa", label: "Pará" },
+                        { value: "pb", label: "Paraíba" },
+                        { value: "pe", label: "Pernambuco" },
+                        { value: "pi", label: "Piauí" },
+                        { value: "pr", label: "Paraná" },
+                        { value: "rj", label: "Rio de Janeiro" },
+                        { value: "rn", label: "Rio Grande do Norte" },
+                        { value: "ro", label: "Rondônia" },
+                        { value: "rr", label: "Roraima" },
+                        { value: "rs", label: "Rio Grande do Sul" },
+                        { value: "sc", label: "Santa Catarina" },
+                        { value: "se", label: "Sergipe" },
+                        { value: "sp", label: "São Paulo" },
+                        { value: "to", label: "Tocantins" },
+                      ]}
+                      placeholder="Selecione um estado"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { SelectPopover } from "@/components/ui/select"
+
+// Sem busca
+<SelectPopover
+  value={value}
+  onValueChange={setValue}
+  options={[
+    { value: "admin", label: "Administrador" },
+    { value: "professional", label: "Profissional" },
+  ]}
+  placeholder="Selecione um cargo"
+/>
+
+// Com busca
+<SelectPopover
+  value={value}
+  onValueChange={setValue}
+  searchable
+  searchPlaceholder="Buscar estado..."
+  options={estados}
+  placeholder="Selecione um estado"
+/>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "value", type: "string", description: "Valor selecionado (controlado)" },
+                  { name: "onValueChange", type: "(value: string) => void", description: "Callback ao selecionar opção" },
+                  { name: "options", type: "{ value: string; label: ReactNode }[]", description: "Lista de opções do select" },
+                  { name: "placeholder", type: "string", default: '"Selecionar"', description: "Texto exibido quando nenhuma opção está selecionada" },
+                  { name: "searchable", type: "boolean", default: "false", description: "Exibe campo de busca no topo do dropdown" },
+                  { name: "searchPlaceholder", type: "string", default: '"Buscar..."', description: "Placeholder do campo de busca" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o componente" },
+                  { name: "className", type: "string", description: "Classe extra no botão trigger" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── CHECKBOX ───────────────────────────────────────────────────── */}
+          <Section
+            id="checkbox"
+            title="Checkbox"
+            description="Campo de seleção binária. Geralmente usado com Label."
+            installCommand="pnpm dlx shadcn@latest add checkbox"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="check1"
+                      checked={checked}
+                      onCheckedChange={(v) => setChecked(v as boolean)}
+                    />
+                    <Label htmlFor="check1">Aceito os termos de uso</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="check2" checked />
+                    <Label htmlFor="check2">Marcado (read-only)</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="check3" disabled />
+                    <Label htmlFor="check3" className="text-muted-foreground">Desabilitado</Label>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+
+const [checked, setChecked] = useState(false)
+
+<div className="flex items-center gap-2">
+  <Checkbox
+    id="termos"
+    checked={checked}
+    onCheckedChange={(value) => setChecked(value as boolean)}
+  />
+  <Label htmlFor="termos">Aceito os termos</Label>
+</div>
+
+<Checkbox disabled />  // desabilitado`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "checked", type: "boolean | 'indeterminate'", description: "Estado da caixa (controlado)" },
+                  { name: "onCheckedChange", type: "(checked: boolean | 'indeterminate') => void", description: "Callback ao mudar estado" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o checkbox" },
+                  { name: "id", type: "string", description: "ID para associar com <Label>" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SWITCH ─────────────────────────────────────────────────────── */}
+          <Section
+            id="switch"
+            title="Switch"
+            description="Alternador on/off. Ideal para configurações booleanas."
+            installCommand="pnpm dlx shadcn@latest add switch"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="sw1"
+                      checked={switchOn}
+                      onCheckedChange={setSwitchOn}
+                    />
+                    <Label htmlFor="sw1">{switchOn ? "Ativado" : "Desativado"}</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Switch disabled />
+                    <Label className="text-muted-foreground">Desabilitado</Label>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+
+const [active, setActive] = useState(false)
+
+<div className="flex items-center gap-3">
+  <Switch
+    id="notificacoes"
+    checked={active}
+    onCheckedChange={setActive}
+  />
+  <Label htmlFor="notificacoes">Notificações</Label>
+</div>
+
+<Switch disabled />  // desabilitado`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "checked", type: "boolean", description: "Estado do switch (controlado)" },
+                  { name: "onCheckedChange", type: "(checked: boolean) => void", description: "Callback ao mudar estado" },
+                  { name: "disabled", type: "boolean", default: "false", description: "Desabilita o switch" },
+                  { name: "id", type: "string", description: "ID para associar com <Label>" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── CARD ───────────────────────────────────────────────────────── */}
+          <Section
+            id="card"
+            title="Card"
+            description="Contêiner com borda e sombra leve. Composto por sub-componentes."
+            installCommand="pnpm dlx shadcn@latest add card"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background max-w-sm">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Título do Card</CardTitle>
+                      <CardDescription>Descrição secundária do card</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Conteúdo principal injetado pela página de consumo.
+                      </p>
+                    </CardContent>
+                    <CardFooter className="gap-2">
+                      <Button size="sm">Confirmar</Button>
+                      <Button size="sm" variant="outline">Cancelar</Button>
+                    </CardFooter>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Card, CardHeader, CardTitle, CardDescription,
+  CardContent, CardFooter
+} from "@/components/ui/card"
+
+<Card>
+  <CardHeader>
+    <CardTitle>Título</CardTitle>
+    <CardDescription>Descrição</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* dados injetados pela página */}
+  </CardContent>
+  <CardFooter>
+    <Button>Ação</Button>
+  </CardFooter>
+</Card>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Aplicável a Card, CardHeader, CardContent, CardFooter" },
+                  { name: "children", type: "ReactNode", description: "Conteúdo — os dados vêm da página de consumo" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── DIALOG ─────────────────────────────────────────────────────── */}
+          <Section
+            id="dialog"
+            title="Dialog"
+            description="Modal com overlay. Suporta mostrar/esconder botão de fechar."
+            installCommand="pnpm dlx shadcn@latest add dialog"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background flex gap-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>Abrir Dialog</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Confirmação</DialogTitle>
+                        <DialogDescription>
+                          Tem certeza que deseja executar esta ação?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline">Cancelar</Button>
+                        <Button>Confirmar</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">Sem botão X</Button>
+                    </DialogTrigger>
+                    <DialogContent showCloseButton={false}>
+                      <DialogHeader>
+                        <DialogTitle>Sem botão de fechar</DialogTitle>
+                        <DialogDescription>showCloseButton={"{false}"}</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button>Fechar via botão</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Dialog, DialogTrigger, DialogContent,
+  DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter, DialogClose
+} from "@/components/ui/dialog"
+
+// Controlado externamente
+const [open, setOpen] = useState(false)
+
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogTrigger asChild>
+    <Button>Abrir</Button>
+  </DialogTrigger>
+  <DialogContent showCloseButton={true}>
+    <DialogHeader>
+      <DialogTitle>Título</DialogTitle>
+      <DialogDescription>Descrição</DialogDescription>
+    </DialogHeader>
+    {/* conteúdo injetado */}
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+      <Button onClick={handleConfirm}>Confirmar</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "open", type: "boolean", description: "Controla visibilidade (modo controlado)" },
+                  { name: "onOpenChange", type: "(open: boolean) => void", description: "Callback ao abrir/fechar" },
+                  { name: "showCloseButton", type: "boolean", default: "true", description: "Exibe o botão X no canto superior direito (prop de DialogContent)" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── ALERT ──────────────────────────────────────────────────────── */}
+          <Section
+            id="alert"
+            title="Alert"
+            description="Mensagem inline de destaque. Não é um toast — fica fixo na página."
+            installCommand="pnpm dlx shadcn@latest add alert"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background">
+                  <Alert variant="info">
+                    <IconInfoCircle className="h-4 w-4" />
+                    <AlertTitle>Nova funcionalidade disponível</AlertTitle>
+                    <AlertDescription>
+                      Adicionamos suporte a múltiplas unidades. Ative nas configurações da conta.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert variant="success">
+                    <IconCircleCheck className="h-4 w-4" />
+                    <AlertTitle>Pagamento realizado</AlertTitle>
+                    <AlertDescription>
+                      Seu plano foi ativado com sucesso. Um recibo foi enviado ao seu e-mail.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert variant="warning">
+                    <IconAlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Atenção</AlertTitle>
+                    <AlertDescription>
+                      Seu período de teste expira em 3 dias. Faça upgrade para continuar.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert variant="destructive">
+                    <IconCircleX className="h-4 w-4" />
+                    <AlertTitle>Erro ao salvar</AlertTitle>
+                    <AlertDescription>
+                      Não foi possível salvar as alterações. Tente novamente.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+
+<Alert variant="info">
+  <Info />
+  <AlertTitle>Nova funcionalidade disponível</AlertTitle>
+  <AlertDescription>Adicionamos suporte a múltiplas unidades.</AlertDescription>
+</Alert>
+
+<Alert variant="success">
+  <CheckCircle2 />
+  <AlertTitle>Pagamento realizado</AlertTitle>
+  <AlertDescription>Seu plano foi ativado com sucesso.</AlertDescription>
+</Alert>
+
+<Alert variant="warning">
+  <AlertTriangle />
+  <AlertTitle>Atenção</AlertTitle>
+  <AlertDescription>Seu teste expira em 3 dias.</AlertDescription>
+</Alert>
+
+<Alert variant="destructive">
+  <XCircle />
+  <AlertTitle>Erro ao salvar</AlertTitle>
+  <AlertDescription>Não foi possível salvar as alterações.</AlertDescription>
+</Alert>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "variant", type: "'default' | 'info' | 'success' | 'warning' | 'destructive'", default: "'default'", description: "Estilo visual do alerta" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── AVATAR ─────────────────────────────────────────────────────── */}
+          <Section
+            id="avatar"
+            title="Avatar"
+            description="Imagem circular de usuário com fallback de iniciais."
+            installCommand="pnpm dlx shadcn@latest add avatar"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-wrap gap-4 items-center p-4 border rounded-lg bg-background">
+                  <Avatar>
+                    <AvatarImage src="https://github.com/shadcn.png" alt="Shadcn" />
+                    <AvatarFallback>SC</AvatarFallback>
+                  </Avatar>
+                  <Avatar>
+                    <AvatarFallback>AN</AvatarFallback>
+                  </Avatar>
+                  <Avatar className="h-14 w-14">
+                    <AvatarFallback className="text-lg">GG</AvatarFallback>
+                  </Avatar>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+
+// Com imagem (fallback exibido se a imagem falhar)
+<Avatar>
+  <AvatarImage src={user.avatarUrl} alt={user.name} />
+  <AvatarFallback>{user.initials}</AvatarFallback>
+</Avatar>
+
+// Apenas fallback
+<Avatar>
+  <AvatarFallback>AB</AvatarFallback>
+</Avatar>
+
+// Tamanho customizado via className
+<Avatar className="h-14 w-14">
+  <AvatarFallback className="text-lg">GG</AvatarFallback>
+</Avatar>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "src", type: "string", description: "(AvatarImage) URL da imagem" },
+                  { name: "alt", type: "string", description: "(AvatarImage) Texto alternativo" },
+                  { name: "className", type: "string", description: "Tamanho via h-X w-X no Avatar raiz" },
+                  { name: "children", type: "ReactNode", description: "(AvatarFallback) Iniciais ou ícone de fallback" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SKELETON ───────────────────────────────────────────────────── */}
+          <Section
+            id="skeleton"
+            title="Skeleton"
+            description="Placeholder animado para estados de carregamento."
+            installCommand="pnpm dlx shadcn@latest add skeleton"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background space-y-3 max-w-xs">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-3/4" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-24 w-full rounded-lg" />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Skeleton } from "@/components/ui/skeleton"
+
+// Linha de texto
+<Skeleton className="h-4 w-full" />
+
+// Avatar circular
+<Skeleton className="h-10 w-10 rounded-full" />
+
+// Card
+<Skeleton className="h-24 w-full rounded-lg" />
+
+// Padrão de carregamento de usuário
+<div className="flex items-center gap-3">
+  <Skeleton className="h-10 w-10 rounded-full" />
+  <div className="space-y-2 flex-1">
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-3 w-3/4" />
+  </div>
+</div>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Define dimensões e forma via h-X w-X rounded-X" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── SEPARATOR ──────────────────────────────────────────────────── */}
+          <Section
+            id="separator"
+            title="Separator"
+            description="Linha divisória horizontal ou vertical."
+            installCommand="pnpm dlx shadcn@latest add separator"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background space-y-4">
+                  <p className="text-[12px]">Acima do separador horizontal</p>
+                  <Separator />
+                  <p className="text-[12px]">Abaixo do separador</p>
+                  <div className="flex h-10 items-center gap-4">
+                    <span className="text-[12px]">Item A</span>
+                    <Separator orientation="vertical" />
+                    <span className="text-[12px]">Item B</span>
+                    <Separator orientation="vertical" />
+                    <span className="text-[12px]">Item C</span>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Separator } from "@/components/ui/separator"
+
+// Horizontal (padrão)
+<Separator />
+
+// Vertical
+<div className="flex h-10 items-center gap-4">
+  <span>Item A</span>
+  <Separator orientation="vertical" />
+  <span>Item B</span>
+</div>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "orientation", type: "'horizontal' | 'vertical'", default: "'horizontal'", description: "Direção da linha" },
+                  { name: "decorative", type: "boolean", default: "true", description: "Decorativo (sem semântica de acessibilidade)" },
+                  { name: "className", type: "string", description: "Classes CSS extras" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TABS ───────────────────────────────────────────────────────── */}
+          <Section
+            id="tabs"
+            title="Tabs"
+            description="Navegação por abas com conteúdo trocável."
+            installCommand="pnpm dlx shadcn@latest add tabs"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background">
+                  <Tabs defaultValue="tab1">
+                    <TabsList>
+                      <TabsTrigger value="tab1">Aba 1</TabsTrigger>
+                      <TabsTrigger value="tab2">Aba 2</TabsTrigger>
+                      <TabsTrigger value="tab3" disabled>Desabilitada</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="tab1" className="mt-4">
+                      <p className="text-sm text-muted-foreground">Conteúdo da Aba 1</p>
+                    </TabsContent>
+                    <TabsContent value="tab2" className="mt-4">
+                      <p className="text-sm text-muted-foreground">Conteúdo da Aba 2</p>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+
+// Não controlado
+<Tabs defaultValue="geral">
+  <TabsList>
+    <TabsTrigger value="geral">Geral</TabsTrigger>
+    <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+  </TabsList>
+  <TabsContent value="geral">
+    {/* dados injetados */}
+  </TabsContent>
+  <TabsContent value="seguranca">
+    {/* dados injetados */}
+  </TabsContent>
+</Tabs>
+
+// Controlado
+const [tab, setTab] = useState("geral")
+<Tabs value={tab} onValueChange={setTab}>...</Tabs>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "defaultValue", type: "string", description: "Aba ativa inicial (não controlado)" },
+                  { name: "value", type: "string", description: "Aba ativa (controlado)" },
+                  { name: "onValueChange", type: "(value: string) => void", description: "Callback ao trocar aba" },
+                  { name: "disabled", type: "boolean", description: "(TabsTrigger) Desabilita a aba" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TOOLTIP ────────────────────────────────────────────────────── */}
+          <Section
+            id="tooltip"
+            title="Tooltip"
+            description="Dica flutuante exibida ao passar o mouse sobre um elemento."
+            installCommand="pnpm dlx shadcn@latest add tooltip"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex gap-4 p-4 border rounded-lg bg-background">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline">Passe o mouse</Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Dica de contexto</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon">?</Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Tooltip à direita</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Tooltip, TooltipTrigger, TooltipContent, TooltipProvider
+} from "@/components/ui/tooltip"
+
+// TooltipProvider já está no App.tsx, não precisa repetir
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button variant="outline">Passe o mouse</Button>
+  </TooltipTrigger>
+  <TooltipContent side="top" sideOffset={4}>
+    <p>Texto da dica</p>
+  </TooltipContent>
+</Tooltip>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "side", type: "'top' | 'right' | 'bottom' | 'left'", default: "'top'", description: "(TooltipContent) Lado de exibição" },
+                  { name: "sideOffset", type: "number", default: "4", description: "(TooltipContent) Distância em px do trigger" },
+                  { name: "asChild", type: "boolean", description: "(TooltipTrigger) Usa o elemento filho como trigger" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── TABLE ──────────────────────────────────────────────────────── */}
+          <Section
+            id="table"
+            title="Table"
+            description="Componentes primitivos de tabela HTML estilizados. Base do DataTable."
+            installCommand="pnpm dlx shadcn@latest add table"
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="border rounded-lg bg-background overflow-hidden">
+                  <Table>
+                    <TableCaption>Lista de profissionais</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Cargo</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>Ana Silva</TableCell>
+                        <TableCell>Administrador</TableCell>
+                        <TableCell><Badge variant="default">Ativo</Badge></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Carlos Lima</TableCell>
+                        <TableCell>Profissional</TableCell>
+                        <TableCell><Badge variant="secondary">Inativo</Badge></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Table, TableHeader, TableBody, TableRow,
+  TableHead, TableCell, TableCaption, TableFooter
+} from "@/components/ui/table"
+
+<Table>
+  <TableCaption>Legenda da tabela</TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Coluna 1</TableHead>
+      <TableHead>Coluna 2</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {data.map((row) => (
+      <TableRow key={row.id}>
+        <TableCell>{row.campo1}</TableCell>
+        <TableCell>{row.campo2}</TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Aplicável a todos os sub-componentes" },
+                  { name: "colSpan", type: "number", description: "(TableCell / TableHead) Colspan de coluna" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── DATA TABLE ─────────────────────────────────────────────────── */}
+          <Section
+            id="data-table"
+            title="DataTable"
+            description="Tabela de dados customizada do projeto. Integra @tanstack/react-table + shadcn Table + suporte a cards mobile e coluna de ações declarativa."
+            installCommand={"pnpm dlx shadcn@latest add table\npnpm add @tanstack/react-table"}
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="actions">Com Ações</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview" className="space-y-6">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sem paginação</p>
+                  <DataTable<SampleRow>
+                    data={SAMPLE_DATA.slice(0, 3)}
+                    columns={[
+                      { key: "name", header: "Nome" },
+                      { key: "role", header: "Cargo" },
+                      {
+                        key: "status",
+                        header: "Status",
+                        render: (value) => (
+                          <Badge variant={value === "Ativo" ? "default" : "secondary"}>
+                            {value}
+                          </Badge>
+                        ),
+                      },
+                    ]}
+                    mobileView="cards"
+                    mobileCardConfig={{ title: "name", subtitle: "role", badge: "status" }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Com paginação (pageSize=3)</p>
+                  <DataTable<SampleRow>
+                    data={SAMPLE_DATA}
+                    columns={[
+                      { key: "name", header: "Nome" },
+                      { key: "role", header: "Cargo" },
+                      {
+                        key: "status",
+                        header: "Status",
+                        render: (value) => (
+                          <Badge variant={value === "Ativo" ? "default" : "secondary"}>
+                            {value}
+                          </Badge>
+                        ),
+                      },
+                    ]}
+                    mobileView="cards"
+                    mobileCardConfig={{ title: "name", subtitle: "role", badge: "status" }}
+                    pageSize={3}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="actions" className="space-y-4">
+                <div className="p-3 rounded-lg bg-muted/60 border text-xs text-muted-foreground">
+                  A prop <code className="bg-background px-1 rounded border">actions</code> adiciona automaticamente uma coluna <strong>"Ações"</strong> ao final da tabela. Suporta <code>disabled</code> e <code>hidden</code> por linha. A variante <code>destructive</code> aplica estilo vermelho ao botão.
+                </div>
+                <DataTable<SampleRow>
+                  data={SAMPLE_DATA.slice(0, 4)}
+                  columns={[
+                    { key: "name", header: "Nome" },
+                    { key: "role", header: "Cargo" },
+                    {
+                      key: "status",
+                      header: "Status",
+                      render: (value) => (
+                        <Badge variant={value === "Ativo" ? "default" : "secondary"}>
+                          {value}
+                        </Badge>
+                      ),
+                    },
+                  ]}
+                  actions={[
+                    {
+                      label: "Editar",
+                      icon: <IconEdit className="h-4 w-4" />,
+                      onClick: () => {},
+                    },
+                    {
+                      label: "Excluir",
+                      icon: <IconTrash className="h-4 w-4" />,
+                      onClick: () => {},
+                      variant: "destructive",
+                      disabled: (row) => row.status === "Inativo",
+                    },
+                  ] satisfies TableAction<SampleRow>[]}
+                  mobileView="cards"
+                  mobileCardConfig={{ title: "name", subtitle: "role", badge: "status" }}
+                />
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { DataTable, TableAction } from "@/components/ui/data-table"
+import { Badge } from "@/components/ui/badge"
+import { Pencil as IconEdit, Trash2 as IconTrash } from "lucide-react"
+
+interface User { id: string; name: string; role: string; active: boolean }
+
+// Com coluna de ações declarativa
+const actions: TableAction<User>[] = [
+  {
+    label: "Editar",
+    icon: <IconEdit className="h-4 w-4" />,
+    onClick: (row) => navigate(\`/users/edit/\${row.id}\`),
+  },
+  {
+    label: "Excluir",
+    icon: <IconTrash className="h-4 w-4" />,
+    onClick: (row) => handleDelete(row),
+    variant: "destructive",
+    disabled: (row) => !row.active,   // desabilita por linha
+    hidden: (row) => row.role === "admin", // oculta por linha
+  },
+]
+
+<DataTable<User>
+  data={users}
+  columns={[
+    { key: "name", header: "Nome" },
+    { key: "role", header: "Cargo" },
+  ]}
+  actions={actions}
+  mobileView="cards"
+  mobileCardConfig={{ title: "name", subtitle: "role" }}
+/>
+
+// Sem paginação
+<DataTable<User> data={users} columns={columns} />
+
+// Com paginação interna
+<DataTable<User>
+  data={users}
+  columns={columns}
+  onRowClick={(row) => navigate(\`/users/\${row.id}\`)}
+  pageSize={10}
+/>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">DataTable</p>
+                    <PropsTable props={[
+                      { name: "data", type: "T[]", description: "Array de dados — sempre injetado pela página de consumo" },
+                      { name: "columns", type: "Column<T>[]", description: "Definição das colunas (key, header, render?, className?, width?)" },
+                      { name: "actions", type: "TableAction<T>[]", description: "Ações por linha — gera automaticamente a coluna 'Ações'" },
+                      { name: "pageSize", type: "number", description: "Ativa paginação com N itens por página. Omitir desabilita a paginação." },
+                      { name: "pageSizeOptions", type: "number[]", description: "Opções do seletor de itens por página" },
+                      { name: "onRowClick", type: "(row: T) => void", description: "Callback ao clicar em uma linha" },
+                      { name: "className", type: "string", description: "Classes CSS extras no wrapper" },
+                      { name: "mobileView", type: "'cards'", description: "Ativa visualização em cards no mobile" },
+                      { name: "mobileCardConfig.title", type: "keyof T | (row) => ReactNode", description: "Campo principal do card mobile" },
+                      { name: "mobileCardConfig.subtitle", type: "keyof T | (row) => ReactNode", description: "Campo secundário do card" },
+                      { name: "mobileCardConfig.badge", type: "keyof T | (row) => ReactNode", description: "Campo exibido como badge no card" },
+                      { name: "mobileCardConfig.excludeFromGrid", type: "(keyof T)[]", description: "Campos ocultos do grid de detalhes mobile" },
+                    ]} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">TableAction&lt;T&gt;</p>
+                    <PropsTable props={[
+                      { name: "label", type: "string", description: "Texto do tooltip do botão (title HTML)" },
+                      { name: "icon", type: "ReactNode", description: "Ícone renderizado dentro do botão" },
+                      { name: "onClick", type: "(row: T, event: MouseEvent) => void", description: "Callback ao clicar na ação" },
+                      { name: "variant", type: "'default' | 'destructive' | 'outline' | 'ghost'", default: "'ghost'", description: "Estilo do botão. 'destructive' aplica cor vermelha." },
+                      { name: "disabled", type: "(row: T) => boolean", description: "Função que determina se a ação está desabilitada para a linha" },
+                      { name: "hidden", type: "(row: T) => boolean", description: "Função que oculta a ação para linhas específicas" },
+                    ]} />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── LOADING SPINNER ────────────────────────────────────────────── */}
+          <Section
+            id="loading-spinner"
+            title="LoadingSpinner"
+            description="Indicador de carregamento centralizado. Componente customizado do projeto."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="flex flex-wrap gap-8 items-center p-6 border rounded-lg bg-background">
+                  <div className="flex flex-col items-center gap-1">
+                    <LoadingSpinner size="sm" />
+                    <span className="text-xs text-muted-foreground">sm</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <LoadingSpinner size="md" />
+                    <span className="text-xs text-muted-foreground">md</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <LoadingSpinner size="lg" />
+                    <span className="text-xs text-muted-foreground">lg</span>
+                  </div>
+                  <LoadingSpinner size="md" text="Carregando dados..." />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import { LoadingSpinner } from "@/components/ui/loading-spinner"
+
+<LoadingSpinner />                            // md, sem texto
+<LoadingSpinner size="sm" />                  // pequeno
+<LoadingSpinner size="lg" />                  // grande
+<LoadingSpinner size="md" text="Salvando..." /> // com texto`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "size", type: "'sm' | 'md' | 'lg'", default: "'md'", description: "Tamanho do ícone giratório (sm=h-4, md=h-8, lg=h-12)" },
+                  { name: "text", type: "string", description: "Texto exibido abaixo do spinner" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── EMPTY ──────────────────────────────────────────────────────── */}
+          <Section
+            id="empty"
+            title="Empty"
+            description="Estado vazio padronizado com borda tracejada. Componente customizado do projeto."
+          >
+            <Tabs defaultValue="preview">
+              <TabsList className="mb-4">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Snippet</TabsTrigger>
+                <TabsTrigger value="props">Props</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="preview">
+                <div className="p-4 border rounded-lg bg-background max-w-md">
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia>
+                        <IconPackage className="h-8 w-8 text-muted-foreground" />
+                      </EmptyMedia>
+                      <EmptyTitle>Nenhum item encontrado</EmptyTitle>
+                      <EmptyDescription>
+                        Ainda não há registros nesta lista. Adicione um novo item para começar.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button>Adicionar primeiro item</Button>
+                    </EmptyContent>
+                  </Empty>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <CodeBlock code={`import {
+  Empty, EmptyHeader, EmptyMedia, EmptyTitle,
+  EmptyDescription, EmptyContent
+} from "@/components/ui/empty"
+import { Package as IconPackage } from "lucide-react"
+
+<Empty>
+  <EmptyHeader>
+    <EmptyMedia>
+      <IconPackage className="h-8 w-8 text-muted-foreground" />
+    </EmptyMedia>
+    <EmptyTitle>Nenhum resultado</EmptyTitle>
+    <EmptyDescription>
+      Descrição explicando o estado vazio.
+    </EmptyDescription>
+  </EmptyHeader>
+  <EmptyContent>
+    {/* ação injetada pela página de consumo */}
+    <Button onClick={handleCreate}>Criar novo</Button>
+  </EmptyContent>
+</Empty>`} />
+              </TabsContent>
+
+              <TabsContent value="props">
+                <PropsTable props={[
+                  { name: "className", type: "string", description: "Aplicável a todos os sub-componentes" },
+                  { name: "children", type: "ReactNode", description: "Conteúdo — ação/CTA vem da página de consumo" },
+                ]} />
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* ── COLORS ─────────────────────────────────────────────────────── */}
+          <Section
+            id="colors"
+            title="Cores"
+            description="Paleta oficial do Easy Salon. Definida em src/index.css como variáveis CSS e mapeada no tailwind.config.ts."
+          >
+            <div className="space-y-8">
+              {/* Token Reference */}
+              {COLOR_CATEGORIES.map((cat) => {
+                const tokens = COLOR_TOKENS.filter((t) => t.category === cat);
+                return (
+                  <div key={cat}>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">{cat}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {tokens.map((token) => (
+                        <div key={token.label} className="space-y-2">
+                          <div
+                            className="h-14 rounded-lg border flex items-center justify-center"
+                            style={{ background: `hsl(var(${token.cssVar}))` }}
+                          >
+                            <span
+                              className="text-[10px] font-mono font-semibold px-1.5"
+                              style={{ color: token.textColor }}
+                            >
+                              {token.hex}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-foreground">{token.label}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground">{token.tailwind}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{token.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Custom utility classes */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Classes Utilitárias Customizadas</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {CUSTOM_COLOR_CLASSES.map((cls) => (
+                    <div key={cls.label} className="space-y-2">
+                      <div
+                        className="h-14 rounded-lg border flex items-center justify-center"
+                        style={{ background: cls.bg }}
+                      >
+                        <span className="text-[11px] font-semibold" style={{ color: cls.color }}>Aa</span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-mono font-medium text-foreground">{cls.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{cls.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Typography scale */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Escala Tipográfica</p>
+                <div className="border rounded-lg overflow-hidden">
+                  {[
+                    { cls: "text-page-title", label: "page-title", size: "20px / 700", example: "Título de Página" },
+                    { cls: "text-section-title", label: "section-title", size: "18px / 600", example: "Título de Seção" },
+                    { cls: "text-body", label: "body", size: "14px / 400", example: "Texto de corpo e listas" },
+                    { cls: "text-button", label: "button", size: "14px / 500", example: "Rótulo de botão" },
+                  ].map((t, i) => (
+                    <div key={t.label} className={cn("flex items-center gap-4 px-4 py-3", i !== 0 && "border-t")}>
+                      <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded shrink-0 w-28 text-center">{t.label}</code>
+                      <span className={t.cls}>{t.example}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto shrink-0">{t.size}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* ── ICONS ──────────────────────────────────────────────────────── */}
+          <Section
+            id="icons"
+            title="Ícones"
+            description="Biblioteca Tabler Icons. Todos usam o prefixo Icon* do @tabler/icons-react. Clique em qualquer ícone para copiar o nome."
+            installCommand="pnpm add @tabler/icons-react"
+          >
+            <Tabs defaultValue="in-use">
+              <TabsList className="mb-6">
+                <TabsTrigger value="in-use">Em Uso ({ICONS_IN_USE.length})</TabsTrigger>
+                <TabsTrigger value="available">Disponíveis</TabsTrigger>
+              </TabsList>
+
+              {/* Em uso */}
+              <TabsContent value="in-use">
+                <div className="mb-3 p-3 rounded-lg bg-muted/60 border text-xs text-muted-foreground">
+                  <strong className="text-foreground">{ICONS_IN_USE.length} ícones</strong> ativamente importados no projeto. Clique para copiar o nome do ícone.
+                </div>
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
+                  {ICONS_IN_USE.map(({ name, Icon }) => (
+                    <IconCard key={name} name={name} Icon={Icon} />
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <CodeBlock code={`import { Calendar as IconCalendar, Check as IconCheck, Plus as IconPlus } from "lucide-react"
+
+// Tamanho padrão recomendado
+<IconCalendar size={16} />   // inline / nav
+<IconCalendar size={20} />   // botões e headers
+<IconCalendar size={24} />   // destaques
+
+// Com className (tailwind)
+<IconCalendar className="h-4 w-4 text-muted-foreground" />`} />
+                </div>
+              </TabsContent>
+
+              {/* Disponíveis */}
+              <TabsContent value="available">
+                <div className="mb-3 p-3 rounded-lg bg-muted/60 border text-xs text-muted-foreground">
+                  Ícones do Tabler <strong className="text-foreground">não utilizados ainda</strong> no projeto, mas disponíveis para uso imediato via import. Clique para copiar o nome.
+                </div>
+                <div className="space-y-8">
+                  {ICONS_AVAILABLE.map(({ category, icons }) => (
+                    <div key={category}>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">{category}</p>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                        {icons.map(({ name, Icon }) => (
+                          <IconCard key={name} name={name} Icon={Icon} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 p-3 rounded-lg border text-xs text-muted-foreground">
+                  O Tabler possui +5.000 ícones. Consulte o catálogo completo em{" "}
+                  <code className="bg-muted px-1 rounded">tabler.io/icons</code>.
+                </div>
+              </TabsContent>
+            </Tabs>
+          </Section>
+
+          {/* Footer */}
+          <div className="border-t pt-8 pb-16 text-xs text-muted-foreground space-y-1">
+            <p>Esta página reflete os componentes reais de <code>src/components/ui/</code>.</p>
+            <p>Qualquer alteração nos componentes pai é imediatamente refletida aqui.</p>
+            <p className="text-[10px]">Rota: <code>/design-system</code> — uso interno, não indexada no menu.</p>
+          </div>
+        </main>
+      </div>
+    </TooltipProvider>
+  );
+}

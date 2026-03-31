@@ -1,0 +1,248 @@
+import { useState, useEffect } from "react";
+import { IconEdit as Edit, IconTrash as Trash2, IconArrowLeft as ArrowLeft, IconLoader2 as Loader2 } from "@tabler/icons-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { DataTable } from "@/components/ui/data-table";
+import { Button } from "@/components/ui/button";
+import { ServiceModal } from "@/components/modals/ServiceModal";
+import { ConfirmationModal } from "@/components/modals/ConfirmationModal";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { specialtyService } from "@/services/specialtyService";
+import { serviceService } from "@/services/serviceService";
+import { Specialty } from "@/types/specialty";
+import { Service, CreateServiceDto, UpdateServiceDto } from "@/types/service";
+
+export default function SpecialtyServicesPage() {
+  const { user } = useAuth();
+  const { specialtyId } = useParams();
+  const navigate = useNavigate();
+
+  const [specialty, setSpecialty] = useState<Specialty | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | undefined>();
+  const [serviceToDelete, setServiceToDelete] = useState<Service | undefined>();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, [specialtyId]);
+
+  const loadData = async (): Promise<void> => {
+    if (!specialtyId) return;
+
+    setIsLoading(true);
+    try {
+      const [specialtyData, servicesData] = await Promise.all([
+        specialtyService.getById(specialtyId),
+        serviceService.listServicesBySpecialty(specialtyId)
+      ]);
+
+      setSpecialty(specialtyData);
+      setServices(servicesData);
+    } catch (error) {
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewService = (): void => {
+    setSelectedService(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditService = (service: Service): void => {
+    setSelectedService(service);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteService = (service: Service): void => {
+    setServiceToDelete(service);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteService = async (): Promise<void> => {
+    if (serviceToDelete) {
+      setIsDeleting(true);
+      try {
+        await serviceService.deleteStandardService(serviceToDelete.id);
+        toast.success("Serviço excluído com sucesso!");
+        setServices(prev => prev.filter(s => s.id !== serviceToDelete.id));
+        setIsDeleteModalOpen(false);
+      } catch (error) {
+        toast.error('Erro ao excluir serviço');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const handleBack = (): void => {
+    navigate("/admin/specialties");
+  };
+
+  const handleSaveService = async (data: any): Promise<void> => {
+    setIsSaving(true);
+    try {
+      if (selectedService) {
+        const updateData: UpdateServiceDto = {
+          name: data.name,
+          acceptsOnlineBooking: data.acceptsOnlineBooking
+        };
+
+        const updated = await serviceService.updateStandardService(selectedService.id, updateData);
+        setServices(prev => prev.map(s => s.id === updated.id ? updated : s).sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Serviço editado com sucesso!");
+      } else {
+        if (!specialtyId) {
+          throw new Error('Specialty ID not found');
+        }
+
+        const createData = {
+          name: data.name,
+          acceptsOnlineBooking: data.acceptsOnlineBooking || false,
+          price: data.price,
+          duration: data.duration,
+          commission: data.commission
+        };
+
+        const created = await serviceService.createStandardServiceForSpecialty(specialtyId, createData);
+        setServices(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Serviço padrão criado com sucesso!");
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      if (error?.response?.status === 409 || error?.message?.includes('já existe')) {
+        toast.error('Já existe um serviço com este nome nesta especialidade');
+      } else {
+        toast.error('Erro ao salvar serviço');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const columns = [
+    {
+      key: "name" as keyof Service,
+      header: "Nome do Serviço",
+    },
+    {
+      key: "acceptsOnlineBooking" as keyof Service,
+      header: "Online",
+      width: "100px",
+      render: (value: any, row: Service) => (
+        <span className={`text-sm font-medium ${row.acceptsOnlineBooking ? 'text-green-600' : 'text-orange-600'
+          }`}>
+          {row.acceptsOnlineBooking ? 'Sim' : 'Não'}
+        </span>
+      ),
+    },
+    {
+      key: "id" as keyof Service,
+      header: "Ações",
+      width: "120px",
+      render: (value: any, row: Service) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditService(row);
+            }}
+            className="h-8 w-8"
+            title="Editar serviço"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteService(row);
+            }}
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            title="Excluir serviço"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || 'Easy Salon')}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Easy Salon"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="page-title">{`Serviços - ${specialty?.name || 'Especialidade'}`}</h1>
+            <p className="text-muted-foreground mt-1">Gerencie os serviços desta especialidade</p>
+          </div>
+        </div>
+        <Button
+          onClick={handleNewService}
+          className="salon-button-primary"
+        >
+          Novo Serviço
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <DataTable
+          data={services}
+          columns={columns}
+          mobileView="cards"
+          mobileCardConfig={{
+            title: "name",
+            subtitle: (row) => row.acceptsOnlineBooking ? "Aceita agendamento online" : "Sem agendamento online",
+          }}
+        />
+      )}
+
+      <ServiceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        service={selectedService}
+        specialtyName={specialty?.name || 'Especialidade'}
+        onSave={handleSaveService}
+        isSaving={isSaving}
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteService}
+        title="Excluir Serviço"
+        description={`Tem certeza que deseja excluir o serviço "${serviceToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
+      />
+    </EasySalonLayout>
+  );
+}

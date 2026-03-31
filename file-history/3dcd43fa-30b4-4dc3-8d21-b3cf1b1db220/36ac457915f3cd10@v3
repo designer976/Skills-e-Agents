@@ -1,0 +1,1133 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { DataTable, Column, TableAction } from "@/components/ui/data-table";
+import { UserServicesAccordion } from "@/components/ui/user-services-accordion";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Pencil as Edit2, Trash2 as Trash2, Check as Check, ChevronsUpDown as ChevronsUpDown, Search as Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ServicePricingModal } from "@/components/modals/ServicePricingModal";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { serviceService } from "@/services/serviceService";
+import { userService } from "@/services/userService";
+import { trackSeverinoEvent } from "@/services/severinoService";
+import { Service, ServicePriceType } from "@/types/service";
+import { Specialty } from "@/types/specialty";
+import {
+  formatPrice,
+  formatCommission,
+  minutesToTime,
+  parseBrazilianCurrency,
+} from "@/utils/serviceHelpers";
+
+interface UserServiceAssignment {
+  id: string;
+  serviceId: string;
+  userId: string;
+  service?: Service;
+  customPrice?: number;
+  customMaxValue?: number;
+  customDuration?: number;
+  commissionRate?: number | string;
+  priceType?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  // Base values from backend (includes salon_service_settings logic)
+  basePrice?: number;
+  baseDuration?: number;
+  baseCommission?: number;
+  isStandardService?: boolean;
+  // Frontend-only fields for display purposes
+  adminFeePercent?: number;
+  adminFeeFixed?: number;
+  supplies?: number;
+
+  specialty?: Record<string, any>;
+}
+
+interface UserServicesFormProps {
+  value?: UserServiceAssignment[];
+  onChange?: (services: UserServiceAssignment[]) => void;
+  onAddServices?: () => void;
+  triggerAddServices?: boolean;
+  onTriggerReset?: () => void;
+  userId?: string;
+}
+
+export function UserServicesForm({
+  value: services = [],
+  onChange,
+  onAddServices,
+  triggerAddServices,
+  onTriggerReset,
+  userId,
+}: UserServicesFormProps) {
+  // const [services, setServices] = useState<UserServiceAssignment[]>(value);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [selectedServiceForPricing, setSelectedServiceForPricing] =
+    useState<UserServiceAssignment | null>(null);
+  const [availableServices, setAvailableServices] = useState<Service[]>([]);
+  const [allServices, setAllServices] = useState<Service[]>([]); // All services for display
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
+  const [isLoadingSpecialties, setIsLoadingSpecialties] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deleteSpecialtyConfirmOpen, setDeleteSpecialtyConfirmOpen] =
+    useState(false);
+  const [specialtyToUnlink, setSpecialtyToUnlink] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeletingSpecialty, setIsDeletingSpecialty] = useState(false);
+
+  const loadAvailableData = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      setIsLoadingServices(true);
+      setIsLoadingSpecialties(true);
+
+      // Use currentServices se fornecido, senão usa o estado
+      const servicesToUse = services;
+
+      // Get available services for linking (this already works correctly)
+      const availableData = await serviceService.getAvailableServicesForUser(
+        userId
+      );
+
+      // Flatten the services from all specialties for linking, ensuring categoryId is set
+      const allAvailableServices: Service[] = [];
+      Object.entries(availableData.servicesBySpecialty).forEach(
+        ([specialtyId, services]) => {
+          (services as any[]).forEach((service) => {
+            allAvailableServices.push({
+              ...service,
+              categoryId: service.categoryId || specialtyId, // Ensure categoryId is set
+            });
+          });
+        }
+      );
+
+      // Combine available services with currently linked services for display
+      // This ensures we always have service details for ALL services (linked + available)
+
+      const linkedServiceDetails = servicesToUse
+        .map(({ service, ...assignment }) => assignment)
+        .filter(Boolean) as unknown as Service[];
+
+      // Merge: keep linked services + add new available services (no duplicates)
+      const allActiveServices: Service[] = [...linkedServiceDetails];
+      allAvailableServices.forEach((service) => {
+        if (!allActiveServices.find((s) => s.id === service.id)) {
+          allActiveServices.push(service);
+        }
+      });
+
+      setAvailableServices(allAvailableServices);
+      setAllServices(allActiveServices); // Now includes both linked and available
+      setSpecialties(availableData.specialties);
+    } catch (error) {
+      console.error("Error loading available data:", error);
+      toast.error(
+        "Erro ao carregar dados do servidor. Por favor, tente novamente."
+      );
+      // Set empty arrays to prevent crashes
+      setAvailableServices([]);
+      setAllServices([]);
+      setSpecialties([]);
+    } finally {
+      setIsLoadingServices(false);
+      setIsLoadingSpecialties(false);
+    }
+  }, [services, userId]);
+
+  // Load available services and specialties from backend
+  useEffect(() => {
+    loadAvailableData();
+  }, [loadAvailableData]);
+
+  // Detectar quando o trigger for ativado
+  useEffect(() => {
+    if (triggerAddServices) {
+      setIsAddModalOpen(true);
+      onTriggerReset?.();
+    }
+  }, [triggerAddServices, onTriggerReset]);
+
+  // Group services by specialty
+  const groupedServices = useMemo(() => {
+    const groups: {
+      [key: string]: {
+        specialty: Specialty | null;
+        services: UserServiceAssignment[];
+      };
+    } = {};
+
+    services.forEach((assignment) => {
+      // Find the service details
+      const service = allServices.find((s) => s.id === assignment.serviceId);
+      const categoryId = service?.categoryId || "uncategorized";
+
+      // Find the specialty from available specialties
+      let specialty = specialties.find((s) => s.id === categoryId);
+
+      // If specialty not found in available list, try to get it from service object
+      if (!specialty && service?.category) {
+        // Create a specialty object from the service's category info
+        specialty = {
+          id: service.category.id || categoryId,
+          name:
+            service.category.name ||
+            (service as any).specialty?.name ||
+            "Outros Serviços",
+          salonId: "",
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          displayOrder: 999,
+          isDefault: false,
+          isActive: specialty?.isActive,
+        } as Specialty;
+      }
+
+      if (!groups[categoryId]) {
+        groups[categoryId] = {
+          specialty:
+            specialty ||
+            ({
+              id: categoryId,
+              name: "Outros Serviços",
+              salonId: "",
+              active: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              displayOrder: 999,
+              isDefault: false,
+              isActive: specialty?.isActive,
+            } as Specialty),
+          services: [],
+        };
+      }
+
+      groups[categoryId].services.push(assignment);
+    });
+
+    // Sort groups by specialty name
+    const sortedGroups = Object.entries(groups).sort((a, b) => {
+      const nameA = a[1].specialty?.name || "";
+      const nameB = b[1].specialty?.name || "";
+      return nameA.localeCompare(nameB, "pt-BR");
+    });
+
+    return sortedGroups.map(([_, group]) => group);
+  }, [services, allServices, specialties]);
+
+  // Filter grouped services based on search term
+  const filteredGroups = useMemo(() => {
+    if (!searchTerm) {
+      return groupedServices;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+
+    return groupedServices
+      .map((group) => {
+        // Check if specialty name matches
+        const specialtyMatches = group.specialty?.name
+          .toLowerCase()
+          .includes(searchLower);
+
+        // Filter services that match the search term
+        const filteredServices = group.services.filter((assignment) => {
+          const service =
+            assignment.service ||
+            allServices.find((s) => s.id === assignment.serviceId);
+          return service?.name.toLowerCase().includes(searchLower);
+        });
+
+        // If specialty matches, show all its services
+        // If specialty doesn't match but has matching services, show only matching services
+        if (specialtyMatches) {
+          return group;
+        } else if (filteredServices.length > 0) {
+          return {
+            ...group,
+            services: filteredServices,
+          };
+        }
+        return null;
+      })
+      .filter((group) => group !== null) as typeof groupedServices;
+  }, [groupedServices, searchTerm, allServices]);
+
+  const columns: Column<UserServiceAssignment>[] = [
+    {
+      key: "service",
+      header: "Serviço",
+      render: (_: unknown, row: UserServiceAssignment) => {
+        if (row.service?.name) {
+          return row.service.name;
+        }
+        const service = allServices.find((s) => s.id === row.serviceId);
+        return service?.name || `Serviço não encontrado (ID: ${row.serviceId})`;
+      },
+    },
+    {
+      key: "customDuration",
+      header: "Duração",
+      render: (_: unknown, row: UserServiceAssignment) => {
+        const serviceData =
+          row.service || allServices.find((s) => s.id === row.serviceId);
+        const duration = Number(
+          row.customDuration || row.baseDuration || serviceData?.duration || 0
+        );
+        return `${duration} min`;
+      },
+    },
+    {
+      key: "commissionRate",
+      header: "Comissão",
+      render: (value: unknown) =>
+        value ? `${Number(value)}%` : "-",
+    },
+    {
+      key: "customPrice",
+      header: "Preço",
+      render: (_: unknown, row: UserServiceAssignment) => {
+        const price = formatPrice(Number(row.customPrice || row.basePrice || 0));
+        if (
+          row.priceType === "A partir de" &&
+          row.customMaxValue &&
+          row.customMaxValue > 0
+        ) {
+          const maxPrice = formatPrice(Number(row.customMaxValue));
+          return `R$ ${price} - R$ ${maxPrice}`;
+        }
+        return `R$ ${price}`;
+      },
+    },
+  ];
+
+  const userServiceActions: TableAction<UserServiceAssignment>[] = [
+    {
+      label: "Editar precificação",
+      icon: <Edit2 className="h-4 w-4" />,
+      onClick: (row) => handleEditService(row.id),
+    },
+    {
+      label: "Remover serviço",
+      icon: <Trash2 className="h-4 w-4" />,
+      variant: "destructive",
+      onClick: (row) => handleRemoveService(row.id),
+    },
+  ];
+
+  const handleEditService = (assignmentId: string) => {
+    const service = allServices.find((s) => s.id === assignmentId);
+    const gService = groupedServices.find((gService) =>
+      gService.services.some((s) => s.id === service.id)
+    );
+
+    if (service) {
+      setSelectedServiceForPricing({
+        ...service,
+        specialty: gService ? gService.specialty : null,
+      } as unknown as UserServiceAssignment);
+      setIsPricingModalOpen(true);
+    }
+  };
+
+  const handleRemoveService = (assignmentId: string) => {
+    setServiceToDelete(assignmentId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!serviceToDelete) return;
+
+    const assignment = services.find((s) => s.id === serviceToDelete);
+
+    if (assignment) {
+      // Remove from backend if we have a userId
+      if (userId && assignment.serviceId) {
+        try {
+          // Use the new serviceService method
+          await serviceService.unlinkServiceFromUser(
+            userId,
+            assignment.serviceId
+          );
+
+          // Update local state after successful removal
+          const newServices = services.filter((s) => s.id !== serviceToDelete);
+
+          onChange?.(newServices);
+
+          toast.success("Serviço removido com sucesso!");
+
+          // Reload available services to update the modal
+          await loadAvailableData();
+        } catch (error) {
+          console.error("Error removing service:", error);
+          toast.dismiss();
+          toast.error("Erro ao remover serviço. Por favor, tente novamente.");
+        }
+      } else {
+        // If no userId, just update local state
+        const newServices = services.filter((s) => s.id !== serviceToDelete);
+
+        onChange?.(newServices);
+        toast.success("Serviço removido localmente.");
+      }
+    }
+
+    setDeleteConfirmOpen(false);
+    setServiceToDelete(null);
+  };
+
+  const handleUnlinkSpecialtyServices = (
+    specialtyId: string,
+    specialtyName: string
+  ) => {
+    setSpecialtyToUnlink({ id: specialtyId, name: specialtyName });
+    setDeleteSpecialtyConfirmOpen(true);
+  };
+
+  const confirmUnlinkSpecialtyServices = async () => {
+    if (!specialtyToUnlink || !userId) return;
+
+    setIsDeletingSpecialty(true);
+    try {
+      // Call the new service method
+      await serviceService.unlinkUserServicesBySpecialty(
+        userId,
+        specialtyToUnlink.id
+      );
+
+      // Filter out the unlinked services from local state
+      const remainingServices = services.filter((assignment) => {
+        const service =
+          assignment.service ||
+          allServices.find((s) => s.id === assignment.serviceId);
+        return service?.categoryId !== specialtyToUnlink.id;
+      });
+
+      onChange?.(remainingServices);
+
+      toast.success(
+        `Todos os serviços da especialidade "${specialtyToUnlink.name}" foram desvinculados com sucesso!`
+      );
+
+      // Reload available services to update the modal
+      await loadAvailableData();
+    } catch (error) {
+      console.error("Error unlinking specialty services:", error);
+      toast.error(
+        `Erro ao desvincular serviços da especialidade "${specialtyToUnlink.name}". Por favor, tente novamente.`
+      );
+    } finally {
+      setIsDeletingSpecialty(false);
+      setDeleteSpecialtyConfirmOpen(false);
+      setSpecialtyToUnlink(null);
+    }
+  };
+
+  const handleAddServices = async (serviceIds: string[]) => {
+    // Filter out services that are already assigned
+    const newServiceIds = serviceIds.filter(
+      (serviceId) => !services.some((s) => s.serviceId === serviceId)
+    );
+
+    if (newServiceIds.length === 0) {
+      toast.warning("Todos os serviços selecionados já estão vinculados.");
+      setIsAddModalOpen(false);
+      return;
+    }
+
+    // Save to backend immediately if we have a userId
+    if (userId) {
+      try {
+        // Use the new incremental add method that preserves existing services and customizations
+        const result = await serviceService.addServicesToUser(userId, {
+          serviceIds: newServiceIds, // Send only NEW service IDs
+        });
+
+        // Show informative message about what was added/skipped
+        if (result.skippedCount > 0) {
+          toast.info(
+            `${result.addedCount} serviço(s) adicionado(s). ${result.skippedCount} já estava(m) vinculado(s).`
+          );
+        } else {
+          toast.success(result.message);
+        }
+
+        if (result.addedCount > 0) {
+          trackSeverinoEvent('servico_vinculado', { description: `${result.addedCount} serviço(s) vinculado(s) ao profissional` });
+        }
+
+        // Reload the user services to get the updated list
+        const updatedServices = await serviceService.getUserServices(userId);
+
+        // Transform the response to UserServiceAssignment format
+        const transformedServices: UserServiceAssignment[] =
+          updatedServices.map((userService: any) => ({
+            id: `${userService.userId || userService.user_id}-${
+              userService.serviceId || userService.service_id
+            }`,
+            serviceId: userService.serviceId || userService.service_id,
+            userId: userService.userId || userService.user_id,
+            service: userService.service || {
+              id: userService.serviceId || userService.service_id,
+              name: userService.name,
+              description: userService.description,
+              duration: userService.duration,
+              price: userService.price,
+              categoryId:
+                userService.categoryId || userService.service?.categoryId,
+              category: userService.category,
+              specialty: userService.specialty,
+            },
+            customPrice: userService.customPrice || userService.custom_price,
+            customMaxValue: userService.customMaxValue || userService.custom_max_value,
+            customDuration:
+              userService.customDuration || userService.custom_duration,
+            commissionRate:
+              userService.commissionRate ||
+              userService.commission_rate ||
+              userService.commission ||
+              50,
+            priceType: userService.priceType || userService.price_type,
+            adminFeeFixed:
+              userService.adminFeeFixed || userService.admin_fee_fixed,
+            adminFeePercent:
+              userService.adminFeePercent || userService.admin_fee_percent,
+            supplies: userService.supplies,
+            // Include base values from backend
+            basePrice: userService.basePrice || userService.price,
+            baseDuration: userService.baseDuration || userService.duration,
+            baseCommission:
+              userService.baseCommission || userService.commission || 50,
+            isStandardService: userService.isStandardService,
+            isActive:
+              userService.isActive !== false && userService.is_active !== false,
+            createdAt: userService.createdAt || userService.created_at,
+            updatedAt: userService.updatedAt || userService.updated_at,
+          }));
+
+        onChange?.(transformedServices);
+        setIsAddModalOpen(false);
+
+        // Reload available services to update the modal
+        // IMPORTANTE: passar transformedServices para evitar race condition com setState
+        await loadAvailableData();
+      } catch (error) {
+        console.error("Error linking services:", error);
+        toast.error("Erro ao vincular serviços. Por favor, tente novamente.");
+      }
+    } else {
+      // If no userId, just update local state (shouldn't happen in normal flow)
+      const newAssignments: UserServiceAssignment[] = [...services];
+
+      newServiceIds.forEach((serviceId) => {
+        const service = availableServices.find((s) => s.id === serviceId);
+        if (service) {
+          newAssignments.push({
+            id: `temp-${Date.now()}-${serviceId}`,
+            serviceId: serviceId,
+            userId: "",
+            service: service,
+            commissionRate: service.commission || 50,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
+
+      onChange?.(newAssignments);
+      setIsAddModalOpen(false);
+      toast.info(
+        "Serviços adicionados localmente. Salve o usuário para confirmar."
+      );
+    }
+  };
+
+  // Removido: lógica global window - agora usa props diretamente
+
+  const handleSavePricing = async (pricingData: {
+    duration: string;
+    priceType: string;
+    grossValue: string;
+    maxValue?: string;
+    adminFeeFixed: string;
+    adminFeePercent: string;
+    supplies: string;
+    netValue: string;
+    commissionFixed: string;
+    commissionPercent: string;
+  }) => {
+    if (selectedServiceForPricing && userId) {
+      try {
+        // Convert duration from HH:MM to minutes
+        const [hours, minutes] = pricingData.duration.split(":").map(Number);
+        const totalMinutes = hours * 60 + minutes;
+
+        // Convert price from Brazilian format to number using helper
+        const price = parseBrazilianCurrency(pricingData.grossValue);
+        const maxValue = pricingData.maxValue
+          ? parseBrazilianCurrency(pricingData.maxValue)
+          : null;
+        const commission = parseBrazilianCurrency(
+          pricingData.commissionPercent
+        );
+        const adminFeeFixedValue = parseBrazilianCurrency(
+          pricingData.adminFeeFixed
+        );
+        const adminFeePercentValue = parseBrazilianCurrency(
+          pricingData.adminFeePercent
+        );
+        const suppliesValue = parseBrazilianCurrency(pricingData.supplies);
+
+        // Save to backend immediately
+        const result = await userService.updateServiceAssignment(
+          userId,
+          selectedServiceForPricing.id,
+          {
+            customPrice: price > 0 ? price : null,
+            customMaxValue: maxValue > 0 ? maxValue : null,
+            customDuration: totalMinutes > 0 ? totalMinutes : null,
+            commissionRate: commission >= 0 ? commission : 50,
+            priceType: pricingData.priceType,
+            adminFeeFixed: adminFeeFixedValue > 0 ? adminFeeFixedValue : null,
+            adminFeePercent:
+              adminFeePercentValue > 0 ? adminFeePercentValue : null,
+            supplies: suppliesValue > 0 ? suppliesValue : null,
+            isActive: selectedServiceForPricing.isActive !== false,
+          }
+        );
+
+        // Update local state after successful save
+        const updatedServices = services.map((assignment) =>
+          assignment.id === selectedServiceForPricing.id
+            ? {
+                ...assignment,
+                ...result.assignment,
+                customDuration: totalMinutes > 0 ? totalMinutes : undefined,
+                customPrice: price > 0 ? price : undefined,
+                customMaxValue: maxValue > 0 ? maxValue : undefined,
+                priceType: pricingData.priceType,
+                commissionRate: commission >= 0 ? commission : 50,
+                // Store admin fee and supplies for display (frontend-only)
+                adminFeeFixed:
+                  adminFeeFixedValue > 0 ? adminFeeFixedValue : undefined,
+                adminFeePercent:
+                  adminFeePercentValue > 0 ? adminFeePercentValue : undefined,
+                supplies: suppliesValue > 0 ? suppliesValue : undefined,
+              }
+            : assignment
+        );
+
+        onChange?.(updatedServices);
+        setSelectedServiceForPricing(null);
+        setIsPricingModalOpen(false);
+        toast.success("Precificação salva com sucesso!");
+      } catch (error) {
+        console.error("Error saving pricing:", error);
+        toast.error("Erro ao salvar precificação. Por favor, tente novamente.");
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Campo de Busca */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          type="text"
+          placeholder="Buscar por especialidade ou serviço..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Accordion de serviços agrupados por especialidade */}
+      {filteredGroups.length > 0 ? (
+        <UserServicesAccordion
+          items={filteredGroups.map((group) => ({
+            id: group.specialty?.id || "uncategorized",
+            title: group.specialty?.name || "Outros Serviços",
+            serviceCount: group.services.length,
+            content: (
+              <div className="space-y-4 p-4">
+                <DataTable
+                  data={group.services}
+                  columns={columns}
+                  actions={userServiceActions}
+                  mobileView="cards"
+                  mobileCardConfig={{
+                    title: (row) => row.service?.name || "Serviço",
+                    subtitle: (row) => `${row.customDuration || row.baseDuration || row.service?.duration || 0} min`,
+                    badge: (row) => {
+                      const price = row.customPrice || row.basePrice || 0;
+                      return `R$ ${price}`;
+                    }
+                  }}
+                />
+                {group.services.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() =>
+                        handleUnlinkSpecialtyServices(
+                          group.specialty?.id || "uncategorized",
+                          group.specialty?.name || "Outros Serviços"
+                        )
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Desvincular Todos
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ),
+          }))}
+          defaultOpenIndex={0}
+        />
+      ) : (
+        <div className="flex justify-center items-center h-48">
+          <p className="text-muted-foreground text-center">
+            {searchTerm
+              ? "Nenhum serviço ou especialidade encontrada para a busca"
+              : services.length === 0
+              ? "Nenhum serviço vinculado a este profissional"
+              : "Carregando serviços..."}
+          </p>
+        </div>
+      )}
+
+      {/* Modal para adicionar serviços */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent
+          className="max-w-2xl z-50 bg-background border-border"
+          aria-describedby="add-services-description"
+        >
+          <DialogHeader>
+            <DialogTitle>Adicionar Serviços</DialogTitle>
+          </DialogHeader>
+          <div id="add-services-description" className="sr-only">
+            Modal para selecionar e adicionar novos serviços ao profissional
+          </div>
+
+          {isLoadingServices || isLoadingSpecialties ? (
+            <div className="flex justify-center items-center h-64">
+              <LoadingSpinner size="md" />
+            </div>
+          ) : (
+            <AddServicesFlow
+              services={availableServices}
+              specialties={specialties}
+              existingServiceIds={services.map((s) => s.serviceId)}
+              onSave={handleAddServices}
+              onCancel={() => setIsAddModalOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Precificação */}
+      <ServicePricingModal
+        isOpen={isPricingModalOpen}
+        onClose={() => {
+          setIsPricingModalOpen(false);
+          setSelectedServiceForPricing(null);
+        }}
+        service={
+          selectedServiceForPricing
+            ? ((() => {
+                const baseService = allServices.find(
+                  (s) => s.id === selectedServiceForPricing.id
+                );
+
+                // Se o profissional já tem valores customizados, usa eles
+                // Senão, usa o valor base que vem do backend (já com a lógica de salon_service_settings)
+                const hasCustomPrice =
+                  selectedServiceForPricing.customPrice !== undefined &&
+                  selectedServiceForPricing.customPrice !== null;
+                const hasCustomDuration =
+                  selectedServiceForPricing.customDuration !== undefined &&
+                  selectedServiceForPricing.customDuration !== null;
+                const hasCustomCommission =
+                  selectedServiceForPricing.commissionRate !== undefined &&
+                  selectedServiceForPricing.commissionRate !== null;
+
+                // Use base values from the assignment (which already includes salon settings logic from backend)
+                const basePrice =
+                  selectedServiceForPricing.basePrice ||
+                  baseService?.price ||
+                  0;
+                const baseDuration =
+                  selectedServiceForPricing.baseDuration ||
+                  baseService?.duration ||
+                  0;
+                const baseCommission =
+                  selectedServiceForPricing.baseCommission ||
+                  baseService?.commission ||
+                  50;
+
+                return {
+                  ...baseService,
+                  // Duration: usa customizado se existir, senão usa base
+                  duration: hasCustomDuration
+                    ? minutesToTime(selectedServiceForPricing.customDuration)
+                    : minutesToTime(baseDuration),
+                  // Price: usa customizado se existir, senão usa base
+                  grossValue: hasCustomPrice
+                    ? formatPrice(selectedServiceForPricing.customPrice)
+                    : formatPrice(basePrice),
+                  // Max value: usa se existir
+                  maxValue: selectedServiceForPricing.customMaxValue
+                    ? formatPrice(selectedServiceForPricing.customMaxValue)
+                    : undefined,
+                  // Commission: usa customizado se existir, senão usa base
+                  commissionPercent: hasCustomCommission
+                    ? formatCommission(selectedServiceForPricing.commissionRate)
+                    : formatCommission(baseCommission),
+                  // Pass admin fee and supplies if they exist
+                  adminFeeFixed: formatPrice(
+                    selectedServiceForPricing.adminFeeFixed
+                  ),
+                  adminFeePercent: formatCommission(
+                    selectedServiceForPricing.adminFeePercent
+                  ),
+                  supplies: formatPrice(selectedServiceForPricing.supplies),
+
+                  specialty: selectedServiceForPricing?.specialty?.name,
+                };
+              })() as any)
+            : undefined
+        }
+        onSave={handleSavePricing}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const assignment = services.find(
+                  (s) => s.id === serviceToDelete
+                );
+                const service =
+                  assignment?.service ||
+                  allServices.find((s) => s.id === assignment?.serviceId);
+                return `Deseja realmente remover o serviço "${
+                  service?.name || "Serviço"
+                }" deste profissional?`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteService}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Delete Specialty Services Dialog */}
+      <AlertDialog
+        open={deleteSpecialtyConfirmOpen}
+        onOpenChange={setDeleteSpecialtyConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirmar Desvinculação por Especialidade
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {specialtyToUnlink && (
+                <>
+                  Deseja realmente desvincular todos os serviços da
+                  especialidade "{specialtyToUnlink.name}" deste profissional?
+                  <br />
+                  <br />
+                  Esta ação não pode ser desfeita.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingSpecialty}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmUnlinkSpecialtyServices}
+              disabled={isDeletingSpecialty}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeletingSpecialty ? (
+                <>
+                  <LoadingSpinner size="sm" inline className="mr-2" />
+                  Desvinculando...
+                </>
+              ) : (
+                "Confirmar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+interface AddServicesFlowProps {
+  services: Service[];
+  specialties: Specialty[];
+  existingServiceIds: string[];
+  onSave: (serviceIds: string[]) => void;
+  onCancel: () => void;
+}
+
+function AddServicesFlow({
+  services,
+  specialties,
+  existingServiceIds,
+  onSave,
+  onCancel,
+}: AddServicesFlowProps) {
+  const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<string[]>(
+    []
+  );
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
+  // Atualiza serviços automaticamente quando especialidades mudam
+  const handleSpecialtyChange = (specialtyIds: string[]) => {
+    setSelectedSpecialtyIds(specialtyIds);
+
+    // Auto-seleciona todos os serviços das especialidades selecionadas
+    const allServiceIds: string[] = [];
+    specialtyIds.forEach((specId) => {
+      const servicesInSpec = services.filter(
+        (s) => s.categoryId === specId && !existingServiceIds.includes(s.id)
+      );
+      servicesInSpec.forEach((service) => {
+        allServiceIds.push(service.id);
+      });
+    });
+    setSelectedServiceIds(allServiceIds);
+  };
+
+  const handleSave = () => {
+    if (selectedServiceIds.length > 0) {
+      onSave(selectedServiceIds);
+      setSelectedSpecialtyIds([]);
+      setSelectedServiceIds([]);
+    }
+  };
+
+  const getAvailableServices = () => {
+    if (selectedSpecialtyIds.length === 0) {
+      // Show all available services not yet assigned
+      const filtered = services.filter(
+        (s) => !existingServiceIds.includes(s.id)
+      );
+
+      return filtered;
+    }
+
+    // Filter services by selected specialties and not yet assigned
+    const filtered = services.filter((s) => {
+      const hasCategory = selectedSpecialtyIds.includes(s.categoryId || "");
+      const notAssigned = !existingServiceIds.includes(s.id);
+
+      return hasCategory && notAssigned;
+    });
+
+    return filtered;
+  };
+
+  return (
+    <div className="space-y-6 min-h-[400px]">
+      {/* Seção de Especialidades */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-foreground">
+          Especialidades
+        </h3>
+        <p className="text-body text-muted-foreground">
+          Selecione as especialidades que deseja vincular ao profissional
+        </p>
+        <MultiSelect
+          options={specialties
+            .map((spec) => ({
+              value: spec.id,
+              label: spec.name,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label))}
+          selected={selectedSpecialtyIds}
+          onSelectionChange={handleSpecialtyChange}
+          placeholder="Selecione as especialidades..."
+        />
+      </div>
+
+      {/* Seção de Serviços - sempre visível para mostrar todos os serviços disponíveis */}
+      <div className="space-y-4 pt-4 border-t border-border">
+        <h3 className="text-lg font-semibold text-foreground">Serviços</h3>
+        <p className="text-body text-muted-foreground">
+          Serviços disponíveis nas especialidades selecionadas. Você pode
+          desmarcar serviços específicos se necessário.
+        </p>
+
+        <MultiSelect
+          options={getAvailableServices()
+            .map((service) => {
+              const category = specialties.find(
+                (s) => s.id === service.categoryId
+              );
+              return {
+                value: service.id,
+                label: `${service.name}${category ? ` (${category.name})` : ""}`,
+              };
+            })
+            .sort((a, b) => a.label.localeCompare(b.label))}
+          selected={selectedServiceIds}
+          onSelectionChange={setSelectedServiceIds}
+          placeholder="Selecione os serviços..."
+        />
+      </div>
+
+      {/* Botões de Ação */}
+      <div className="flex justify-end gap-3 pt-6 border-t border-border">
+        <Button variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={selectedServiceIds.length === 0}
+          className="min-w-[120px]"
+        >
+          Vincular
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+interface MultiSelectProps {
+  options: { value: string; label: string }[];
+  selected: string[];
+  onSelectionChange: (selected: string[]) => void;
+  placeholder: string;
+}
+
+function MultiSelect({
+  options,
+  selected,
+  onSelectionChange,
+  placeholder,
+}: MultiSelectProps) {
+  const [open, setOpen] = useState(false);
+
+  const toggleOption = (optionValue: string) => {
+    if (selected.includes(optionValue)) {
+      onSelectionChange(selected.filter((item) => item !== optionValue));
+    } else {
+      onSelectionChange([...selected, optionValue]);
+    }
+  };
+
+  const getDisplayText = () => {
+    if (selected.length === 0) return placeholder;
+    if (selected.length === 1) {
+      return options.find((opt) => opt.value === selected[0])?.label || "";
+    }
+    return `${selected.length} selecionados`;
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {getDisplayText()}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="p-0 pointer-events-auto"
+        align="start"
+        style={{ width: "var(--radix-popover-trigger-width)" }}
+        onWheel={(e) => e.stopPropagation()}
+      >
+        <Command>
+          <CommandInput placeholder="Pesquisar..." />
+          <CommandList className="max-h-[300px] overflow-y-auto">
+            <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={() => toggleOption(option.value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selected.includes(option.value)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

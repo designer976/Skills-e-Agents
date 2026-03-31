@@ -1,0 +1,378 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Coffee, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+interface TimeInterval {
+  id: string;
+  startTime: string;
+  endTime: string;
+  type: 'work' | 'break';
+}
+
+interface UserScheduleFormWithBreaksProps {
+  value?: any;
+  onChange?: (value: any) => void;
+}
+
+const daysOfWeek = [
+  { key: 'monday', label: 'Seg' },
+  { key: 'tuesday', label: 'Ter' },
+  { key: 'wednesday', label: 'Qua' },
+  { key: 'thursday', label: 'Qui' },
+  { key: 'friday', label: 'Sex' },
+  { key: 'saturday', label: 'Sáb' },
+  { key: 'sunday', label: 'Dom' },
+];
+
+export function UserScheduleFormWithBreaks({ value = {}, onChange }: UserScheduleFormWithBreaksProps) {
+  const [selectedDays, setSelectedDays] = useState<string[]>(value.selectedDays || []);
+  const [daySchedules, setDaySchedules] = useState<Record<string, TimeInterval[]>>(
+    value.daySchedules || {}
+  );
+  const [acceptsOnlineBooking, setAcceptsOnlineBooking] = useState<boolean>(
+    value.acceptsOnlineBooking !== undefined ? value.acceptsOnlineBooking : true
+  );
+
+  const toggleDay = (dayKey: string) => {
+    const newSelectedDays = selectedDays.includes(dayKey)
+      ? selectedDays.filter(d => d !== dayKey)
+      : [...selectedDays, dayKey];
+    
+    setSelectedDays(newSelectedDays);
+    
+    // Remove schedules if day is unselected
+    if (!newSelectedDays.includes(dayKey)) {
+      const newDaySchedules = { ...daySchedules };
+      delete newDaySchedules[dayKey];
+      setDaySchedules(newDaySchedules);
+      onChange?.({ selectedDays: newSelectedDays, daySchedules: newDaySchedules, acceptsOnlineBooking });
+    } else {
+      // Add default work interval if day is selected
+      const newDaySchedules = {
+        ...daySchedules,
+        [dayKey]: daySchedules[dayKey] || [{ 
+          id: `${dayKey}-work-1`, 
+          startTime: '09:00', 
+          endTime: '18:00',
+          type: 'work' as const
+        }]
+      };
+      setDaySchedules(newDaySchedules);
+      onChange?.({ selectedDays: newSelectedDays, daySchedules: newDaySchedules, acceptsOnlineBooking });
+    }
+  };
+
+  const addWorkInterval = (dayKey: string) => {
+    const existingIntervals = daySchedules[dayKey] || [];
+    const workIntervals = existingIntervals.filter(i => i.type === 'work');
+    
+    if (workIntervals.length >= 2) {
+      toast.error('Máximo de 2 turnos de trabalho por dia');
+      return;
+    }
+
+    const newInterval: TimeInterval = {
+      id: `${dayKey}-work-${Date.now()}`,
+      startTime: '',
+      endTime: '',
+      type: 'work'
+    };
+
+    const newIntervals = [...existingIntervals, newInterval];
+    const newDaySchedules = { ...daySchedules, [dayKey]: newIntervals };
+    setDaySchedules(newDaySchedules);
+    onChange?.({ selectedDays, daySchedules: newDaySchedules, acceptsOnlineBooking });
+  };
+
+  const addBreakInterval = (dayKey: string) => {
+    const existingIntervals = daySchedules[dayKey] || [];
+    const workIntervals = existingIntervals.filter(i => i.type === 'work');
+    
+    if (workIntervals.length === 0) {
+      toast.error('Adicione um horário de trabalho primeiro');
+      return;
+    }
+
+    const newInterval: TimeInterval = {
+      id: `${dayKey}-break-${Date.now()}`,
+      startTime: '12:00',
+      endTime: '13:00',
+      type: 'break'
+    };
+
+    const newIntervals = [...existingIntervals, newInterval];
+    const newDaySchedules = { ...daySchedules, [dayKey]: newIntervals };
+    setDaySchedules(newDaySchedules);
+    onChange?.({ selectedDays, daySchedules: newDaySchedules, acceptsOnlineBooking });
+  };
+
+  const removeInterval = (dayKey: string, intervalId: string) => {
+    const newIntervals = daySchedules[dayKey]?.filter(interval => interval.id !== intervalId) || [];
+    
+    // Don't allow removing the last work interval if there are breaks
+    const workIntervals = newIntervals.filter(i => i.type === 'work');
+    const breakIntervals = newIntervals.filter(i => i.type === 'break');
+    
+    if (workIntervals.length === 0 && breakIntervals.length > 0) {
+      toast.error('Não é possível remover o último turno de trabalho quando há intervalos');
+      return;
+    }
+
+    const newDaySchedules = { ...daySchedules, [dayKey]: newIntervals };
+    setDaySchedules(newDaySchedules);
+    onChange?.({ selectedDays, daySchedules: newDaySchedules, acceptsOnlineBooking });
+  };
+
+  const updateInterval = (dayKey: string, intervalId: string, field: 'startTime' | 'endTime', value: string) => {
+    const newIntervals = daySchedules[dayKey]?.map(interval =>
+      interval.id === intervalId ? { ...interval, [field]: value } : interval
+    ) || [];
+    const newDaySchedules = { ...daySchedules, [dayKey]: newIntervals };
+    setDaySchedules(newDaySchedules);
+    onChange?.({ selectedDays, daySchedules: newDaySchedules, acceptsOnlineBooking });
+  };
+
+  const validateSchedule = (dayKey: string): string[] => {
+    const intervals = daySchedules[dayKey] || [];
+    const errors: string[] = [];
+
+    // Sort intervals by start time
+    const sortedIntervals = [...intervals].sort((a, b) => {
+      const timeA = a.startTime ? parseInt(a.startTime.replace(':', '')) : 0;
+      const timeB = b.startTime ? parseInt(b.startTime.replace(':', '')) : 0;
+      return timeA - timeB;
+    });
+
+    // Check for overlaps and validate times
+    for (let i = 0; i < sortedIntervals.length; i++) {
+      const current = sortedIntervals[i];
+      
+      // Check if times are filled
+      if (!current.startTime || !current.endTime) {
+        errors.push(`${current.type === 'work' ? 'Turno' : 'Intervalo'} com horário incompleto`);
+        continue;
+      }
+
+      // Check if end time is after start time
+      const startMinutes = parseInt(current.startTime.split(':')[0]) * 60 + parseInt(current.startTime.split(':')[1]);
+      const endMinutes = parseInt(current.endTime.split(':')[0]) * 60 + parseInt(current.endTime.split(':')[1]);
+      
+      if (endMinutes <= startMinutes) {
+        errors.push(`${current.type === 'work' ? 'Turno' : 'Intervalo'}: horário final deve ser após o inicial`);
+      }
+
+      // Check for overlaps with next interval
+      if (i < sortedIntervals.length - 1) {
+        const next = sortedIntervals[i + 1];
+        if (next.startTime && current.endTime > next.startTime) {
+          errors.push('Horários sobrepostos detectados');
+        }
+      }
+
+      // Check if breaks are within work hours
+      if (current.type === 'break') {
+        const workIntervals = sortedIntervals.filter(i => i.type === 'work');
+        let isWithinWork = false;
+        
+        for (const work of workIntervals) {
+          if (work.startTime && work.endTime &&
+              current.startTime >= work.startTime && 
+              current.endTime <= work.endTime) {
+            isWithinWork = true;
+            break;
+          }
+        }
+        
+        if (!isWithinWork) {
+          errors.push('Intervalo deve estar dentro do horário de trabalho');
+        }
+      }
+    }
+
+    return errors;
+  };
+
+  const handleOnlineBookingToggle = (checked: boolean) => {
+    setAcceptsOnlineBooking(checked);
+    onChange?.({ selectedDays, daySchedules, acceptsOnlineBooking: checked });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h3 className="text-lg font-medium">Configuração de agenda</h3>
+        <p className="text-sm text-muted-foreground">
+          Configure os horários de trabalho e intervalos
+        </p>
+      </div>
+
+      {/* Opção de aceitar agendamentos online */}
+      <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+        <div className="space-y-1">
+          <Label className="font-medium">Aceitar agendamentos online</Label>
+          <p className="text-sm text-muted-foreground">
+            Quando ativo, este profissional aparecerá na lista de profissionais disponíveis para agendamento online
+          </p>
+        </div>
+        <Switch
+          checked={acceptsOnlineBooking}
+          onCheckedChange={handleOnlineBookingToggle}
+        />
+      </div>
+
+      {/* Seleção dos dias da semana */}
+      <div className="flex flex-wrap gap-2 justify-center">
+        {daysOfWeek.map((day) => (
+          <Button
+            key={day.key}
+            type="button"
+            variant={selectedDays.includes(day.key) ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "w-12 h-10",
+              selectedDays.includes(day.key) && "bg-primary text-primary-foreground"
+            )}
+            onClick={() => toggleDay(day.key)}
+          >
+            {day.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Horários para cada dia selecionado */}
+      {selectedDays.length > 0 && (
+        <div className="space-y-4">
+          {selectedDays.map((dayKey) => {
+            const dayLabel = daysOfWeek.find(d => d.key === dayKey)?.label;
+            const intervals = daySchedules[dayKey] || [];
+            const workIntervals = intervals.filter(i => i.type === 'work');
+            const breakIntervals = intervals.filter(i => i.type === 'break');
+            const errors = validateSchedule(dayKey);
+
+            return (
+              <div key={dayKey} className="space-y-3 p-4 border rounded-md">
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium text-base">{dayLabel}</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addWorkInterval(dayKey)}
+                      disabled={workIntervals.length >= 2}
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      Turno
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addBreakInterval(dayKey)}
+                      disabled={workIntervals.length === 0}
+                    >
+                      <Coffee className="h-4 w-4 mr-1" />
+                      Intervalo
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Work intervals */}
+                {workIntervals.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Horários de trabalho</Label>
+                    {workIntervals.map((interval, index) => (
+                      <div key={interval.id} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-16">
+                          Turno {index + 1}
+                        </span>
+                        <div className="flex-1">
+                          <Input
+                            type="time"
+                            placeholder="Início"
+                            value={interval.startTime}
+                            onChange={(e) => updateInterval(dayKey, interval.id, 'startTime', e.target.value)}
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground">até</span>
+                        <div className="flex-1">
+                          <Input
+                            type="time"
+                            placeholder="Fim"
+                            value={interval.endTime}
+                            onChange={(e) => updateInterval(dayKey, interval.id, 'endTime', e.target.value)}
+                          />
+                        </div>
+                        {workIntervals.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeInterval(dayKey, interval.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Break intervals */}
+                {breakIntervals.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Intervalos</Label>
+                    {breakIntervals.map((interval) => (
+                      <div key={interval.id} className="flex items-center gap-2">
+                        <Coffee className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <Input
+                            type="time"
+                            placeholder="Início"
+                            value={interval.startTime}
+                            onChange={(e) => updateInterval(dayKey, interval.id, 'startTime', e.target.value)}
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground">até</span>
+                        <div className="flex-1">
+                          <Input
+                            type="time"
+                            placeholder="Fim"
+                            value={interval.endTime}
+                            onChange={(e) => updateInterval(dayKey, interval.id, 'endTime', e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeInterval(dayKey, interval.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Validation errors */}
+                {errors.length > 0 && (
+                  <div className="text-sm text-destructive space-y-1">
+                    {errors.map((error, index) => (
+                      <div key={index}>• {error}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

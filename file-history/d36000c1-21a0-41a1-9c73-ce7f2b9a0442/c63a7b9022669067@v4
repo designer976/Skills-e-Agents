@@ -1,0 +1,893 @@
+import { useState, useEffect, useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarIcon, Clock, Phone, Mail, User as UserIcon, Filter } from "lucide-react";
+import { SolicitacaoItem } from "@/types/solicitacoes";
+import { format, isAfter } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { formatDateByTz } from "@/utils/formatters";
+import { userService } from "@/services/userService";
+import { appointmentService } from "@/services/appointmentService";
+import { httpClient } from "@/services/httpClient";
+import { useToast } from "@/hooks/use-toast";
+import { toast as toastAlert } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { User } from "@/types/user";
+import { useAuth } from "@/contexts/AuthContext";
+import { Salon } from "@/types/salon";
+import { getUserDisplayName } from "@/utils/userHelpers";
+
+interface TransformarSolicitacaoModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  solicitacao: SolicitacaoItem | null;
+  onSave: (solicitacao: SolicitacaoItem) => void;
+  selectedSalon?: Salon;
+}
+
+export function TransformarSolicitacaoModal({
+  isOpen,
+  onClose,
+  solicitacao,
+  selectedSalon,
+  onSave,
+}: TransformarSolicitacaoModalProps) {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [selectedProfessionalId, setSelectedProfessionalId] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [professionals, setProfessionals] = useState<User[]>([]);
+  const [loadingProfessionals, setLoadingProfessionals] = useState(false);
+  const [availabilityData, setAvailabilityData] = useState<any>(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [serviceId, setServiceId] = useState<string>("");
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const hasAutoSelectedTime = useRef(false);
+  const hasAutoSelectedDate = useRef(false);
+  const hasAutoSelectedProfessional = useRef(false);
+
+  // Buscar profissionais que trabalham com o serviço específico
+  useEffect(() => {
+    const loadProfessionals = async () => {
+      if (isOpen && solicitacao?.serviceName) {
+        setLoadingProfessionals(true);
+        try {
+          // Primeiro buscar o serviceId pelo nome
+          const response = await httpClient.get(
+            `/services/by-name/${encodeURIComponent(solicitacao.serviceName)}`
+          );
+          const service = response.data;
+
+          if (service && service.id) {
+            // Guardar o serviceId para usar na busca de disponibilidade
+            setServiceId(service.id);
+
+            // Agora buscar profissionais que podem atender este serviço
+            const data = await userService.listProfessionalsByService(
+              service.id
+            );
+
+            // Se não há profissionais associados ao serviço, buscar todos os profissionais ativos
+            if (data.length === 0) {
+              console.warn(
+                "No professionals associated with this service, loading all professionals"
+              );
+              const allProfessionals = await userService.listProfessionals();
+              setProfessionals(allProfessionals);
+            } else {
+              setProfessionals(data);
+            }
+          } else {
+            // Se não encontrar o serviço, buscar todos os profissionais
+            console.warn(
+              "Service not found by name, loading all professionals"
+            );
+            const data = await userService.listProfessionals();
+            setProfessionals(data);
+          }
+        } catch (error) {
+          console.error("Error loading professionals:", error);
+          // Se falhar, tentar carregar todos os profissionais como fallback
+          try {
+            const data = await userService.listProfessionals();
+            setProfessionals(data);
+          } catch (fallbackError) {
+            console.error("Error loading all professionals:", fallbackError);
+            toast({
+              title: "Erro ao carregar profissionais",
+              description:
+                "Não foi possível carregar a lista de profissionais.",
+              variant: "destructive",
+            });
+          }
+        } finally {
+          setLoadingProfessionals(false);
+        }
+      }
+    };
+
+    loadProfessionals();
+  }, [isOpen, solicitacao?.serviceName, toast]);
+
+  // Pré-preencher campos quando a modal abrir com uma nova solicitação
+  useEffect(() => {
+    if (isOpen && solicitacao) {
+      // Reset dos flags de auto-seleção
+      hasAutoSelectedTime.current = false;
+      hasAutoSelectedDate.current = false;
+      hasAutoSelectedProfessional.current = false;
+
+      // Não selecionar data aqui - deixar para a lógica de smart date selection
+      setSelectedDate(undefined);
+      setSelectedTime("");
+      setSelectedProfessionalId("");
+      setAvailabilityData(null);
+      setAvailableSlots([]);
+    }
+  }, [isOpen, solicitacao]);
+
+  // Auto-selecionar profissional quando profissionais são carregados
+  useEffect(() => {
+    if (
+      isOpen &&
+      solicitacao &&
+      professionals.length > 0 &&
+      !hasAutoSelectedProfessional.current &&
+      !loadingProfessionals
+    ) {
+      hasAutoSelectedProfessional.current = true;
+
+      // Se já tem profissional atribuído, pré-selecionar
+      if (solicitacao.assignedProfessionalId) {
+        const professionalExists = professionals.find(
+          (p) => p.id === solicitacao.assignedProfessionalId
+        );
+        if (professionalExists) {
+          setSelectedProfessionalId(solicitacao.assignedProfessionalId);
+        } else if (professionals.length > 0) {
+          // Se não encontrou o profissional mas há profissionais, seleciona o primeiro
+          setSelectedProfessionalId(professionals[0].id);
+        }
+      } else if (professionals.length > 0) {
+        // Se não tem profissional atribuído, seleciona o primeiro disponível
+        setSelectedProfessionalId(professionals[0].id);
+      }
+    }
+  }, [isOpen, solicitacao, professionals, loadingProfessionals]);
+
+  // Smart date selection: selecionar hoje ou próximo dia disponível
+  useEffect(() => {
+    const selectSmartDate = async () => {
+      if (
+        isOpen &&
+        solicitacao &&
+        serviceId &&
+        selectedProfessionalId && // Só rodar quando tiver profissional selecionado
+        !hasAutoSelectedDate.current &&
+        !loadingProfessionals
+      ) {
+        hasAutoSelectedDate.current = true;
+
+        try {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dateStr = format(today, "yyyy-MM-dd");
+
+          // Buscar disponibilidade para hoje
+          const params: any = {
+            date: dateStr,
+            serviceId: serviceId,
+            professionalId: selectedProfessionalId,
+          };
+
+          const response = await httpClient
+            .get("/appointments/availability/detailed", {
+              params,
+              headers: {
+                "X-Skip-Toast": true,
+                "x-salon-id": user?.salonId || "",
+              },
+            })
+            .then((res) => res.data);
+
+          // Verificar se há slots disponíveis hoje
+          const hasAvailableSlots = response?.slots?.some(
+            (slot: any) => slot.available
+          );
+
+          if (hasAvailableSlots) {
+            // Se há slots hoje, selecionar hoje
+            setSelectedDate(today);
+          } else {
+            // Se não há slots hoje, tentar amanhã
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = format(tomorrow, "yyyy-MM-dd");
+
+            const tomorrowParams = {
+              date: tomorrowStr,
+              serviceId: serviceId,
+              professionalId: selectedProfessionalId,
+            };
+
+            const tomorrowResponse = await httpClient
+              .get("/appointments/availability/detailed", {
+                params: tomorrowParams,
+                headers: {
+                  "X-Skip-Toast": true,
+                  "x-salon-id": user?.salonId || "",
+                },
+              })
+              .then((res) => res.data);
+
+            const hasTomorrowSlots = tomorrowResponse?.slots?.some(
+              (slot: any) => slot.available
+            );
+
+            if (hasTomorrowSlots) {
+              setSelectedDate(tomorrow);
+            } else {
+              // Se não há slots nem hoje nem amanhã, usar data preferida ou hoje
+              if (solicitacao.preferredDate) {
+                const preferredDate = new Date(solicitacao.preferredDate);
+                const localDate = new Date(
+                  preferredDate.getFullYear(),
+                  preferredDate.getMonth(),
+                  preferredDate.getDate()
+                );
+                setSelectedDate(localDate);
+              } else {
+                setSelectedDate(today);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error in smart date selection:", error);
+          // Em caso de erro, usar data preferida ou hoje
+          if (solicitacao.preferredDate) {
+            const preferredDate = new Date(solicitacao.preferredDate);
+            const localDate = new Date(
+              preferredDate.getFullYear(),
+              preferredDate.getMonth(),
+              preferredDate.getDate()
+            );
+            setSelectedDate(localDate);
+          } else {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            setSelectedDate(today);
+          }
+        }
+      }
+    };
+
+    selectSmartDate();
+  }, [
+    isOpen,
+    solicitacao,
+    serviceId,
+    selectedProfessionalId,
+    loadingProfessionals,
+    user?.salonId,
+  ]);
+
+  // Buscar disponibilidade detalhada quando data mudar (sem depender do profissional)
+  useEffect(() => {
+    const fetchDetailedAvailability = async () => {
+      // Buscar disponibilidade quando tiver data e serviço
+      if (isOpen && selectedDate && serviceId) {
+        setLoadingAvailability(true);
+        try {
+          const dateStr = format(selectedDate, "yyyy-MM-dd");
+
+          // Buscar disponibilidade detalhada para o profissional selecionado
+          const params: any = {
+            date: dateStr,
+            serviceId: serviceId,
+            professionalId: selectedProfessionalId,
+          };
+
+          const detailedResponse = await httpClient
+            .get("/appointments/availability/detailed", {
+              params,
+              headers: {
+                "X-Skip-Toast": true,
+                "x-salon-id": user?.salonId || "",
+              },
+            })
+            .then((res) => res.data);
+
+          // Verificar se a resposta tem a estrutura esperada
+          if (detailedResponse && detailedResponse.slots) {
+            setAvailabilityData(detailedResponse);
+          } else {
+            setAvailabilityData(null);
+          }
+        } catch (error: any) {
+          console.error("Error loading detailed availability:", error);
+
+          // Verificar se é um erro específico da API
+          if (error.response?.data?.code === "INVALID_DATE") {
+            toastAlert.error(
+              error.response.data.message ||
+                "Não é possível verificar disponibilidade para datas passadas"
+            );
+          }
+
+          // Limpar dados em caso de erro
+          setAvailabilityData(null);
+        } finally {
+          setLoadingAvailability(false);
+        }
+      }
+    };
+
+    fetchDetailedAvailability();
+  }, [
+    isOpen,
+    selectedDate,
+    serviceId,
+    solicitacao?.duration,
+    user?.salonId,
+    selectedProfessionalId,
+  ]);
+
+  // Processar slots disponíveis quando availabilityData mudar
+  useEffect(() => {
+    if (availabilityData && availabilityData.slots && selectedDate) {
+      const now = new Date();
+      const isToday =
+        format(selectedDate, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
+      const currentTime = format(now, "HH:mm");
+
+      // Filtrar slots disponíveis
+      const slots = availabilityData.slots
+        .filter((slot: any) => {
+          if (isToday) {
+            return slot.available && slot.time > currentTime;
+          }
+          return slot.available;
+        })
+        .map((slot: any) => slot.time);
+
+      setAvailableSlots(slots);
+
+      // Auto-selecionar horário preferido se disponível (apenas uma vez)
+      if (
+        !hasAutoSelectedTime.current &&
+        solicitacao?.preferredTime &&
+        slots.length > 0
+      ) {
+        if (slots.includes(solicitacao.preferredTime)) {
+          setSelectedTime(solicitacao.preferredTime);
+          hasAutoSelectedTime.current = true;
+        } else if (slots.length > 0) {
+          // Se o horário preferido não está disponível, seleciona o primeiro
+          setSelectedTime(slots[0]);
+          hasAutoSelectedTime.current = true;
+        }
+      } else if (
+        !hasAutoSelectedTime.current &&
+        slots.length > 0 &&
+        !selectedTime
+      ) {
+        // Se não tem horário preferido mas tem slots, seleciona o primeiro
+        setSelectedTime(slots[0]);
+        hasAutoSelectedTime.current = true;
+      }
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [
+    availabilityData,
+    selectedDate,
+    solicitacao?.preferredTime,
+    selectedTime,
+  ]);
+
+  // Função para alterar data
+  const handleDateChange = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setSelectedTime(""); // Limpar horário ao trocar data
+    hasAutoSelectedTime.current = false; // Reset flag para auto-selecionar novamente
+  };
+
+  if (!solicitacao) return null;
+
+  const handleSave = () => {
+    const professional = professionals.find(
+      (p) => p.id === selectedProfessionalId
+    );
+
+    const updatedSolicitacao: SolicitacaoItem = {
+      ...solicitacao,
+      assignedProfessionalId: selectedProfessionalId,
+      assignedProfessionalName: professional?.name || "",
+      finalDate: selectedDate,
+      finalTime: selectedTime,
+      status: "scheduled",
+      serviceId: serviceId, // Include the serviceId for appointment creation
+    };
+
+    onSave(updatedSolicitacao);
+    onClose();
+
+    // Reset form
+    setSelectedProfessionalId("");
+    setSelectedDate(undefined);
+    setSelectedTime("");
+    setAvailabilityData(null);
+  };
+
+  const isFormValid = selectedProfessionalId && selectedDate && selectedTime;
+
+  // All professionals are available for selection
+  const availableProfessionals = professionals;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-7xl max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-xl md:rounded-lg border-none shadow-2xl overflow-hidden flex flex-col"> {/* RESP: Dimensões dinâmicas e arredondamento padrão */}
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-3 border-b shrink-0"> {/* RESP: Header fixo no topo */}
+          <DialogTitle className="text-base md:text-lg font-semibold">
+            Transformar em agendamento - {solicitacao.serviceName}
+          </DialogTitle>
+          <p className="text-xs md:text-sm text-muted-foreground"> {/* RESP: Fonte responsiva */}
+            Cliente: {solicitacao.customerName}
+          </p>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 custom-scrollbar"> {/* RESP: Área de conteúdo com scroll interno e padding reduzido */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2"> {/* RESP: Grid se mantém, mas dentro do scroll */}
+            {/* Lado Esquerdo - Informações e Formulário */}
+            <div className="space-y-4"> {/* RESP: Removido max-h fixo interno para usar o scroll do container pai */}
+              {/* Informações do Cliente */}
+              <div className="bg-card border border-border rounded-lg">
+                <div className="p-4 border-b border-border">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <UserIcon className="h-4 w-4" />
+                    Dados do Cliente
+                  </h3>
+                </div>
+                <div className="px-4 pb-4 pt-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2 text-xs md:text-sm">
+                      <UserIcon className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                      <span>{solicitacao.customerName}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs md:text-sm">
+                      <Phone className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                      <span>{solicitacao.customerPhone}</span>
+                    </div>
+
+                    {solicitacao.customerEmail && (
+                      <div className="flex items-center gap-2 md:col-span-2 text-xs md:text-sm">
+                        <Mail className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                        <span>{solicitacao.customerEmail}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Informações do Serviço */}
+              <div className="bg-card border border-border rounded-lg">
+                <div className="p-4 border-b border-border">
+                  <h3 className="text-sm font-semibold">Serviço Solicitado</h3>
+                </div>
+                <div className="px-4 pb-4 pt-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-xs md:text-sm">
+                    <div>
+                      <Label className="text-[10px] md:text-xs text-muted-foreground">
+                        Serviço
+                      </Label>
+                      <p className="font-medium">{solicitacao.serviceName}</p>
+                    </div>
+
+                    <div>
+                      <Label className="text-[10px] md:text-xs text-muted-foreground">
+                        Categoria
+                      </Label>
+                      <p>{solicitacao.serviceCategory}</p>
+                    </div>
+
+                    <div>
+                      <Label className="text-[10px] md:text-xs text-muted-foreground">
+                        Duração
+                      </Label>
+                      <p>{solicitacao.duration} min</p>
+                    </div>
+
+                    <div>
+                      <Label className="text-[10px] md:text-xs text-muted-foreground">
+                        Valor
+                      </Label>
+                      <p className="font-semibold salon-primary">
+                        R${" "}
+                        {(typeof solicitacao.price === "string"
+                          ? parseFloat(solicitacao.price)
+                          : solicitacao.price
+                        ).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {solicitacao.observations && (
+                    <div>
+                      <Label className="text-[10px] md:text-xs text-muted-foreground">
+                        Observações
+                      </Label>
+                      <p className="text-xs italic bg-muted/50 p-2 rounded"> {/* RESP: Estilo ajustado */}
+                        "{solicitacao.observations}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Preferência do Cliente */}
+              <div className="bg-secondary/50 border border-border rounded-lg">
+                <div className="p-4 border-b border-border">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Preferência Informada pelo Cliente
+                  </h3>
+                </div>
+                <div className="px-4 pb-4 pt-4">
+                  <div className="grid grid-cols-2 gap-3 text-xs md:text-sm">
+                    {solicitacao.preferredDate && (
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                        <span>
+                          {formatDateByTz(new Date(solicitacao.preferredDate))}
+                        </span>
+                      </div>
+                    )}
+
+                    {solicitacao.preferredTime && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                        <span>{solicitacao.preferredTime}</span>
+                      </div>
+                    )}
+
+                    {!solicitacao.preferredDate && !solicitacao.preferredTime && (
+                      <div className="col-span-2 text-muted-foreground text-xs">
+                        Sem preferência de data/hora informada
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulário de Agendamento */}
+              <div className="bg-green-50 border border-green-200 rounded-lg">
+                <div className="p-4 border-b border-green-200">
+                  <h3 className="text-sm font-semibold text-green-700">
+                    Definir Agendamento Final
+                  </h3>
+                  <p className="text-xs text-green-600">
+                    Escolha o profissional, data e horário definitivos
+                  </p>
+                </div>
+                <div className="px-4 pb-4 pt-4 space-y-4">
+                  <div className="flex flex-col gap-1"> {/* RESP: Label conforme padrão */}
+                    <Label className="text-sm font-medium">Profissional *</Label>
+                    <Select
+                      value={selectedProfessionalId}
+                      onValueChange={(value) => {
+                        setSelectedProfessionalId(value);
+                        setSelectedTime(""); // Limpar horário ao trocar profissional
+                        hasAutoSelectedTime.current = false; // Reset flag para auto-selecionar novamente
+                      }}
+                    >
+                      <SelectTrigger className="min-h-[44px] text-base md:text-sm sm:h-9"> {/* RESP: Touch target */}
+                        <SelectValue placeholder="Selecione um profissional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingProfessionals ? (
+                          <div className="p-2">
+                            <Skeleton className="h-8 w-full mb-2" />
+                            <Skeleton className="h-8 w-full" />
+                          </div>
+                        ) : availableProfessionals.length > 0 ? (
+                          availableProfessionals.map((professional) => (
+                            <SelectItem
+                              key={professional.id}
+                              value={professional.id}
+                            >
+                              {getUserDisplayName(professional)}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-muted-foreground">
+                            Nenhum profissional disponível
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-sm font-medium">Data *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal min-h-[44px] text-base md:text-sm sm:h-9",
+                            !selectedDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {selectedDate
+                            ? formatDateByTz(selectedDate)
+                            : "Selecione uma data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={handleDateChange}
+                          locale={ptBR}
+                          disabled={(date) => {
+                            // Desabilitar datas passadas
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            return date < today;
+                          }}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-sm font-medium">Horário *</Label>
+                    <Select
+                      value={selectedTime}
+                      onValueChange={setSelectedTime}
+                      disabled={
+                        !selectedProfessionalId ||
+                        !selectedDate ||
+                        loadingAvailability ||
+                        availableSlots?.length === 0
+                      }
+                    >
+                      <SelectTrigger className="min-h-[44px] text-base md:text-sm sm:h-9"> {/* RESP: Touch target */}
+                        <SelectValue
+                          placeholder={
+                            !selectedProfessionalId
+                              ? "Selecione um profissional primeiro"
+                              : !selectedDate
+                              ? "Selecione uma data primeiro"
+                              : loadingAvailability
+                              ? "Carregando horários..."
+                              : availableSlots?.length === 0
+                              ? "Nenhum horário disponível"
+                              : "Selecione um horário"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingAvailability ? (
+                          <div className="p-2">
+                            <Skeleton className="h-8 w-full mb-2" />
+                            <Skeleton className="h-8 w-full" />
+                          </div>
+                        ) : availableSlots.length > 0 ? (
+                          availableSlots.map((slot) => (
+                            <SelectItem key={slot} value={slot}>
+                              {slot}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-muted-foreground">
+                            {!selectedProfessionalId
+                              ? "Selecione um profissional primeiro"
+                              : !selectedDate
+                              ? "Selecione uma data primeiro"
+                              : "Nenhum horário disponível"}
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Lado Direito - Agenda com Filtros */}
+            <div className="space-y-4"> {/* RESP: Removido max-h fixo interno */}
+              <div className="bg-card border border-border rounded-lg">
+                <div className="p-4 border-b border-border">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Visualizar Agenda
+                  </h3>
+                </div>
+                <div className="px-4 pb-4 pt-4 space-y-4">
+                  {/* Informações da visualização */}
+                  <div className="space-y-3">
+                    <div className="text-xs text-muted-foreground">
+                      <p>
+                        A agenda do profissional será exibida após selecionar o
+                        profissional e a data no formulário ao lado.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Data selecionada para agenda */}
+                  {selectedDate && selectedProfessionalId ? (
+                    <div className="text-center p-2 bg-primary/10 border border-primary/20 rounded">
+                      <span className="text-xs font-medium text-primary">
+                        📅 Visualizando agenda para:{" "}
+                        {formatDateByTz(selectedDate)}
+                      </span>
+                    </div>
+                  ) : selectedDate && !selectedProfessionalId ? (
+                    <div className="text-center p-2 bg-yellow-100/50 border border-yellow-200 rounded">
+                      <span className="text-xs font-medium text-yellow-700">
+                        ⚠️ Selecione um profissional para visualizar a agenda
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-center p-2 bg-muted border border-border rounded">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        ⚠️ Selecione uma data e profissional para ver a agenda
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Grade de horários - só mostra se data e profissional selecionados */}
+                  {selectedDate &&
+                  selectedProfessionalId &&
+                  availabilityData?.slots ? (
+                    <div className="space-y-4">
+                      {availabilityData.slots &&
+                      availabilityData.slots.length > 0 ? (
+                        <div className="border rounded-lg p-3">
+                          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <UserIcon className="h-4 w-4" />
+                            {availabilityData.professionalName || "Profissional"}
+                            <Badge variant="outline" className="ml-auto text-[10px]">
+                              {
+                                availabilityData.slots.filter(
+                                  (s: any) => s.available
+                                ).length
+                              }{" "}
+                              livres de {availabilityData.slots.length}
+                            </Badge>
+                          </h4>
+
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-4 gap-2"> {/* RESP: Grid mais flexível */}
+                            {availabilityData.slots.map(
+                              (slot: any, index: number) => {
+                                const now = new Date();
+                                const isToday =
+                                  format(selectedDate, "yyyy-MM-dd") ===
+                                  format(now, "yyyy-MM-dd");
+                                const currentTime = format(now, "HH:mm");
+                                const isPast = isToday && slot.time < currentTime;
+                                const isAvailable = slot.available && !isPast;
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className={cn(
+                                      "p-2 rounded text-[10px] md:text-xs text-center transition-colors font-medium border", /* RESP: Adicionada borda */
+                                      isAvailable
+                                        ? "bg-green-50 text-green-800 border-green-200 hover:bg-green-100 cursor-pointer"
+                                        : isPast
+                                        ? "bg-muted text-muted-foreground border-transparent cursor-not-allowed opacity-50"
+                                        : slot.reason === "appointment"
+                                        ? "bg-red-50 text-red-800 border-red-200 cursor-not-allowed opacity-75"
+                                        : slot.reason === "break"
+                                        ? "bg-yellow-50 text-yellow-800 border-yellow-200 cursor-not-allowed opacity-75"
+                                        : slot.reason === "absence"
+                                        ? "bg-purple-50 text-purple-800 border-purple-200 cursor-not-allowed opacity-75"
+                                        : slot.reason === "non-working"
+                                        ? "bg-muted/30 text-muted-foreground border-border cursor-not-allowed opacity-75"
+                                        : slot.reason === "insufficient-duration"
+                                        ? "bg-orange-50 text-orange-800 border-orange-200 cursor-not-allowed opacity-75"
+                                        : "bg-muted text-muted-foreground border-border cursor-not-allowed opacity-75",
+                                      selectedTime === slot.time &&
+                                        "ring-2 ring-primary border-transparent"
+                                    )}
+                                    onClick={() => {
+                                      if (isAvailable) {
+                                        setSelectedTime(slot.time);
+                                      }
+                                    }}
+                                    title={
+                                      isPast
+                                        ? "Horário já passou"
+                                        : !slot.available
+                                        ? slot.reason === "appointment"
+                                          ? "Horário ocupado"
+                                          : slot.reason === "break"
+                                          ? "Horário de intervalo"
+                                          : slot.reason === "absence"
+                                          ? "Profissional ausente"
+                                          : slot.reason === "non-working"
+                                          ? "Fora do horário de trabalho"
+                                          : slot.reason ===
+                                            "insufficient-duration"
+                                          ? "Tempo insuficiente"
+                                          : "Horário indisponível"
+                                        : "Horário disponível"
+                                    }
+                                  >
+                                    <div className="font-bold">{slot.time}</div>
+                                  </div>
+                                );
+                              }
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground text-xs font-medium">
+                          <p>Nenhum horário disponível para esta data</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : selectedDate && loadingAvailability ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Clock className="h-10 w-10 mx-auto mb-2 opacity-50 animate-spin" />
+                      <p className="text-xs">Carregando horários...</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-xs">
+                        Selecione uma data no formulário para visualizar os
+                        horários disponíveis
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* FOOTER - STICKY FIXED */}
+        <div className="sticky bottom-0 z-10 bg-background px-4 md:px-6 pt-3 pb-4 border-t shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3"> {/* RESP: Footer fixo com botões empilhados no mobile */}
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-[44px]">
+            Cancelar
+          </Button>
+
+          <Button
+            onClick={handleSave}
+            className="w-full sm:w-auto min-h-[44px] salon-button-primary"
+            disabled={!isFormValid || !selectedSalon?.active}
+          >
+            Confirmar Agendamento
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

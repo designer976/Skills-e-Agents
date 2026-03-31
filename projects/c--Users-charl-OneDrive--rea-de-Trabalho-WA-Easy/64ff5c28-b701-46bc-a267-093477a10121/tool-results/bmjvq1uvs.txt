@@ -1,0 +1,2700 @@
+diff --git a/frontend/src/App.tsx b/frontend/src/App.tsx
+index c3f5e49..e8e6517 100644
+--- a/frontend/src/App.tsx
++++ b/frontend/src/App.tsx
+@@ -149,14 +149,7 @@ const App = () => (
+               position="top-right"
+               duration={5000}
+               expand={true}
+-              richColors
+               closeButton
+-              toastOptions={{
+-                className: "animate-fade-in",
+-                style: {
+-                  maxWidth: "500px",
+-                },
+-              }}
+             />
+             <BrowserRouter>
+               <PageViewTracker />
+diff --git a/frontend/src/components/agenda/AgendaFilters.tsx b/frontend/src/components/agenda/AgendaFilters.tsx
+index a8028e1..16744be 100644
+--- a/frontend/src/components/agenda/AgendaFilters.tsx
++++ b/frontend/src/components/agenda/AgendaFilters.tsx
+@@ -134,7 +134,7 @@ export function AgendaFilters({
+   // Carregar filtros salvos na inicialização
+   const savedFilters = loadSavedFilters();
+ 
+-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(savedFilters?.selectedSpecialty || null);
++  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(savedFilters?.selectedSpecialties || []);
+   const [selectedServices, setSelectedServices] = useState<string[]>(savedFilters?.selectedServices || []);
+   const [selectedProfessionals, setSelectedProfessionals] = useState<string[]>(savedFilters?.selectedProfessionals || []);
+   const [selectedStatus, setSelectedStatus] = useState<string | null>(savedFilters?.selectedStatus || null);
+@@ -160,13 +160,13 @@ export function AgendaFilters({
+   // Salvar filtros sempre que mudarem
+   useEffect(() => {
+     const filters = {
+-      selectedSpecialty,
++      selectedSpecialties,
+       selectedServices,
+       selectedProfessionals,
+       selectedStatus,
+     };
+     saveFilters(filters);
+-  }, [selectedSpecialty, selectedServices, selectedProfessionals, selectedStatus]);
++  }, [selectedSpecialties, selectedServices, selectedProfessionals, selectedStatus]);
+ 
+   // Aplicar filtros salvos ao carregar
+   useEffect(() => {
+@@ -351,78 +351,12 @@ export function AgendaFilters({
+         return;
+       }
+ 
+-      // Se não há especialidade selecionada ou é "all", mostra todos os profissionais
+-      if (!selectedSpecialty || selectedSpecialty === "all") {
++      // Se não há especialidades selecionadas, mostra todos os profissionais
++      if (selectedSpecialties.length === 0) {
+         setProfessionals(allProfessionals);
+         onFilteredProfessionalsChange?.(allProfessionals);
+         return;
+       }
+-
+-      // Caso especial para "Outros"
+-      if (selectedSpecialty === 'outros') {
+-        setProfessionals(allProfessionals);
+-        onFilteredProfessionalsChange?.(allProfessionals);
+-        return;
+-      }
+-
+-      // Se há apenas especialidade selecionada (sem serviço específico)
+-      // Buscar todos os profissionais que trabalham com qualquer serviço desta especialidade
+-      const specialty = specialties.find(s => s.id === selectedSpecialty);
+-
+-      if (!specialty) {
+-        setProfessionals(allProfessionals);
+-        onFilteredProfessionalsChange?.(allProfessionals);
+-        return;
+-      }
+-
+-      // Se a especialidade não tem serviços, mostra lista vazia (nenhum profissional trabalha com ela)
+-      if (specialty.services.length === 0) {
+-        setProfessionals([]);
+-        onFilteredProfessionalsChange?.([]);
+-        return;
+-      }
+-
+-      // Buscar profissionais para cada serviço da especialidade
+-      try {
+-        const professionalsByService = await Promise.all(
+-          specialty.services.map(async (service) => {
+-            // Usar cache se disponível
+-            if (professionalsByServiceCache.has(service.id)) {
+-              const cachedProfs = professionalsByServiceCache.get(service.id)!;
+-              return cachedProfs;
+-            }
+-
+-            try {
+-              const profs = await serviceService.getProfessionals(service.id);
+-              const mappedProfs = profs.map((prof: any) => ({
+-                id: prof.userId || prof.professionalId || prof.id,
+-                name: prof.userName || prof.professionalName || prof.name || 'Profissional'
+-              }));
+-
+-              // Adicionar ao cache
+-              professionalsByServiceCache.set(service.id, mappedProfs);
+-
+-              return mappedProfs;
+-            } catch {
+-              return [];
+-            }
+-          })
+-        );
+-
+-        // Combinar e remover duplicatas
+-        const allServiceProfessionals = professionalsByService.flat();
+-        filteredProfessionals = Array.from(
+-          new Map(allServiceProfessionals.map(prof => [prof.id, prof])).values()
+-        );
+-
+-        // Sempre usa os profissionais filtrados, mesmo que vazio
+-        // Isso garante que a mensagem "Nenhum profissional disponível" apareça quando apropriado
+-        setProfessionals(filteredProfessionals);
+-        onFilteredProfessionalsChange?.(filteredProfessionals);
+-      } catch (err) {
+-        setProfessionals(allProfessionals);
+-        onFilteredProfessionalsChange?.(allProfessionals);
+-      }
+     };
+ 
+     // Só executar se não for um profissional (profissionais não veem o filtro)
+@@ -430,24 +364,39 @@ export function AgendaFilters({
+       filterProfessionalsBySpecialty();
+     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [selectedSpecialty, selectedServices, allProfessionals, specialties, userRole, professionalsByServiceCache]); // onFilteredProfessionalsChange omitido intencionalmente para evitar loops
++  }, [selectedSpecialties, selectedServices, allProfessionals, specialties, userRole, professionalsByServiceCache]); // onFilteredProfessionalsChange omitido intencionalmente para evitar loops
+ 
+-  const handleSpecialtySelect = (specialtyId: string): void => {
++  const handleSpecialtyToggle = (specialtyId: string): void => {
+     if (specialtyId === "all") {
+-      setSelectedSpecialty(null);
++      setSelectedSpecialties([]);
+       setSelectedServices([]);
+       if (onServiceFilter) onServiceFilter(null);
+       onSpecialtyLabelChange?.(null);
+       return;
+     }
+ 
+-    const specialty = specialties.find(s => s.id === specialtyId);
+-    const serviceIds = specialty ? specialty.services.map(s => s.id) : [];
++    const newSpecialties = selectedSpecialties.includes(specialtyId)
++      ? selectedSpecialties.filter(id => id !== specialtyId)
++      : [...selectedSpecialties, specialtyId];
++
++    setSelectedSpecialties(newSpecialties);
+ 
+-    setSelectedSpecialty(specialtyId);
+-    setSelectedServices(serviceIds);
+-    if (onServiceFilter) onServiceFilter(serviceIds.length > 0 ? serviceIds : null);
+-    onSpecialtyLabelChange?.(specialty?.name ?? null);
++    const allServiceIds = newSpecialties.flatMap(sId => {
++      const spec = specialties.find(s => s.id === sId);
++      return spec ? spec.services.map(sv => sv.id) : [];
++    });
++
++    setSelectedServices(allServiceIds);
++    if (onServiceFilter) onServiceFilter(allServiceIds.length > 0 ? allServiceIds : null);
++
++    if (newSpecialties.length === 0) {
++      onSpecialtyLabelChange?.(null);
++    } else if (newSpecialties.length === 1) {
++      const spec = specialties.find(s => s.id === newSpecialties[0]);
++      onSpecialtyLabelChange?.(spec?.name ?? null);
++    } else {
++      onSpecialtyLabelChange?.(`Especialidades (${newSpecialties.length})`);
++    }
+   };
+ 
+   const handleServiceToggle = (serviceId: string): void => {
+@@ -489,7 +438,7 @@ export function AgendaFilters({
+   };
+ 
+   const clearFilters = (): void => {
+-    setSelectedSpecialty(null);
++    setSelectedSpecialties([]);
+     setSelectedServices([]);
+     setSelectedStatus(null);
+     setSearchQuery("");
+@@ -517,7 +466,7 @@ export function AgendaFilters({
+   useEffect(() => {
+     if (!removeSignal) return;
+     if (removeSignal.type === 'all') clearFilters();
+-    else if (removeSignal.type === 'specialty') handleSpecialtySelect("all");
++    else if (removeSignal.type === 'specialty') handleSpecialtyToggle("all");
+     else if (removeSignal.type === 'professional' && removeSignal.id) handleProfessionalToggle(removeSignal.id);
+     else if (removeSignal.type === 'status') { setSelectedStatus(null); onStatusFilter(null); }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+@@ -555,8 +504,8 @@ export function AgendaFilters({
+   };
+ 
+   const getSelectedSpecialtyName = (): string => {
+-    if (!selectedSpecialty) return "Especialidades";
+-    return specialties.find(s => s.id === selectedSpecialty)?.name || "Especialidade";
++    if (selectedSpecialties.length === 0) return "Especialidades";
++    return `Especialidade (${selectedSpecialties.length})`;
+   };
+ 
+   const getSelectedProfessionalName = (): string => {
+@@ -567,14 +516,14 @@ export function AgendaFilters({
+     return `${selectedProfessionals.length} selecionados`;
+   };
+ 
+-  const hasActiveFilters = selectedSpecialty || (userRole !== 'Profissional' && selectedProfessionals.length > 0) || selectedStatus;
++  const hasActiveFilters = selectedSpecialties.length > 0 || (userRole !== 'Profissional' && selectedProfessionals.length > 0) || selectedStatus;
+ 
+   if (variant === 'mobile') {
+     return (
+       <div className="space-y-6 max-h-[calc(100vh-150px)] overflow-y-auto pb-2">
+         {/* Especialidades */}
+         <div>
+-          <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Especialidades</p>
++          <p className="text-button font-semibold text-primary uppercase tracking-wider mb-3">Especialidades</p>
+           <div className="relative mb-2">
+             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+             <Input
+@@ -585,11 +534,11 @@ export function AgendaFilters({
+             />
+           </div>
+           <button
+-            onClick={() => { handleSpecialtySelect("all"); setSearchQuery(""); }}
++            onClick={() => { handleSpecialtyToggle("all"); setSearchQuery(""); }}
+             className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+           >
+             <span className="text-body">Todos</span>
+-            {!selectedSpecialty && <Check className="w-4 h-4 text-primary" />}
++            {selectedSpecialties.length === 0 && <Check className="w-4 h-4 text-primary" />}
+           </button>
+           {loading ? (
+             <p className="text-body text-muted-foreground px-3 py-2">Carregando...</p>
+@@ -597,11 +546,14 @@ export function AgendaFilters({
+             getFilteredSpecialties().map((specialty) => (
+               <button
+                 key={specialty.id}
+-                onClick={() => { handleSpecialtySelect(specialty.id); setSearchQuery(""); }}
+-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
++                onClick={() => { handleSpecialtyToggle(specialty.id); }}
++                className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+               >
+-                <span className="text-body">{specialty.name}</span>
+-                {selectedSpecialty === specialty.id && <Check className="w-4 h-4 text-primary" />}
++                <Checkbox
++                  checked={selectedSpecialties.includes(specialty.id)}
++                  className="pointer-events-none"
++                />
++                <span className="text-body flex-1">{specialty.name}</span>
+               </button>
+             ))
+           )}
+@@ -610,7 +562,7 @@ export function AgendaFilters({
+         {/* Profissionais */}
+         {userRole !== 'Profissional' && (
+           <div>
+-            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Profissionais</p>
++            <p className="text-button font-semibold text-primary uppercase tracking-wider mb-3">Profissionais</p>
+             <div className="relative mb-2">
+               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+               <Input
+@@ -635,7 +587,7 @@ export function AgendaFilters({
+ 
+         {/* Status */}
+         <div>
+-          <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Status</p>
++          <p className="text-button font-semibold text-primary uppercase tracking-wider mb-3">Status</p>
+           <button
+             onClick={() => handleStatusSelect("all")}
+             className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+@@ -663,7 +615,7 @@ export function AgendaFilters({
+       {/* Filtro por Especialidade/Serviços */}
+       <DropdownMenu open={servicesDropdownOpen} onOpenChange={setServicesDropdownOpen}>
+         <DropdownMenuTrigger asChild>
+-          <Button variant="outline" size="sm" className={selectedSpecialty ? "bg-primary/10 border-primary/40 text-primary" : ""}>
++          <Button variant="outline" size="sm" className={selectedSpecialties.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+             <Filter className="h-4 w-4 flex-shrink-0" />
+             <span className="truncate">{loading ? "Carregando..." : getSelectedSpecialtyName()}</span>
+             <ChevronDown className="h-4 w-4 flex-shrink-0" />
+@@ -686,16 +638,12 @@ export function AgendaFilters({
+           </div>
+ 
+           {/* Opção para limpar seleção */}
+-          {selectedServices.length > 0 && (
++          {selectedSpecialties.length > 0 && (
+             <>
+               <DropdownMenuItem
+                 onClick={() => {
+-                  setSelectedServices([]);
+-                  setSelectedSpecialty(null);
++                  handleSpecialtyToggle("all");
+                   setSearchQuery("");
+-                  if (onServiceFilter) {
+-                    onServiceFilter(null);
+-                  }
+                 }}
+                 className="text-body text-muted-foreground"
+               >
+@@ -706,8 +654,8 @@ export function AgendaFilters({
+           )}
+ 
+           <DropdownMenuItem onClick={() => {
+-            handleSpecialtySelect("all");
+-            setSearchQuery(""); // Limpa a busca ao selecionar "Todos"
++            handleSpecialtyToggle("all");
++            setSearchQuery("");
+           }}>
+             Todos
+           </DropdownMenuItem>
+@@ -732,13 +680,17 @@ export function AgendaFilters({
+                 return filteredSpecialties.map((specialty) => (
+                   <DropdownMenuItem
+                     key={specialty.id}
+-                    onClick={() => {
+-                      handleSpecialtySelect(specialty.id);
+-                      setSearchQuery("");
++                    onSelect={(e) => {
++                      e.preventDefault();
++                      handleSpecialtyToggle(specialty.id);
+                     }}
+-                    className={selectedSpecialty === specialty.id ? "bg-accent" : ""}
++                    className="flex items-center gap-2"
+                   >
+-                    {specialty.name}
++                    <Checkbox
++                      checked={selectedSpecialties.includes(specialty.id)}
++                      className="pointer-events-none"
++                    />
++                    <span className="flex-1">{specialty.name}</span>
+                   </DropdownMenuItem>
+                 ));
+               })()}
+@@ -851,7 +803,7 @@ export function AgendaFilters({
+ 
+       {/* Botão para limpar filtros */}
+       {hasActiveFilters && (
+-        <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-foreground">
++        <Button variant="secondary" size="sm" onClick={clearFilters}>
+           Limpar
+         </Button>
+       )}
+diff --git a/frontend/src/components/forms/UserBasicDataForm.tsx b/frontend/src/components/forms/UserBasicDataForm.tsx
+index ea5a63e..bab3ebb 100644
+--- a/frontend/src/components/forms/UserBasicDataForm.tsx
++++ b/frontend/src/components/forms/UserBasicDataForm.tsx
+@@ -1,4 +1,4 @@
+-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
++import { FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+ import { cn } from "@/lib/utils";
+ import { Input } from "@/components/ui/input";
+ import { Textarea } from "@/components/ui/textarea";
+@@ -64,10 +64,9 @@ export function UserBasicDataForm({
+             control={control}
+             name="fullName"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1"> {/* RESP: Padrão label acima do input */}
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Nome Completo *</FormLabel>
++              <FormItem>
+                 <FormControl>
+-                  <Input {...field} placeholder="Nome completo do usuário" className="salon-input w-full" maxLength={100} />
++                  <Input {...field} label="Nome Completo *" placeholder="Nome completo do usuário" className="salon-input w-full" maxLength={100} />
+                 </FormControl>
+                 <FormMessage className="text-[10px]" />
+               </FormItem>
+@@ -78,11 +77,10 @@ export function UserBasicDataForm({
+             control={control}
+             name="accessLevel"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Perfil *</FormLabel>
++              <FormItem>
+                 <Select onValueChange={field.onChange} value={field.value}>
+                   <FormControl>
+-                    <SelectTrigger className="salon-input w-full">
++                    <SelectTrigger label="Perfil *" className="salon-input w-full">
+                       <SelectValue placeholder="Selecione o perfil" />
+                     </SelectTrigger>
+                   </FormControl>
+@@ -104,10 +102,9 @@ export function UserBasicDataForm({
+             control={control}
+             name="nickname"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Apelido *</FormLabel>
++              <FormItem>
+                 <FormControl>
+-                  <Input {...field} placeholder="Como é conhecido" className="salon-input w-full" maxLength={50} />
++                  <Input {...field} label="Apelido *" placeholder="Como é conhecido" className="salon-input w-full" maxLength={50} />
+                 </FormControl>
+                 <FormMessage className="text-[10px]" />
+               </FormItem>
+@@ -118,11 +115,11 @@ export function UserBasicDataForm({
+             control={control}
+             name="whatsapp"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">WhatsApp</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
++                    label="WhatsApp"
+                     placeholder="(00) 00000-0000"
+                     className="salon-input w-full"
+                     onChange={(e) => {
+@@ -144,12 +141,12 @@ export function UserBasicDataForm({
+             control={control}
+             name="email"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">E-mail *</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
+                     type="email"
++                    label="E-mail *"
+                     placeholder="usuario@exemplo.com"
+                     className={cn(
+                       "salon-input w-full",
+@@ -170,11 +167,11 @@ export function UserBasicDataForm({
+             control={control}
+             name="cpf"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">CPF</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
++                    label="CPF"
+                     placeholder="000.000.000-00"
+                     className={cn(
+                       "salon-input w-full",
+@@ -202,12 +199,12 @@ export function UserBasicDataForm({
+             control={control}
+             name="birthDate"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Data de Nascimento</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
+                     type="date"
++                    label="Data de Nascimento"
+                     className="salon-input w-full"
+                   />
+                 </FormControl>
+@@ -220,11 +217,11 @@ export function UserBasicDataForm({
+             control={control}
+             name="cnpj"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">CNPJ</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
++                    label="CNPJ"
+                     placeholder="00.000.000/0000-00"
+                     className="salon-input w-full"
+                     onChange={(e) => {
+@@ -246,12 +243,12 @@ export function UserBasicDataForm({
+             control={control}
+             name="admissionDate"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Data de Entrada *</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
+                     type="date"
++                    label="Data de Entrada *"
+                     className="salon-input w-full"
+                   />
+                 </FormControl>
+@@ -264,12 +261,12 @@ export function UserBasicDataForm({
+             control={control}
+             name="dismissalDate"
+             render={({ field }) => (
+-              <FormItem className="flex flex-col gap-1">
+-                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Data de Saída</FormLabel>
++              <FormItem>
+                 <FormControl>
+                   <Input
+                     {...field}
+                     type="date"
++                    label="Data de Saída"
+                     className="salon-input w-full"
+                   />
+                 </FormControl>
+@@ -284,11 +281,11 @@ export function UserBasicDataForm({
+           control={control}
+           name="description"
+           render={({ field }) => (
+-            <FormItem className="flex flex-col gap-1">
+-              <FormLabel className="text-xs font-semibold uppercase tracking-wider">Descrição</FormLabel>
++            <FormItem>
+               <FormControl>
+                 <Textarea
+                   {...field}
++                  label="Descrição"
+                   placeholder="Informações adicionais sobre o usuário"
+                   className="salon-input min-h-[120px] w-full resize-none"
+                   maxLength={500}
+diff --git a/frontend/src/components/layout/EasySalonSidebar.tsx b/frontend/src/components/layout/EasySalonSidebar.tsx
+index 376a52d..dd1d4b5 100644
+--- a/frontend/src/components/layout/EasySalonSidebar.tsx
++++ b/frontend/src/components/layout/EasySalonSidebar.tsx
+@@ -2,6 +2,7 @@ import { ReactNode, useCallback } from "react";
+ import { NavLink, useLocation } from "react-router-dom";
+ import { X as X } from "lucide-react";
+ import { cn } from "@/lib/utils";
++import { Badge } from "@/components/ui/badge";
+ import { NavItem, NavSection } from "@/types/navigation";
+ import { analytics } from "@/lib/analytics";
+ import { useAuth } from "@/contexts/AuthContext";
+@@ -49,13 +50,13 @@ export function EasySalonSidebar({
+   const navLinkClasses = (isActive: boolean) => cn(
+     "flex items-center justify-between px-3 py-2 rounded-[10px] text-body transition-colors",
+     isActive
+-      ? "bg-accent text-accent-foreground font-medium"
+-      : "text-sidebar-foreground hover:bg-muted"
++      ? "bg-primary text-primary-foreground font-medium"
++      : "text-sidebar-foreground hover:bg-secondary"
+   );
+ 
+   const iconClasses = (isActive: boolean) => cn(
+-    "w-5 h-5 shrink-0",
+-    isActive ? "text-accent-foreground" : "text-muted-foreground"
++    "w-[18px] h-[18px] shrink-0",
++    isActive ? "text-primary-foreground" : "text-foreground"
+   );
+ 
+   // Renderiza um NavItem como NavLink ou button
+@@ -75,11 +76,11 @@ export function EasySalonSidebar({
+           }}
+           className={cn(
+             "w-full flex items-center justify-between px-3 py-2 rounded-[10px] text-body transition-colors",
+-            "text-sidebar-foreground hover:bg-muted"
++            "text-sidebar-foreground hover:bg-secondary"
+           )}
+         >
+           <div className="flex items-center gap-3">
+-            <Icon className="w-5 h-5 shrink-0 text-muted-foreground" />
++            <Icon className="w-[18px] h-[18px] shrink-0 text-foreground" />
+             <span>{navItem.title}</span>
+           </div>
+         </button>
+@@ -107,10 +108,10 @@ export function EasySalonSidebar({
+   return (
+     <div className={sidebarClasses}>
+ 
+-      {/* Header */}
+-      <div className="p-4 pt-6 border-b flex-shrink-0 flex items-center justify-between">
+-        <h2 className="text-body font-medium text-foreground">{title}</h2>
+-        {variant === 'drawer' && (
++      {/* Header — apenas no drawer mobile */}
++      {variant === 'drawer' && (
++        <div className="p-4 pt-6 flex-shrink-0 flex items-center justify-between">
++          <Badge variant="secondary">{title}</Badge>
+           <button
+             onClick={onClose}
+             className="flex items-center justify-center w-8 h-8 rounded-[10px] hover:bg-muted transition-colors"
+@@ -118,8 +119,8 @@ export function EasySalonSidebar({
+           >
+             <X className="w-5 h-5 text-muted-foreground" />
+           </button>
+-        )}
+-      </div>
++        </div>
++      )}
+ 
+       {/* Navigation */}
+       <nav className="flex-1 px-3 py-2 overflow-y-auto min-h-0">
+@@ -131,7 +132,7 @@ export function EasySalonSidebar({
+               return (
+                 <div key={index} className={cn(index > 0 && "mt-6")}>
+                   {section.title && (
+-                    <p className="px-3 mb-2 text-xs font-medium text-muted-foreground tracking-wide uppercase">
++                    <p className="px-3 mb-2 text-button font-medium text-muted-foreground tracking-wide uppercase">
+                       {section.title}
+                     </p>
+                   )}
+@@ -154,8 +155,8 @@ export function EasySalonSidebar({
+       </nav>
+ 
+       {/* Rodapé com versão */}
+-      <div className="p-4 mt-auto border-t border-border flex-shrink-0">
+-        <span className="text-xs text-muted-foreground">v0.0.64</span>
++      <div className="p-4 mt-auto flex-shrink-0">
++        <Badge variant="secondary">v0.0.64</Badge>
+       </div>
+     </div>
+   );
+diff --git a/frontend/src/components/layout/Header.tsx b/frontend/src/components/layout/Header.tsx
+index 6bdb141..aa1c172 100644
+--- a/frontend/src/components/layout/Header.tsx
++++ b/frontend/src/components/layout/Header.tsx
+@@ -17,7 +17,9 @@ import {
+ } from "lucide-react";
+ import { useEffect, useRef, useState } from "react";
+ import { useLocation, useNavigate } from "react-router-dom";
++import { Badge } from "@/components/ui/badge";
+ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
++import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+ import easySalonLogo from "@/assets/easy-logo.svg";
+ 
+ interface HeaderProps {
+@@ -136,19 +138,19 @@ export function Header({ onMenuClick }: HeaderProps) {
+       <button
+         key={salon.id}
+         onClick={() => handleSalonSelect(salon)}
+-        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-b-0 ${
+-          isSelected ? "bg-primary/10 border-l-2 border-l-primary" : ""
++        className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left rounded-[14px] ${
++          isSelected ? "bg-primary hover:bg-primary" : "hover:bg-secondary"
+         } ${expired ? "bg-red-50/50" : ""}`}
+       >
+-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${expired ? "bg-red-100/50" : "bg-primary/10"}`}>
+-          <Building2 className={`w-4 h-4 ${expired ? "text-red-500" : "text-primary"}`} />
++        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${expired ? "bg-red-100/50" : isSelected ? "bg-primary-foreground/20" : "bg-primary/10"}`}>
++          <Building2 className={`w-4 h-4 ${expired ? "text-red-500" : isSelected ? "text-primary-foreground" : "text-primary"}`} />
+         </div>
+         <div className="flex-1 min-w-0">
+           <div className="flex items-center gap-2">
+-            <p className="text-body font-medium text-foreground truncate">{salon.name}</p>
++            <p className={`text-body font-medium truncate ${isSelected ? "text-primary-foreground" : "text-foreground"}`}>{salon.name}</p>
+             {expired && <AlertCircle className="w-3 h-3 text-red-500" />}
+           </div>
+-          <p className="text-xs text-muted-foreground">{salon.phone || "(s/ contato)"}</p>
++          <p className={`text-button ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{salon.phone || "(s/ contato)"}</p>
+         </div>
+       </button>
+     );
+@@ -167,6 +169,11 @@ export function Header({ onMenuClick }: HeaderProps) {
+             <Menu className="w-6 h-6 text-foreground" />
+           </button>
+           <img src={easySalonLogo} alt="Easy Salon" className="hidden md:block h-7 w-auto" />
++          {(isSalonArea ? selectedSalon?.name : isAdminArea ? "Easy Salon" : null) && (
++            <Badge variant="secondary" className="hidden md:inline-flex">
++              {isSalonArea ? selectedSalon?.name : "Easy Salon"}
++            </Badge>
++          )}
+         </div>
+ 
+         {/* Logo — mobile only, absolutely centered */}
+@@ -182,20 +189,34 @@ export function Header({ onMenuClick }: HeaderProps) {
+           {/* Minha página web + Agendamento IA — desktop only */}
+           {isSalonArea && (
+             <>
+-              <button
+-                onClick={() => window.open(`/agenda/${selectedSalon?.slug}`, "_blank")}
+-                aria-label="Minha página web"
+-                className="hidden md:flex w-[35px] h-[35px] items-center justify-center border border-[#CE4836] rounded-lg hover:bg-[#CE4836]/10 transition-colors"
+-              >
+-                <AppWindow className="w-4 h-4 text-[#CE4836]" />
+-              </button>
+-              <button
+-                onClick={() => window.open("https://wa.me/5541992938071", "_blank")}
+-                aria-label="Agendamento IA"
+-                className="hidden md:flex w-[35px] h-[35px] items-center justify-center border border-[#CE4836] rounded-lg hover:bg-[#CE4836]/10 transition-colors"
+-              >
+-                <Bot className="w-4 h-4 text-[#CE4836]" />
+-              </button>
++              <TooltipProvider>
++                <Tooltip>
++                  <TooltipTrigger asChild>
++                    <button
++                      onClick={() => window.open(`/agenda/${selectedSalon?.slug}`, "_blank")}
++                      aria-label="Minha página web"
++                      className="hidden md:flex w-[35px] h-[35px] items-center justify-center border border-[#CE4836] rounded-lg hover:bg-[#CE4836]/10 transition-colors"
++                    >
++                      <AppWindow className="w-4 h-4 text-[#CE4836]" />
++                    </button>
++                  </TooltipTrigger>
++                  <TooltipContent>Minha página web</TooltipContent>
++                </Tooltip>
++              </TooltipProvider>
++              <TooltipProvider>
++                <Tooltip>
++                  <TooltipTrigger asChild>
++                    <button
++                      onClick={() => window.open("https://wa.me/5541992938071", "_blank")}
++                      aria-label="Agendamento IA"
++                      className="hidden md:flex w-[35px] h-[35px] items-center justify-center border border-[#CE4836] rounded-lg hover:bg-[#CE4836]/10 transition-colors"
++                    >
++                      <Bot className="w-4 h-4 text-[#CE4836]" />
++                    </button>
++                  </TooltipTrigger>
++                  <TooltipContent>Agendamento IA</TooltipContent>
++                </Tooltip>
++              </TooltipProvider>
+             </>
+           )}
+ 
+@@ -203,7 +224,7 @@ export function Header({ onMenuClick }: HeaderProps) {
+           <div className="relative hidden md:block" ref={salonDropdownRef}>
+             <button
+               onClick={() => setSalonDropdownOpen(!salonDropdownOpen)}
+-              className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg transition-colors hover:bg-muted cursor-pointer h-[38px] sm:h-[35px]"
++              className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg transition-colors hover:bg-secondary cursor-pointer h-[38px] sm:h-[35px]"
+             >
+               <Building2 className="w-4 h-4 text-muted-foreground" />
+               <span className="text-body text-foreground">
+@@ -214,12 +235,12 @@ export function Header({ onMenuClick }: HeaderProps) {
+ 
+             {salonDropdownOpen && (
+               <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+-                <div className="max-h-96 overflow-y-auto">
++                <div className="max-h-96 overflow-y-auto p-2 flex flex-col gap-1">
+                   {/* Admin/Network panels */}
+                   {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+                     <button
+                       onClick={handleAdminPanel}
+-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border bg-muted/30"
++                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left rounded-[14px]"
+                     >
+                       <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                         <LayoutDashboard className="w-4 h-4 text-primary" />
+@@ -232,8 +253,8 @@ export function Header({ onMenuClick }: HeaderProps) {
+                   )}
+ 
+                   {/* Section header */}
+-                  <div className="px-4 py-2 bg-muted/50 border-b border-border">
+-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Salões</p>
++                  <div className="px-4 py-2 bg-tertiary rounded-[8px]">
++                    <p className="text-button font-medium text-muted-foreground uppercase tracking-wider">Salões</p>
+                   </div>
+ 
+                   {loadingSalons ? (
+@@ -252,7 +273,7 @@ export function Header({ onMenuClick }: HeaderProps) {
+           <div className="relative" ref={userDropdownRef}>
+             <button
+               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+-              className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 hover:bg-muted rounded-lg transition-colors"
++              className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 hover:bg-secondary rounded-lg transition-colors"
+             >
+               <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                 <span className="text-primary-foreground text-xs font-semibold">
+diff --git a/frontend/src/components/layout/PageHeader.tsx b/frontend/src/components/layout/PageHeader.tsx
+index dd3e0cf..b8a794b 100644
+--- a/frontend/src/components/layout/PageHeader.tsx
++++ b/frontend/src/components/layout/PageHeader.tsx
+@@ -23,7 +23,7 @@ export function PageHeader({
+   return (
+     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 mb-6"> {/* RESP: Breakpoint md e gaps responsivos */}
+       <div>
+-        <h1 className="text-xl md:text-2xl font-semibold text-foreground">{title}</h1>
++        <h1 className="text-page-title text-foreground">{title}</h1>
+         {subtitle && <p className="text-body text-muted-foreground mt-1">{subtitle}</p>}
+       </div>
+ 
+diff --git a/frontend/src/components/modals/ClientModal.tsx b/frontend/src/components/modals/ClientModal.tsx
+index c2d28fa..9d28d79 100644
+--- a/frontend/src/components/modals/ClientModal.tsx
++++ b/frontend/src/components/modals/ClientModal.tsx
+@@ -361,13 +361,13 @@ export function ClientModal({
+   return (
+     <>
+       <Dialog open={isOpen} onOpenChange={onClose}>
+-        <DialogContent className="w-[95vw] md:max-w-2xl max-h-[85vh] rounded-lg flex flex-col overflow-hidden gap-0">
++        <DialogContent className="w-[95vw] md:max-w-2xl max-h-[85vh] rounded-lg flex flex-col overflow-hidden gap-0 p-0">
+           <Tabs
+             value={activeTab}
+             onValueChange={(v) => setActiveTab(v as "info" | "history")}
+             className="flex-1 flex flex-col min-h-0"
+           >
+-            <DialogHeader className="border-b pb-3 shrink-0">
++            <DialogHeader className="border-b px-6 pt-6 pb-3 shrink-0">
+               <DialogTitle>{title}</DialogTitle>
+               <DialogDescription>
+                 {isEditing
+@@ -385,7 +385,7 @@ export function ClientModal({
+               )}
+             </DialogHeader>
+ 
+-            <div className="flex-1 overflow-y-auto py-4">
++            <div className="flex-1 overflow-y-auto py-6 px-6">
+               <TabsContent value="info" className="mt-0 space-y-6">
+                 {/* Nome Completo */}
+                 <div className="flex flex-col gap-[4px]">
+@@ -646,7 +646,7 @@ export function ClientModal({
+             </div>
+           </Tabs>
+ 
+-          <DialogFooter className="border-t pt-6 shrink-0">
++          <DialogFooter className="border-t px-6 pt-6 pb-6 shrink-0">
+             {isEditing && onDelete ? (
+               <div className="flex flex-col sm:flex-row justify-between w-full gap-3">
+                 <Button
+diff --git a/frontend/src/components/ui/EasyCalendar/EasyCalendar.tsx b/frontend/src/components/ui/EasyCalendar/EasyCalendar.tsx
+index a3352c9..7610aa1 100644
+--- a/frontend/src/components/ui/EasyCalendar/EasyCalendar.tsx
++++ b/frontend/src/components/ui/EasyCalendar/EasyCalendar.tsx
+@@ -239,10 +239,10 @@ export const EasyCalendar: React.FC<EasyCalendarProps> = ({
+     return (
+       <div className={outerClass}>
+         <div className="flex flex-col items-center justify-center h-full px-4 text-center">
+-          <h3 className="text-lg font-semibold text-foreground mb-2">
++          <h3 className="text-section-title font-semibold text-foreground mb-2">
+             Salão fechado neste dia
+           </h3>
+-          <p className="text-sm text-muted-foreground max-w-md">
++          <p className="text-body text-muted-foreground max-w-md">
+             O salão não está aberto na data selecionada. Verifique os horários
+             de funcionamento ou selecione outro dia.
+           </p>
+@@ -255,14 +255,14 @@ export const EasyCalendar: React.FC<EasyCalendarProps> = ({
+     return (
+       <div className={outerClass}>
+         <div className="flex flex-col items-center justify-center h-full px-4 text-center">
+-          <h3 className="text-lg font-semibold text-foreground mb-2">
++          <h3 className="text-section-title font-semibold text-foreground mb-2">
+             Nenhum profissional cadastrado
+           </h3>
+-          <p className="text-sm text-muted-foreground max-w-md">
++          <p className="text-body text-muted-foreground max-w-md">
+             Para utilizar a agenda, é necessário cadastrar pelo menos um
+             profissional no salão.
+           </p>
+-          <p className="text-sm text-muted-foreground mt-2">
++          <p className="text-body text-muted-foreground mt-2">
+             Acesse <span className="font-semibold">Gestão de Acesso</span> para
+             cadastrar profissionais.
+           </p>
+@@ -293,11 +293,11 @@ export const EasyCalendar: React.FC<EasyCalendarProps> = ({
+                   )}
+                 >
+                   <div className="flex items-center justify-center gap-1.5">
+-                    <span className="text-primary font-semibold text-sm">
++                    <span className="text-primary font-semibold text-body">
+                       {getInitials(getUserDisplayName(column))}
+                     </span>
+                   </div>
+-                  <div className="text-xs text-muted-foreground mt-1 font-normal break-words leading-tight">
++                  <div className="text-button text-muted-foreground mt-1 font-normal break-words leading-tight">
+                     {getUserDisplayName(column)}
+                   </div>
+                 </div>
+diff --git a/frontend/src/components/ui/EasyCalendar/EventBlock.tsx b/frontend/src/components/ui/EasyCalendar/EventBlock.tsx
+index 7c15844..b361246 100644
+--- a/frontend/src/components/ui/EasyCalendar/EventBlock.tsx
++++ b/frontend/src/components/ui/EasyCalendar/EventBlock.tsx
+@@ -146,7 +146,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({
+       <div className="relative z-10 h-full">
+       {isReserva ? (
+         <div className="flex flex-col h-full justify-center items-center">
+-          <span className="font-bold text-sm text-center">Reserva feita pelo profissional</span>
++          <span className="font-bold text-body text-center">Reserva feita pelo profissional</span>
+           <div className="flex items-center gap-1 text-[10px] opacity-80 mt-1">
+             <Clock className="w-3 h-3" />
+             <span>
+@@ -156,9 +156,9 @@ export const EventBlock: React.FC<EventBlockProps> = ({
+           </div>
+         </div>
+       ) : (
+-        <div className="flex flex-col h-full text-xs">
++        <div className="flex flex-col h-full text-button">
+           <div className="flex items-center justify-between gap-1">
+-            <span className="font-semibold text-sm truncate">{event.clientName}</span>
++            <span className="font-semibold text-body truncate">{event.clientName}</span>
+             {event.source && (
+               <BookingSourceBadge
+                 source={event.source}
+diff --git a/frontend/src/components/ui/EasyCalendar/ProfessionalColumn.tsx b/frontend/src/components/ui/EasyCalendar/ProfessionalColumn.tsx
+index e19b326..88e50fe 100644
+--- a/frontend/src/components/ui/EasyCalendar/ProfessionalColumn.tsx
++++ b/frontend/src/components/ui/EasyCalendar/ProfessionalColumn.tsx
+@@ -991,7 +991,7 @@ export const ProfessionalColumn: React.FC<ProfessionalColumnProps> = ({
+             <div className="text-center">
+               <div
+                 className={cn(
+-                  "text-xs font-bold mb-0.5",
++                  "text-button font-bold mb-0.5",
+                   absence.isPassed ? "text-muted-foreground" : "text-pink-700"
+                 )}
+               >
+@@ -999,7 +999,7 @@ export const ProfessionalColumn: React.FC<ProfessionalColumnProps> = ({
+               </div>
+               <div
+                 className={cn(
+-                  "text-xs font-medium",
++                  "text-button font-medium",
+                   absence.isPassed ? "text-muted-foreground/80" : "text-pink-600"
+                 )}
+               >
+@@ -1028,7 +1028,7 @@ export const ProfessionalColumn: React.FC<ProfessionalColumnProps> = ({
+           </PopoverTrigger>
+           <PopoverContent className="w-56 p-2" align="start">
+             <div className="space-y-1">
+-              <p className="text-sm font-medium mb-2">O que deseja criar?</p>
++              <p className="text-body font-medium mb-2">O que deseja criar?</p>
+               <Button
+                 variant="ghost"
+                 className="w-full justify-start"
+diff --git a/frontend/src/components/ui/EasyCalendar/TimeGrid.tsx b/frontend/src/components/ui/EasyCalendar/TimeGrid.tsx
+index e2963d2..ad4274e 100644
+--- a/frontend/src/components/ui/EasyCalendar/TimeGrid.tsx
++++ b/frontend/src/components/ui/EasyCalendar/TimeGrid.tsx
+@@ -21,7 +21,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
+             style={{ height: `${slotHeight}px` }}
+             data-time-slot={slot.label}
+           >
+-            <span className="text-xs text-muted-foreground font-medium">
++            <span className="text-button text-muted-foreground font-medium">
+               {slot.label}
+             </span>
+           </div>
+diff --git a/frontend/src/components/ui/alert-dialog.tsx b/frontend/src/components/ui/alert-dialog.tsx
+index 8722561..1351882 100644
+--- a/frontend/src/components/ui/alert-dialog.tsx
++++ b/frontend/src/components/ui/alert-dialog.tsx
+@@ -34,7 +34,7 @@ const AlertDialogContent = React.forwardRef<
+     <AlertDialogPrimitive.Content
+       ref={ref}
+       className={cn(
+-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
++        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+         className
+       )}
+       {...props}
+diff --git a/frontend/src/components/ui/alert.tsx b/frontend/src/components/ui/alert.tsx
+index 0652fa0..9dac3d7 100644
+--- a/frontend/src/components/ui/alert.tsx
++++ b/frontend/src/components/ui/alert.tsx
+@@ -1,5 +1,6 @@
+ import * as React from "react"
+ import { cva, type VariantProps } from "class-variance-authority"
++import { X } from "lucide-react"
+ 
+ import { cn } from "@/lib/utils"
+ 
+@@ -8,7 +9,7 @@ const alertVariants = cva(
+   {
+     variants: {
+       variant: {
+-        default: "bg-background text-foreground",
++        default: "bg-card text-foreground",
+         destructive:
+           "border-[#CE4836]/50 text-[#CE4836] bg-[#FFF4F4] [&>svg]:text-[#CE4836]",
+         success:
+@@ -62,4 +63,21 @@ const AlertDescription = React.forwardRef<
+ ))
+ AlertDescription.displayName = "AlertDescription"
+ 
+-export { Alert, AlertTitle, AlertDescription }
++const AlertClose = React.forwardRef<
++  HTMLButtonElement,
++  React.ButtonHTMLAttributes<HTMLButtonElement>
++>(({ className, ...props }, ref) => (
++  <button
++    ref={ref}
++    className={cn(
++      "absolute right-3 top-3 p-0.5 rounded-sm opacity-60 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
++      className
++    )}
++    {...props}
++  >
++    <X className="h-4 w-4" />
++  </button>
++))
++AlertClose.displayName = "AlertClose"
++
++export { Alert, AlertTitle, AlertDescription, AlertClose }
+diff --git a/frontend/src/components/ui/chart.tsx b/frontend/src/components/ui/chart.tsx
+index a21d77e..b92bdf5 100644
+--- a/frontend/src/components/ui/chart.tsx
++++ b/frontend/src/components/ui/chart.tsx
+@@ -177,7 +177,7 @@ const ChartTooltipContent = React.forwardRef<
+       <div
+         ref={ref}
+         className={cn(
+-          "grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
++          "grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-card px-2.5 py-1.5 text-xs shadow-xl",
+           className
+         )}
+       >
+diff --git a/frontend/src/components/ui/data-table.tsx b/frontend/src/components/ui/data-table.tsx
+index c295abf..eed0bd3 100644
+--- a/frontend/src/components/ui/data-table.tsx
++++ b/frontend/src/components/ui/data-table.tsx
+@@ -61,9 +61,9 @@ function buildActionsColumn<T>(actions: TableAction<T>[]): Column<T> {
+     key: ACTIONS_COLUMN_KEY,
+     header: "Ações",
+     width: "1%",
+-    className: "text-left",
++    className: "text-left pr-4",
+     render: (_: unknown, row: T): React.ReactNode => (
+-      <div className="flex items-center justify-end gap-1">
++      <div className={cn("flex items-center gap-1", actions.length === 1 ? "justify-center" : "justify-end")}>
+         {actions.map((action, i) => {
+           if (action.hidden?.(row)) return null;
+           return (
+@@ -79,7 +79,7 @@ function buildActionsColumn<T>(actions: TableAction<T>[]): Column<T> {
+               className={cn(
+                 "h-8 w-8",
+                 action.variant === "destructive" &&
+-                  "text-red-600 hover:text-red-700 hover:bg-red-50"
++                  "text-[#CE4836] hover:text-[#CE4836] hover:bg-[#FFF4F4]"
+               )}
+               title={action.label}
+             >
+diff --git a/frontend/src/components/ui/dialog.tsx b/frontend/src/components/ui/dialog.tsx
+index aedcf61..41a5f73 100644
+--- a/frontend/src/components/ui/dialog.tsx
++++ b/frontend/src/components/ui/dialog.tsx
+@@ -104,7 +104,7 @@ const DialogDescription = React.forwardRef<
+ >(({ className, ...props }, ref) => (
+   <DialogPrimitive.Description
+     ref={ref}
+-    className={cn("text-sm text-muted-foreground", className)}
++    className={cn("text-body text-muted-foreground", className)}
+     {...props}
+   />
+ ))
+diff --git a/frontend/src/components/ui/drawer.tsx b/frontend/src/components/ui/drawer.tsx
+index 8149161..8ae0785 100644
+--- a/frontend/src/components/ui/drawer.tsx
++++ b/frontend/src/components/ui/drawer.tsx
+@@ -36,7 +36,7 @@ function DrawerContent({ className, children, ...props }: React.ComponentProps<t
+         data-slot="drawer-content"
+         aria-describedby={undefined}
+         className={cn(
+-          "group/drawer-content bg-background fixed z-50 flex h-auto flex-col",
++          "group/drawer-content bg-card fixed z-50 flex h-auto flex-col",
+           "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t",
+           "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b",
+           "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm",
+diff --git a/frontend/src/components/ui/select.tsx b/frontend/src/components/ui/select.tsx
+index ba6e94f..8521175 100644
+--- a/frontend/src/components/ui/select.tsx
++++ b/frontend/src/components/ui/select.tsx
+@@ -2,6 +2,7 @@ import * as React from "react"
+ import * as SelectPrimitive from "@radix-ui/react-select"
+ import { Check as Check, ChevronDown as ChevronDown, ChevronUp as ChevronUp, Search as Search } from "lucide-react";
+ import { Input } from "@/components/ui/input"
++import { Label } from "@/components/ui/label"
+ 
+ import { cn } from "@/lib/utils"
+ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+@@ -14,22 +15,39 @@ const SelectValue = SelectPrimitive.Value
+ 
+ const SelectTrigger = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.Trigger>,
+-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
+->(({ className, children, ...props }, ref) => (
+-  <SelectPrimitive.Trigger
+-    ref={ref}
+-    className={cn(
+-      "flex h-[38px] sm:h-[35px] w-full items-center justify-between rounded-[10px] border border-input bg-background px-3 py-2 text-[13px] sm:text-[12px] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+-      className
+-    )}
+-    {...props}
+-  >
+-    {children}
+-    <SelectPrimitive.Icon asChild>
+-      <ChevronDown className="h-4 w-4 opacity-50" />
+-    </SelectPrimitive.Icon>
+-  </SelectPrimitive.Trigger>
+-))
++  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & { label?: string }
++>(({ className, children, label, id, ...props }, ref) => {
++  const generatedId = React.useId();
++  const triggerId = id ?? generatedId;
++
++  const trigger = (
++    <SelectPrimitive.Trigger
++      ref={ref}
++      id={triggerId}
++      className={cn(
++        "flex h-[38px] sm:h-[35px] w-full items-center justify-between rounded-[10px] border border-input bg-background px-3 py-2 text-[13px] sm:text-[12px] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
++        className
++      )}
++      {...props}
++    >
++      {children}
++      <SelectPrimitive.Icon asChild>
++        <ChevronDown className="h-4 w-4 opacity-50" />
++      </SelectPrimitive.Icon>
++    </SelectPrimitive.Trigger>
++  );
++
++  if (label) {
++    return (
++      <div className="flex flex-col gap-[4px]">
++        <Label htmlFor={triggerId}>{label}</Label>
++        {trigger}
++      </div>
++    );
++  }
++
++  return trigger;
++})
+ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+ 
+ const SelectScrollUpButton = React.forwardRef<
+diff --git a/frontend/src/components/ui/sheet.tsx b/frontend/src/components/ui/sheet.tsx
+index 2dcf3da..dca82c5 100644
+--- a/frontend/src/components/ui/sheet.tsx
++++ b/frontend/src/components/ui/sheet.tsx
+@@ -29,7 +29,7 @@ const SheetOverlay = React.forwardRef<
+ SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
+ 
+ const sheetVariants = cva(
+-  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
++  "fixed z-50 gap-4 bg-card p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+   {
+     variants: {
+       side: {
+diff --git a/frontend/src/components/ui/sonner.tsx b/frontend/src/components/ui/sonner.tsx
+index 3993a71..1cd79ed 100644
+--- a/frontend/src/components/ui/sonner.tsx
++++ b/frontend/src/components/ui/sonner.tsx
+@@ -2,38 +2,43 @@ import { Toaster as Sonner, toast } from "sonner"
+ 
+ type ToasterProps = React.ComponentProps<typeof Sonner>
+ 
+-const Toaster = ({ ...props }: ToasterProps) => {
++const DS_TOAST_CLASS_NAMES: NonNullable<NonNullable<ToasterProps["toastOptions"]>["classNames"]> = {
++  toast:
++    "!bg-card !text-foreground !border !border-border !shadow-md !rounded-[16px] !p-4",
++  title:
++    "!font-medium !text-[13px]",
++  description:
++    "!text-[12px] !text-muted-foreground",
++  icon:
++    "!mt-0.5",
++  actionButton:
++    "!bg-primary !text-primary-foreground",
++  cancelButton:
++    "!bg-muted !text-muted-foreground",
++  error:
++    "!bg-[#FFF4F4] !border-[#CE4836]/50 !text-[#CE4836] [&_[data-icon]]:!text-[#CE4836]",
++  success:
++    "!bg-[#F2FBE8] !border-[#7DBA44]/50 !text-[#49870E] [&_[data-icon]]:!text-[#49870E]",
++  warning:
++    "!bg-[#FEF6E4] !border-[#EBB33A]/50 !text-[#C28604] [&_[data-icon]]:!text-[#C28604]",
++  info:
++    "!bg-[#F1F4FF] !border-[#007AFF]/50 !text-[#1166C3] [&_[data-icon]]:!text-[#1166C3]",
++  loading:
++    "!bg-card !border-border !text-muted-foreground",
++}
++
++const Toaster = ({ toastOptions, ...props }: ToasterProps) => {
+   const theme: ToasterProps["theme"] = "light";
+ 
+   return (
+     <Sonner
+       theme={theme}
+       className="toaster group"
++      {...props}
+       toastOptions={{
+-        classNames: {
+-          toast:
+-            "group-[.toaster]:bg-card group-[.toaster]:text-foreground group-[.toaster]:border group-[.toaster]:border-border group-[.toaster]:shadow-md group-[.toaster]:rounded-lg",
+-          title:
+-            "group-[.toast]:font-medium group-[.toast]:text-[13px]",
+-          description:
+-            "group-[.toast]:text-[12px] group-[.toast]:text-muted-foreground",
+-          actionButton:
+-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+-          cancelButton:
+-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+-          error:
+-            "group-[.toaster]:!bg-[#FFF4F4] group-[.toaster]:!border-[#CE4836]/50 group-[.toaster]:!text-[#CE4836]",
+-          success:
+-            "group-[.toaster]:!bg-[#F2FBE8] group-[.toaster]:!border-[#7DBA44]/50 group-[.toaster]:!text-[#49870E]",
+-          warning:
+-            "group-[.toaster]:!bg-[#FEF6E4] group-[.toaster]:!border-[#EBB33A]/50 group-[.toaster]:!text-[#C28604]",
+-          info:
+-            "group-[.toaster]:!bg-[#F1F4FF] group-[.toaster]:!border-[#007AFF]/50 group-[.toaster]:!text-[#1166C3]",
+-          loading:
+-            "group-[.toaster]:bg-card group-[.toaster]:border-border group-[.toaster]:text-muted-foreground",
+-        },
++        ...toastOptions,
++        classNames: DS_TOAST_CLASS_NAMES,
+       }}
+-      {...props}
+     />
+   )
+ }
+diff --git a/frontend/src/components/ui/textarea.tsx b/frontend/src/components/ui/textarea.tsx
+index ad181c1..83014ee 100644
+--- a/frontend/src/components/ui/textarea.tsx
++++ b/frontend/src/components/ui/textarea.tsx
+@@ -1,14 +1,21 @@
+ import * as React from "react"
+ 
+ import { cn } from "@/lib/utils"
++import { Label } from "@/components/ui/label"
+ 
+ export interface TextareaProps
+-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
++  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
++  label?: string;
++}
+ 
+ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+-  ({ className, ...props }, ref) => {
+-    return (
++  ({ className, label, id, ...props }, ref) => {
++    const generatedId = React.useId();
++    const textareaId = id ?? generatedId;
++
++    const textareaElement = (
+       <textarea
++        id={textareaId}
+         className={cn(
+           "flex min-h-[80px] w-full rounded-[10px] border border-input bg-background px-3 py-2 text-[13px] ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+           className
+@@ -16,7 +23,18 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+         ref={ref}
+         {...props}
+       />
+-    )
++    );
++
++    if (label) {
++      return (
++        <div className="flex flex-col gap-[4px]">
++          <Label htmlFor={textareaId}>{label}</Label>
++          {textareaElement}
++        </div>
++      );
++    }
++
++    return textareaElement;
+   }
+ )
+ Textarea.displayName = "Textarea"
+diff --git a/frontend/src/components/ui/toast.tsx b/frontend/src/components/ui/toast.tsx
+index bb7c588..c1dcffb 100644
+--- a/frontend/src/components/ui/toast.tsx
++++ b/frontend/src/components/ui/toast.tsx
+@@ -27,7 +27,7 @@ const toastVariants = cva(
+   {
+     variants: {
+       variant: {
+-        default: "border bg-background text-foreground",
++        default: "border bg-card text-foreground",
+         destructive:
+           "destructive group border-[#CE4836]/50 bg-[#FFF4F4] text-[#CE4836]",
+         success:
+diff --git a/frontend/src/components/ui/tooltip.tsx b/frontend/src/components/ui/tooltip.tsx
+index 2928e7d..ea4be17 100644
+--- a/frontend/src/components/ui/tooltip.tsx
++++ b/frontend/src/components/ui/tooltip.tsx
+@@ -3,7 +3,9 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+ 
+ import { cn } from "@/lib/utils"
+ 
+-const TooltipProvider = TooltipPrimitive.Provider
++const TooltipProvider = ({ delayDuration = 50, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>) => (
++  <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />
++)
+ 
+ const Tooltip = TooltipPrimitive.Root
+ 
+diff --git a/frontend/src/index.css b/frontend/src/index.css
+index 7cdddd4..b6974af 100644
+--- a/frontend/src/index.css
++++ b/frontend/src/index.css
+@@ -286,4 +286,74 @@ All colors MUST be HSL.
+       font-size: 16px !important;
+     }
+   }
+-}
+\ No newline at end of file
++}
++
++/* ── Sonner Toast — herda visual do Alert do DS ───────────────────────── */
++[data-sonner-toast] {
++  border-radius: 16px !important;
++  padding: 1rem !important;
++  border-width: 1px !important;
++  border-style: solid !important;
++  background: hsl(var(--card)) !important;
++  border-color: hsl(var(--border)) !important;
++  color: hsl(var(--foreground)) !important;
++  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08) !important;
++}
++
++[data-sonner-toast] [data-title] {
++  font-size: 13px !important;
++  font-weight: 500 !important;
++  line-height: 1 !important;
++}
++
++[data-sonner-toast] [data-description] {
++  font-size: 12px !important;
++  color: hsl(var(--muted-foreground)) !important;
++}
++
++[data-sonner-toast] [data-icon] {
++  width: 1rem !important;
++  height: 1rem !important;
++  margin-top: 2px !important;
++}
++
++[data-sonner-toast] [data-icon] svg {
++  width: 1rem !important;
++  height: 1rem !important;
++}
++
++/* Variante error / destructive */
++[data-sonner-toast][data-type="error"] {
++  background: #FFF4F4 !important;
++  border-color: rgb(206 72 54 / 0.5) !important;
++  color: #CE4836 !important;
++}
++[data-sonner-toast][data-type="error"] [data-description] { color: #CE4836 !important; }
++[data-sonner-toast][data-type="error"] [data-icon] { color: #CE4836 !important; }
++
++/* Variante success */
++[data-sonner-toast][data-type="success"] {
++  background: #F2FBE8 !important;
++  border-color: rgb(125 186 68 / 0.5) !important;
++  color: #49870E !important;
++}
++[data-sonner-toast][data-type="success"] [data-description] { color: #49870E !important; }
++[data-sonner-toast][data-type="success"] [data-icon] { color: #49870E !important; }
++
++/* Variante warning */
++[data-sonner-toast][data-type="warning"] {
++  background: #FEF6E4 !important;
++  border-color: rgb(235 179 58 / 0.5) !important;
++  color: #C28604 !important;
++}
++[data-sonner-toast][data-type="warning"] [data-description] { color: #C28604 !important; }
++[data-sonner-toast][data-type="warning"] [data-icon] { color: #C28604 !important; }
++
++/* Variante info */
++[data-sonner-toast][data-type="info"] {
++  background: #F1F4FF !important;
++  border-color: rgb(0 122 255 / 0.5) !important;
++  color: #1166C3 !important;
++}
++[data-sonner-toast][data-type="info"] [data-description] { color: #1166C3 !important; }
++[data-sonner-toast][data-type="info"] [data-icon] { color: #1166C3 !important; }
+\ No newline at end of file
+diff --git a/frontend/src/lib/utils.ts b/frontend/src/lib/utils.ts
+index bd0c391..a94e3c2 100644
+--- a/frontend/src/lib/utils.ts
++++ b/frontend/src/lib/utils.ts
+@@ -1,5 +1,13 @@
+ import { clsx, type ClassValue } from "clsx"
+-import { twMerge } from "tailwind-merge"
++import { extendTailwindMerge } from "tailwind-merge"
++
++const twMerge = extendTailwindMerge({
++  extend: {
++    classGroups: {
++      "font-size": ["text-page-title", "text-section-title", "text-body", "text-button"],
++    },
++  },
++})
+ 
+ export function cn(...inputs: ClassValue[]) {
+   return twMerge(clsx(inputs))
+diff --git a/frontend/src/pages/DesignSystemPage.tsx b/frontend/src/pages/DesignSystemPage.tsx
+index f2f5198..f679177 100644
+--- a/frontend/src/pages/DesignSystemPage.tsx
++++ b/frontend/src/pages/DesignSystemPage.tsx
+@@ -5,7 +5,7 @@ import {
+   CalendarEvent,
+   ProfessionalColumn as ProfessionalColumnType,
+ } from "@/components/ui/EasyCalendar";
+-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
++import { Alert, AlertClose, AlertDescription, AlertTitle } from "@/components/ui/alert";
+ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+@@ -196,7 +196,7 @@ function Section({ id, title, description, importPath, children }: {
+ function PreviewAndCode({ preview, code }: { preview: React.ReactNode; code: string }) {
+   return (
+     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+-      <div className="rounded-lg border bg-background p-6 flex flex-wrap gap-3 items-center justify-start min-h-[80px]">
++      <div className="rounded-lg border bg-card p-6 flex flex-wrap gap-3 items-center justify-start min-h-[80px]">
+         {preview}
+       </div>
+       <CodeBlock code={code} />
+@@ -522,7 +522,7 @@ function IconCard({ name, Icon }: { name: string; Icon: React.ComponentType<{ si
+     <button
+       onClick={copy}
+       title={copied ? "Copiado!" : `Copiar: ${name}`}
+-      className="flex flex-col items-center gap-1.5 p-3 rounded-lg border bg-background hover:bg-muted/60 hover:border-primary/30 transition-all group text-center"
++      className="flex flex-col items-center gap-1.5 p-3 rounded-lg border bg-card hover:bg-muted/60 hover:border-primary/30 transition-all group text-center"
+     >
+       <Icon size={20} />
+       <span className={cn("text-[9px] font-mono leading-tight break-all", copied ? "text-primary font-semibold" : "text-muted-foreground")}>
+@@ -601,7 +601,7 @@ export default function DesignSystemPage() {
+               <TabsContent value="preview" className="space-y-4">
+                 <div>
+                   <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Variantes</p>
+-                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
++                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-card">
+                     <Button variant="default">Default</Button>
+                     <Button variant="destructive">Destructive</Button>
+                     <Button variant="outline">Outline</Button>
+@@ -612,14 +612,14 @@ export default function DesignSystemPage() {
+                 </div>
+                 <div>
+                   <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Tamanhos</p>
+-                  <div className="flex flex-wrap gap-3 items-center p-4 border rounded-lg bg-background">
++                  <div className="flex flex-wrap gap-3 items-center p-4 border rounded-lg bg-card">
+                     <Button size="sm">Small</Button>
+                     <Button size="default">Default</Button>
+                   </div>
+                 </div>
+                 <div>
+                   <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Estado Disabled</p>
+-                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
++                  <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-card">
+                     <Button disabled>Desabilitado</Button>
+                     <Button variant="outline" disabled>Outline Disabled</Button>
+                   </div>
+@@ -678,7 +678,7 @@ export default function DesignSystemPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-background">
++                <div className="flex flex-wrap gap-3 p-4 border rounded-lg bg-card">
+                   <Badge variant="default">Default</Badge>
+                   <Badge variant="secondary">Secondary</Badge>
+                   <Badge variant="destructive">Destructive</Badge>
+@@ -719,7 +719,7 @@ export default function DesignSystemPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-sm">
++                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-card max-w-sm">
+                   <Input placeholder="Placeholder padrão" />
+                   <Input type="email" placeholder="email@exemplo.com" />
+                   <Input type="password" placeholder="Senha" />
+@@ -768,7 +768,7 @@ export default function DesignSystemPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-sm">
++                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-card max-w-sm">
+                   <Textarea placeholder="Escreva uma observação..." />
+                   <Textarea disabled placeholder="Desabilitado" />
+                 </div>
+@@ -809,7 +809,7 @@ export default function DesignSystemPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background max-w-xs">
++                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-card max-w-xs">
+                   <Select>
+                     <SelectTrigger>
+                       <SelectValue placeholder="Selecione um cargo" />
+@@ -877,7 +877,7 @@ export default function DesignSystemPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 border rounded-lg bg-background">
++                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 border rounded-lg bg-card">
+                   {/* Sem busca */}
+                   <div className="space-y-2">
+                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sem busca</p>
+@@ -995,7 +995,7 @@ export default function DesignSystemPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
++                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-card">
+                   <div className="flex items-center gap-2">
+                     <Checkbox
+                       id="check1"
+@@ -1059,7 +1059,7 @@ const [checked, setChecked] = useState(false)
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-background">
++                <div className="flex flex-col gap-4 p-4 border rounded-lg bg-card">
+                   <div className="flex items-center gap-3">
+                     <Switch
+                       id="sw1"
+@@ -1118,7 +1118,7 @@ const [active, setActive] = useState(false)
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="p-4 border rounded-lg bg-background max-w-sm">
++                <div className="p-4 border rounded-lg bg-card max-w-sm">
+                   <Card>
+                     <CardHeader>
+                       <CardTitle>Título do Card</CardTitle>
+@@ -1181,7 +1181,7 @@ const [active, setActive] = useState(false)
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="p-4 border rounded-lg bg-background flex flex-wrap gap-3">
++                <div className="p-4 border rounded-lg bg-card flex flex-wrap gap-3">
+                   <Dialog>
+                     <DialogTrigger asChild>
+                       <Button>Confirmação</Button>
+@@ -1404,7 +1404,7 @@ export function ClientsPage() {
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-background">
++                <div className="flex flex-col gap-3 p-4 border rounded-lg bg-card">
+                   <Alert variant="info">
+                     <IconInfoCircle className="h-4 w-4" />
+                     <AlertTitle>Nova funcionalidade disponível</AlertTitle>
+@@ -1433,35 +1433,52 @@ export function ClientsPage() {
+                       Não foi possível salvar as alterações. Tente novamente.
+                     </AlertDescription>
+                   </Alert>
++
++                  <p className="text-button font-semibold text-muted-foreground uppercase tracking-wider mt-2">Com botão de fechar</p>
++                  <Alert variant="info">
++                    <IconInfoCircle className="h-4 w-4" />
++                    <AlertTitle>Nova funcionalidade disponível</AlertTitle>
++                    <AlertDescription>Adicionamos suporte a múltiplas unidades.</AlertDescription>
++                    <AlertClose onClick={() => {}} />
++                  </Alert>
++                  <Alert variant="success">
++                    <IconCircleCheck className="h-4 w-4" />
++                    <AlertTitle>Pagamento realizado</AlertTitle>
++                    <AlertDescription>Seu plano foi ativado com sucesso.</AlertDescription>
++                    <AlertClose onClick={() => {}} />
++                  </Alert>
++                  <Alert variant="warning">
++                    <IconAlertTriangle className="h-4 w-4" />
++                    <AlertTitle>Atenção</AlertTitle>
++                    <AlertDescription>Seu período de teste expira em 3 dias.</AlertDescription>
++                    <AlertClose onClick={() => {}} />
++                  </Alert>
++                  <Alert variant="destructive">
++                    <IconCircleX className="h-4 w-4" />
++                    <AlertTitle>Erro ao salvar</AlertTitle>
++                    <AlertDescription>Não foi possível salvar as alterações.</AlertDescription>
++                    <AlertClose onClick={() => {}} />
++                  </Alert>
+                 </div>
+               </TabsContent>
+ 
+               <TabsContent value="code">
+-                <CodeBlock code={`import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
++                <CodeBlock code={`import { Alert, AlertTitle, AlertDescription, AlertClose } from "@/components/ui/alert"
+ import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+ 
++{/* Sem botão de fechar */}
+ <Alert variant="info">
+   <Info />
+   <AlertTitle>Nova funcionalidade disponível</AlertTitle>
+   <AlertDescription>Adicionamos suporte a múltiplas unidades.</AlertDescription>
+ </Alert>
+ 
+-<Alert variant="success">
+-  <CheckCircle2 />
+-  <AlertTitle>Pagamento realizado</AlertTitle>
+-  <AlertDescription>Seu plano foi ativado com sucesso.</AlertDescription>
+-</Alert>
+-
+-<Alert variant="warning">
+-  <AlertTriangle />
+-  <AlertTitle>Atenção</AlertTitle>
+-  <AlertDescription>Seu teste expira em 3 dias.</AlertDescription>
+-</Alert>
+-
++{/* Com botão de fechar */}
+ <Alert variant="destructive">
+   <XCircle />
+   <AlertTitle>Erro ao salvar</AlertTitle>
+   <AlertDescription>Não foi possível salvar as alterações.</AlertDescription>
++  <AlertClose onClick={() => setVisible(false)} />
+ </Alert>`} />
+               </TabsContent>
+ 
+@@ -1470,6 +1487,11 @@ import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+                   { name: "variant", type: "'default' | 'info' | 'success' | 'warning' | 'destructive'", default: "'default'", description: "Estilo visual do alerta" },
+                   { name: "className", type: "string", description: "Classes CSS extras" },
+                 ]} />
++                <p className="text-button font-semibold text-muted-foreground uppercase tracking-wider mt-4 mb-2">AlertClose</p>
++                <PropsTable props={[
++                  { name: "onClick", type: "() => void", description: "Callback ao clicar no botão de fechar" },
++                  { name: "className", type: "string", description: "Classes CSS extras" },
++                ]} />
+               </TabsContent>
+             </Tabs>
+           </Section>
+@@ -1488,7 +1510,7 @@ import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-wrap gap-4 items-center p-4 border rounded-lg bg-background">
++                <div className="flex flex-wrap gap-4 items-center p-4 border rounded-lg bg-card">
+                   <Avatar>
+                     <AvatarImage src="https://github.com/shadcn.png" alt="Shadcn" />
+                     <AvatarFallback>SC</AvatarFallback>
+@@ -1547,7 +1569,7 @@ import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="p-4 border rounded-lg bg-background space-y-3 max-w-xs">
++                <div className="p-4 border rounded-lg bg-card space-y-3 max-w-xs">
+                   <div className="flex items-center gap-3">
+                     <Skeleton className="h-10 w-10 rounded-full" />
+                     <div className="space-y-2 flex-1">
+@@ -1603,7 +1625,7 @@ import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="p-4 border rounded-lg bg-background space-y-4">
++                <div className="p-4 border rounded-lg bg-card space-y-4">
+                   <p className="text-[12px]">Acima do separador horizontal</p>
+                   <Separator />
+                   <p className="text-[12px]">Abaixo do separador</p>
+@@ -1655,7 +1677,7 @@ import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="p-4 border rounded-lg bg-background">
++                <div className="p-4 border rounded-lg bg-card">
+                   <Tabs defaultValue="tab1">
+                     <TabsList>
+                       <TabsTrigger value="tab1">Aba 1</TabsTrigger>
+@@ -1719,7 +1741,7 @@ const [tab, setTab] = useState("geral")
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex gap-4 p-4 border rounded-lg bg-background">
++                <div className="flex gap-4 p-4 border rounded-lg bg-card">
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Button variant="outline">Passe o mouse</Button>
+@@ -1779,7 +1801,7 @@ const [tab, setTab] = useState("geral")
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="border rounded-lg bg-background overflow-hidden">
++                <div className="border rounded-lg bg-card overflow-hidden">
+                   <Table>
+                     <TableCaption>Lista de profissionais</TableCaption>
+                     <TableHeader>
+@@ -2034,7 +2056,7 @@ const actions: TableAction<User>[] = [
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="flex flex-wrap gap-8 items-center p-6 border rounded-lg bg-background">
++                <div className="flex flex-wrap gap-8 items-center p-6 border rounded-lg bg-card">
+                   <div className="flex flex-col items-center gap-1">
+                     <LoadingSpinner size="sm" />
+                     <span className="text-xs text-muted-foreground">sm</span>
+@@ -2084,7 +2106,7 @@ const actions: TableAction<User>[] = [
+               </TabsList>
+ 
+               <TabsContent value="preview">
+-                <div className="p-4 border rounded-lg bg-background max-w-md">
++                <div className="p-4 border rounded-lg bg-card max-w-md">
+                   <Empty>
+                     <EmptyHeader>
+                       <EmptyMedia>
+diff --git a/frontend/src/pages/ForgotPassword.tsx b/frontend/src/pages/ForgotPassword.tsx
+index 278a4c9..6f97534 100644
+--- a/frontend/src/pages/ForgotPassword.tsx
++++ b/frontend/src/pages/ForgotPassword.tsx
+@@ -34,7 +34,7 @@ export default function ForgotPassword() {
+           <Link to="/login">
+             <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+           </Link>
+-          <h1 className="text-2xl font-bold text-foreground">Recuperar Senha</h1>
++          <h1 className="text-page-title text-foreground">Recuperar Senha</h1>
+         </div>
+ 
+         {!isSubmitted ? (
+diff --git a/frontend/src/pages/Login.tsx b/frontend/src/pages/Login.tsx
+index c5c2791..1cc86da 100644
+--- a/frontend/src/pages/Login.tsx
++++ b/frontend/src/pages/Login.tsx
+@@ -55,7 +55,7 @@ export default function Login() {
+     <AuthLayout imagePosition="center top">
+       <div className="space-y-6">
+         <div>
+-          <h1 className="text-2xl font-bold text-foreground">
++          <h1 className="text-page-title text-foreground">
+             Bem-vindo ao Easy Salon
+           </h1>
+         </div>
+diff --git a/frontend/src/pages/Register.tsx b/frontend/src/pages/Register.tsx
+index 83c46a1..a8ccc23 100644
+--- a/frontend/src/pages/Register.tsx
++++ b/frontend/src/pages/Register.tsx
+@@ -134,7 +134,7 @@ export default function Register() {
+     <AuthLayout maxWidth="xl" imagePosition="center top">
+       <div className="w-full">
+         <div className="text-center mb-4">
+-          <h1 className="text-2xl font-bold text-foreground">Comece Grátis</h1>
++          <h1 className="text-page-title text-foreground">Comece Grátis</h1>
+           <p className="text-muted-foreground text-body">
+             Crie sua conta e configure seu salão
+           </p>
+diff --git a/frontend/src/pages/ResetPassword.tsx b/frontend/src/pages/ResetPassword.tsx
+index 4409d4d..e274a95 100644
+--- a/frontend/src/pages/ResetPassword.tsx
++++ b/frontend/src/pages/ResetPassword.tsx
+@@ -85,7 +85,7 @@ export default function ResetPassword() {
+             <Link to="/login">
+               <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+             </Link>
+-            <h1 className="text-2xl font-bold text-foreground">Token Inválido</h1>
++            <h1 className="text-page-title text-foreground">Token Inválido</h1>
+           </div>
+           
+           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+@@ -118,7 +118,7 @@ export default function ResetPassword() {
+           <Link to="/login">
+             <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+           </Link>
+-          <h1 className="text-2xl font-bold text-foreground">Redefinir Senha</h1>
++          <h1 className="text-page-title text-foreground">Redefinir Senha</h1>
+         </div>
+ 
+         <p className="text-muted-foreground">
+diff --git a/frontend/src/pages/SetPassword.tsx b/frontend/src/pages/SetPassword.tsx
+index 884b41f..fb91959 100644
+--- a/frontend/src/pages/SetPassword.tsx
++++ b/frontend/src/pages/SetPassword.tsx
+@@ -91,7 +91,7 @@ export default function SetPassword() {
+             <Link to="/login">
+               <ArrowLeft className="w-6 h-6 text-muted-foreground" />
+             </Link>
+-            <h1 className="text-2xl font-bold text-foreground">Link Inválido</h1>
++            <h1 className="text-page-title text-foreground">Link Inválido</h1>
+           </div>
+ 
+           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+@@ -112,7 +112,7 @@ export default function SetPassword() {
+     <AuthLayout>
+       <div className="space-y-6">
+         <div>
+-          <h1 className="text-2xl font-bold text-foreground">Criar sua senha</h1>
++          <h1 className="text-page-title text-foreground">Criar sua senha</h1>
+           <p className="text-muted-foreground text-body mt-1">
+             Defina uma senha segura para acessar o Easy Salon.
+           </p>
+diff --git a/frontend/src/pages/admin/SpecialtyServicesPage.tsx b/frontend/src/pages/admin/SpecialtyServicesPage.tsx
+index 1026c47..95c03f7 100644
+--- a/frontend/src/pages/admin/SpecialtyServicesPage.tsx
++++ b/frontend/src/pages/admin/SpecialtyServicesPage.tsx
+@@ -190,7 +190,7 @@ export default function SpecialtyServicesPage() {
+       <div className="flex items-center justify-between mb-6">
+         <div className="flex items-center gap-4">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleBack}
+             className="h-8 w-8"
+diff --git a/frontend/src/pages/admin/UsersPage.tsx b/frontend/src/pages/admin/UsersPage.tsx
+index ddd715e..af2f793 100644
+--- a/frontend/src/pages/admin/UsersPage.tsx
++++ b/frontend/src/pages/admin/UsersPage.tsx
+@@ -526,7 +526,7 @@ export default function UsersPage() {
+       >
+         <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-lg p-6 gap-6"> {/* RESP: AlertDialog adaptado */}
+           <AlertDialogHeader className="text-left">
+-            <AlertDialogTitle className="text-xl font-bold">Excluir usuário</AlertDialogTitle>
++            <AlertDialogTitle className="text-section-title">Excluir usuário</AlertDialogTitle>
+             <AlertDialogDescription className="text-base pt-2">
+               Tem certeza que deseja excluir o usuário "{userToDelete?.name}"?
+               Esta ação não pode ser desfeita.
+@@ -553,7 +553,7 @@ export default function UsersPage() {
+       >
+         <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-lg p-6 gap-6"> {/* RESP: AlertDialog adaptado */}
+           <AlertDialogHeader className="text-left">
+-            <AlertDialogTitle className="text-xl font-bold">Excluir múltiplos usuários</AlertDialogTitle>
++            <AlertDialogTitle className="text-section-title">Excluir múltiplos usuários</AlertDialogTitle>
+             <AlertDialogDescription className="text-base pt-2">
+               Tem certeza que deseja excluir {selectedUsers.length} usuário(s)
+               selecionado(s)? Esta ação não pode ser desfeita.
+diff --git a/frontend/src/pages/salon/AbsencesPage.tsx b/frontend/src/pages/salon/AbsencesPage.tsx
+index f5c318d..e4c0ae8 100644
+--- a/frontend/src/pages/salon/AbsencesPage.tsx
++++ b/frontend/src/pages/salon/AbsencesPage.tsx
+@@ -187,7 +187,7 @@ export default function AbsencesPage() {
+     <div className="space-y-6">
+       <div className="flex items-center justify-between">
+         <div>
+-          <h1 className="text-3xl font-bold">Ausências</h1>
++          <h1 className="text-page-title text-foreground">Ausências</h1>
+           <p className="text-muted-foreground mt-1">
+             Gerencie as ausências dos profissionais
+           </p>
+diff --git a/frontend/src/pages/salon/AgendaV2Page.tsx b/frontend/src/pages/salon/AgendaV2Page.tsx
+index 5e192ed..84292b7 100644
+--- a/frontend/src/pages/salon/AgendaV2Page.tsx
++++ b/frontend/src/pages/salon/AgendaV2Page.tsx
+@@ -304,6 +304,7 @@ export default function AgendaV2Page(): JSX.Element {
+   });
+ 
+   const dateString = format(selectedDate, "yyyy-MM-dd");
++  const isSelectedToday = dateString === format(new Date(), "yyyy-MM-dd");
+ 
+   const { appointments, refresh: refreshAppointments } = useRealtimeAppointments({
+     date: selectedDate,
+@@ -918,7 +919,7 @@ export default function AgendaV2Page(): JSX.Element {
+           {activeFilterChips.map((chip) => (
+             <span
+               key={chip.id}
+-              className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-foreground"
++              className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-button text-foreground"
+             >
+               {chip.label}
+               <button onClick={() => handleRemoveChip(chip)} className="hover:text-destructive">
+@@ -926,7 +927,7 @@ export default function AgendaV2Page(): JSX.Element {
+               </button>
+             </span>
+           ))}
+-          <button onClick={handleClearAllFilters} className="text-xs text-muted-foreground hover:text-foreground underline">
++          <button onClick={handleClearAllFilters} className="text-button text-muted-foreground hover:text-foreground underline">
+             Limpar
+           </button>
+         </div>
+@@ -944,8 +945,8 @@ export default function AgendaV2Page(): JSX.Element {
+ 
+           <Popover>
+             <PopoverTrigger asChild>
+-              <Button variant="outline" size="sm" className="font-normal">
+-                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
++              <Button variant="outline" size="sm" className="font-normal group">
++                <CalendarIcon className="w-4 h-4 text-foreground group-hover:text-primary transition-colors" />
+                 <span className="text-body">
+                   {format(selectedDate, "EEEE (d 'de' MMMM)", {
+                     locale: ptBR,
+@@ -963,7 +964,7 @@ export default function AgendaV2Page(): JSX.Element {
+             </PopoverContent>
+           </Popover>
+ 
+-          <Button variant="default" size="sm" onClick={handleToday}>
++          <Button variant={isSelectedToday ? "default" : "outline"} size="sm" onClick={handleToday}>
+             Hoje
+           </Button>
+         </div>
+@@ -1039,7 +1040,7 @@ export default function AgendaV2Page(): JSX.Element {
+                   variant="link"
+                   size="sm"
+                   onClick={handleClearAllFilters}
+-                  className="text-xs h-auto p-0 text-primary"
++                  className="text-button h-auto p-0 text-primary"
+                 >
+                   Limpar tudo
+                 </Button>
+diff --git a/frontend/src/pages/salon/ClientsPage.tsx b/frontend/src/pages/salon/ClientsPage.tsx
+index d10521b..c42d820 100644
+--- a/frontend/src/pages/salon/ClientsPage.tsx
++++ b/frontend/src/pages/salon/ClientsPage.tsx
+@@ -1,10 +1,10 @@
+ import { useState, useEffect, useCallback } from "react";
+ import { trackSeverinoEvent } from "@/services/severinoService";
+-import { Edit, Search, Users } from "lucide-react";
++import { Pencil, Search, Users } from "lucide-react";
+ import { LoadingSpinner } from "@/components/ui/loading-spinner";
+ import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+ import { PageHeader } from "@/components/layout/PageHeader";
+-import { DataTable } from "@/components/ui/data-table";
++import { DataTable, Column, TableAction } from "@/components/ui/data-table";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+ import { ClientModal } from "@/components/modals/ClientModal";
+@@ -214,28 +214,28 @@ export default function ClientsPage() {
+     }
+   };
+ 
+-  const columns = [
++  const columns: Column<Client>[] = [
+     {
+-      key: "name" as keyof Client,
++      key: "name",
+       header: "Nome",
+     },
+     {
+-      key: "email" as keyof Client,
++      key: "email",
+       header: "E-mail",
+       render: (value: string | undefined) => value || "N/A",
+     },
+     {
+-      key: "phone" as keyof Client,
++      key: "phone",
+       header: "Telefone",
+       render: (value: string) => formatPhone(value),
+     },
+     {
+-      key: "cpf" as keyof Client,
++      key: "cpf",
+       header: "CPF",
+       render: (value: string | undefined) => (value ? formatCPF(value) : "N/A"),
+     },
+     {
+-      key: "lastVisit" as keyof Client,
++      key: "lastVisit",
+       header: "Última Visita",
+       render: (value: Date | string | undefined) => {
+         if (!value) return "Nunca";
+@@ -246,19 +246,13 @@ export default function ClientsPage() {
+         }
+       },
+     },
++  ];
++
++  const actions: TableAction<Client>[] = [
+     {
+-      key: "id" as keyof Client,
+-      header: "Ações",
+-      render: (value: string, row: Client) => (
+-        <Button
+-          variant="ghost"
+-          size="icon"
+-          onClick={() => handleEditClient(row)}
+-          className="h-8 w-8"
+-        >
+-          <Edit className="h-4 w-4" />
+-        </Button>
+-      ),
++      label: "Editar",
++      icon: <Pencil className="h-4 w-4" />,
++      onClick: (row: Client): void => { void handleEditClient(row); },
+     },
+   ];
+ 
+@@ -319,9 +313,10 @@ export default function ClientsPage() {
+       ) : (
+         <>
+           {/* RESP: DataTable com Opt-in de Card View e configuração */}
+-          <DataTable 
+-            data={clients} 
+-            columns={columns} 
++          <DataTable
++            data={clients}
++            columns={columns}
++            actions={actions}
+             mobileView="cards"
+             mobileCardConfig={{
+               title: "name",
+diff --git a/frontend/src/pages/salon/DashboardPage.tsx b/frontend/src/pages/salon/DashboardPage.tsx
+index c18266a..bf6a7d3 100644
+--- a/frontend/src/pages/salon/DashboardPage.tsx
++++ b/frontend/src/pages/salon/DashboardPage.tsx
+@@ -84,7 +84,7 @@ export default function DashboardPage() {
+     >
+       {/* Header row: title + date filters */}
+       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+-        <h1 className="text-xl md:text-2xl font-semibold text-foreground">Dashboard</h1>
++        <h1 className="text-page-title text-foreground">Dashboard</h1>
+ 
+         <div className="flex items-center gap-2 min-w-0 w-full md:w-auto">
+           <div className="relative min-w-0 flex-1 md:flex-none">
+@@ -118,7 +118,7 @@ export default function DashboardPage() {
+           <Card>
+             <CardContent className="p-6 flex flex-col items-center justify-center py-8">
+               <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+-              <h3 className="text-lg font-medium mb-2">Nenhum salão selecionado</h3>
++              <h3 className="text-section-title mb-2">Nenhum salão selecionado</h3>
+               <p className="text-muted-foreground text-center mb-4">
+                 Para visualizar os dados do dashboard, você precisa selecionar um salão.
+               </p>
+@@ -206,7 +206,7 @@ export default function DashboardPage() {
+             <Card>
+               <CardContent className="p-4 md:p-6">
+                 <div className="mb-4">
+-                  <h3 className="text-lg font-semibold text-foreground">
++                  <h3 className="text-section-title text-foreground">
+                     Serviços Mais Agendados
+                   </h3>
+                   <p className="text-body text-muted-foreground">
+diff --git a/frontend/src/pages/salon/MyPlanPage.tsx b/frontend/src/pages/salon/MyPlanPage.tsx
+index 9516c17..9abd27e 100644
+--- a/frontend/src/pages/salon/MyPlanPage.tsx
++++ b/frontend/src/pages/salon/MyPlanPage.tsx
+@@ -288,7 +288,7 @@ export default function MyPlanPage() {
+         >
+             <div className="max-w-5xl mx-auto space-y-8 p-8">
+                 <div>
+-                    <h1 className="text-2xl font-semibold text-foreground">Meu Plano</h1>
++                    <h1 className="text-page-title text-foreground">Meu Plano</h1>
+                     <p className="text-body text-muted-foreground mt-1">Gerencie sua assinatura e forma de pagamento</p>
+                 </div>
+ 
+diff --git a/frontend/src/pages/salon/SalonSpecialtyServicesPage.tsx b/frontend/src/pages/salon/SalonSpecialtyServicesPage.tsx
+index 252b81f..1205a99 100644
+--- a/frontend/src/pages/salon/SalonSpecialtyServicesPage.tsx
++++ b/frontend/src/pages/salon/SalonSpecialtyServicesPage.tsx
+@@ -557,7 +557,7 @@ export default function SalonSpecialtyServicesPage() {
+       >
+         <div className="flex items-center gap-4 mb-6">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleBack}
+             className="h-8 w-8"
+@@ -582,7 +582,7 @@ export default function SalonSpecialtyServicesPage() {
+       >
+         <div className="flex items-center gap-4 mb-6">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleBack}
+             className="h-8 w-8"
+@@ -612,7 +612,7 @@ export default function SalonSpecialtyServicesPage() {
+       <div className="flex items-center justify-between mb-6">
+         <div className="flex items-center gap-4">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleBack}
+             className="h-8 w-8"
+diff --git a/frontend/src/pages/salon/SalonUserFormPage.tsx b/frontend/src/pages/salon/SalonUserFormPage.tsx
+index 95a64bb..bfad993 100644
+--- a/frontend/src/pages/salon/SalonUserFormPage.tsx
++++ b/frontend/src/pages/salon/SalonUserFormPage.tsx
+@@ -409,7 +409,7 @@ export default function SalonUserFormPage() {
+         {/* Header */}
+         <div className="flex items-center gap-4">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleGoBack}
+           >
+diff --git a/frontend/src/pages/salon/SalonUsersPage.tsx b/frontend/src/pages/salon/SalonUsersPage.tsx
+index f1b0c77..fc9e53b 100644
+--- a/frontend/src/pages/salon/SalonUsersPage.tsx
++++ b/frontend/src/pages/salon/SalonUsersPage.tsx
+@@ -1,20 +1,20 @@
+ import { useState, useEffect, useCallback } from "react";
+ import { useNavigate } from "react-router-dom";
+-import { Edit, Clock, Briefcase, Lock, UserX, Trash2, Search } from "lucide-react";
++import { Pencil, Clock, Briefcase, Lock, UserX, Trash2, Search, ChevronDown } from "lucide-react";
+ import { LoadingSpinner } from "@/components/ui/loading-spinner";
+ import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+ import { PageHeader } from "@/components/layout/PageHeader";
+-import { DataTable } from "@/components/ui/data-table";
++import { DataTable, Column, TableAction } from "@/components/ui/data-table";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+ import { Input } from "@/components/ui/input";
+ import {
+-  Select,
+-  SelectContent,
+-  SelectItem,
+-  SelectTrigger,
+-  SelectValue,
+-} from "@/components/ui/select";
++  DropdownMenu,
++  DropdownMenuContent,
++  DropdownMenuItem,
++  DropdownMenuSeparator,
++  DropdownMenuTrigger,
++} from "@/components/ui/dropdown-menu";
+ import {
+   AlertDialog,
+   AlertDialogAction,
+@@ -24,7 +24,6 @@ import {
+   AlertDialogFooter,
+   AlertDialogHeader,
+   AlertDialogTitle,
+-  AlertDialogTrigger,
+ } from "@/components/ui/alert-dialog";
+ import { getSalonNavItems } from "@/config/navigation";
+ import { useAuth } from "@/contexts/AuthContext";
+@@ -50,6 +49,7 @@ export default function SalonUsersPage() {
+   const [totalPages, setTotalPages] = useState(1);
+   const [totalItems, setTotalItems] = useState(0);
+   const [pageSize, setPageSize] = useState(16);
++  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+ 
+   const navItems = getSalonNavItems(user?.role || "Profissional");
+ 
+@@ -185,32 +185,32 @@ export default function SalonUsersPage() {
+     return userService.getRoleLabel(role);
+   };
+ 
+-  const columns = [
++  const columns: Column<User>[] = [
+     {
+-      key: "nickname" as keyof User,
++      key: "nickname",
+       header: "Apelido",
+       render: (value: string | undefined): string => value || "-",
+     },
+     {
+-      key: "name" as keyof User,
++      key: "name",
+       header: "Nome",
+     },
+     {
+-      key: "role" as keyof User,
++      key: "role",
+       header: "Perfil",
+       render: (value: UserRole): string => getRoleLabel(value),
+     },
+     {
+-      key: "email" as keyof User,
++      key: "email",
+       header: "Email",
+     },
+     {
+-      key: "whatsapp" as keyof User,
++      key: "whatsapp",
+       header: "WhatsApp",
+       render: (value: string | undefined): string => value ? formatPhone(value) : "-",
+     },
+     {
+-      key: "active" as keyof User,
++      key: "active",
+       header: "Status",
+       render: (value: boolean): JSX.Element => (
+         <Badge className={value ? "salon-badge-active" : "salon-badge-inactive"}>
+@@ -218,100 +218,44 @@ export default function SalonUsersPage() {
+         </Badge>
+       ),
+     },
++  ];
++
++  const userActions: TableAction<User>[] = [
+     {
+-      key: "id" as keyof User,
+-      header: "Ações",
+-      render: (_value: string, row: User): JSX.Element => (
+-        <div className="flex items-center gap-1">
+-          <Button
+-            variant="ghost"
+-            size="sm"
+-            onClick={() => handleEditUser(row)}
+-            className="h-7 w-7 p-0"
+-            title="Editar dados básicos"
+-          >
+-            <Edit className="h-3 w-3" />
+-          </Button>
+-          {/* Botões de horários e serviços só para profissionais */}
+-          {row.role === "professional" && (
+-            <>
+-              <Button
+-                variant="ghost"
+-                size="sm"
+-                onClick={() => handleUserSchedule(row)}
+-                className="h-7 w-7 p-0"
+-                title="Gerenciar horários"
+-              >
+-                <Clock className="h-3 w-3" />
+-              </Button>
+-              <Button
+-                variant="ghost"
+-                size="sm"
+-                onClick={() => handleUserServices(row)}
+-                className="h-7 w-7 p-0"
+-                title="Gerenciar serviços"
+-              >
+-                <Briefcase className="h-3 w-3" />
+-              </Button>
+-            </>
+-          )}
+-          <Button
+-            variant="ghost"
+-            size="sm"
+-            onClick={() => handleUserPassword(row)}
+-            className="h-7 w-7 p-0"
+-            disabled={!selectedSalon?.active}
+-            title="Alterar senha"
+-          >
+-            <Lock className="h-3 w-3" />
+-          </Button>
+-          <Button
+-            variant="ghost"
+-            size="sm"
+-            disabled={!selectedSalon?.active}
+-            onClick={() => handleToggleUserStatus(row)}
+-            className={`h-7 w-7 p-0 ${
+-              row.active
+-                ? "text-orange-600 hover:text-orange-700"
+-                : "text-green-600 hover:text-green-700"
+-            }`}
+-            title={row.active ? "Desativar usuário" : "Ativar usuário"}
+-          >
+-            <UserX className="h-3 w-3" />
+-          </Button>
+-          <AlertDialog>
+-            <AlertDialogTrigger asChild>
+-              <Button
+-                variant="ghost"
+-                size="sm"
+-                disabled={!selectedSalon?.active}
+-                className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+-                title="Excluir usuário"
+-              >
+-                <Trash2 className="h-3 w-3" />
+-              </Button>
+-            </AlertDialogTrigger>
+-            <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-lg p-6 gap-6"> {/* RESP: AlertDialog adaptado */}
+-              <AlertDialogHeader className="text-left">
+-                <AlertDialogTitle className="text-xl font-bold">Excluir usuário</AlertDialogTitle>
+-                <AlertDialogDescription className="text-base pt-2">
+-                  Tem certeza que deseja excluir o usuário "{row.name}"? Esta
+-                  ação não pode ser desfeita.
+-                </AlertDialogDescription>
+-              </AlertDialogHeader>
+-              <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3"> {/* RESP: Footer empilhado no mobile */}
+-                <AlertDialogCancel className="w-full sm:w-auto min-h-[44px] rounded-lg mt-0">Cancelar</AlertDialogCancel>
+-                <AlertDialogAction
+-                  onClick={() => handleDeleteUser(row)}
+-                  className="w-full sm:w-auto min-h-[44px] rounded-lg bg-destructive hover:bg-destructive/90 shadow-md transition-all active:scale-[0.98]"
+-                >
+-                  Excluir
+-                </AlertDialogAction>
+-              </AlertDialogFooter>
+-            </AlertDialogContent>
+-          </AlertDialog>
+-        </div>
+-      ),
++      label: "Editar",
++      icon: <Pencil className="h-4 w-4" />,
++      onClick: (row: User): void => handleEditUser(row),
++    },
++    {
++      label: "Gerenciar horários",
++      icon: <Clock className="h-4 w-4" />,
++      onClick: (row: User): void => handleUserSchedule(row),
++      hidden: (row: User): boolean => row.role !== "professional",
++    },
++    {
++      label: "Gerenciar serviços",
++      icon: <Briefcase className="h-4 w-4" />,
++      onClick: (row: User): void => handleUserServices(row),
++      hidden: (row: User): boolean => row.role !== "professional",
++    },
++    {
++      label: "Alterar senha",
++      icon: <Lock className="h-4 w-4" />,
++      onClick: (row: User): void => handleUserPassword(row),
++      disabled: (_row: User): boolean => !selectedSalon?.active,
++    },
++    {
++      label: "Alterar status",
++      icon: <UserX className="h-4 w-4" />,
++      onClick: (row: User): void => { void handleToggleUserStatus(row); },
++      disabled: (_row: User): boolean => !selectedSalon?.active,
++    },
++    {
++      label: "Excluir usuário",
++      icon: <Trash2 className="h-4 w-4" />,
++      variant: "destructive",
++      onClick: (row: User): void => setUserToDelete(row),
++      disabled: (_row: User): boolean => !selectedSalon?.active,
+     },
+   ];
+ 
+@@ -343,21 +287,38 @@ export default function SalonUsersPage() {
+               className="pl-10 salon-input"
+             />
+           </div>
+-          <div className="flex items-center gap-2 w-full sm:w-auto">
+-            <label htmlFor="status-filter" className="text-xs font-semibold whitespace-nowrap">
+-              Status:
+-            </label>
+-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+-              <SelectTrigger className="w-full sm:w-[150px] h-9 salon-input">
+-                <SelectValue placeholder="Status" />
+-              </SelectTrigger>
+-              <SelectContent>
+-                <SelectItem value="all">Todos</SelectItem>
+-                <SelectItem value="active">Ativos</SelectItem>
+-                <SelectItem value="inactive">Inativos</SelectItem>
+-              </SelectContent>
+-            </Select>
+-          </div>
++          <DropdownMenu>
++            <DropdownMenuTrigger asChild>
++              <Button
++                variant="outline"
++                size="sm"
++                className={statusFilter !== "all" ? "bg-primary/10 border-primary/40 text-primary" : ""}
++              >
++                <span className="truncate">
++                  {statusFilter === "active" ? "Ativos" : statusFilter === "inactive" ? "Inativos" : "Status"}
++                </span>
++                <ChevronDown className="h-4 w-4 flex-shrink-0" />
++              </Button>
++            </DropdownMenuTrigger>
++            <DropdownMenuContent className="w-40 p-0 bg-card border border-border shadow-lg" align="end">
++              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
++                Todos
++              </DropdownMenuItem>
++              <DropdownMenuSeparator />
++              <DropdownMenuItem
++                onClick={() => setStatusFilter("active")}
++                className={statusFilter === "active" ? "bg-accent" : ""}
++              >
++                Ativos
++              </DropdownMenuItem>
++              <DropdownMenuItem
++                onClick={() => setStatusFilter("inactive")}
++                className={statusFilter === "inactive" ? "bg-accent" : ""}
++              >
++                Inativos
++              </DropdownMenuItem>
++            </DropdownMenuContent>
++          </DropdownMenu>
+         </div>
+       </div>
+ 
+@@ -378,9 +339,10 @@ export default function SalonUsersPage() {
+         </div>
+       ) : (
+         <>
+-          <DataTable 
+-            data={users} 
+-            columns={columns} 
++          <DataTable<User>
++            data={users}
++            columns={columns}
++            actions={userActions}
+             mobileView="cards"
+             mobileCardConfig={{
+               title: "nickname",
+@@ -399,6 +361,26 @@ export default function SalonUsersPage() {
+           />
+         </>
+       )}
++      <AlertDialog open={userToDelete !== null} onOpenChange={(open) => { if (!open) setUserToDelete(null); }}>
++        <AlertDialogContent className="w-[95vw] max-w-[400px] rounded-lg p-6 gap-6">
++          <AlertDialogHeader className="text-left">
++            <AlertDialogTitle className="text-section-title">Excluir usuário</AlertDialogTitle>
++            <AlertDialogDescription className="text-base pt-2">
++              Tem certeza que deseja excluir o usuário "{userToDelete?.name}"? Esta
++              ação não pode ser desfeita.
++            </AlertDialogDescription>
++          </AlertDialogHeader>
++          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3">
++            <AlertDialogCancel className="w-full sm:w-auto min-h-[44px] rounded-lg mt-0">Cancelar</AlertDialogCancel>
++            <AlertDialogAction
++              onClick={() => { if (userToDelete) void handleDeleteUser(userToDelete); }}
++              className="w-full sm:w-auto min-h-[44px] rounded-lg bg-destructive hover:bg-destructive/90 shadow-md transition-all active:scale-[0.98]"
++            >
++              Excluir
++            </AlertDialogAction>
++          </AlertDialogFooter>
++        </AlertDialogContent>
++      </AlertDialog>
+     </EasySalonLayout>
+   );
+ }
+diff --git a/frontend/src/pages/salon/ServiceEditPage.tsx b/frontend/src/pages/salon/ServiceEditPage.tsx
+index 22e01ba..2cd6311 100644
+--- a/frontend/src/pages/salon/ServiceEditPage.tsx
++++ b/frontend/src/pages/salon/ServiceEditPage.tsx
+@@ -282,7 +282,7 @@ export default function ServiceEditPage() {
+       {/* Header */}
+       <div className="flex items-center gap-4 mb-6">
+         <Button
+-          variant="ghost"
++          variant="secondary"
+           size="icon"
+           onClick={handleGoBack}
+           className="h-8 w-8"
+diff --git a/frontend/src/pages/salon/ServicesPage.tsx b/frontend/src/pages/salon/ServicesPage.tsx
+index 5423742..9296c02 100644
+--- a/frontend/src/pages/salon/ServicesPage.tsx
++++ b/frontend/src/pages/salon/ServicesPage.tsx
+@@ -1,13 +1,13 @@
+ import { useState, useEffect, useMemo, useCallback } from "react";
+ import { trackSeverinoEvent } from "@/services/severinoService";
+-import { Search, Settings, Edit } from "lucide-react";
++import { Search, Settings } from "lucide-react";
+ import { LoadingSpinner } from "@/components/ui/loading-spinner";
+ import { useNavigate } from "react-router-dom";
+ import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+ import { PageHeader } from "@/components/layout/PageHeader";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+-import { DataTable } from "@/components/ui/data-table";
++import { DataTable, Column, TableAction } from "@/components/ui/data-table";
+ import { Badge } from "@/components/ui/badge";
+ import { ServicesAccordion } from "@/components/ui/services-accordion";
+ import { ServicePricingModal, ServicePricingData, ServicePricingInput } from "@/components/modals/ServicePricingModal";
+@@ -32,7 +32,6 @@ interface ServiceExtended extends Service {
+ }
+ 
+ interface ServiceWithAction extends ServiceExtended {
+-  handleConfig?: () => void;
+   specialtyName?: string;
+ }
+ 
+@@ -362,9 +361,9 @@ export default function ServicesPage() {
+   }
+ 
+   // Configuração das colunas para a tabela de serviços
+-  const servicesColumns = [
++  const servicesColumns: Column<ServiceWithAction>[] = [
+     {
+-      key: "name" as keyof ServiceWithAction,
++      key: "name",
+       header: "NOME DO SERVIÇO",
+       width: "250px",
+       render: (_value: unknown, row: ServiceWithAction) => (
+@@ -379,59 +378,35 @@ export default function ServicesPage() {
+       ),
+     },
+     {
+-      key: "price" as keyof ServiceWithAction,
++      key: "price",
+       header: "VALOR",
+       width: "140px",
+       render: (_value: unknown, row: ServiceWithAction) => {
+         const price = formatPrice(Number(row.price));
+-
+         if (row.priceType === ServicePriceType.FIXED || !row.maxPrice) {
+           return price;
+         }
+-
+         const maxPrice = formatPrice(Number(row.maxPrice));
+         return `${price} - ${maxPrice}`;
+       },
+     },
+     {
+-      key: "duration" as keyof ServiceWithAction,
++      key: "duration",
+       header: "DURAÇÃO",
+       width: "120px",
+       render: (_value: unknown, row: ServiceWithAction) =>
+         formatDuration(row.duration),
+     },
+     {
+-      key: "isAvailableInSalon" as keyof ServiceWithAction,
++      key: "isAvailableInSalon",
+       header: "STATUS",
+       width: "100px",
+       render: (value: unknown) => (
+-        <Badge
+-          className={value ? "salon-badge-active" : "salon-badge-inactive"}
+-        >
++        <Badge className={value ? "salon-badge-active" : "salon-badge-inactive"}>
+           {value ? "Ativo" : "Inativo"}
+         </Badge>
+       ),
+     },
+-    {
+-      key: "actions" as keyof ServiceWithAction,
+-      header: "Ações",
+-      width: "80px",
+-      render: (_value: unknown, row: ServiceWithAction) => {
+-        return (
+-          <div className="flex justify-end pr-1">
+-            <Button
+-              variant="ghost"
+-              size="sm"
+-              onClick={() => row.handleConfig && row.handleConfig()}
+-              className="h-8 w-8 p-0 text-muted-foreground hover:text-primary transition-colors"
+-              title="Configurar serviço"
+-            >
+-              <Settings className="h-5 w-5" />
+-            </Button>
+-          </div>
+-        );
+-      },
+-    },
+   ];
+ 
+   if (loading) {
+@@ -523,12 +498,18 @@ export default function ServicesPage() {
+             title: specialty.name,
+             serviceCount: specialty.services.length,
+             content: (
+-              <DataTable
+-                data={specialty.services.map((service) => ({
+-                  ...service,
+-                  handleConfig: () => handleConfigService(service, specialty),
+-                }))}
++              <DataTable<ServiceWithAction>
++                data={specialty.services as ServiceWithAction[]}
+                 columns={servicesColumns}
++                actions={[
++                  {
++                    label: "Configurar",
++                    icon: <Settings className="h-4 w-4" />,
++                    onClick: (row: ServiceWithAction): void => {
++                      handleConfigService(row, specialty);
++                    },
++                  },
++                ] satisfies TableAction<ServiceWithAction>[]}
+                 mobileView="cards"
+                 mobileCardConfig={{
+                   title: "name",
+diff --git a/frontend/src/pages/salon/SolicitacoesPage.tsx b/frontend/src/pages/salon/SolicitacoesPage.tsx
+index 4a660be..0c7176b 100644
+--- a/frontend/src/pages/salon/SolicitacoesPage.tsx
++++ b/frontend/src/pages/salon/SolicitacoesPage.tsx
+@@ -129,11 +129,17 @@ export default function SolicitacoesPage(): JSX.Element {
+   const handleStartDateSelect = (date: Date | undefined) => {
+     setStartDate(date);
+     setStartDateOpen(false);
++    if (date) {
++      toast({ title: "Filtro aplicado", description: `A partir de ${format(date, "dd/MM/yyyy")}`, variant: "success" });
++    }
+   };
+ 
+   const handleEndDateSelect = (date: Date | undefined) => {
+     setEndDate(date);
+     setEndDateOpen(false);
++    if (date) {
++      toast({ title: "Filtro aplicado", description: `Até ${format(date, "dd/MM/yyyy")}`, variant: "success" });
++    }
+   };
+ 
+   useEffect(() => {
+@@ -410,23 +416,9 @@ export default function SolicitacoesPage(): JSX.Element {
+       sideNavItems={navItems}
+     >
+       <div className="space-y-4 md:space-y-6">
+-        {/* Header with actions */}
+-        <div className="flex justify-between items-center bg-card p-4 md:p-0 rounded-lg md:bg-transparent shadow-sm md:shadow-none">
+-          <h1 className="text-xl md:text-2xl font-bold text-foreground">Solicitações</h1>
+-          <div className="flex gap-2">
+-            <Button
+-              variant="outline"
+-              size="sm"
+-              onClick={loadData}
+-              disabled={refreshing}
+-              className=""
+-            >
+-              <RefreshCw
+-                className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")}
+-              />
+-              <span className="hidden sm:inline">Atualizar</span>
+-            </Button>
+-          </div>
++        {/* Header */}
++        <div className="bg-card p-4 md:p-0 rounded-lg md:bg-transparent shadow-sm md:shadow-none">
++          <h1 className="text-page-title text-foreground">Solicitações</h1>
+         </div>
+ 
+         {/* Filtros de Data - Compacto no Mobile */}
+@@ -434,11 +426,11 @@ export default function SolicitacoesPage(): JSX.Element {
+           <div className="p-0 md:p-4">
+             <div className="flex flex-col gap-3 p-4 md:p-0">
+               <div className="flex flex-row items-center gap-2 flex-wrap text-body">
+-                <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-lg border">
++                <div className="flex items-center gap-2 flex-1">
+                   <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                     <PopoverTrigger asChild>
+-                      <Button variant="ghost" size="sm" className="gap-2 px-2 py-1 h-auto font-medium">
+-                        <CalendarIcon className="h-4 w-4 text-primary" />
++                      <Button variant="outline" size="sm" className="font-normal group">
++                        <CalendarIcon className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                         {startDate ? format(startDate, "dd/MM/yy") : "Início"}
+                       </Button>
+                     </PopoverTrigger>
+@@ -457,8 +449,8 @@ export default function SolicitacoesPage(): JSX.Element {
+ 
+                   <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                     <PopoverTrigger asChild>
+-                      <Button variant="ghost" size="sm" className="gap-2 px-2 py-1 h-auto font-medium">
+-                        <CalendarIcon className="h-4 w-4 text-primary" />
++                      <Button variant="outline" size="sm" className="font-normal group">
++                        <CalendarIcon className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                         {endDate ? format(endDate, "dd/MM/yy") : "Fim"}
+                       </Button>
+                     </PopoverTrigger>
+@@ -472,24 +464,28 @@ export default function SolicitacoesPage(): JSX.Element {
+                       />
+                     </PopoverContent>
+                   </Popover>
++
++                  <Button
++                    variant="secondary"
++                    size="sm"
++                    onClick={handleClearFilters}
++                  >
++                    Limpar
++                  </Button>
+                 </div>
+ 
+                 <Button
+-                  variant="ghost"
++                  variant="outline"
+                   size="sm"
+-                  onClick={handleClearFilters}
+-                  className="h-9 px-2 text-muted-foreground hover:text-destructive"
++                  onClick={loadData}
++                  disabled={refreshing}
++                  className="ml-auto"
+                 >
+-                  <X className="h-4 w-4 mr-1" />
+-                  Limpar
++                  <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
++                  <span className="hidden sm:inline">Atualizar</span>
+                 </Button>
+               </div>
+ 
+-              {startDate && endDate && (
+-                <div className="text-xs text-muted-foreground pl-1">
+-                  Mostrando solicitações de <span className="font-semibold text-foreground">{format(startDate, "dd/MM/yyyy")}</span> até <span className="font-semibold text-foreground">{format(endDate, "dd/MM/yyyy")}</span>
+-                </div>
+-              )}
+             </div>
+           </div>
+         </div>
+@@ -582,7 +578,7 @@ export default function SolicitacoesPage(): JSX.Element {
+           </div>
+ 
+           {/* Kanban Board */}
+-          <div className="min-h-[600px] bg-background border border-border rounded-lg overflow-hidden shadow-sm">
++          <div className="min-h-[600px] bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+             <SolicitacaoKanban
+               columns={columns}
+               onMoveItem={handleMoveItem}
+@@ -670,7 +666,7 @@ export default function SolicitacoesPage(): JSX.Element {
+ 
+ function StatsCard({ label, value, icon: Icon, color, badgeColor, badgeValue }: any) {
+   return (
+-    <div className="bg-card border border-border rounded-lg shadow-sm">
++    <div className="bg-card border border-border rounded-lg">
+       <div className="p-4">
+         <div className="flex items-center justify-between">
+           <div>
+diff --git a/frontend/src/pages/salon/UserPasswordPage.tsx b/frontend/src/pages/salon/UserPasswordPage.tsx
+index 9965818..32c88fd 100644
+--- a/frontend/src/pages/salon/UserPasswordPage.tsx
++++ b/frontend/src/pages/salon/UserPasswordPage.tsx
+@@ -107,7 +107,7 @@ export default function UserPasswordPage() {
+         {/* Header */}
+         <div className="flex items-center gap-4">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleGoBack}
+           >
+diff --git a/frontend/src/pages/salon/UserSchedulePage.tsx b/frontend/src/pages/salon/UserSchedulePage.tsx
+index 1e09549..2e40434 100644
+--- a/frontend/src/pages/salon/UserSchedulePage.tsx
++++ b/frontend/src/pages/salon/UserSchedulePage.tsx
+@@ -407,7 +407,7 @@ export default function UserSchedulePage() {
+         {/* Header */}
+         <div className="flex items-center gap-4">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleGoBack}
+           >
+diff --git a/frontend/src/pages/salon/UserServicesPage.tsx b/frontend/src/pages/salon/UserServicesPage.tsx
+index 6c2130c..e5e8571 100644
+--- a/frontend/src/pages/salon/UserServicesPage.tsx
++++ b/frontend/src/pages/salon/UserServicesPage.tsx
+@@ -191,7 +191,7 @@ export default function UserServicesPage() {
+         {/* Header */}
+         <div className="flex items-center gap-4">
+           <Button
+-            variant="ghost"
++            variant="secondary"
+             size="icon"
+             onClick={handleGoBack}
+           >
+diff --git a/frontend/src/pages/salon/settings/OnlineBookingSettingsPage.tsx b/frontend/src/pages/salon/settings/OnlineBookingSettingsPage.tsx
+index b9c600e..67177ad 100644
+--- a/frontend/src/pages/salon/settings/OnlineBookingSettingsPage.tsx
++++ b/frontend/src/pages/salon/settings/OnlineBookingSettingsPage.tsx
+@@ -189,7 +189,7 @@ export default function OnlineBookingSettingsPage() {
+       {/* Header com botão voltar */}
+       <div className="flex items-center gap-4 mb-6">
+         <Button
+-          variant="ghost"
++          variant="secondary"
+           size="icon"
+           onClick={handleBack}
+           className="h-8 w-8"
+diff --git a/frontend/tailwind.config.ts b/frontend/tailwind.config.ts
+index 7aedfaf..51202d4 100644
+--- a/frontend/tailwind.config.ts
++++ b/frontend/tailwind.config.ts
+@@ -23,10 +23,10 @@ export default {
+ 				'sans': ['Inter', 'sans-serif'],
+ 			},
+ 			fontSize: {
+-				'page-title': ['20px', { lineHeight: '28px' }], // H1 - Títulos de Página
+-				'section-title': ['18px', { lineHeight: '24px' }], // H2 - Títulos de Seção/Card
+-				'body': ['13px', { lineHeight: '20px' }], // Corpo/Itens de Lista
+-				'button': ['12px', { lineHeight: '20px' }], // Botões e Labels
++				'page-title': ['20px', { lineHeight: '28px', fontWeight: '700' }], // H1 - Títulos de Página
++				'section-title': ['18px', { lineHeight: '24px', fontWeight: '600' }], // H2 - Títulos de Seção/Card
++				'body': ['13px', { lineHeight: '20px', fontWeight: '400' }], // Corpo/Itens de Lista
++				'button': ['12px', { lineHeight: '20px', fontWeight: '500' }], // Botões e Labels
+ 			},
+ 			colors: {
+ 				border: 'hsl(var(--border))',

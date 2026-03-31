@@ -1,0 +1,319 @@
+import { useState, useEffect, useCallback } from "react";
+import { format, startOfMonth } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Calendar as CalendarIconLucide, ClipboardList, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { dashboardService, type DashboardStats } from "@/services/dashboardService";
+import { analytics } from "@/lib/analytics";
+
+const defaultChartConfig = {
+  value: {
+    label: "Agendamentos",
+  },
+};
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const { selectedSalon } = useSelectedSalon();
+
+  // Estados para os filtros de data
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+
+  const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(new Date()));
+  const [dateTo, setDateTo] = useState<Date>(tomorrow);
+
+  // Estados para os dados
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const navItems = getSalonNavItems(user?.role || 'Profissional');
+
+  useEffect(() => {
+    analytics.trackEvent("dashboard_viewed", {});
+  }, []);
+
+  // Função para buscar dados do dashboard
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await dashboardService.getStats({
+        startDate: format(dateFrom, 'yyyy-MM-dd'),
+        endDate: format(dateTo, 'yyyy-MM-dd')
+      });
+
+      setDashboardData(data);
+    } catch (err) {
+      setError('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedSalon, dateFrom, dateTo]);
+
+  // Buscar dados quando o componente carrega ou quando as datas mudam ou salão muda
+  useEffect(() => {
+    if (selectedSalon?.id) {
+      fetchDashboardData();
+    }
+  }, [dateFrom, dateTo, selectedSalon?.id]); // Remove fetchDashboardData from deps to avoid loop
+
+  // Criar configuração do gráfico baseada nos dados reais
+  const chartConfig = dashboardData?.topServices.reduce((acc, service) => {
+    acc[service.name] = {
+      label: service.name,
+      color: service.color,
+    };
+    return acc;
+  }, { ...defaultChartConfig }) || defaultChartConfig;
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Easy Salon"
+      sideNavItems={navItems}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-6">
+
+        {/* Filtros de Data */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">De:</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[140px] justify-start text-left font-normal",
+                    !dateFrom && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, "dd/MM/yyyy") : <span>Selecionar</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={(date) => {
+                    if (date) {
+                      setDateFrom(date);
+                      // Se a data "de" for maior que a data "até", ajustar a data "até"
+                      if (dateTo && date > dateTo) {
+                        setDateTo(date);
+                      }
+                    }
+                  }}
+                  disabled={false}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Até:</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[140px] justify-start text-left font-normal",
+                    !dateTo && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, "dd/MM/yyyy") : <span>Selecionar</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  disabled={(date) => (dateFrom && date < dateFrom)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Verificar se há salão selecionado */}
+        {!selectedSalon && !loading && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum salão selecionado</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                Para visualizar os dados do dashboard, você precisa selecionar um salão.
+              </p>
+              <Button
+                onClick={() => window.location.href = '/admin/salons'}
+                variant="default"
+              >
+                Selecionar Salão
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading e Error States */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-muted-foreground">Carregando dados...</div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="text-red-800">{error}</div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={fetchDashboardData}
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && dashboardData && selectedSalon && (
+          <>
+            {/* KPIs - Big Numbers */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Agendamentos no Período
+                  </CardTitle>
+                  <CalendarIconLucide className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{dashboardData.appointments.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {dashboardData.appointments.thisWeek} esta semana
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Solicitações Totais
+                  </CardTitle>
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{dashboardData.requests.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {dashboardData.requests.pending} pendentes
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total de Clientes
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{dashboardData.clients.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {dashboardData.clients.new} novos este mês
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Gráfico de Pizza - Serviços mais Agendados */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="col-span-2">
+                <CardHeader>
+                  <CardTitle>Serviços Mais Agendados</CardTitle>
+                  <CardDescription>
+                    Distribuição dos agendamentos por tipo de serviço no período selecionado
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {dashboardData.topServices.length > 0 ? (
+                    <>
+                      <ChartContainer
+                        config={chartConfig}
+                        className="mx-auto aspect-square max-h-[350px]"
+                      >
+                        <PieChart>
+                          <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                          />
+                          <Pie
+                            data={dashboardData.topServices}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={120}
+                            innerRadius={60}
+                            strokeWidth={2}
+                          >
+                            {dashboardData.topServices.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
+
+                      {/* Legendas */}
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        {dashboardData.topServices.map((item, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {item.name}: {item.value} agendamentos
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="text-muted-foreground">
+                        Nenhum agendamento encontrado para o período selecionado
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+      </div>
+    </EasySalonLayout>
+  );
+}

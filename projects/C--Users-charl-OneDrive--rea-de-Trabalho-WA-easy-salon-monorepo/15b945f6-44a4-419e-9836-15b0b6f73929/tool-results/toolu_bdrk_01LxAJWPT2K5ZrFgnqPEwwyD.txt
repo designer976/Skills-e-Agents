@@ -1,0 +1,279 @@
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\App.tsx-579-                  {/* Rota pública para agendamento online */}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\App.tsx-580-                  <Route
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\App.tsx:581:                    path="/agenda/:salonSlug"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\App.tsx-582-                    element={<NewBookingPage />}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\App.tsx-583-                  />
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-184-            <>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-185-              <button
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:186:                onClick={() => window.open("/agenda-online", "_blank")}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-187-                aria-label="Minha página web"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-188-                className="hidden md:flex w-9 h-9 items-center justify-center border border-[#dd4227] rounded-lg hover:bg-[#dd4227]/10 transition-colors"
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-288-                  <>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-289-                    <button
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:290:                      onClick={() => { setUserDropdownOpen(false); window.open("/agenda-online", "_blank"); }}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-291-                      className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx-292-                    >
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-36-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-37-interface BookingServiceRecommendationsProps {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:38:  salonSlug: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-39-  serviceId: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-40-  serviceName: string;
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-45-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-46-export function BookingServiceRecommendations({
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:47:  salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-48-  serviceId,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-49-  serviceName,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-61-        setLoading(true);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-62-        const data = await bookingService.getServiceRecommendations(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:63:          salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-64-          serviceId
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-65-        );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-73-    };
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-74-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:75:    if (serviceId && salonSlug) {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-76-      fetchRecommendations();
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-77-    }
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:78:  }, [salonSlug, serviceId]);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-79-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx-80-  // Filtrar apenas recomendações ativas e que não estão já selecionadas
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-15-  bookingData: BookingData;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-16-  salon: SalonBranding;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:17:  salonSlug: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-18-  primaryColor: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-19-  confirmations?: BookingConfirmationResponse[];
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-24-  bookingData,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-25-  salon,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:26:  salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-27-  primaryColor,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-28-  confirmations,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-133-    try {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-134-      await bookingService.cancelBookingLock(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:135:        salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-136-        confirmationCode.split("/")
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx-137-      );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-15-  bookingData: BookingData;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-16-  salon: SalonBranding;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:17:  salonSlug: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-18-  sessionId: string | null;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-19-  primaryColor: string;
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-25-  bookingData,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-26-  salon,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:27:  salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-28-  sessionId,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-29-  primaryColor,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-57-      const bookingRequests = createMultiServiceBookingRequests(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-58-        bookingData,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:59:        salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-60-        salon.timezone,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-61-        sessionId || undefined
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-81-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-82-            const confirmation = await bookingService.createBooking(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:83:              salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-84-              request
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-85-            );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-102-                  );
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-103-                  await bookingService.cancelBookingsBulk(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:104:                    salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-105-                    confirmationCodes
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-106-                  );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-114-                    try {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-115-                      await bookingService.cancelBooking(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:116:                        salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-117-                        conf.confirmationCode
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx-118-                      );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-38-  timeSlots: BookingTimeSlot[];
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-39-  primaryColor: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:40:  salonSlug: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-41-  services?: Array<{
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-42-    id: string;
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-59-  timeSlots,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-60-  primaryColor,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:61:  salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-62-  services = [],
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-63-  onConfigUpdate,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-88-      try {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-89-        const response = await bookingService.getProfessionals(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:90:          salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-91-          serviceId
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-92-        );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-103-      }
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-104-    },
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:105:    [salonSlug]
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-106-  );
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-107-
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-120-      try {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-121-        const availability = await bookingService.getAvailability(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:122:          salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-123-          serviceId,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-124-          professionalId || undefined,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-145-      }
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-146-    },
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:147:    [salonSlug]
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-148-  );
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx-149-
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-73-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-74-  // Get salon slug from URL
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:75:  const salonSlug = window.location.pathname.split("/")[2];
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-76-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-77-  // Search client by phone or CPF
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-98-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-99-        const { data: clientData } = await publicHttpClient.post(
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:100:          `/booking/${salonSlug}/client/search`,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-101-          {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-102-            cpf: cleanCpf,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-137-      customerGender,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-138-      onCustomerDataChange,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:139:      salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-140-    ]
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx-141-  );
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-12-  selectedServices: BookingService[];
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-13-  primaryColor: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:14:  salonSlug: string;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-15-  onAddService: (service: BookingService) => void;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-16-  onRemoveService: (serviceId: string) => void;
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-23-  selectedServices,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-24-  primaryColor,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:25:  salonSlug,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-26-  onAddService,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-27-  onRemoveService,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-300-          {selectedServices.length > 0 && (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-301-            <BookingServiceRecommendations
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:302:              salonSlug={salonSlug}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-303-              serviceId={selectedServices[selectedServices.length - 1].id}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx-304-              serviceName={selectedServices[selectedServices.length - 1].name}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-618-                          <p>A URL pública para agendamento online será:</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-619-                          <p className="font-mono">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:620:                            https://app.easysalon.com.br/agenda/
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-621-                            {formatUrlSlug(salonInfo.nomeFantasia) ||
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-622-                              "slug-do-salao"}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx-445-            onClick={() => {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx-446-              if (selectedSalon?.slug) {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:447:                window.open(`/agenda/${selectedSalon.slug}`, "_blank");
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx-448-              } else {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx-449-                toast({
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx-3-import { CalendarEvent, EventPosition } from "./types";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx-4-import { formatUTCToLocal } from "@/utils/dateTimeHelpers";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx:5:import { BookingSourceBadge } from "@/components/agenda/BookingSourceBadge";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx-6-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx-7-interface EventBlockProps {
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-8-import { toast } from "sonner";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-9-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:10:import { AgendaFilters, FilterRemoveSignal, ProfessionalChip } from "@/components/agenda/AgendaFilters";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:11:import { ModalComanda } from "@/components/agenda/ModalComanda";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:12:import { ModalEditarAgendamento } from "@/components/agenda/ModalEditarAgendamento";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:13:import { ModalNovaAusencia } from "@/components/agenda/ModalNovaAusencia";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:14:import { ModalNovoAgendamento } from "@/components/agenda/ModalNovoAgendamento";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-15-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx-16-import { FirstAppointmentModal } from "@/components/onboarding/FirstAppointmentModal";
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-102-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-103-export default function NewBookingPage() {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:104:  const { salonSlug } = useParams();
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-105-  const [salonBranding, setSalonBranding] =
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-106-    useState<SalonBranding>(defaultSalonBranding);
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-125-    resetBooking,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-126-    releaseAllLocks,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:127:  } = useNewBookingFlow(salonSlug || undefined);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-128-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-129-  const prevStepRef = useRef<number>(-1);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-130-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-131-  useEffect(() => {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:132:    if (!salonSlug) return;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-133-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-134-    if (currentStep === 0 && prevStepRef.current === -1) {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:135:      analytics.trackEvent('booking_welcome_viewed', { salon_slug: salonSlug });
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-136-    }
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-137-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-138-    if (currentStep === 1 && prevStepRef.current === 0) {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:139:      analytics.trackEvent('booking_started', { salon_slug: salonSlug });
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-140-    }
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-141-
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-159-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-160-    prevStepRef.current = currentStep;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:161:  }, [currentStep, salonSlug, bookingData, confirmations]);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-162-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:163:  const loadSalonData = useCallback(async (salonSlug): Promise<void> => {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:164:    if (!salonSlug) return;
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-165-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-166-    setIsLoading(true);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-167-    try {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-168-      // Get salon info from booking API
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:169:      const salon = await bookingService.getSalonInfo(salonSlug);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-170-      setSalonInfo(salon);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-171-
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-201-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-202-        // Load services from booking API
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:203:        const servicesResponse = await bookingService.getServices(salonSlug);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-204-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-205-        // Convert categories/services to flat BookingService array and extract unique professionals
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-270-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-271-  useEffect(() => {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:272:    loadSalonData(salonSlug);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:273:  }, [loadSalonData, salonSlug]);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-274-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-275-  const handleCustomerDataChange = (data: CustomerData): void => {
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-288-            selectedServices={bookingData.services}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-289-            primaryColor={salonBranding.primaryColor}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:290:            salonSlug={salonSlug || ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-291-            onAddService={addService}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-292-            onRemoveService={removeService}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-303-            timeSlots={defaultTimeSlots}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-304-            primaryColor={salonBranding.primaryColor}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:305:            salonSlug={salonSlug || ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-306-            services={bookingData.services}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-307-            onConfigUpdate={updateServiceConfig}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-334-            bookingData={bookingData}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-335-            salon={salonBranding}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:336:            salonSlug={salonSlug || ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-337-            sessionId={sessionId}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-338-            primaryColor={salonBranding.primaryColor}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-342-              const totalDuration = bookingData.services.reduce((sum, s) => sum + (s.duration || 0), 0);
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-343-              analytics.trackEvent('booking_confirmed', {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:344:                salon_slug: salonSlug || '',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-345-                services_count: bookingData.services.length,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-346-                total_price: totalPrice,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-359-            bookingData={bookingData}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-360-            salon={salonBranding}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:361:            salonSlug={salonSlug || ""}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-362-            confirmations={confirmations}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx-363-            primaryColor={salonBranding.primaryColor}

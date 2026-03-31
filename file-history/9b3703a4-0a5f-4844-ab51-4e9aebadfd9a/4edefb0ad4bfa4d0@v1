@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__pencil"
+    ]
+  },
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "effortLevel": "high",
+  "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true
+}

@@ -1,0 +1,384 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { CircleCheck as CheckCircle, Calendar as Calendar, Clock as Clock, User as User, Phone as Phone, Mail as Mail, MapPin as MapPin, CircleX as XCircle } from "lucide-react";
+import { BookingData, SalonBranding } from "@/types/booking-new";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import type { BookingConfirmationResponse } from "@/types/booking-api";
+import { formatBookingConfirmation } from "@/utils/bookingHelpers";
+import { bookingService } from "@/services/bookingService";
+import { OpeningHoursDisplay } from "@/components/booking/OpeningHoursDisplay";
+
+interface BookingReceiptProps {
+  bookingData: BookingData;
+  salon: SalonBranding;
+  salonSlug: string;
+  primaryColor: string;
+  confirmations?: BookingConfirmationResponse[];
+  onNewBooking: () => void;
+}
+
+export function BookingReceipt({
+  bookingData,
+  salon,
+  salonSlug,
+  primaryColor,
+  confirmations,
+  onNewBooking,
+}: BookingReceiptProps) {
+  const { toast } = useToast();
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  const getTotalPrice = () => {
+    return bookingData.serviceConfigs.reduce(
+      (total, config) => total + (config.price || 0),
+      0
+    );
+  };
+
+  const getTotalDuration = () => {
+    return bookingData.services.reduce(
+      (total, service) => total + service.duration,
+      0
+    );
+  };
+
+  const getConfirmationCode = () => {
+    if (confirmations && confirmations.length > 0) {
+      return formatBookingConfirmation(confirmations);
+    }
+    // Fallback para ID fictício se não houver confirmações
+    return `AG${Date.now().toString().slice(-6)}`;
+  };
+
+  const handleShare = async () => {
+    const confirmationCode = getConfirmationCode();
+    const text = `🎉 Agendamento confirmado!\n\n🆔 Código: ${confirmationCode}\n📍 ${
+      salon.name
+    }\n📅 ${
+      bookingData.serviceConfigs[0]?.date
+        ? format(bookingData.serviceConfigs[0].date, "dd/MM/yyyy", {
+            locale: ptBR,
+          })
+        : ""
+    }\n⏰ ${
+      bookingData.serviceConfigs[0]?.time || ""
+    }\n\n✨ Serviços: ${bookingData.services
+      .map((s) => s.name)
+      .join(", ")}\n💰 Total: R$ ${getTotalPrice().toFixed(2)}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+      } catch (error) {
+        // Fallback para copiar para área de transferência
+        navigator.clipboard.writeText(text);
+        toast({
+          title: "Copiado!",
+          description:
+            "Detalhes do agendamento copiados para área de transferência",
+          variant: "info",
+        });
+      }
+    } else {
+      navigator.clipboard.writeText(text);
+      toast({
+        title: "Copiado!",
+        description:
+          "Detalhes do agendamento copiados para área de transferência",
+        variant: "info",
+      });
+    }
+  };
+
+  const generateCalendarEvent = () => {
+    const firstConfig = bookingData.serviceConfigs[0];
+    if (!firstConfig?.date || !firstConfig?.time) return "";
+
+    const startDate = new Date(
+      `${firstConfig.date.toISOString().split("T")[0]}T${firstConfig.time}`
+    );
+    const endDate = new Date(startDate.getTime() + getTotalDuration() * 60000);
+
+    const title = encodeURIComponent(`Agendamento - ${salon.name}`);
+    const details = encodeURIComponent(
+      `Serviços: ${bookingData.services.map((s) => s.name).join(", ")}\n` +
+        `Local: ${salon.address}`
+    );
+
+    const startTime =
+      startDate.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const endTime =
+      endDate.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}&location=${encodeURIComponent(
+      salon.address
+    )}`;
+  };
+
+  const handleCancelBooking = async () => {
+    const confirmationCode = getConfirmationCode();
+
+    if (!confirmationCode || confirmationCode.startsWith("AG")) {
+      toast({
+        title: "Erro",
+        description: "Código de confirmação inválido para cancelamento",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCanceling(true);
+
+    try {
+      await bookingService.cancelBookingLock(
+        salonSlug,
+        confirmationCode.split("/")
+      );
+
+      toast({
+        title: "Agendamento Cancelado",
+        description: "Seu agendamento foi cancelado com sucesso",
+        variant: "success",
+      });
+
+      // Recarrega a página após 1.5 segundos
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Não foi possível cancelar o agendamento";
+
+      toast({
+        title: "Erro ao cancelar",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setIsCanceling(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {/* Header de Sucesso */}
+      <div className="text-center mb-8">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{ backgroundColor: primaryColor }}
+        >
+          <CheckCircle className="w-10 h-10 text-white" />
+        </div>
+
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Agendamento Realizado!
+        </h1>
+        <p className="text-gray-600 mb-4">
+          Seu agendamento foi confirmado com sucesso
+        </p>
+      </div>
+
+      {/* Comprovante */}
+      <Card className="mb-6 border-2" style={{ borderColor: primaryColor }}>
+        <CardHeader
+          className="text-center"
+          style={{ backgroundColor: `${primaryColor}10` }}
+        >
+          <CardTitle className="text-xl">Comprovante de Agendamento</CardTitle>
+          <p className="text-body text-gray-600">{salon.name}</p>
+          <div
+            className="mt-2 p-2 bg-white rounded-lg border-2"
+            style={{ borderColor: primaryColor }}
+          >
+            <p className="text-xs text-gray-500 mb-1">Código de Confirmação</p>
+            <p className="text-lg font-bold" style={{ color: primaryColor }}>
+              {getConfirmationCode()}
+            </p>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6 p-6">
+          {/* Serviços Agendados */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Calendar className="h-5 w-5" style={{ color: primaryColor }} />
+              Serviços Agendados
+            </h3>
+
+            <div className="space-y-3">
+              {bookingData.serviceConfigs.map((config) => (
+                <div
+                  key={config.serviceId}
+                  className="bg-gray-50 rounded-lg p-4"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-900">
+                        {config.serviceName}
+                      </h4>
+                      {config.isRequest && (
+                        <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                          Solicitação
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-semibold">
+                      {config.priceType === 'A partir de' && config.maxValue
+                        ? `R$ ${config.price?.toFixed(2)} - R$ ${config.maxValue.toFixed(2)}`
+                        : `R$ ${(config.price || 0).toFixed(2)}`
+                      }
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-body text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {config.date &&
+                        format(config.date, "dd/MM/yyyy", { locale: ptBR })}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      {config.time} ({config.duration} min)
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {config.professionalName || "Qualquer Profissional"}
+                    </div>
+                  </div>
+
+                  {config.isRequest && (
+                    <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                      <strong>Agendamento por solicitação:</strong> O salão
+                      entrará em contato para confirmar o profissional e horário
+                      final.
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Total */}
+            <div className="border-t pt-4 mt-4">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-lg">Total:</span>
+                <div className="text-right">
+                  <div
+                    className="font-bold text-xl"
+                    style={{ color: primaryColor }}
+                  >
+                    {bookingData.serviceConfigs.some(c => c.priceType === 'A partir de')
+                      ? `A partir de R$ ${getTotalPrice().toFixed(2)}`
+                      : `R$ ${getTotalPrice().toFixed(2)}`
+                    }
+                  </div>
+                  <div className="text-body text-gray-600">
+                    {getTotalDuration()} minutos total
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dados do Cliente */}
+          <div className="border-t pt-4">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <User className="h-5 w-5" style={{ color: primaryColor }} />
+              Dados do Cliente
+            </h3>
+
+            <div className="space-y-2 text-body">
+              <div>
+                <strong>Nome:</strong> {bookingData.customerName}{" "}
+                {bookingData.customerLastName}
+              </div>
+              {bookingData.customerEmail && (
+                <div>
+                  <strong>E-mail:</strong> {bookingData.customerEmail}
+                </div>
+              )}
+              <div>
+                <strong>WhatsApp:</strong> {bookingData.customerPhone}
+              </div>
+              <div>
+                <strong>CPF:</strong> {bookingData.customerCpf}
+              </div>
+            </div>
+          </div>
+
+          {/* Local */}
+          <div className="border-t pt-4">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <MapPin className="h-5 w-5" style={{ color: primaryColor }} />
+              Local do Atendimento
+            </h3>
+
+            <div className="text-body space-y-3">
+              <div className="font-medium">{salon.name}</div>
+              <div className="text-gray-600">{salon.address}</div>
+              <div className="text-gray-600">{salon.phone}</div>
+              <div className="mt-3">
+                <OpeningHoursDisplay openingHours={salon.openingHours} />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ações */}
+      <div className="space-y-3">
+        <Button
+          variant="outline"
+          onClick={() => window.open(generateCalendarEvent(), "_blank")}
+          className="w-full flex items-center justify-center gap-2"
+        >
+          <Calendar className="w-4 h-4" />
+          Adicionar ao Calendário
+        </Button>
+
+        <Button
+          className="w-full text-white"
+          style={{ backgroundColor: primaryColor }}
+          onClick={onNewBooking}
+        >
+          Fazer Novo Agendamento
+        </Button>
+        <hr className="mt-4 mb-2" />
+
+        <Button
+          variant="destructive"
+          onClick={handleCancelBooking}
+          disabled={isCanceling}
+          className="w-full flex items-center justify-center gap-2"
+        >
+          {isCanceling ? (
+            <>
+              <LoadingSpinner size="sm" inline />
+              Cancelando...
+            </>
+          ) : (
+            <>
+              <XCircle className="w-4 h-4" />
+              Cancelar Agendamento
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Observação Final */}
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <p className="text-body text-blue-800 text-center">
+          <strong>Importante:</strong> Chegue 10 minutos antes do horário
+          agendado. Em caso de cancelamento, entre em contato com antecedência
+          mínima de 2 horas.
+        </p>
+      </div>
+    </div>
+  );
+}

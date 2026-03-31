@@ -1,0 +1,20 @@
+-- Migration: fix lead_propostas status check constraint
+-- Problema: constraint original permitia 'Enviada' mas o código usa 'Concluída'
+-- Resultado: erro 500 ao salvar proposta gerada pela IA
+--
+-- INSTRUÇÕES: Executar no Supabase SQL Editor (Dashboard > SQL Editor)
+
+-- 1. Segurança: migrar linhas órfãs com status 'Enviada' para 'Rascunho'
+--    (precaução — nenhum dado deve ter esse valor, mas garante consistência)
+UPDATE lead_propostas
+SET status = 'Rascunho'
+WHERE status = 'Enviada';
+
+-- 2. Remover a constraint antiga
+ALTER TABLE lead_propostas
+  DROP CONSTRAINT IF EXISTS lead_propostas_status_check;
+
+-- 3. Recriar com os valores corretos alinhados ao TypeScript
+ALTER TABLE lead_propostas
+  ADD CONSTRAINT lead_propostas_status_check
+  CHECK (status = ANY (ARRAY['Rascunho','Concluída','Aprovada','Rejeitada']));

@@ -1,0 +1,53 @@
+import { ConfigService } from '@nestjs/config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import * as fs from 'fs';
+
+export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOptions => {
+  // Detectar se existe .env.local (desenvolvimento local sem Docker)
+  const isLocalDev = fs.existsSync(__dirname + '/../../.env.local');
+
+  if (isLocalDev) {
+    // Configuração SQLite para desenvolvimento local
+    return {
+      type: 'sqlite' as const,
+      database: 'easy_salon_dev.db',
+      synchronize: true, // Auto-criar tabelas em desenvolvimento
+      logging: true,
+      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+      namingStrategy: new SnakeNamingStrategy(),
+    };
+  }
+
+  // Configuração PostgreSQL original (produção/Docker)
+  const config: TypeOrmModuleOptions = {
+    type: 'postgres' as const,
+    host: configService.get<string>('DATABASE_HOST', 'localhost'),
+    port: configService.get<number>('DATABASE_PORT', 5432),
+    username: configService.get<string>('DATABASE_USER', 'postgres'),
+    password: configService.get<string>('DATABASE_PASSWORD', 'postgres'),
+    database: configService.get<string>('DATABASE_NAME', 'easy_salon'),
+    synchronize: false, // Desabilitado após criar as tabelas
+    logging: configService.get('NODE_ENV') === 'development',
+    entities:
+      process.env.NODE_ENV === 'production'
+        ? [__dirname + '/../**/*.entity.js']
+        : [__dirname + '/../**/*.entity{.ts,.js}'],
+    migrations:
+      process.env.NODE_ENV === 'production'
+        ? [__dirname + '/../migrations/*.js']
+        : [__dirname + '/../migrations/*{.ts,.js}'],
+    ssl:
+      configService.get('DATABASE_SSL') === 'true'
+        ? {
+          rejectUnauthorized: false,
+        }
+        : false,
+    extra: {
+      timezone: 'UTC',
+    },
+    namingStrategy: new SnakeNamingStrategy(),
+  };
+
+  return config;
+};

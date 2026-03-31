@@ -1,0 +1,129 @@
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\App.tsx:13:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\hooks\useWowMoment.ts:1:import { Sparkles } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\SetPassword.tsx:3:import { ArrowLeft, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\UserServicesPage.tsx:6:import { ArrowLeft, Plus, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AgendaV2Page.tsx:10:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\config\navigation.ts:12:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx:2:import { Plus, Calendar, Edit, Trash2, Clock } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\UserSchedulePage.tsx:6:import { ArrowLeft } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\ResetPassword.tsx:7:import { ArrowLeft } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\UserPasswordPage.tsx:3:import { ArrowLeft } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\UsersPage.tsx:14:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\SpecialtyServicesPage.tsx:2:import { Edit, Trash2, ArrowLeft, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\ForgotPassword.tsx:7:import { ArrowLeft } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:19:import { Loader2, Building2, Globe, Calendar, CheckCircle, XCircle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\Register.tsx:2:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SpecialtiesPage.tsx:2:import { Edit, Trash2, Plus, Eye } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\SalonsPage.tsx:21:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\SpecialtiesPage.tsx:2:import { Edit, Trash2, Plus, Eye, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\ProfilePage.tsx:19:import { CalendarIcon, ArrowLeft, Lock, Save } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\FinancialPage.tsx:10:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:20:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\OnboardingPage.tsx:20:import { ChevronLeft, ChevronRight } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\MyPlanPage.tsx:20:import { AlertTriangle, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:31:import { Calendar as CalendarIcon, ClipboardList, RefreshCw, X, Phone, User as UserIcon, Clock } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\types\navigation.ts:1:import { LucideIcon } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUserFormPage.tsx:7:import { ArrowLeft, Lock } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\DashboardPage.tsx:3:import { Calendar as CalendarIconLucide, ClipboardList, Users, AlertTriangle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\CreateSalonPage.tsx:17:import { Info, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx:2:import { Edit, Trash2, ArrowLeft, Settings } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SettingsPage.tsx:1:import { Building, Clock, Briefcase, Calendar, Trash2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SettingsPage.tsx:22:import { LucideIcon } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:3:import { Search, Settings, Edit } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ClientsPage.tsx:11:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\admin\AdminDashboardPage.tsx:3:import { CalendarIcon, Building2, Users, Scissors, Calendar, ClipboardList, MessageSquare, TrendingUp, ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\WorkingHoursPage.tsx:15:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:13:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServiceEditPage.tsx:3:import { ArrowLeft } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:26:import { Upload, Palette, Info, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:2:import { ArrowLeft, ExternalLink } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:22:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\accordion.tsx:3:import { ChevronDown } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\PasswordRequirements.tsx:1:import { Check, X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\context-menu.tsx:3:import { Check, ChevronRight, Circle } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingHoursPage.tsx:15:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ConnectionStatus.tsx:12:} from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\solicitacoes\SolicitacaoKanban.tsx:8:import { Calendar, Clock, Phone, User, Mail } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\command.tsx:4:import { Search } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\UserServicesForm.tsx:12:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\checkbox.tsx:3:import { Check } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationsManager.tsx:46:import { Plus, Trash2, GripVertical, Save, Edit } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\toast.tsx:4:import { X } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\admin\financial\FinancialInvoicesTable.tsx:34:import { Calendar, Check, ChevronDown, ChevronRight, Download, Printer, RefreshCw, XCircle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\UserScheduleFormWithBreaks.tsx:6:import { Plus, Trash2, Coffee, Clock } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\services\ServiceRecommendationCard.tsx:16:import { Clock, DollarSign, Sparkles, Plus } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\SalonOperatingHours.tsx:4:import { Clock, Calendar } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\onboarding\StepServices.tsx:6:import { Check, Clock, DollarSign } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\carousel.tsx:5:import { ArrowLeft, ArrowRight } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:12:import { Clock, CreditCard, CheckCircle, XCircle, UserCheck, ChevronDown } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\UserScheduleForm.tsx:13:import { Plus, Trash2, AlertCircle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\calendar.tsx:2:import { ChevronLeft, ChevronRight } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:32:import { Calendar as CalendarIcon, Clock, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\onboarding\StepSchedule.tsx:3:import { Check } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\ModalNovoAgendamento.tsx:38:import { Calendar, Check, Loader2, Plus, UserPlus, X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:7:import { RefreshCw, XCircle, Clock } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\breadcrumb.tsx:3:import { ChevronRight, MoreHorizontal } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\onboarding\StepProfessional.tsx:6:import { Check } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\mobile\TimeSlotGrid.tsx:3:import { Plus } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionConfirmationModal.tsx:4:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\mobile\SmartFAB.tsx:2:import { Plus } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\TimezoneCombobox.tsx:2:import { Check, ChevronsUpDown } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\ModalEditarAgendamento.tsx:16:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\sidebar.tsx:4:import { PanelLeft } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\onboarding\FirstAppointmentModal.tsx:6:import { ArrowUpRight } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\SecureCardInput.tsx:4:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:7:import { Trash2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\SpecialtyForm.tsx:7:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\sheet.tsx:3:import { X } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:3:import { CheckCircle, Calendar, Clock, User, Phone, Mail, MapPin } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\OpeningHoursDisplay.tsx:1:import { Clock } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:13:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:3:import { ChevronLeft, ChevronRight, X, Check, Loader2, Search, Calendar as CalendarIcon, Clock, UserPlus } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\PlanSelection.tsx:4:import { Check } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\ServiceForm.tsx:8:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\menubar.tsx:3:import { Check, ChevronRight, Circle } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\PlanActivationSuccessModal.tsx:6:import { MessageSquareText, X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingServiceRecommendations.tsx:15:import { Clock, DollarSign, Sparkles, Plus } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\select.tsx:3:import { Check, ChevronDown, ChevronUp } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\mobile\MobileAgendaView.tsx:5:import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\loading-spinner.tsx:1:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:20:import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentMethodCard.tsx:4:import { CreditCard, Trash2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\BookingErrorBoundary.tsx:4:import { AlertCircle, RefreshCw } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\TransformarSolicitacaoModal.tsx:32:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:3:import { MapPin, Phone } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\ProfileImageUpload.tsx:2:import { Camera } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\mobile\EventCard.tsx:4:import { Clock, User as UserIcon } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\salon\subscription\PaymentHistoryTable.tsx:13:import { AlertCircle, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, CreditCard, ReceiptText, X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\SubscriptionAlertModal.tsx:8:import { AlertTriangle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:14:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\ImageUpload.tsx:5:import { Upload, X } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\responsive-pagination.tsx:10:import { ChevronLeft, ChevronRight } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\input-otp.tsx:3:import { Dot } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\resizable.tsx:1:import { GripVertical } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\dropdown-menu.tsx:3:import { Check, ChevronRight, Circle } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\forms\AdminSpecialtyForm.tsx:5:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\radio-group.tsx:3:import { Circle } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\ConfirmationModal.tsx:3:import { AlertTriangle, Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\agenda\AgendaFilters.tsx:16:import { Check, ChevronDown, Filter, Search } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\ServiceConfigModal.tsx:13:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:9:import { Calendar as CalendarIcon, Clock, Phone, Mail, User } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\CreateSolicitacaoModal.tsx:30:import { CalendarIcon } from 'lucide-react';
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\dialog.tsx:3:import { X } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\ClientModal.tsx:22:import { Trash2, Loader2, History } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\ReplaceCardModal.tsx:12:import { Loader2, X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\ConfirmCancelModal.tsx:11:import { AlertTriangle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\date-picker-with-selects.tsx:2:import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\AbsenceModal.tsx:9:import { Calendar } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\ChangePlanModal.tsx:10:import { Check, Lock, RefreshCw, MessageCircle } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\pagination.tsx:2:import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\password-input.tsx:4:import { Eye, EyeOff } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\navigation-menu.tsx:4:import { ChevronDown } from "lucide-react"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\CancelSubscriptionModal.tsx:10:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\modals\AppointmentModal.tsx:47:} from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EventBlock.tsx:1:import { Clock } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\Header.tsx:14:import { AlertCircle, AppWindow, Bot, Building2, ChevronDown, LayoutDashboard, LogOut, Menu, Network, User } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\SideNav.tsx:3:import { Menu, X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\layout\EasySalonSidebar.tsx:3:import { X } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EasyCalendar.tsx:4:import { Loader2 } from "lucide-react";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\ProfessionalColumn.tsx:18:import { Calendar, UserX, Coffee } from "lucide-react";

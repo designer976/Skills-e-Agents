@@ -1,0 +1,6 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 30L12 12C14 7 18 4 23 4H37C42 4 46 7 48 12L55 30L48 48C46 53 42 56 37 56H23C18 56 14 53 12 48L5 30Z" fill="#003B71"/>
+<text x="30" y="38" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">Wa</text>
+<text x="115" y="25" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#333">Project</text>
+<circle cx="180" cy="25" r="3" fill="#003B71"/>
+</svg>

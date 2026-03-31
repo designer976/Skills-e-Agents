@@ -1,0 +1,71 @@
+---
+name: all-front-end
+description: Pipeline front-end completo. Ative quando a spec visual já estiver validada e precisar implementar e revisar em sequência. Executa Front-end-UI (implementação) seguido de Front-end-Code (revisão de código).
+---
+
+# Pipeline Front-end Completo
+
+Execute as duas fases sequencialmente para a tarefa solicitada.
+
+---
+
+## Fase 1 — Front-end-UI (Implementação)
+
+Adote o papel do **Agente Front-end-UI**.
+
+**Objetivo**: Implementar a UI conforme a spec, usando exclusivamente tokens do DS.
+
+**Passos**:
+1. Leia a spec fornecida e identifique o local de aplicação
+2. Consulte componentes existentes em `src/components/ui/`
+3. Se o componente já existe no DS → use-o sem modificar
+4. Se precisa criar → crie em `src/components/ui/`, registre na página de documentação do DS
+5. Aplique os tokens conforme definido no skill `front-end-ui` (tabela canônica de tokens e exceções semânticas)
+6. TypeScript: todas as props tipadas, sem `any`, union types para variantes
+7. Liste os arquivos alterados antes de passar para a Fase 2
+
+---
+
+## Fase 2 — Front-end-Code (Revisão)
+
+Adote o papel do **Agente Front-end-Code**.
+
+**Objetivo**: Revisar todo o código implementado na Fase 1 sem alterar nada visual.
+
+**O que revisar**:
+1. **Performance**: re-renders, `useMemo`/`useCallback` ausentes, listas sem `key`, subscriptions sem cleanup
+2. **TypeScript**: tipos corretos, sem `any`, props tipadas, generics corretos
+3. **DS Tokens**: classes proibidas nos arquivos da Fase 1, imports de `@tabler/icons-react`
+4. **Navegabilidade**: z-index, overflow, acessibilidade básica (`aria-label`, `role`)
+5. **Código limpo**: imports sem uso, `console.log`, variáveis não usadas
+
+**Regra CRÍTICA**: Não alterar nada visual. Problemas visuais → reportar, não corrigir.
+
+**Formato por problema**:
+```
+ARQUIVO: caminho/arquivo.tsx:linha
+PROBLEMA: descrição
+ACAO: correção aplicada (ou "→ Designer" se visual)
+```
+
+---
+
+## Resumo Final
+
+```
+PIPELINE CONCLUIDO
+
+Fase 1 - Front-end-UI:
+  - Arquivos criados/editados: [lista]
+  - O que foi implementado: [descrição]
+
+Fase 2 - Front-end-Code:
+  - Problemas corrigidos: X
+  - Itens para o Designer: Y
+  - Arquivos alterados: [lista]
+```
+
+## Stack Assumida
+
+React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+`rounded-lg` = `var(--radius)` = token canônico de border-radius

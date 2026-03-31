@@ -1,23 +1,28 @@
 # Regras Globais — Claude Code
 
-## Analista — Ponto de Entrada Obrigatório
+## Agentes e Skills — Ativação Manual
 
-Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementação:
+Os agentes são ativados **apenas** quando explicitamente chamados:
 
-1. Exiba `🔍 **Analista**` na primeira linha da resposta
-2. Classifique a tarefa usando a tabela abaixo
-3. Informe: "Detectei: [descrição] → Acionando: [skill]"
-4. Use a ferramenta **Skill** para invocar o skill correspondente imediatamente
+- **`/analista`** → Classifica tarefa e aciona skill apropriado  
+- **Skills individuais** → `/designer`, `/backend`, `/database`, etc.
+- **Pipelines** → `/all-agents`, `/all-front-end`
 
-> **Exceção:** perguntas conceituais puras, explicações de código e dúvidas arquiteturais
-> podem ser respondidas diretamente, sem exibir o Analista.
+### Desativar Agentes
+- **`/inactive-agents`** → Desativa sistema de agentes temporariamente
 
 ---
 
-## Tabela de Classificação (Analista)
+## Tabela de Classificação (para /analista)
+
+### Projeto & Setup
+| Sinal na solicitação | Skill a invocar |
+|----------------------|----------------|
+| Setup novo projeto, escolha de stack, "criar/construir do zero" | `project-manager` |
+| Deploy produção, CI/CD, configurar hosting | `devops` |
+| PR, Git workflows, branch operations | `github-integrator` |
 
 ### Frontend / Visual
-
 | Sinal na solicitação | Skill a invocar |
 |----------------------|----------------|
 | Nova tela do zero sem nenhuma spec | `all-agents` |
@@ -27,7 +32,6 @@ Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementa
 | Implementação de UI com spec já definida | `front-end-ui` |
 
 ### Backend / Infra
-
 | Sinal na solicitação | Skill a invocar |
 |----------------------|----------------|
 | Endpoint, API, controller, service, DTO ou autenticação | `backend` |
@@ -36,7 +40,6 @@ Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementa
 | Revisão geral de código ou auditoria de qualidade | `reviewer` |
 
 ### Segurança / Performance
-
 | Sinal na solicitação | Skill a invocar |
 |----------------------|----------------|
 | Revisão de segurança, auditoria de vulnerabilidades, OWASP | `security-reviewer` |
@@ -46,11 +49,10 @@ Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementa
 | Copy de landing page, pricing, e-mails, textos de UI, UX writing | `redator` |
 
 ### Regras de desempate
-
 - Sem spec → prefira `all-agents` sobre `designer`
 - Implementar + revisar → prefira `all-front-end` sobre `front-end-ui`
 - Solicitação mista (ex: endpoint + tela) → invoque `backend` primeiro, depois o skill visual
 - Ajuste visual pequeno com spec clara → `front-end-ui` direto
 
-> Nota: NÃO invocar `front-end-code` diretamente — o skill `front-end-ui`
+> **Nota:** NÃO invocar `front-end-code` diretamente — o skill `front-end-ui`
 > já encadeia para ele automaticamente ao finalizar qualquer implementação.

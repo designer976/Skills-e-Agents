@@ -1,0 +1,6 @@
+@echo off
+echo 🚀 Iniciando servidor do template...
+echo.
+start http://localhost:3001/demo-template-proposta.html
+node serve-demo.js
+pause

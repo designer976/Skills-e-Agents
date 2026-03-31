@@ -1,0 +1,226 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Invoice } from "@/types/subscription";
+import { differenceInDays, format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AlertCircle as AlertCircle, Calendar as Calendar, Check as Check, ChevronDown as ChevronDown, ChevronLeft as ChevronLeft, ChevronRight as ChevronRight, CreditCard as CreditCard, ReceiptText as ReceiptText, X as X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+interface PaymentHistoryTableProps {
+    history: Invoice[];
+    showActions?: boolean; // Optional prop if we want to enable it later
+}
+
+type PeriodFilter = 'all' | '30' | '90';
+
+const ITEMS_PER_PAGE = 5;
+
+export function PaymentHistoryTable({ history, showActions = false }: PaymentHistoryTableProps) {
+    const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const filteredHistory = useMemo(() => {
+        let items = history;
+        if (periodFilter !== 'all') {
+            const now = new Date();
+            const days = parseInt(periodFilter);
+            items = history.filter(item => {
+                const date = parseISO(item.createdAt);
+                return differenceInDays(now, date) <= days;
+            });
+        }
+        return items;
+    }, [history, periodFilter]);
+
+    // Reset to page 1 when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [periodFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredHistory.length / ITEMS_PER_PAGE));
+
+    const paginatedHistory = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredHistory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredHistory, currentPage]);
+
+    const getFilterLabel = () => {
+        switch (periodFilter) {
+            case '30': return 'Últimos 30 dias';
+            case '90': return 'Últimos 90 dias';
+            default: return 'Todos os períodos';
+        }
+    };
+
+    return (
+        <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-medium text-foreground flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="tabler-icon tabler-icon-receipt w-5 h-5">
+                        <path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"></path>
+                    </svg>
+                    Histórico de Pagamentos
+                </h2>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="transition-all cursor-pointer shadow-xs dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="tabler-icon tabler-icon-calendar w-4 h-4 mr-2">
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"></path>
+                                <path d="M16 3v4"></path>
+                                <path d="M8 3v4"></path>
+                                <path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path>
+                                <path d="M12 15v3"></path>
+                            </svg>
+                            {getFilterLabel()}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setPeriodFilter('all')}>
+                            Todos os períodos
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setPeriodFilter('30')}>
+                            Últimos 30 dias
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setPeriodFilter('90')}>
+                            Últimos 90 dias
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
+                <Table>
+                    <TableHeader className="bg-[#f5ebe6]">
+                        <TableRow className="hover:bg-transparent">
+                            <TableHead className="py-3 px-4 h-auto font-medium text-foreground">Data</TableHead>
+                            <TableHead className="py-3 px-4 h-auto font-medium text-foreground">Plano</TableHead>
+                            <TableHead className="py-3 px-4 h-auto font-medium text-foreground">Valor</TableHead>
+                            <TableHead className="py-3 px-4 h-auto font-medium text-foreground">Método</TableHead>
+                            <TableHead className="py-3 px-4 h-auto font-medium text-foreground">Status</TableHead>
+                            {showActions && <TableHead className="py-3 px-4 h-auto font-medium text-foreground text-right">Ações</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedHistory.map((item) => (
+                            <TableRow key={item.id} className="border-t border-border hover:bg-muted/30">
+                                <TableCell className="py-3 px-4 text-sm text-foreground">
+                                    {format(parseISO(item.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                                </TableCell>
+                                <TableCell className="py-3 px-4 text-sm text-foreground">
+                                    {item.subscription?.plan?.name || <span className="text-muted-foreground">-</span>}
+                                </TableCell>
+                                <TableCell className="py-3 px-4 text-sm text-foreground">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.amount))}
+                                </TableCell>
+                                <TableCell className="py-3 px-4 text-sm text-muted-foreground">
+                                    {item.subscription?.paymentMethod ? (
+                                        <>Cartão •••• {item.subscription.paymentMethod.last4}</>
+                                    ) : (
+                                        <span className="text-muted-foreground">-</span>
+                                    )}
+                                </TableCell>
+                                <TableCell className="py-3 px-4">
+                                    <StatusBadge status={item.status} />
+                                </TableCell>
+                                {showActions && (
+                                    <TableCell className="text-right">
+                                        {/* Placeholder for future implementation */}
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                        {filteredHistory.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={showActions ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                                    Nenhum histórico encontrado para este período.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {filteredHistory.length > 0 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                    <p className="text-sm text-muted-foreground">
+                        Mostrando <span className="font-medium">{Math.min(filteredHistory.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}</span>-
+                        <span className="font-medium">{Math.min(filteredHistory.length, currentPage * ITEMS_PER_PAGE)}</span> de{" "}
+                        <span className="font-medium">{filteredHistory.length}</span> resultados
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="flex items-center gap-1 px-2">
+                            <span className="text-sm font-medium">{currentPage}</span>
+                            <span className="text-sm text-muted-foreground">/</span>
+                            <span className="text-sm text-muted-foreground">{totalPages}</span>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function StatusBadge({ status }: { status: string }) {
+    if (status === 'paid' || status === 'PAID') {
+        return (
+            <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-50 flex items-center gap-1 w-fit rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="tabler-icon tabler-icon-check w-3 h-3">
+                    <path d="M5 12l5 5l10 -10"></path>
+                </svg>
+                Pago
+            </span>
+        );
+    }
+    if (status === 'open' || status === 'OPEN') {
+        return (
+            <span className="px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-50 flex items-center gap-1 w-fit rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="tabler-icon tabler-icon-alert-circle w-3 h-3">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Aberto
+            </span>
+        );
+    }
+    return (
+        <span className="px-2 py-1 text-xs font-medium text-red-700 bg-red-50 flex items-center gap-1 w-fit rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="tabler-icon tabler-icon-x w-3 h-3">
+                <path d="M18 6l-12 12"></path>
+                <path d="M6 6l12 12"></path>
+            </svg>
+            {status}
+        </span>
+    );
+}

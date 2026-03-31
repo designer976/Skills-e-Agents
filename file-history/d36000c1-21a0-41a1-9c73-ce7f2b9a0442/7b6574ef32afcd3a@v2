@@ -1,0 +1,43 @@
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertTriangle } from "lucide-react";
+
+interface SubscriptionAlertModalProps {
+    isOpen: boolean;
+    onConfirm: () => void;
+}
+
+export function SubscriptionAlertModal({ isOpen, onConfirm }: SubscriptionAlertModalProps) {
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onConfirm()}>
+            <DialogContent 
+                className="w-[95vw] md:max-w-md p-6 rounded-xl md:rounded-lg border-none shadow-2xl gap-4" 
+                onInteractOutside={(e) => e.preventDefault()}
+            >
+                <DialogHeader className="flex flex-col gap-2 text-center sm:text-left">
+                    <DialogTitle className="text-xl leading-none font-semibold flex items-center gap-2 text-foreground justify-center sm:justify-start">
+                        <AlertTriangle className="w-6 h-6 text-primary shrink-0" />
+                        Plano expirado
+                    </DialogTitle>
+                    <p className="text-muted-foreground text-sm">
+                        Seu plano expirou, escolha o plano que melhor se encaixe com o seu salão para continuar!
+                    </p>
+                </DialogHeader>
+
+                <div className="mt-4">
+                    <Button
+                        className="w-full h-11 min-h-[44px] bg-primary hover:bg-primary/90 text-white rounded-md text-base md:text-sm font-medium transition-all salon-button-primary"
+                        onClick={onConfirm}
+                    >
+                        Ir para Meu Plano
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}

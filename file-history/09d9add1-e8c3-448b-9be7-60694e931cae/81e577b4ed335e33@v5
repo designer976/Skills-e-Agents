@@ -1,0 +1,133 @@
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft as ChevronLeft, ChevronRight as ChevronRight } from "lucide-react";
+
+const DEFAULT_PAGE_SIZE_OPTIONS = [16, 20, 50, 100];
+
+interface ResponsivePaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number | string) => void;
+  itemLabel?: string;
+  pageSizeOptions?: number[];
+  className?: string;
+}
+
+export function ResponsivePagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  itemLabel = "registros",
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  className,
+}: ResponsivePaginationProps) {
+  const safeTotalPages = Math.max(1, totalPages);
+  const from = totalItems === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, totalItems);
+  const to = Math.min(currentPage * pageSize, totalItems);
+
+  const minPageSize = Math.min(...pageSizeOptions);
+  const isLocked = totalItems < minPageSize;
+  const selectValue = isLocked ? totalItems.toString() : pageSize.toString();
+  const selectOptions = isLocked ? [totalItems] : pageSizeOptions;
+
+  const pageNumbers = Array.from({ length: Math.min(5, safeTotalPages) }, (_, i) => {
+    if (safeTotalPages <= 5) return i + 1;
+    if (currentPage <= 3) return i + 1;
+    if (currentPage >= safeTotalPages - 2) return safeTotalPages - 4 + i;
+    return currentPage - 2 + i;
+  });
+
+  return (
+    <div className={cn(
+      "mt-8 flex flex-col items-center gap-4 md:flex-row md:justify-between pb-8 w-full",
+      className
+    )}>
+
+      {/* Controle de Itens e Resumo */}
+      <div className="flex flex-col items-center sm:flex-row gap-3 md:items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            Itens por página:
+          </span>
+          <Select
+            value={selectValue}
+            onValueChange={(v) => onPageSizeChange(Number(v))}
+            disabled={isLocked}
+          >
+            <SelectTrigger className="w-[70px] h-8 text-xs bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {selectOptions.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <span className="text-xs font-medium text-muted-foreground bg-muted/30 px-3 py-1 rounded-full border whitespace-nowrap">
+          Mostrando {from}–{to} de {totalItems} {itemLabel}
+        </span>
+      </div>
+
+      {/* Controles de Navegação */}
+      <div className="flex items-center justify-center gap-2">
+
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="h-8 w-8 p-0 shrink-0 bg-background"
+        >
+          <ChevronLeft className="h-4 w-4 shrink-0" />
+        </Button>
+
+        {/* Números das Páginas — visíveis a partir de sm (tablets+) */}
+        <div className="hidden sm:flex items-center gap-1">
+          {pageNumbers.map((pageNum, i) => (
+            <Button
+              key={i}
+              variant={pageNum === currentPage ? "default" : "outline"}
+              onClick={() => onPageChange(pageNum)}
+              className={cn(
+                "w-8 h-8 p-0 text-xs",
+                pageNum === currentPage ? "" : "bg-background"
+              )}
+            >
+              {pageNum}
+            </Button>
+          ))}
+        </div>
+
+        {/* Indicador de Página Compacto — visível SÓ no mobile */}
+        <span className="sm:hidden text-sm font-medium text-muted-foreground px-2 shrink-0">
+          {currentPage} / {safeTotalPages}
+        </span>
+
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === safeTotalPages}
+          className="h-8 w-8 p-0 shrink-0 bg-background"
+        >
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,133 @@
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { SalonForm, SalonFormData } from "@/components/forms/SalonForm";
+import { Salon, UpdateSalonDto } from "@/types/salon";
+import { salonService } from "@/services/salonService";
+import { toast } from "sonner";
+
+interface SalonEditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  salon: Salon | null;
+  onSave: (id: string, data: UpdateSalonDto) => Promise<void>;
+  isSaving: boolean;
+}
+
+function buildFormData(salon: Salon | null): SalonFormData {
+  return {
+    nomeFantasia: salon?.name ?? "",
+    razaoSocial: salon?.responsible ?? "",
+    cnpj: salon?.cnpj ?? "",
+    telefoneComercial: salon?.phone ?? "",
+    emailContato: salon?.email ?? "",
+    nomeLinkUtil: salon?.websiteName ?? "",
+    urlLinkUtil: salon?.websiteUrl ?? "",
+    timezone: salon?.timezone ?? "America/Sao_Paulo",
+  };
+}
+
+export function SalonEditModal({
+  isOpen,
+  onClose,
+  salon,
+  onSave,
+  isSaving,
+}: SalonEditModalProps) {
+  const [formData, setFormData] = useState<SalonFormData>(() => buildFormData(salon));
+  const [active, setActive] = useState<boolean>(salon?.active ?? true);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(buildFormData(salon));
+      setActive(salon?.active ?? true);
+    }
+  }, [isOpen, salon]);
+
+  const validate = (): boolean => {
+    if (!formData.nomeFantasia.trim()) {
+      toast.error("Por favor, preencha o nome fantasia");
+      return false;
+    }
+    if (!formData.telefoneComercial.trim()) {
+      toast.error("Por favor, preencha o telefone");
+      return false;
+    }
+    if (formData.cnpj && !salonService.validateCNPJ(formData.cnpj)) {
+      toast.error("CNPJ inválido");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async (): Promise<void> => {
+    if (!validate() || !salon) return;
+
+    await onSave(salon.id, {
+      name: formData.nomeFantasia.trim(),
+      responsible: formData.razaoSocial.trim() || undefined,
+      cnpj: formData.cnpj ? salonService.formatCNPJ(formData.cnpj) : undefined,
+      phone: salonService.formatPhone(formData.telefoneComercial),
+      email: formData.emailContato.trim() || undefined,
+      timezone: formData.timezone,
+      websiteName: formData.nomeLinkUtil.trim() || undefined,
+      websiteUrl: formData.urlLinkUtil.trim() || undefined,
+      active,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-2xl flex flex-col gap-0">
+        <DialogHeader className="border-b pb-3 shrink-0">
+          <DialogTitle>Editar Salão</DialogTitle>
+          <DialogDescription>
+            Edite as informações do salão abaixo.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogBody>
+          <SalonForm
+            data={formData}
+            onChange={setFormData}
+            disabled={isSaving}
+          />
+        </DialogBody>
+
+        <DialogFooter className="border-t pt-6 shrink-0">
+          {/* Status switch — lado esquerdo, na mesma linha dos botões */}
+          <div className="flex items-center gap-2 mr-auto">
+            <Switch
+              id="salon-edit-active"
+              checked={active}
+              onCheckedChange={setActive}
+              disabled={isSaving}
+            />
+            <Label htmlFor="salon-edit-active" className="cursor-pointer select-none">
+              {active ? "Ativo" : "Inativo"}
+            </Label>
+          </div>
+
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button onClick={() => { void handleSave(); }} disabled={isSaving}>
+            {isSaving && <LoadingSpinner size="sm" inline className="mr-2" />}
+            Salvar alterações
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

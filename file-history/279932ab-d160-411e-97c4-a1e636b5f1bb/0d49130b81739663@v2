@@ -1,0 +1,78 @@
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Menu as Menu, X as X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { NavItem } from "@/types/navigation";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+interface SideNavProps {
+  items: NavItem[];
+  title: string;
+  subtitle?: string;
+}
+
+export function SideNav({ items, title, subtitle }: SideNavProps) {
+  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const NavContent = () => (
+    <div className="flex flex-col h-full bg-card">
+      {/* Header */}
+      <div className="p-6 border-b border-border">
+        <h2 className="section-title text-foreground">{title}</h2>
+        {subtitle && (
+          <p className="text-body text-muted-foreground mt-1">{subtitle}</p>
+        )}
+      </div>
+
+      {/* Navigation Items */}
+      <nav className="flex-1 p-4 flex flex-col gap-[4px]">
+        {items.map((item) => {
+          const isActive = location.pathname === item.href;
+          const Icon = item.icon;
+          
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-[10px] body-text transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <Icon className="w-5 h-5" />
+              <span>{item.title}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile Trigger */}
+      <div className="lg:hidden">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-64">
+            <NavContent />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-50">
+        <NavContent />
+      </div>
+    </>
+  );
+}

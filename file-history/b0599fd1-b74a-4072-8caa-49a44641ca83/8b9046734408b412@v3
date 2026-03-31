@@ -1,0 +1,680 @@
+import { useState, useEffect, useCallback } from "react";
+import { Pencil as Edit, Trash2 as Trash2, ArrowLeft as ArrowLeft, Settings as Settings } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate, useParams } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { DataTable } from "@/components/ui/data-table";
+import { Button } from "@/components/ui/button";
+import { ServiceModal } from "@/components/modals/ServiceModal";
+import { ServiceConfigModal } from "@/components/modals/ServiceConfigModal";
+import { ConfirmationModal } from "@/components/modals/ConfirmationModal";
+import { getSalonNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { serviceService } from "@/services/serviceService";
+import { specialtyService } from "@/services/specialtyService";
+import { Service } from "@/types/service";
+import { Specialty } from "@/types/specialty";
+import { Badge } from "@/components/ui/badge";
+
+interface ServiceWithConfig extends Service {
+  type?: "standard" | "custom";
+  isConfigured?: boolean;
+  configured_price?: number;
+  configured_duration?: number;
+  configured_commission?: number;
+  allowOnlineBooking?: boolean;
+}
+
+export default function SalonSpecialtyServicesPage() {
+  const { specialtyId } = useParams();
+  const navigate = useNavigate();
+  const { selectedSalon, selectSalon } = useSelectedSalon();
+  const { user } = useAuth();
+
+  const navItems = getSalonNavItems(user?.role || "Profissional");
+
+  const [specialty, setSpecialty] = useState<Specialty | null>(null);
+  const [standardServices, setStandardServices] = useState<ServiceWithConfig[]>(
+    []
+  );
+  const [customServices, setCustomServices] = useState<ServiceWithConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<
+    ServiceWithConfig | undefined
+  >();
+  const [serviceToDelete, setServiceToDelete] = useState<
+    ServiceWithConfig | undefined
+  >();
+  const [serviceToConfig, setServiceToConfig] = useState<
+    ServiceWithConfig | undefined
+  >();
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const syncSalon = async (): Promise<void> => {
+      const storedSalonId = localStorage.getItem("selectedSalonId");
+
+      if (
+        storedSalonId &&
+        (!selectedSalon || selectedSalon.id !== storedSalonId)
+      ) {
+        try {
+          await selectSalon(storedSalonId);
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Erro ao carregar dados do salão";
+          toast.error(message);
+        }
+      }
+    };
+
+    syncSalon();
+  }, [selectedSalon, selectSalon]);
+
+  const loadData = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!selectedSalon?.id) {
+        setError("Salon ID not found");
+        return;
+      }
+
+      const specialtyResponse = await specialtyService.getById(specialtyId!);
+      setSpecialty(specialtyResponse);
+
+      const servicesResponse = await serviceService.getSalonSpecialtyServices(
+        specialtyId!
+      );
+
+      interface ServiceResponse {
+        type: "standard" | "custom";
+        salonPrice?: string;
+        price?: string;
+        salonDuration?: number;
+        duration?: number;
+        salonCommission?: string;
+        commission?: string;
+        salonAllowOnlineBooking?: boolean;
+        salonActive?: boolean;
+        isActive?: boolean;
+        [key: string]: unknown;
+      }
+
+      const standardServices =
+        servicesResponse.data
+          ?.filter((s: ServiceResponse) => s.type === "standard")
+          .map((s: ServiceResponse) => ({
+            ...s,
+            configured_price:
+              s.salonPrice !== undefined
+                ? parseFloat(s.salonPrice)
+                : s.price !== undefined
+                  ? parseFloat(s.price)
+                  : undefined,
+            configured_duration: s.salonDuration || s.duration || undefined,
+            configured_commission:
+              s.salonCommission !== undefined
+                ? parseFloat(s.salonCommission)
+                : s.commission !== undefined
+                  ? parseFloat(s.commission)
+                  : undefined,
+            configured_accepts_online: s.salonAllowOnlineBooking,
+            is_enabled:
+              s.salonActive !== undefined ? s.salonActive : s.isActive,
+          })) || [];
+
+      const customServices =
+        servicesResponse.data?.filter(
+          (s: ServiceResponse) => s.type === "custom"
+        ) || [];
+
+      // Sort both arrays alphabetically by name
+      standardServices.sort((a, b) => a.name.localeCompare(b.name));
+      customServices.sort((a, b) => a.name.localeCompare(b.name));
+
+      setStandardServices(standardServices);
+      setCustomServices(customServices);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedSalon?.id, specialtyId]);
+
+  useEffect(() => {
+    if (specialtyId && selectedSalon?.id) {
+      loadData();
+    }
+  }, [specialtyId, selectedSalon?.id, loadData]);
+
+  const handleNewService = () => {
+    setSelectedService(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditService = (service: ServiceWithConfig): void => {
+    if (service.type === "standard") {
+      toast.info("Para serviços padrão, use o botão de configurações");
+    } else {
+      setSelectedService(service);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleConfigService = (service: ServiceWithConfig) => {
+    setServiceToConfig(service);
+    setIsConfigModalOpen(true);
+  };
+
+  const handleDeleteService = (service: ServiceWithConfig) => {
+    // Don't allow deleting standard services
+    if (service.type === "standard") {
+      toast.error("Serviços padrão não podem ser excluídos");
+      return;
+    }
+    setServiceToDelete(service);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!serviceToDelete || !selectedSalon?.id) return;
+
+    try {
+      setIsSaving(true);
+      await serviceService.deleteSalonService(serviceToDelete.id);
+      setCustomServices((prev) =>
+        prev.filter((s) => s.id !== serviceToDelete.id)
+      );
+      toast.success("Serviço excluído com sucesso");
+      setIsDeleteModalOpen(false);
+      setServiceToDelete(undefined);
+    } catch (err) {
+      console.error("Error deleting service:", err);
+      toast.error("Erro ao excluir serviço. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBack = () => {
+    navigate("/salon/specialties");
+  };
+
+  const handleToggleService = async (service: ServiceWithConfig) => {
+    try {
+      if (!selectedSalon?.id) return;
+
+      if (service.type === "standard") {
+        // For standard services, update salon settings
+        await serviceService.updateSalonServiceSettings(service.id, {
+          isActive: !service.active,
+        });
+
+        // Update local state
+        setStandardServices((prev) =>
+          prev.map((s) =>
+            s.id === service.id ? { ...s, active: !s.active } : s
+          )
+        );
+
+        toast.success(
+          service.active ? "Serviço desativado" : "Serviço ativado"
+        );
+      } else {
+        // For custom services, update the service itself
+        await serviceService.updateSalonService(service.id, {
+          isActive: !(service?.active || service?.isActive),
+        });
+
+        setCustomServices((prev) =>
+          prev.map((s) =>
+            s.id === service.id ? { ...s, active: !s.active } : s
+          )
+        );
+
+        toast.success(
+          service.active ? "Serviço desativado" : "Serviço ativado"
+        );
+      }
+    } catch (err) {
+      console.error("Error toggling service:", err);
+      toast.error("Algo deu errado. Tente novamente.");
+    }
+  };
+
+  interface SaveServiceData {
+    name: string;
+    description?: string;
+    acceptsOnlineBooking?: boolean;
+    price?: number;
+    duration?: number;
+    commission?: number;
+    categoryId?: string;
+    administrativeCostPercentage?: number;
+    fixedCost?: number;
+    active?: boolean;
+    isActive?: boolean;
+    requiresProfessional?: boolean;
+  }
+
+  const handleSaveService = async (data: SaveServiceData): Promise<void> => {
+    try {
+      setIsSaving(true);
+
+      if (!selectedSalon?.id) {
+        toast.error("Salon ID not found");
+        return;
+      }
+
+      if (selectedService) {
+        const updateData: Partial<SaveServiceData> = {
+          name: data.name,
+          acceptsOnlineBooking: data.acceptsOnlineBooking,
+        };
+
+        if (data.price !== undefined && data.price !== null) {
+          updateData.price = data.price;
+        }
+        if (data.duration !== undefined && data.duration !== null) {
+          updateData.duration = data.duration;
+        }
+        if (data.commission !== undefined && data.commission !== null) {
+          updateData.commission = data.commission;
+        }
+
+        if (data.acceptsOnlineBooking === undefined) {
+          updateData.acceptsOnlineBooking =
+            selectedService.acceptsOnlineBooking ?? true;
+        }
+
+        const updatedService = await serviceService.updateSalonService(
+          selectedService.id,
+          updateData
+        );
+
+        setCustomServices((prev) =>
+          prev.map((s) =>
+            s.id === selectedService.id
+              ? {
+                ...s,
+                ...updatedService,
+                type: "custom" as const,
+                active:
+                  updatedService.isActive !== undefined
+                    ? updatedService.isActive
+                    : s.active,
+              }
+              : s
+          ).sort((a, b) => a.name.localeCompare(b.name))
+        );
+        toast.success("Alterações salvas com sucesso");
+      } else {
+        const createData: SaveServiceData & { isActive: boolean } = {
+          name: data.name,
+          description: data.description,
+          acceptsOnlineBooking: data.acceptsOnlineBooking ?? true,
+          isActive: true,
+        };
+
+        if (data.price !== undefined && data.price !== null) {
+          createData.price = data.price;
+        }
+        if (data.duration !== undefined && data.duration !== null) {
+          createData.duration = data.duration;
+        }
+        if (data.commission !== undefined && data.commission !== null) {
+          createData.commission = data.commission;
+        }
+
+        const newService = await serviceService.createSalonSpecialtyService(
+          specialtyId!,
+          createData as any
+        );
+
+        const formattedService = {
+          ...newService,
+          type: "custom" as const,
+          active:
+            newService?.isActive !== undefined
+              ? newService?.isActive
+              : newService.active !== undefined
+                ? newService.active
+                : true,
+        };
+        setCustomServices((prev) => [...prev, formattedService].sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success("Serviço criado com sucesso");
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Algo deu errado. Tente novamente.";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  interface ConfigureServiceData {
+    price: string;
+    duration: number;
+    commission: number;
+    isEnabled: boolean;
+    acceptsOnlineBooking: boolean;
+  }
+
+  const handleConfigureService = async (
+    data: ConfigureServiceData
+  ): Promise<void> => {
+    try {
+      setIsSaving(true);
+
+      const salonId =
+        localStorage.getItem("selectedSalonId") || selectedSalon?.id;
+
+      if (!salonId || !serviceToConfig) {
+        toast.error("Dados necessários não encontrados");
+        return;
+      }
+
+      const price =
+        typeof data.price === "string"
+          ? parseFloat(data.price.replace(".", "").replace(",", "."))
+          : data.price;
+
+      await serviceService.configureSalonService(salonId, serviceToConfig.id, {
+        price: price,
+        duration: data.duration,
+        commission: data.commission,
+        isActive: data.isEnabled,
+        isEnabled: data.isEnabled,
+        acceptsOnlineBooking: data.acceptsOnlineBooking,
+      });
+
+      setStandardServices((prev) =>
+        prev.map((s) =>
+          s.id === serviceToConfig.id
+            ? ({
+              ...s,
+              configured_price: data.price,
+              configured_duration: data.duration,
+              configured_commission: data.commission,
+              is_enabled: data.isEnabled,
+              configured_accepts_online: data.acceptsOnlineBooking,
+              isConfigured: price > 0,
+              price,
+              active: data.isEnabled,
+            } as any)
+            : s
+        )
+      );
+
+      toast.success("Configuração salva com sucesso");
+      setIsConfigModalOpen(false);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Algo deu errado. Tente novamente.";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Combine standard and custom services for display
+  // Sort alphabetically by name regardless of type (standard or custom)
+  const allServices = [...standardServices, ...customServices].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  const columns = [
+    {
+      key: "active" as keyof ServiceWithConfig,
+      header: "Ativo",
+      width: "80px",
+      render: (_value: boolean | undefined, row: ServiceWithConfig) => {
+        const isActive = row.active;
+        return (
+          <Checkbox
+            checked={isActive}
+            onCheckedChange={() => handleToggleService(row)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        );
+      },
+    },
+    {
+      key: "name" as keyof ServiceWithConfig,
+      header: "Nome do Serviço",
+      render: (_value: string, row: ServiceWithConfig) => (
+        <div className="flex items-center gap-2">
+          <span>{row.name}</span>
+          {row.type === "standard" && (
+            <Badge variant="secondary" className="text-xs">
+              Padrão
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "configured_price" as any,
+      header: "Preço",
+      render: (_value: any, row: ServiceWithConfig) => {
+        const price = row.type === "standard" ? row.configured_price : row.price;
+        if (price === undefined || price === null || price === "") return "-";
+        const numericPrice = typeof price === "string" ? parseFloat(price) : price;
+        return new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }).format(numericPrice);
+      },
+    },
+    {
+      key: "configured_duration" as any,
+      header: "Duração",
+      render: (_value: any, row: ServiceWithConfig) => {
+        const duration = row.type === "standard" ? row.configured_duration : row.duration;
+        return duration ? `${duration} min` : "-";
+      },
+    },
+    {
+      key: "id" as keyof ServiceWithConfig,
+      header: "Ações",
+      width: "120px",
+      className: "text-right",
+      render: (_value: string, row: ServiceWithConfig) => (
+        <div className="flex items-center justify-end gap-2">
+          {row.type === "standard" ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConfigService(row);
+              }}
+              className="h-8 w-8"
+              title="Configurar serviço"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditService(row);
+                }}
+                className="h-8 w-8"
+                title="Editar serviço"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={!selectedSalon?.active}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteService(row);
+                }}
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                title="Excluir serviço"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  if (loading) {
+    return (
+      <EasySalonLayout
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle={selectedSalon?.name || "Salão"}
+        sideNavItems={navItems}
+      >
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="page-title">Carregando...</h1>
+        </div>
+        <div className="flex justify-center items-center h-48">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground mt-2">Carregando serviços...</p>
+          </div>
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <EasySalonLayout
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle={selectedSalon?.name || "Salão"}
+        sideNavItems={navItems}
+      >
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="page-title">Erro</h1>
+        </div>
+        <div className="flex justify-center items-center h-48">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={loadData} variant="outline">
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle={selectedSalon?.name || "Salão"}
+      sideNavItems={navItems}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="page-title">{`Serviços - ${specialty?.name || "Especialidade"
+              }`}</h1>
+            <p className="text-muted-foreground mt-1">
+              Gerencie os serviços desta especialidade
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={handleNewService}
+          disabled={loading || !selectedSalon?.active}
+        >
+          Novo Serviço
+        </Button>
+      </div>
+
+      <DataTable
+        data={allServices}
+        columns={columns}
+        mobileView="cards"
+        mobileCardConfig={{
+          title: "name",
+          subtitle: (row) => row.type === "standard" ? "Serviço Padrão" : "Serviço Personalizado",
+          badge: (row) => row.active ? "Ativo" : "Inativo",
+        }}
+      />
+
+      <ServiceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        service={selectedService}
+        selectedSalon={selectedSalon}
+        specialtyName={specialty?.name || "Especialidade"}
+        onSave={handleSaveService}
+        isSaving={isSaving}
+      />
+
+      {serviceToConfig && (
+        <ServiceConfigModal
+          isOpen={isConfigModalOpen}
+          onClose={() => setIsConfigModalOpen(false)}
+          service={serviceToConfig}
+          onSave={handleConfigureService}
+          isSaving={isSaving}
+        />
+      )}
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteService}
+        title="Excluir Serviço"
+        description={`Tem certeza que deseja excluir o serviço "${serviceToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={isSaving}
+      />
+    </EasySalonLayout>
+  );
+}

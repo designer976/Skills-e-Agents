@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposta Comercial — {{NOME_CLIENTE}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #2563EB;
+            --dark-blue: #1E3A8A;
+            --text: #1F2937;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ── PAGES ── */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            margin: 0 auto 24px;
+            padding: 46px 56px 90px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+        .page-cover {
+            background: #FAFBFC;
+            padding-bottom: 0;
+        }
+
+        /* ── LOGO ── */
+        .logo { display: inline-flex; align-items: center; gap: 7px; }
+        .logo-badge {
+            background: var(--dark-blue);
+            color: #fff;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 5px 9px;
+            border-radius: 5px;
+            line-height: 1.2;
+            letter-spacing: 0.2px;
+        }
+        .logo-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+
+        /* ── COVER DECORATION ── */
+        .cover-bg {
+            position: absolute;
+            right: -60px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 520px;
+            height: auto;
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .cover-content { position: relative; z-index: 1; }
+        .cover-title { margin-top: 82px; }
+        .cover-title h1 {
+            font-size: 38px;
+            font-weight: 800;
+            color: var(--blue);
+            line-height: 1.15;
+            margin-bottom: 20px;
+        }
+        .cover-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .cover-bottom {
+            position: absolute;
+            bottom: 56px;
+            left: 56px;
+            z-index: 1;
+        }
+        .cover-bottom p {
+            font-size: 13.5px;
+            color: var(--text);
+            line-height: 1.7;
+            margin-bottom: 2px;
+        }
+
+        /* ── HEADINGS ── */
+        h2 {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+            margin-top: 22px;
+        }
+        h3.first { margin-top: 0; }
+
+        /* ── BODY TEXT ── */
+        p {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        p.highlight {
+            color: var(--blue);
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        /* ── LISTS ── */
+        ul { list-style: disc; padding-left: 22px; margin-bottom: 16px; }
+        ul li {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        /* Numbered list (funcionalidades / próximos passos) */
+        .num-list { list-style: none; padding: 0; margin-bottom: 16px; }
+        .num-list li {
+            display: flex;
+            gap: 10px;
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            align-items: flex-start;
+        }
+        .num-list li .n {
+            color: var(--blue);
+            font-weight: 700;
+            min-width: 22px;
+            flex-shrink: 0;
+            padding-top: 1px;
+        }
+
+        /* ── PHASES ── */
+        .phase {
+            font-size: 13.5px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+        .phase .lbl { color: var(--blue); font-weight: 700; }
+
+        /* ── INVESTMENT ── */
+        .invest-total { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 26px; }
+        .payment-heading { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 14px; }
+        .payment-row { font-size: 13.5px; line-height: 1.75; color: var(--text-muted); margin-bottom: 5px; }
+        .payment-row strong { color: var(--text); font-weight: 700; }
+
+        /* ── CLOSING ── */
+        .closing-section { margin-top: 56px; }
+        .closing-quote { font-size: 15px; font-weight: 700; color: var(--blue); line-height: 1.6; margin-bottom: 2px; }
+        .company-info { margin-top: 26px; font-size: 12.5px; color: var(--text-muted); line-height: 1.75; }
+
+        /* ── FOOTER ── */
+        .footer {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 0 56px 22px;
+        }
+        .footer-line { height: 1px; background: var(--border); margin-bottom: 13px; }
+        .footer-row { display: flex; justify-content: space-between; align-items: center; }
+        .pg-num { font-size: 12.5px; color: var(--gray); }
+
+        /* ── PRINT ── */
+        @media print {
+            body { background: #fff; }
+            .page { margin: 0; box-shadow: none; page-break-after: always; }
+            .page:last-child { page-break-after: auto; }
+        }
+        @page { size: A4; margin: 0; }
+    </style>
+</head>
+<body>
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              TEMPLATE — PROPOSTA COMERCIAL WA PROJECT                       ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Substitua os tokens {{...}} com os dados do cliente e do projeto.          ║
+║                                                                              ║
+║  VARIÁVEIS:                                                                  ║
+║  {{NOME_CLIENTE}}        → Nome do cliente/empresa (ex: "Easy Salon")       ║
+║  {{DATA}}                → Data no formato DD/MM/YYYY (ex: "27/03/2026")    ║
+║  {{TIPO_PROJETO}}        → "Escopo fechado" | "Time & Materials" | outro    ║
+║  {{SUBTITULO_PROJETO}}   → Título bold da seção Sobre o Projeto             ║
+║  {{DESCRICAO_PROJETO}}   → Parágrafo com contexto e problema do cliente     ║
+║  {{DESTAQUE_1}}          → Frase azul/bold descrevendo a solução            ║
+║  {{DESTAQUE_2}}          → Frase azul/bold descrevendo a entrega final      ║
+║  {{FUNCIONALIDADES}}     → Bloco <li> das funcionalidades (ver formato ▼)   ║
+║  {{INTEGRACOES_TEXTO}}   → Parágrafo descrevendo integrações previstas      ║
+║  {{PRAZO_TOTAL}}         → Ex: "4,5 semanas" | "3 meses"                   ║
+║  {{CRONOGRAMA_FASES}}    → Bloco de fases (ver formato ▼)                  ║
+║  {{VALOR_TOTAL}}         → Ex: "R$ 20.000"                                 ║
+║  {{PARCELA_1_VALOR}}     → Ex: "R$ 6.667"                                  ║
+║  {{PARCELA_2_CONDICAO}}  → Ex: "30 dias após a assinatura"                 ║
+║  {{PARCELA_2_VALOR}}     → Ex: "R$ 6.667"                                  ║
+║  {{PARCELA_3_CONDICAO}}  → Ex: "Pós-homologação"                           ║
+║  {{PARCELA_3_VALOR}}     → Ex: "R$ 6.666"                                  ║
+║  {{ENTREGAVEIS}}         → Bloco <li> dos entregáveis (ver formato ▼)      ║
+║                                                                              ║
+║  FORMATO {{FUNCIONALIDADES}}:                                               ║
+║  <li>                                                                        ║
+║    <span class="n">1.</span>                                                 ║
+║    <div><strong>Título da Funcionalidade</strong> – Descrição detalhada     ║
+║    da funcionalidade e seu valor para o cliente.</div>                       ║
+║  </li>                                                                       ║
+║                                                                              ║
+║  FORMATO {{CRONOGRAMA_FASES}}:                                              ║
+║  <div class="phase">                                                         ║
+║    <span class="lbl">Fase 1:</span> Concepção do produto: Semanas 1–2       ║
+║  </div>                                                                      ║
+║                                                                              ║
+║  FORMATO {{ENTREGAVEIS}}:                                                   ║
+║  <li>Protótipos de Alta Fidelidade (Figma).</li>                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 1 — CAPA
+     ════════════════════════════════════════════════════════ -->
+<section class="page page-cover">
+
+    <!-- Logo -->
+    <div class="cover-content">
+        <div class="logo">
+            <div class="logo-badge">Wa</div>
+            <span class="logo-text">Project.</span>
+        </div>
+    </div>
+
+    <!-- Decoração de fundo (marca WaProject) -->
+    <svg class="cover-bg" width="1200" height="1269" viewBox="0 0 1200 1269" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M318.818 91.1069C357.171 13.757 449.939 -20.6792 529.95 12.7514L1053.55 231.566C1108.04 254.336 1145.68 304.516 1151.95 362.713L1199.08 800.307C1205.82 863.006 1175 923.997 1120.18 956.558L633.234 1245.8C572.028 1282.14 494.217 1275.28 440.89 1228.8L55.0715 892.401C-0.00108413 844.385 -15.6906 765.791 16.7514 700.354L318.818 91.1069ZM177.321 433.492L303.709 904.828H420.368L504.616 588.432L588.828 904.828H705.486L831.875 433.492H723.001L641.938 769.397L556.452 433.492H452.744L367.258 769.397L286.195 433.492H177.321ZM982.112 542.262C956.557 542.264 932.972 546.068 911.381 553.698C889.786 561.331 871.255 572.174 855.83 586.166C840.414 600.156 829.194 616.912 822.145 636.409L901.474 672.665C907.644 657.403 917.34 645.1 930.559 635.771C944.223 626.442 959.882 621.786 977.513 621.786C996.018 621.786 1010.56 626.235 1021.14 635.134C1032.15 644.037 1037.66 655.064 1037.66 668.204V677.481L937.848 693.024C909.207 697.263 885.163 704.451 865.772 714.623C846.829 724.796 832.708 737.533 823.454 752.791C814.198 767.632 809.584 784.839 809.584 804.344C809.586 825.112 814.631 843.15 824.763 858.41C834.901 873.249 849.476 884.699 868.426 892.755C887.377 900.809 909.866 904.828 935.866 904.828C955.255 904.827 972.9 902.268 988.764 897.181C1004.62 892.517 1018.94 885.329 1031.72 875.582C1036.06 872.13 1040.2 868.29 1044.28 864.252V897.181H1136.84V668.204C1136.84 643.188 1130.22 621.358 1116.99 602.701C1104.21 583.626 1086.17 568.759 1062.82 558.159C1039.46 547.558 1012.53 542.262 982.112 542.262ZM1037.66 758.527C1037.66 772.519 1034.14 785.461 1027.08 797.333C1020.48 808.775 1011 817.885 998.672 824.667C986.336 831.449 972.015 834.861 955.716 834.864C943.382 834.864 933.022 831.872 924.65 825.942C916.278 820.007 912.056 811.754 912.054 801.157C912.054 789.715 915.785 780.998 923.27 775.062C930.763 768.701 941.612 764.258 955.716 761.714L1037.66 747.622V758.527Z" fill="#2E2E2E"/>
+    </svg>
+
+    <!-- Título principal -->
+    <div class="cover-content cover-title">
+        <h1>Proposta Comercial<br>{{NOME_CLIENTE}}</h1>
+        <p class="cover-date">{{DATA}} | Válido por 30 dias</p>
+    </div>
+
+    <!-- Destinatário / Tipo -->
+    <div class="cover-bottom">
+        <p><strong>Para:</strong> {{NOME_CLIENTE}}</p>
+        <p><strong>Tipo:</strong> {{TIPO_PROJETO}}</p>
+    </div>
+
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 2 — SOBRE A WA PROJECT  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Sobre a Wa Project</h2>
+
+    <p>A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.</p>
+
+    <h3 class="first">Nossos serviços:</h3>
+
+    <ul>
+        <li>Desenvolvimento de Software.</li>
+        <li>Desenvolvimento de Aplicativos.</li>
+        <li>Soluções de Inteligência Artificial.</li>
+        <li>Alocação de Profissionais.</li>
+    </ul>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">2</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 3 — NOSSOS CLIENTES  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Nossos Clientes</h2>
+
+    <ul>
+        <li>PepsiCo</li>
+        <li>Vtex</li>
+        <li>Santillana</li>
+        <li>Dasa</li>
+        <li>WideLabs</li>
+        <li>Confederação Brasileira de Hipismo</li>
+        <li>Forbes</li>
+        <li>Easy Salon</li>
+        <li>InstaCarro</li>
+        <li>Antilhas</li>
+        <li>Fundação Carlos Chagas</li>
+        <li>Funarbe</li>
+    </ul>
+
+    <p>Cases completos: <a href="https://waproject.com.br/cases" style="color:var(--blue);">waproject.com.br/cases</a></p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">3</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 4 — SOBRE O PROJETO  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Sobre o Projeto</h2>
+
+    <h3 class="first">{{SUBTITULO_PROJETO}}</h3>
+
+    <p>{{DESCRICAO_PROJETO}}</p>
+
+    <p class="highlight">{{DESTAQUE_1}}</p>
+
+    <p class="highlight">{{DESTAQUE_2}}</p>
+
+    <h3>Funcionalidades</h3>
+
+    <ol class="num-list">
+        {{FUNCIONALIDADES}}
+    </ol>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">4</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 5 — INTEGRAÇÕES PREVISTAS  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h3 class="first">Integrações Previstas</h3>
+
+    <p>{{INTEGRACOES_TEXTO}}</p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">5</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 6 — MODELO DE TRABALHO  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Modelo de Trabalho</h2>
+
+    <p><strong>Escopo Fechado – Prazo e valor definidos previamente.</strong><br>
+    Processo orientado a entregas contínuas, previsibilidade e colaboração.</p>
+
+    <h3>Fases do Projeto:</h3>
+
+    <div class="phase"><span class="lbl">Fase 1:</span> Planejamento – Priorização de demandas e alinhamento de objetivos e escopo.</div>
+    <div class="phase"><span class="lbl">Fase 2:</span> Levantamento de Requisitos – Detalhamento funcional e técnico validado com stakeholders.</div>
+    <div class="phase"><span class="lbl">Fase 3:</span> Protótipo – Criação de protótipos navegáveis de alta fidelidade validados antes do desenvolvimento.</div>
+    <div class="phase"><span class="lbl">Fase 4:</span> Desenvolvimento – Implementação técnica com boas práticas, testes e code review.</div>
+    <div class="phase"><span class="lbl">Fase 5:</span> Homologação – Testes completos e validação do cliente em ambiente de homologação.</div>
+    <div class="phase"><span class="lbl">Fase 6:</span> Go-Live – Publicação em produção com monitoramento e acompanhamento inicial.</div>
+    <div class="phase"><span class="lbl">Fase 7:</span> Garantia – 90 dias de suporte técnico gratuito após o go-live.</div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">6</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 7 — EQUIPE  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Equipe</h2>
+
+    <p>O projeto contará com uma equipe multidisciplinar de especialistas:</p>
+
+    <h3 class="first">UX e UI Designer</h3>
+    <p>Responsável pelo design de interfaces, prototipagem navegável e validação de usabilidade. Cria o design system e acompanha a implementação para garantir fidelidade ao design aprovado.</p>
+
+    <h3>Desenvolvedor(es)</h3>
+    <p>Realiza a implementação técnica completa (frontend e backend), integrações com APIs e sistemas externos. Garante qualidade através de testes, code review e boas práticas de desenvolvimento.</p>
+
+    <h3>Product Owner</h3>
+    <p>Atua como ponte entre cliente e equipe técnica, gerenciando backlog e priorização. Garante alinhamento estratégico, planeja sprints e acompanha prazos e entregas do projeto.</p>
+
+    <h3>Tester (QA)</h3>
+    <p>Executa testes funcionais e de regressão para validar qualidade de cada funcionalidade. Documenta bugs, realiza homologação com o cliente e garante critérios de aceite.</p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">7</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 8 — CRONOGRAMA  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Cronograma</h2>
+
+    <p><strong>Prazo total estimado: {{PRAZO_TOTAL}}</strong></p>
+
+    {{CRONOGRAMA_FASES}}
+
+    <p>O cronograma acima é uma estimativa inicial e poderá ser ajustado após o planejamento detalhado, conforme validações e fornecimento de informações pelo cliente.</p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">8</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 9 — INVESTIMENTO  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Investimento</h2>
+
+    <p class="invest-total">Investimento total: {{VALOR_TOTAL}}</p>
+
+    <p class="payment-heading">Condições de Pagamento:</p>
+
+    <p class="payment-row"><strong>1ª Parcela:</strong> Na assinatura do contrato: {{PARCELA_1_VALOR}}</p>
+    <p class="payment-row"><strong>2ª Parcela:</strong> {{PARCELA_2_CONDICAO}}: {{PARCELA_2_VALOR}}</p>
+    <p class="payment-row"><strong>3ª Parcela:</strong> {{PARCELA_3_CONDICAO}}: {{PARCELA_3_VALOR}}</p>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">9</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 10 — ENTREGÁVEIS  [variável]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Entregáveis</h2>
+
+    <ul>
+        {{ENTREGAVEIS}}
+    </ul>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">10</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════
+     PÁGINA 11 — PRÓXIMOS PASSOS  [conteúdo fixo]
+     ════════════════════════════════════════════════════════ -->
+<section class="page">
+
+    <h2>Próximos Passos</h2>
+
+    <ol class="num-list">
+        <li><span class="n">1.</span><span>Alinhamento Final.</span></li>
+        <li><span class="n">2.</span><span>Aprovação da Proposta.</span></li>
+        <li><span class="n">3.</span><span>Assinatura do Contrato.</span></li>
+        <li><span class="n">4.</span><span>Kickoff do Projeto.</span></li>
+        <li><span class="n">5.</span><span>Início do desenvolvimento.</span></li>
+    </ol>
+
+    <p>Estamos à disposição para qualquer esclarecimento e ansiosos para iniciar esta parceria.</p>
+
+    <div class="closing-section">
+        <p class="closing-quote">Não é sobre desenvolvimento, é sobre envolvimento.<br>
+        Obrigado por confiar na Wa Project!</p>
+
+        <div class="company-info">
+            <p>Wa Project Soluções Tecnológicas LTDA.<br>
+            CNPJ: 19.317.018/0001-40 &nbsp;·&nbsp; Website: waproject.com.br &nbsp;·&nbsp; Email: comercial@waproject.com.br<br>
+            Telefone/WhatsApp: (11) 5028-2010</p>
+        </div>
+
+        <p style="margin-top:14px; font-size:12.5px; color:var(--text-muted);">
+            Proposta válida por 30 dias a partir da data de emissão
+        </p>
+    </div>
+
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-row">
+            <div class="logo">
+                <div class="logo-badge">Wa</div>
+                <span class="logo-text">Project.</span>
+            </div>
+            <span class="pg-num">11</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

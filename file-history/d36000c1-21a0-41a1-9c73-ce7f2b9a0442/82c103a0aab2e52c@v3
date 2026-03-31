@@ -1,0 +1,336 @@
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Clock, CreditCard, CheckCircle, XCircle, UserCheck, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { appointmentService } from "@/services/appointmentService";
+import { toast } from "sonner";
+
+interface ServiceDetail {
+  id: string;
+  serviceName: string;
+  startTime: string;
+  endTime: string;
+  professional: string;
+  price: number;
+  status: "Agendado" | "Atendendo" | "Pgto Pendente" | "Pago" | "Cancelado";
+}
+
+interface ModalComandaProps {
+  isOpen: boolean;
+  onClose: () => void;
+  clientName: string;
+  date: string;
+  services: ServiceDetail[];
+  onStatusUpdate?: (serviceId: string, newStatus: ServiceDetail["status"]) => void;
+}
+
+export function ModalComanda({
+  isOpen,
+  onClose,
+  clientName,
+  date,
+  services,
+  onStatusUpdate
+}: ModalComandaProps) {
+  // Estado local para gerenciar status dos serviços
+  const [serviceStatuses, setServiceStatuses] = useState<Record<string, ServiceDetail["status"]>>({});
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+
+  // Inicializar estados quando os serviços mudarem
+  useEffect(() => {
+    const initialStatuses = services.reduce((acc, service) => ({
+      ...acc,
+      [service.id]: service.status
+    }), {});
+    setServiceStatuses(initialStatuses);
+  }, [services]);
+
+  // Função para obter status disponíveis baseado no status atual
+  const getAvailableStatuses = (currentStatus: ServiceDetail["status"]): ServiceDetail["status"][] => {
+    // Lista de todos os status disponíveis (sem "Cancelado")
+    const allStatuses: ServiceDetail["status"][] = [
+      "Agendado",
+      "Atendendo",
+      "Pgto Pendente",
+      "Pago"
+    ];
+
+    // Retorna todos os status exceto o atual (pode mudar para qualquer outro)
+    return allStatuses.filter(status => status !== currentStatus);
+  };
+
+  // Configuração de cores e ícones por status
+  const getStatusConfig = (status: ServiceDetail["status"]) => {
+    switch (status) {
+      case "Agendado":
+        return {
+          icon: Clock,
+          bgColor: "bg-blue-50",
+          textColor: "text-blue-700",
+          iconColor: "text-blue-500"
+        };
+      case "Atendendo":
+        return {
+          icon: UserCheck,
+          bgColor: "bg-orange-50",
+          textColor: "text-orange-700",
+          iconColor: "text-orange-500"
+        };
+      case "Pgto Pendente":
+        return {
+          icon: CreditCard,
+          bgColor: "bg-yellow-50",
+          textColor: "text-yellow-700",
+          iconColor: "text-yellow-500"
+        };
+      case "Pago":
+        return {
+          icon: CheckCircle,
+          bgColor: "bg-green-50",
+          textColor: "text-green-700",
+          iconColor: "text-green-500"
+        };
+      case "Cancelado":
+        return {
+          icon: XCircle,
+          bgColor: "bg-red-50",
+          textColor: "text-red-700",
+          iconColor: "text-red-500"
+        };
+      default:
+        return {
+          icon: Clock,
+          bgColor: "bg-muted",
+          textColor: "text-foreground",
+          iconColor: "text-muted-foreground"
+        };
+    }
+  };
+
+  // Função para alterar status do serviço e persistir no backend
+  const handleStatusChange = async (serviceId: string, newStatus: ServiceDetail["status"]) => {
+    // Mapear status para o formato do backend
+    const statusMap: Record<ServiceDetail["status"], string> = {
+      "Agendado": "scheduled",
+      "Atendendo": "in_progress",
+      "Pgto Pendente": "completed",
+      "Pago": "paid", // Este será tratado de forma especial
+      "Cancelado": "cancelled" // Mantido para compatibilidade com dados existentes
+    };
+    
+    // Verificar o status atual do serviço
+    const currentStatus = serviceStatuses[serviceId] || services.find(s => s.id === serviceId)?.status;
+    const currentBackendStatus = statusMap[currentStatus as ServiceDetail["status"]];
+    const newBackendStatus = statusMap[newStatus];
+    
+    // Não permitir transição para o mesmo status
+    if (currentStatus === newStatus) {
+      return; // Silenciosamente ignorar se for o mesmo status
+    }
+    
+    // LIBERADO: Permitir todas as transições entre todos os status
+    // Removida validação de transições - agora qualquer status pode ir para qualquer outro
+    // Isso dá flexibilidade total para o salão gerenciar seus agendamentos
+    
+    setIsUpdating(serviceId);
+    
+    try {
+      // Se o novo status for "Pago", usar o endpoint de pagamento
+      if (newStatus === "Pago") {
+        // Buscar o preço do serviço
+        const service = services.find(s => s.id === serviceId);
+        await appointmentService.updatePayment(serviceId, {
+          paymentStatus: "paid" as any,
+          paymentMethod: "cash" as any, // Default para dinheiro, pode ser melhorado depois
+        });
+      } else {
+        // Para outros status, usar o endpoint de status normal
+        await appointmentService.updateStatus(serviceId, {
+          status: statusMap[newStatus] as any
+        });
+      }
+      
+      // Atualizar estado local após sucesso
+      setServiceStatuses(prev => ({
+        ...prev,
+        [serviceId]: newStatus
+      }));
+      
+      // Notificar o componente pai sobre a atualização
+      onStatusUpdate?.(serviceId, newStatus);
+      
+      toast.success(`Status atualizado para ${newStatus}`);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Erro ao atualizar status';
+      toast.error(errorMessage);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  // Ordenar serviços: "Pago" vai para o final
+  const sortedServices = [...services].sort((a, b) => {
+    const statusA = serviceStatuses[a.id] || a.status;
+    const statusB = serviceStatuses[b.id] || b.status;
+    
+    if (statusA === "Pago" && statusB !== "Pago") return 1;
+    if (statusB === "Pago" && statusA !== "Pago") return -1;
+    return 0;
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent 
+        className="w-[95vw] md:max-w-2xl max-h-[90vh] p-0 gap-0 rounded-xl md:rounded-2xl border-none shadow-2xl overflow-hidden flex flex-col" /* RESP: Dimensões padrão */
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="sticky top-0 z-10 bg-background px-5 py-4 border-b shrink-0 text-left"> {/* RESP: Header fixo e padding padrão */}
+          <DialogTitle className="text-xl font-bold text-primary"> {/* RESP: Cor primária no título */}
+            Comanda – {clientName}
+          </DialogTitle>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="outline" className="font-normal text-xs bg-muted/50 border-muted-foreground/20">
+              {date}
+            </Badge>
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-5 py-6 custom-scrollbar"> {/* RESP: Área de scroll com padding padrão */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Serviços Agendados</h3>
+              <Badge variant="secondary" className="text-[10px] font-bold">
+                {sortedServices.length} {sortedServices.length === 1 ? 'ITEM' : 'ITENS'}
+              </Badge>
+            </div>
+            
+            {sortedServices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                <div className="p-4 bg-muted/30 rounded-full">
+                  <Clock className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <p className="text-sm text-muted-foreground max-w-[200px]">
+                  Nenhum serviço agendado para este cliente nesta data.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sortedServices.map((service) => {
+                  const currentStatus = serviceStatuses[service.id] || service.status;
+                  const { icon: StatusIcon, bgColor, textColor, iconColor } = getStatusConfig(currentStatus);
+                  const isPaid = currentStatus === "Pago";
+                  
+                  return (
+                    <Card key={service.id} className="overflow-hidden border-muted/60 shadow-sm hover:shadow-md transition-shadow">
+                      <CardContent className="p-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center">
+                          {/* Barra de Status Lateral no Mobile / Superior no Desktop */}
+                          <div className={cn("w-full sm:w-2 sm:self-stretch", bgColor)} />
+                          
+                          <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-bold text-base">{service.serviceName}</span>
+                                
+                                {isPaid ? (
+                                  <Badge className={cn("border-0 text-[10px] px-2 h-5", bgColor, textColor)}>
+                                    <StatusIcon className={cn("h-3 w-3 mr-1", iconColor)} />
+                                    {currentStatus.toUpperCase()}
+                                  </Badge>
+                                ) : (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={isUpdating === service.id || getAvailableStatuses(currentStatus).length === 0}
+                                        className={cn(
+                                          "h-6 py-0 px-2 font-bold text-[10px] gap-1 rounded-full",
+                                          bgColor,
+                                          textColor,
+                                          "hover:opacity-80"
+                                        )}
+                                      >
+                                        <StatusIcon className={cn("h-3 w-3", iconColor)} />
+                                        {isUpdating === service.id ? "..." : currentStatus.toUpperCase()}
+                                        {getAvailableStatuses(currentStatus).length > 0 && (
+                                          <ChevronDown className="h-3 w-3 opacity-50" />
+                                        )}
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48">
+                                      {getAvailableStatuses(currentStatus).map((status) => {
+                                        const config = getStatusConfig(status);
+                                        const OptionIcon = config.icon;
+                                        return (
+                                          <DropdownMenuItem
+                                            key={status}
+                                            onClick={() => handleStatusChange(service.id, status)}
+                                            className="text-xs font-medium py-2"
+                                          >
+                                            <div className={cn("p-1 rounded-md mr-2", config.bgColor)}>
+                                              <OptionIcon className={cn("h-3 w-3", config.iconColor)} />
+                                            </div>
+                                            {status}
+                                          </DropdownMenuItem>
+                                        );
+                                      })}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-sm text-muted-foreground font-medium">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {service.startTime} – {service.endTime}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <UserCheck className="h-3 w-3" />
+                                  {service.professional}
+                                </span>
+                                <span className="sm:hidden font-bold text-primary ml-auto">
+                                  R$ {(Number(service.price) || 0).toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="hidden sm:block text-right">
+                              <div className="text-xs text-muted-foreground font-medium mb-0.5">Valor</div>
+                              <div className="text-lg font-black text-primary">
+                                R$ {(Number(service.price) || 0).toFixed(2).replace('.', ',')}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 z-10 bg-background px-5 py-4 border-t shrink-0 flex flex-col sm:flex-row sm:justify-end gap-3"> {/* RESP: Footer fixo com padding padrão */}
+          <Button
+            variant="default"
+            onClick={onClose}
+            className="w-full sm:w-auto min-h-[44px] rounded-xl font-bold"
+          >
+            Fechar Comanda
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

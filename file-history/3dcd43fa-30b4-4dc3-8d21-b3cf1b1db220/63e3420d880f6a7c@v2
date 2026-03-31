@@ -1,0 +1,52 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: "destructive" | "default";
+  isLoading?: boolean;
+}
+
+export function ConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  variant = "destructive",
+  isLoading = false,
+}: ConfirmationModalProps) {
+  const handleConfirm = () => {
+    onConfirm();
+    if (!isLoading) onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-md flex flex-col gap-0">
+        <DialogHeader className="border-b pb-3 shrink-0">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="border-t pt-6 shrink-0">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            {cancelText}
+          </Button>
+          <Button variant={variant} onClick={handleConfirm} disabled={isLoading}>
+            {isLoading && <LoadingSpinner size="sm" inline className="mr-2" />}
+            {confirmText}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

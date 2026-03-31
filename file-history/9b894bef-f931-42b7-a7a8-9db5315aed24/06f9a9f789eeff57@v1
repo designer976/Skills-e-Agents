@@ -1,0 +1,426 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { userService } from "@/services/userService";
+import { tenantService } from "@/services/tenantService";
+import { User, UpdateUserDto, UserRole } from "@/types/user";
+import { Tenant } from "@/types/tenant";
+import { Loader2, Building2, Globe, Calendar, CheckCircle, XCircle } from "lucide-react";
+
+export default function EditUserPage() {
+  const { user } = useAuth();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [originalUser, setOriginalUser] = useState<User | null>(null);
+  const [tenantData, setTenantData] = useState<Tenant | null>(null);
+  const [userData, setUserData] = useState<UpdateUserDto & { birthDate?: string; cpf?: string; description?: string }>({
+    name: "",
+    email: "",
+    birthDate: "",
+    phone: "",
+    whatsapp: "",
+    cpf: "",
+    description: "",
+    active: true
+  });
+
+  useEffect(() => {
+    fetchUser();
+  }, [id]);
+
+  const fetchUser = async () => {
+    if (!id) return;
+    
+    setFetching(true);
+    try {
+      const user = await userService.getById(id);
+      setOriginalUser(user);
+      setUserData({
+        name: user.name,
+        email: user.email,
+        birthDate: (user as any).birthDate || "",
+        phone: user.phone || "",
+        whatsapp: user.whatsapp || "",
+        cpf: (user as any).cpf || "",
+        description: (user as any).description || "",
+        active: user.active
+      });
+      
+      // Se o usuário for tenant admin, buscar dados do tenant
+      if (user.role === UserRole.TENANT_ADMIN && user.tenantId) {
+        try {
+          const tenant = await tenantService.getById(user.tenantId);
+          setTenantData(tenant);
+        } catch (error) {
+          // Não mostrar erro ao usuário, apenas não exibir os dados do tenant
+        }
+      }
+    } catch (error: any) {
+      toast.error("Algo deu errado. Tente novamente.");
+      navigate("/admin/users");
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof (UpdateUserDto & { birthDate?: string; cpf?: string; description?: string }), value: any) => {
+    setUserData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})/, '$1-$2');
+    }
+    return value;
+  };
+
+  const validateForm = () => {
+    if (!userData.name?.trim()) {
+      toast.error("Nome completo é obrigatório");
+      return false;
+    }
+    if (!userData.email?.trim()) {
+      toast.error("Email é obrigatório");
+      return false;
+    }
+    // Validação de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      toast.error("Email inválido");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm() || !id) return;
+
+    setLoading(true);
+    try {
+      // Prepare data for API - remove formatting from phone numbers
+      const dataToSend: UpdateUserDto = {
+        name: userData.name.trim(),
+        email: userData.email.trim(),
+        active: userData.active
+      };
+
+      // Only include optional fields if they have values
+      if (userData.birthDate) {
+        dataToSend.birthDate = userData.birthDate;
+      }
+
+      if (userData.whatsapp) {
+        // Remove formatting from whatsapp/phone
+        const cleanPhone = userData.whatsapp.replace(/\D/g, '');
+        dataToSend.whatsapp = cleanPhone;
+        dataToSend.phone = cleanPhone; // Set both fields with same value
+      }
+
+      if (userData.cpf) {
+        // CPF should be in format XXX.XXX.XXX-XX
+        dataToSend.cpf = userData.cpf;
+      }
+
+      // Always include description field, even if empty
+      dataToSend.description = userData.description?.trim() || "";
+
+      await userService.update(id, dataToSend);
+      toast.success("Usuário atualizado com sucesso!");
+      navigate("/admin/users");
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        toast.error(`Erro ao atualizar usuário: ${error.response.data.message}`);
+      } else {
+        toast.error("Algo deu errado. Tente novamente.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate("/admin/users");
+  };
+
+  // Role cannot be changed
+  const hasRoleChanged = () => false;
+
+  if (fetching) {
+    return (
+      <EasySalonLayout
+        sideNavItems={getAdminNavItems(user?.role || 'Easy Salon')}
+        sideNavTitle="Easy Salon"
+        sideNavSubtitle="Área Easy Salon"
+      >
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        </div>
+      </EasySalonLayout>
+    );
+  }
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || 'Easy Salon')}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Easy Salon"
+    >
+      <PageHeader
+        title="Editar Usuário"
+        subtitle="Edite as informações do usuário"
+      />
+      
+      {/* Seção de informações do Tenant - somente leitura */}
+      {originalUser?.role === UserRole.TENANT_ADMIN && tenantData && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Informações do Tenant
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Nome do Tenant</Label>
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-sm font-medium">{tenantData.name}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Slug</Label>
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="text-sm font-medium">{tenantData.slug}</p>
+                </div>
+              </div>
+              
+              {tenantData.domain && (
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground flex items-center gap-1">
+                    <Globe className="h-3 w-3" />
+                    Domínio
+                  </Label>
+                  <div className="p-2 bg-muted rounded-md">
+                    <p className="text-sm font-medium">{tenantData.domain}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Status</Label>
+                <div className="p-2 bg-muted rounded-md">
+                  <div className="flex items-center gap-2">
+                    {tenantData.active ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-600">Ativo</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="text-sm font-medium text-red-600">Inativo</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {tenantData.subscriptionExpiresAt && (
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Expiração da Assinatura
+                  </Label>
+                  <div className="p-2 bg-muted rounded-md">
+                    <p className="text-sm font-medium">
+                      {new Date(tenantData.subscriptionExpiresAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-xs text-amber-700">
+                <strong>Nota:</strong> As informações do tenant são somente leitura. Para alterações, entre em contato com o suporte.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      <Card>
+        <CardContent className="p-6 space-y-6">
+          {originalUser && originalUser.role !== UserRole.TENANT_ADMIN && (
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Perfil:</strong> {userService.getRoleLabel(originalUser.role)} (não pode ser alterado)
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome Completo <span className="text-red-500">*</span></Label>
+              <Input
+                id="name"
+                value={userData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                placeholder="Digite o nome completo"
+                disabled={loading}
+                maxLength={100}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Data de Nascimento</Label>
+              <Input
+                id="birthDate"
+                type="date"
+                value={userData.birthDate || ""}
+                onChange={(e) => handleInputChange("birthDate", e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp/Telefone</Label>
+              <Input
+                id="whatsapp"
+                value={userData.whatsapp || ""}
+                onChange={(e) => {
+                  // Remove tudo que não é número
+                  const cleaned = e.target.value.replace(/[^\d]/g, '');
+                  // Limita a 11 dígitos
+                  const limited = cleaned.slice(0, 11);
+                  // Aplica a formatação
+                  handleInputChange("whatsapp", userService.formatPhone(limited));
+                }}
+                onKeyPress={(e) => {
+                  // Permite apenas números
+                  if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete') {
+                    e.preventDefault();
+                  }
+                }}
+                placeholder="(XX) XXXXX-XXXX"
+                disabled={loading}
+                maxLength={15}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
+              <Input
+                id="email"
+                type="email"
+                value={userData.email || ""}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="usuario@exemplo.com"
+                disabled={loading}
+                maxLength={100}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                value={userData.cpf || ""}
+                onChange={(e) => handleInputChange("cpf", formatCPF(e.target.value))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                disabled={loading}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2 pt-6">
+              <Switch
+                id="active"
+                checked={userData.active}
+                onCheckedChange={(checked) => handleInputChange("active", checked)}
+                disabled={loading}
+              />
+              <Label htmlFor="active" className="cursor-pointer">
+                Usuário ativo
+              </Label>
+            </div>
+          </div>
+
+          {/* Description Field */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              value={userData.description || ""}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+              placeholder="Informações adicionais sobre o usuário"
+              disabled={loading}
+              className="resize-none"
+              rows={4}
+              maxLength={500}
+            />
+          </div>
+
+          {hasRoleChanged() && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 className="font-medium text-yellow-800 mb-2">⚠️ Alteração de Perfil</h4>
+              <p className="text-sm text-yellow-700 mb-2">
+                O perfil será alterado de <strong>{userService.getRoleLabel(originalUser!.role)}</strong> para <strong>{userService.getRoleLabel(userData.role!)}</strong>.
+              </p>
+              <p className="text-sm text-yellow-700">
+                Esta alteração afetará as permissões do usuário no sistema.
+              </p>
+            </div>
+          )}
+
+
+          <div className="flex justify-end gap-4 pt-6 border-t">
+            <Button 
+              variant="outline"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSave}
+              className="bg-[#ce4836] hover:bg-[#b33d2e] text-white px-8"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Alterações"
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </EasySalonLayout>
+  );
+}

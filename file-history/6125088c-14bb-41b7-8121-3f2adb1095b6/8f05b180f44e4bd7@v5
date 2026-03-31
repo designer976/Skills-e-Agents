@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITULO_PROPOSTA}} — {{NOME_CLIENTE}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0047ba;
+            --secondary: #0056A3;
+            --text: #2e2e2e;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        /* ── CONTINUOUS DOCUMENT CONTAINER ── */
+        .document {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 24px 0;
+            position: relative;
+        }
+
+        /* ── CONTINUOUS CONTENT FLOW ── */
+        .continuous-content {
+            width: 210mm;
+            background: #fcfcfc;
+            margin: 0 auto;
+            padding: 46px 56px 46px;
+            position: relative;
+            overflow: visible;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+            min-height: 297mm;
+            page-break-inside: auto;
+        }
+
+        /* ── BACKGROUND FOR ALL CONTENT ── */
+        .continuous-content::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 210mm;
+            height: 100vh;
+            background: url('/fundo-center.png') center center no-repeat;
+            background-size: 602px auto;
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── CONTENT WRAPPER ── */
+        .content {
+            position: relative;
+            z-index: 1;
+            overflow: visible;
+        }
+
+        /* ── HEADER DA CAPA (com logo) ── */
+        .header {
+            margin-bottom: 32px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .header-logo {
+            text-align: left;
+            margin-bottom: 32px;
+        }
+        .header-logo img {
+            max-width: 150px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .cover-title {
+            margin-bottom: 40px;
+        }
+        .cover-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--blue);
+            line-height: 1.2;
+            margin-bottom: 0;
+        }
+        .cover-title h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-top: 0;
+            margin-bottom: 40px;
+        }
+
+        .cover-info {
+            margin-bottom: 32px;
+        }
+        .cover-info .cover-date {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .cover-info p {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .cover-info strong {
+            font-weight: 600;
+        }
+
+        /* ── HEADINGS ── */
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--blue);
+            margin: 32px 0 16px 0;
+            page-break-after: avoid;
+        }
+        h2:first-of-type,
+        .flow-content h2:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 24px 0 8px 0;
+            page-break-after: avoid;
+        }
+
+        h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 16px 0 8px 0;
+            page-break-after: avoid;
+        }
+
+        /* ── BODY TEXT ── */
+        p {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            orphans: 2;
+            widows: 2;
+        }
+
+        strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* ── LISTS ── */
+        ul {
+            list-style: disc;
+            padding-left: 20px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        ul li {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        ol {
+            list-style: decimal;
+            padding-left: 20px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        ol li {
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        /* ── FUNCTIONAL SECTIONS ── */
+        .func-item {
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        .func-item strong {
+            color: var(--text);
+        }
+
+        .phase {
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+        }
+        .phase strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .team-role {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .team-role h4 {
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .investment-total {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 20px 0 16px 0;
+        }
+
+        .payment-condition {
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--text-muted);
+        }
+
+        /* ── CONTINUOUS FLOW SECTIONS ── */
+        .section {
+            margin-bottom: 24px;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+
+        .section.allow-break {
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+
+        /* ── AUTOMATIC PAGE BREAKS ── */
+        .section h2 {
+            break-after: avoid-page;
+            page-break-after: avoid;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── CLOSING ── */
+        .closing {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+        .closing-quote {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        .company-info {
+            margin-top: 24px;
+        }
+        .company-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .validity {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── PRINT STYLES ── */
+        @media print {
+            body {
+                background: #D1D5DB;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .document {
+                padding: 0;
+            }
+
+            .continuous-content {
+                margin: 0;
+                box-shadow: none;
+                padding: 46px 56px 46px;
+                page-break-after: auto;
+            }
+
+            /* Enhanced page break controls for continuous flow */
+            h2 {
+                page-break-after: avoid;
+                break-after: avoid;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            h3 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            h4 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            .func-item {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .team-role {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .phase {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .section.allow-break {
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+            .closing {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            ul, ol {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            p {
+                orphans: 3;
+                widows: 3;
+            }
+
+            /* Continuous content background for print */
+            .continuous-content::before {
+                position: fixed;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 210mm;
+                height: 100%;
+                background: url('/fundo-center.png') center center no-repeat;
+                background-size: 602px auto;
+                background-attachment: fixed;
+                opacity: 0.035;
+            }
+        }
+
+        @page {
+            size: A4;
+            margin: 56px;
+            /* Rodapé com numeração à direita */
+            @top-left { content: ""; }
+            @top-center { content: ""; }
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-center { content: ""; }
+            @bottom-right {
+                content: counter(page);
+                font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 13px;
+                font-weight: 500;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document">
+    <!-- CONTEÚDO CONTÍNUO -->
+    <div class="continuous-content">
+        <div class="content">
+            <!-- HEADER DA CAPA (com logo) -->
+            <div class="header">
+                <div class="header-logo">
+                    <img src="/logo-completa.png" alt="{{NOME_EMPRESA}} Logo" />
+                </div>
+                <div class="cover-title">
+                    <h1>{{TITULO_PROPOSTA}}</h1>
+                    <h2>{{SUBTITULO_PROJETO}}</h2>
+                </div>
+
+                <div class="cover-info">
+                    <div class="cover-date">{{DATA_PROPOSTA}} | Válido por {{DIAS_VALIDADE}} dias</div>
+                    <p><strong>Para:</strong> {{CLIENTE_EMPRESA}}</p>
+                    <p><strong>Empresa:</strong> {{NOME_CLIENTE}}</p>
+                    <p><strong>Tipo:</strong> {{TIPO_ESCOPO}}</p>
+                </div>
+            </div>
+
+            <!-- SOBRE A EMPRESA -->
+            <div class="section">
+                <h2>{{TITULO_SOBRE_EMPRESA}}</h2>
+                <p>{{DESCRICAO_EMPRESA}}</p>
+
+                {{SECAO_SERVICOS}}
+
+                <h2>{{TITULO_CLIENTES}}</h2>
+                {{LISTA_CLIENTES}}
+            </div>
+
+            <!-- SOBRE O PROJETO -->
+            <div class="section">
+                <h2>{{TITULO_PROJETO}}</h2>
+                <h3>{{SUBTITULO_PROJETO}}</h3>
+
+                {{DESCRICAO_PROJETO}}
+            </div>
+
+            <!-- FUNCIONALIDADES -->
+            <div class="section allow-break">
+                <h2>{{TITULO_FUNCIONALIDADES}}</h2>
+
+                {{LISTA_FUNCIONALIDADES}}
+            </div>
+
+            <!-- INTEGRAÇÕES -->
+            <div class="section">
+                <h2>{{TITULO_INTEGRACOES}}</h2>
+                {{DESCRICAO_INTEGRACOES}}
+            </div>
+
+            <!-- MODELO DE TRABALHO -->
+            <div class="section allow-break">
+                <h2>{{TITULO_MODELO_TRABALHO}}</h2>
+                {{DESCRICAO_MODELO}}
+
+                <h3>{{TITULO_FASES}}</h3>
+                {{LISTA_FASES}}
+            </div>
+
+            <!-- EQUIPE -->
+            <div class="section allow-break">
+                <h2>{{TITULO_EQUIPE}}</h2>
+                {{DESCRICAO_EQUIPE}}
+
+                {{LISTA_MEMBROS_EQUIPE}}
+            </div>
+
+            <!-- CRONOGRAMA -->
+            <div class="section">
+                <h2>{{TITULO_CRONOGRAMA}}</h2>
+                {{PRAZO_TOTAL}}
+                <p>O desenvolvimento será realizado em sprints de 1-2 semanas com entregas parciais para validação.</p>
+                <p>Cronograma detalhado será refinado durante a fase de planejamento, com marcos de entrega bem definidos.</p>
+            </div>
+
+            <!-- INVESTIMENTO -->
+            <div class="section">
+                <h2>{{TITULO_INVESTIMENTO}}</h2>
+                {{VALOR_TOTAL}}
+
+                <h3>{{TITULO_CONDICOES_PAGAMENTO}}</h3>
+                {{CONDICOES_PAGAMENTO}}
+            </div>
+
+            <!-- ENTREGÁVEIS -->
+            <div class="section">
+                <h2>{{TITULO_ENTREGAVEIS}}</h2>
+                {{LISTA_ENTREGAVEIS}}
+            </div>
+
+            <!-- PRÓXIMOS PASSOS -->
+            <div class="section">
+                <h2>{{TITULO_PROXIMOS_PASSOS}}</h2>
+                <ol>
+                    <li>Aprovação desta proposta comercial</li>
+                    <li>Assinatura do contrato de prestação de serviços</li>
+                    <li>Kick-off do projeto com stakeholders</li>
+                    <li>Início do levantamento detalhado de requisitos</li>
+                    <li>Criação dos primeiros protótipos para validação</li>
+                </ol>
+
+                <p>Estamos à disposição para esclarecer dúvidas e ansiosos para iniciar esta parceria!</p>
+            </div>
+
+            <!-- ENCERRAMENTO -->
+            <div class="section closing">
+                {{CITACAO_ENCERRAMENTO}}
+
+                <div class="company-info">
+                    {{INFORMACOES_EMPRESA_COMPLETA}}
+                    <p><strong>Email:</strong> comercial@waproject.com.br</p>
+                    <p><strong>Telefone/WhatsApp:</strong> (11) 5028-2010</p>
+                </div>
+
+                <div class="validity">
+                    {{TEXTO_VALIDADE}}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Controla exibição do footer na impressão
+    window.addEventListener('beforeprint', function() {
+        // Footer configurado via CSS @page - nenhuma ação JS necessária
+    });
+
+    window.addEventListener('afterprint', function() {
+        // Cleanup pós-impressão se necessário
+    });
+
+    // Log apenas se não estiver em produção
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('✅ Template novo implementado com ajustes finalizados');
+    }
+});
+</script>
+
+</body>
+</html>

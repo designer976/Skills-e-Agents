@@ -1,0 +1,492 @@
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { absenceService, TimeSlot } from "@/services/absenceService";
+import { AbsenceType } from "@/types/absence";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { toast } from "sonner";
+import { format, isAfter, startOfDay } from "date-fns";
+import { convertLocalToUTC, formatUTCToLocal } from "@/utils/dateTimeHelpers";
+import { formatInTimeZone } from "date-fns-tz";
+
+interface ModalNovaAusenciaProps {
+  isOpen: boolean;
+  onClose: () => void;
+  profissional: string;
+  profissionalId?: string;
+  data: string; // Para exibição no modal
+  selectedDate?: Date; // Date object para processamento correto (evita problemas de timezone)
+  horarioInicio: string;
+  // Props para modo de edição
+  isEditing?: boolean;
+  ausenciaId?: string;
+  horarioFimInicial?: string;
+  motivoInicial?: string;
+  onAbsenceCreated?: () => void;
+  onAbsenceUpdated?: () => void;
+  onAbsenceDeleted?: () => void;
+}
+
+export function ModalNovaAusencia({
+  isOpen,
+  onClose,
+  profissional,
+  profissionalId,
+  data,
+  selectedDate,
+  horarioInicio,
+  isEditing = false,
+  ausenciaId,
+  horarioFimInicial,
+  motivoInicial,
+  onAbsenceCreated,
+  onAbsenceUpdated,
+  onAbsenceDeleted,
+}: ModalNovaAusenciaProps) {
+  const { selectedSalon } = useSelectedSalon();
+  const [horarioInicioAusencia, setHorarioInicioAusencia] =
+    useState<string>("");
+  const [horarioFim, setHorarioFim] = useState<string>("");
+  const [motivo, setMotivo] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [motivoError, setMotivoError] = useState<string>("");
+
+  // Buscar slots disponíveis quando o modal abrir
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      if (!isOpen || !profissionalId || !selectedDate || !selectedSalon) return;
+
+      setIsLoadingSlots(true);
+      try {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        const response = await absenceService.getAvailableTimeSlots(
+          profissionalId,
+          dateStr,
+          isEditing ? ausenciaId : undefined
+        );
+
+        // Formatar slots para mostrar apenas horários no timezone do salão
+        const salonTimezone = selectedSalon.timezone || "America/Sao_Paulo";
+        const formattedSlots = response.slots.map((slot) => {
+          // Se o slot já está no formato HH:mm, manter como está
+          if (/^\d{2}:\d{2}$/.test(slot.slot)) {
+            return slot;
+          }
+
+          // Se for uma data ISO (UTC), converter para timezone local do salão
+          const formattedTime = formatUTCToLocal(slot.slot, salonTimezone, "HH:mm");
+          return {
+            slot: formattedTime,
+            available: slot.available,
+          };
+        });
+
+        setTimeSlots(formattedSlots);
+      } catch (error: any) {
+        console.error("Erro ao buscar horários disponíveis:", error);
+        toast.error("Erro ao carregar horários disponíveis");
+        setTimeSlots([]);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    fetchAvailableSlots();
+  }, [isOpen, profissionalId, selectedDate, isEditing, ausenciaId, selectedSalon]);
+
+  // Inicializar dados quando o modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      if (isEditing) {
+        // Modo edição: carregar dados da ausência existente
+        setHorarioInicioAusencia(horarioInicio);
+        setHorarioFim(horarioFimInicial || "");
+        setMotivo(motivoInicial || "");
+        setMotivoError("");
+      } else {
+        // Modo criação: usar horário clicado
+        setHorarioInicioAusencia(horarioInicio);
+        setHorarioFim("");
+        setMotivo("");
+        setMotivoError("");
+      }
+    }
+  }, [isOpen, isEditing, horarioInicio, horarioFimInicial, motivoInicial]);
+
+  // Gerar opções de horário de início (apenas disponíveis, exceto o último)
+  // O último horário não pode ser selecionado como início pois não haveria horário de fim disponível
+  const opcoesHorarioInicio = (() => {
+    const availableSlots = timeSlots.filter((slot) => slot.available);
+    // Se só há um slot disponível, não permite criar ausência
+    if (availableSlots.length <= 1) return [];
+    // Remove o último slot da lista de opções de início
+    return availableSlots.slice(0, -1).map((slot) => slot.slot);
+  })();
+  /**
+   * Verifica se um horário já passou considerando o timezone do salão
+   *
+   * As datas do backend vêm em UTC e precisam ser convertidas para o timezone do salão
+   *
+   * @param timeString - Horário no formato "HH:mm"
+   * @returns true se já passou (deve bloquear), false se ainda não passou (deve habilitar)
+   */
+  const isTimeSlotPassed = (timeString: string): boolean => {
+    if (!selectedDate || !selectedSalon?.timezone) {
+      return false;
+    }
+
+    const salonTimezone = selectedSalon.timezone || "America/Sao_Paulo";
+
+    // Obter data e hora atual no timezone do salão
+    const now = new Date();
+    const nowInSalonTz = formatInTimeZone(
+      now,
+      salonTimezone,
+      "yyyy-MM-dd HH:mm"
+    );
+    const [currentDateStr, currentTimeStr] = nowInSalonTz.split(" ");
+
+    // Obter data selecionada formatada
+    // selectedDate já representa o dia correto em UTC
+    const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+
+    // Se a data selecionada é anterior a hoje, todos os horários já passaram
+    if (selectedDateStr < currentDateStr) {
+      return true;
+    }
+
+    // Se a data selecionada é posterior a hoje, nenhum horário passou
+    if (selectedDateStr > currentDateStr) {
+      return false;
+    }
+
+    // Se é hoje, comparar os horários
+    // Converter horários para minutos desde meia-noite para comparação fácil
+    const [currentHour, currentMinute] = currentTimeStr.split(":").map(Number);
+    const currentMinutes = currentHour * 60 + currentMinute;
+
+    const [slotHour, slotMinute] = timeString.split(":").map(Number);
+    const slotMinutes = slotHour * 60 + slotMinute;
+
+    // Bloqueia se o horário é menor ou igual ao atual
+    return slotMinutes <= currentMinutes;
+  };
+
+  // Gerar opções de horário de fim (todos os slots após o início selecionado)
+  const opcoesHorarioFim = (() => {
+    if (!horarioInicioAusencia) return [];
+
+    const [horaInicio, minutoInicio] = horarioInicioAusencia
+      .split(":")
+      .map(Number);
+    const minutosInicio = horaInicio * 60 + minutoInicio;
+
+    return timeSlots
+      .filter((slot) => {
+        const [hora, minuto] = slot.slot.split(":").map(Number);
+        const minutos = hora * 60 + minuto;
+        return minutos > minutosInicio; // Horário de fim deve ser posterior ao início
+      })
+      .map((slot) => slot.slot);
+  })();
+
+  const handleSalvar = async () => {
+    if (!selectedSalon?.id || !profissionalId) {
+      toast.error("Informações do salão ou profissional não encontradas");
+      return;
+    }
+
+    if (!horarioFim || !motivo) {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (motivo.trim().length < 3) {
+      setMotivoError("O motivo deve ter pelo menos 3 caracteres");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Usar Date object se disponível, caso contrário usar data atual
+      const dateToUse = selectedDate || new Date();
+      const dateStr = format(dateToUse, "yyyy-MM-dd");
+
+      // Converter horários locais do salão para UTC
+      const salonTimezone = selectedSalon?.timezone || "America/Sao_Paulo";
+      const startDateTime = convertLocalToUTC(
+        dateStr,
+        horarioInicioAusencia,
+        salonTimezone
+      ).toISOString();
+      const endDateTime = convertLocalToUTC(
+        dateStr,
+        horarioFim,
+        salonTimezone
+      ).toISOString();
+
+      if (isEditing && ausenciaId) {
+        // Update existing absence
+        await absenceService.update(ausenciaId, {
+          reason: motivo,
+          startDate: startDateTime,
+          endDate: endDateTime,
+        });
+        toast.success("Ausência atualizada com sucesso");
+        onAbsenceUpdated?.();
+      } else {
+        // Create new absence
+        await absenceService.create({
+          userId: profissionalId,
+          salonId: selectedSalon.id,
+          type: AbsenceType.OTHER,
+          reason: motivo,
+          description: "",
+          startDate: startDateTime,
+          endDate: endDateTime,
+          allDay: false,
+          blockSchedule: true,
+        });
+        toast.success("Ausência registrada com sucesso");
+        onAbsenceCreated?.();
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error("Erro ao salvar ausência:", error);
+      const errorMessage =
+        error.response?.data?.message || "Erro ao salvar ausência";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExcluir = async () => {
+    if (!ausenciaId) return;
+
+    // Validar se a ausência é futura
+    const dateToUse = selectedDate || new Date();
+    const today = startOfDay(new Date());
+    const absenceDate = startOfDay(dateToUse);
+
+    if (
+      !isAfter(absenceDate, today) &&
+      absenceDate.getTime() !== today.getTime()
+    ) {
+      toast.error("Apenas ausências futuras podem ser excluídas");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await absenceService.delete(ausenciaId);
+      toast.success("Ausência excluída com sucesso");
+      onAbsenceDeleted?.();
+      onClose();
+    } catch (error: any) {
+      console.error("Erro ao excluir ausência:", error);
+      toast.error("Erro ao excluir ausência");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="w-[95vw] md:max-w-[500px] max-h-[90vh] md:max-h-[85vh] p-0 gap-0 rounded-xl md:rounded-lg border-none md:border shadow-2xl overflow-hidden flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        {/* Cabeçalho */}
+        <DialogHeader className="sticky top-0 z-10 bg-background px-4 pt-4 pb-3 border-b md:border-none shrink-0 text-left">
+          <DialogTitle className="text-foreground text-lg font-semibold">
+            {isEditing ? "Editar Ausência" : "Registrar Ausência"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 custom-scrollbar">
+          <div className="space-y-6">
+          {/* Informações Pré-selecionadas */}
+          <div className="space-y-2 p-4 bg-secondary rounded-lg">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium">Profissional:</span> {profissional}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium">Data:</span> {data}
+            </div>
+          </div>
+
+          {/* Horário de Início */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="horario-inicio"
+              className="text-foreground font-medium"
+            >
+              Horário de Início
+            </Label>
+            <Select
+              value={horarioInicioAusencia}
+              onValueChange={setHorarioInicioAusencia}
+              disabled={isLoadingSlots}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    isLoadingSlots
+                      ? "Carregando horários..."
+                      : "Selecione o horário de início..."
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {opcoesHorarioInicio.map((horario) => {
+                  const isPassed = isTimeSlotPassed(horario);
+                  return (
+                    <SelectItem
+                      key={horario}
+                      value={horario}
+                      disabled={isPassed}
+                    >
+                      {horario}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Horário de Término */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="horario-fim"
+              className="text-foreground font-medium"
+            >
+              Horário de Término
+            </Label>
+            <Select
+              value={horarioFim}
+              onValueChange={setHorarioFim}
+              disabled={isLoadingSlots || !horarioInicioAusencia}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o horário de término..." />
+              </SelectTrigger>
+              <SelectContent>
+                {opcoesHorarioFim.map((horario) => {
+                  const isPassed = isTimeSlotPassed(horario);
+                  return (
+                    <SelectItem
+                      key={horario}
+                      value={horario}
+                      disabled={isPassed}
+                    >
+                      {horario}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Motivo */}
+          <div className="space-y-2">
+            <Label htmlFor="motivo" className="text-foreground font-medium">
+              Motivo da Ausência *
+            </Label>
+            <Textarea
+              id="motivo"
+              placeholder="Digite o motivo da ausência (mínimo 3 caracteres)..."
+              value={motivo}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 200);
+                setMotivo(value);
+                if (value.trim().length >= 3) {
+                  setMotivoError("");
+                } else if (value.trim().length > 0) {
+                  setMotivoError("O motivo deve ter pelo menos 3 caracteres");
+                } else {
+                  setMotivoError("");
+                }
+              }}
+              maxLength={200}
+              className={`min-h-[72px] resize-none ${motivoError ? "border-destructive" : ""}`}
+            />
+            {motivoError && (
+              <p className="text-sm text-destructive">{motivoError}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {motivo.length}/200 caracteres
+            </p>
+          </div>
+
+          </div>
+        </div>
+
+        {/* Rodapé com Ações */}
+        <div className="sticky bottom-0 z-10 bg-background px-4 pt-3 pb-4 border-t md:border-none shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+          {isEditing ? (
+            <>
+              <Button
+                variant="destructive"
+                onClick={handleExcluir}
+                className="w-full sm:w-auto sm:mr-auto"
+                disabled={isLoading}
+              >
+                {isLoading ? "Excluindo..." : "Excluir Ausência"}
+              </Button>
+              <Button
+                onClick={handleSalvar}
+                disabled={!horarioFim || !motivo || motivo.trim().length < 3 || isLoading}
+                className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {isLoading ? "Salvando..." : "Salvar"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto text-foreground"
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSalvar}
+                disabled={
+                  !horarioFim ||
+                  !motivo ||
+                  motivo.trim().length < 3 ||
+                  isLoading ||
+                  !selectedSalon?.active
+                }
+                className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {isLoading ? "Registrando..." : "Registrar Ausência"}
+              </Button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

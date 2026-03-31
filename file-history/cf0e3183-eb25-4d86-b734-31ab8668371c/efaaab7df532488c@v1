@@ -1,0 +1,46 @@
+import { Toaster as Sonner, toast } from "sonner"
+
+type ToasterProps = React.ComponentProps<typeof Sonner>
+
+const DS_TOAST_CLASS_NAMES: NonNullable<NonNullable<ToasterProps["toastOptions"]>["classNames"]> = {
+  toast:
+    "!bg-card !text-foreground !border !border-border !shadow-md !rounded-[16px] !p-4",
+  title:
+    "!font-medium !text-[13px]",
+  description:
+    "!text-[12px] !text-muted-foreground",
+  icon:
+    "!mt-0.5",
+  actionButton:
+    "!bg-primary !text-primary-foreground",
+  cancelButton:
+    "!bg-muted !text-muted-foreground",
+  error:
+    "!bg-[#FFF4F4] !border-[#CE4836]/50 !text-[#CE4836] [&_[data-icon]]:!text-[#CE4836]",
+  success:
+    "!bg-[#F2FBE8] !border-[#7DBA44]/50 !text-[#49870E] [&_[data-icon]]:!text-[#49870E]",
+  warning:
+    "!bg-[#FEF6E4] !border-[#EBB33A]/50 !text-[#C28604] [&_[data-icon]]:!text-[#C28604]",
+  info:
+    "!bg-[#F1F4FF] !border-[#007AFF]/50 !text-[#1166C3] [&_[data-icon]]:!text-[#1166C3]",
+  loading:
+    "!bg-card !border-border !text-muted-foreground",
+}
+
+const Toaster = ({ toastOptions, ...props }: ToasterProps) => {
+  const theme: ToasterProps["theme"] = "light";
+
+  return (
+    <Sonner
+      theme={theme}
+      className="toaster group"
+      {...props}
+      toastOptions={{
+        ...toastOptions,
+        classNames: DS_TOAST_CLASS_NAMES,
+      }}
+    />
+  )
+}
+
+export { Toaster, toast }

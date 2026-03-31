@@ -1,0 +1,1387 @@
+warning: in the working copy of 'frontend/src/components/layout/Header.tsx', LF will be replaced by CRLF the next time Git touches it
+diff --git a/frontend/components.json b/frontend/components.json
+index 71f2223..48b1c68 100644
+--- a/frontend/components.json
++++ b/frontend/components.json
+@@ -1,6 +1,6 @@
+ {
+   "$schema": "https://ui.shadcn.com/schema.json",
+-  "style": "default",
++  "style": "new-york",
+   "rsc": false,
+   "tsx": true,
+   "tailwind": {
+diff --git a/frontend/src/components/agenda/AgendaFilters.tsx b/frontend/src/components/agenda/AgendaFilters.tsx
+index a61e117..c87d2e1 100644
+--- a/frontend/src/components/agenda/AgendaFilters.tsx
++++ b/frontend/src/components/agenda/AgendaFilters.tsx
+@@ -38,14 +38,27 @@ interface Status {
+   name: string;
+ }
+ 
++export type FilterRemoveSignal = {
++  version: number;
++  type: 'specialty' | 'professional' | 'status' | 'all';
++  id?: string;
++};
++
++export type ProfessionalChip = {
++  id: string;
++  label: string;
++};
++
+ interface AgendaFiltersProps {
+   onProfessionalFilter: (professionalIds: string[] | null) => void;
+   onStatusFilter: (status: string | null) => void;
+   onServiceFilter?: (serviceIds: string[] | null) => void;
+   onFilteredProfessionalsChange?: (professionals: Professional[]) => void;
++  onSpecialtyLabelChange?: (label: string | null) => void;
++  onProfessionalChipsChange?: (chips: ProfessionalChip[] | null) => void;
+   userRole?: 'Easy Salon' | 'Profissional' | 'Recepcionista';
+   variant?: 'desktop' | 'mobile';
+-  clearTrigger?: number;
++  removeSignal?: FilterRemoveSignal;
+ }
+ 
+ // Status data remains static as it's a predefined list
+@@ -86,9 +99,11 @@ export function AgendaFilters({
+   onStatusFilter,
+   onServiceFilter,
+   onFilteredProfessionalsChange,
++  onSpecialtyLabelChange,
++  onProfessionalChipsChange,
+   userRole,
+   variant = 'desktop',
+-  clearTrigger,
++  removeSignal,
+ }: AgendaFiltersProps) {
+   // Chave para localStorage
+   const FILTERS_STORAGE_KEY = 'agendaFilters';
+@@ -420,9 +435,8 @@ export function AgendaFilters({
+     if (specialtyId === "all") {
+       setSelectedSpecialty(null);
+       setSelectedServices([]);
+-      if (onServiceFilter) {
+-        onServiceFilter(null);
+-      }
++      if (onServiceFilter) onServiceFilter(null);
++      onSpecialtyLabelChange?.(null);
+       return;
+     }
+ 
+@@ -431,9 +445,8 @@ export function AgendaFilters({
+ 
+     setSelectedSpecialty(specialtyId);
+     setSelectedServices(serviceIds);
+-    if (onServiceFilter) {
+-      onServiceFilter(serviceIds.length > 0 ? serviceIds : null);
+-    }
++    if (onServiceFilter) onServiceFilter(serviceIds.length > 0 ? serviceIds : null);
++    onSpecialtyLabelChange?.(specialty?.name ?? null);
+   };
+ 
+   const handleServiceToggle = (serviceId: string): void => {
+@@ -451,6 +464,7 @@ export function AgendaFilters({
+     if (professionalId === "all") {
+       setSelectedProfessionals([]);
+       onProfessionalFilter(null);
++      onProfessionalChipsChange?.(null);
+     } else {
+       const newSelection = selectedProfessionals.includes(professionalId)
+         ? selectedProfessionals.filter(id => id !== professionalId)
+@@ -458,6 +472,12 @@ export function AgendaFilters({
+ 
+       setSelectedProfessionals(newSelection);
+       onProfessionalFilter(newSelection.length > 0 ? newSelection : null);
++
++      const chips = newSelection
++        .map(id => allProfessionals.find(p => p.id === id))
++        .filter((p): p is Professional => p !== undefined)
++        .map(p => ({ id: p.id, label: getUserDisplayName(p) }));
++      onProfessionalChipsChange?.(chips.length > 0 ? chips : null);
+     }
+   };
+ 
+@@ -474,9 +494,9 @@ export function AgendaFilters({
+     setSearchQuery("");
+     setProfessionalSearchQuery("");
+     onStatusFilter(null);
+-    if (onServiceFilter) {
+-      onServiceFilter(null);
+-    }
++    if (onServiceFilter) onServiceFilter(null);
++    onSpecialtyLabelChange?.(null);
++    onProfessionalChipsChange?.(null);
+ 
+     if (userRole !== 'Profissional') {
+       setSelectedProfessionals([]);
+@@ -485,7 +505,6 @@ export function AgendaFilters({
+       onFilteredProfessionalsChange?.(allProfessionals);
+     }
+ 
+-    // Limpar filtros salvos no localStorage
+     try {
+       localStorage.removeItem(FILTERS_STORAGE_KEY);
+     } catch (error) {
+@@ -493,12 +512,15 @@ export function AgendaFilters({
+     }
+   };
+ 
+-  // Reset all filters when clearTrigger changes (used by parent to imperative-clear)
++  // Reage a sinais de remoção de filtro individuais ou total
+   useEffect(() => {
+-    if (!clearTrigger) return;
+-    clearFilters();
++    if (!removeSignal) return;
++    if (removeSignal.type === 'all') clearFilters();
++    else if (removeSignal.type === 'specialty') handleSpecialtySelect("all");
++    else if (removeSignal.type === 'professional' && removeSignal.id) handleProfessionalToggle(removeSignal.id);
++    else if (removeSignal.type === 'status') { setSelectedStatus(null); onStatusFilter(null); }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [clearTrigger]);
++  }, [removeSignal?.version]);
+ 
+   const getFilteredSpecialties = (): Specialty[] => {
+     if (!searchQuery.trim()) return specialties;
+diff --git a/frontend/src/components/agenda/ModalNovoAgendamento.tsx b/frontend/src/components/agenda/ModalNovoAgendamento.tsx
+index 47aac55..7f45650 100644
+--- a/frontend/src/components/agenda/ModalNovoAgendamento.tsx
++++ b/frontend/src/components/agenda/ModalNovoAgendamento.tsx
+@@ -1,7 +1,6 @@
+ import { trackSeverinoEvent } from "@/services/severinoService";
+ import { Button } from "@/components/ui/button";
+ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+-import { Card, CardContent } from "@/components/ui/card";
+ import {
+   Command,
+   CommandEmpty,
+@@ -16,6 +15,13 @@ import {
+   DialogHeader,
+   DialogTitle,
+ } from "@/components/ui/dialog";
++import {
++  Drawer,
++  DrawerContent,
++  DrawerHeader,
++  DrawerTitle,
++} from "@/components/ui/drawer";
++import { useIsMobile } from "@/hooks/useMediaQuery";
+ import { Label } from "@/components/ui/label";
+ import {
+   Popover,
+@@ -96,6 +102,7 @@ export function ModalNovoAgendamento({
+ }: ModalNovoAgendamentoProps): JSX.Element {
+   const { selectedSalon } = useSelectedSalon();
+   const { user } = useAuth();
++  const isMobile = useIsMobile();
+   const [isLoading, setIsLoading] = useState(false);
+   const [isSaving, setIsSaving] = useState(false);
+ 
+@@ -656,38 +663,26 @@ export function ModalNovoAgendamento({
+     }
+   };
+ 
+-  return (
+-    <Dialog open={isOpen} onOpenChange={handleClose}>
+-      <DialogContent
+-        className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto"
+-        onInteractOutside={(e) => e.preventDefault()}
+-      >
+-        <DialogHeader>
+-          <DialogTitle className="text-2xl">
+-            Novo Agendamento - Seleção
+-          </DialogTitle>
+-        </DialogHeader>
+-
+-        {isLoading ? (
++  const formBody = isLoading ? (
+           <div className="flex items-center justify-center py-12">
+             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+           </div>
+         ) : (
+-          <div className="space-y-6">
++          <div className="px-4 pb-8 pt-5 space-y-6">
+             {/* Step 1: Cliente */}
+-            <div className="space-y-3">
+-              <div className="flex items-center gap-3">
++            <div className="space-y-2">
++              <div className="flex items-center gap-2">
+                 <div
+                   className={cn(
+-                    "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
++                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                     clienteSelecionado
+-                      ? "bg-primary text-primary-foreground"
+-                      : "bg-muted"
++                      ? "bg-[#dd4227] text-white"
++                      : "bg-muted border border-border"
+                   )}
+                 >
+-                  {clienteSelecionado && <Check className="h-4 w-4" />}
++                  {clienteSelecionado && <Check className="w-2.5 h-2.5 text-white" />}
+                 </div>
+-                <h3 className="text-lg font-semibold">Selecione o Cliente</h3>
++                <span className="text-sm font-semibold">Selecione o Cliente</span>
+               </div>
+ 
+               <div>
+@@ -873,29 +868,23 @@ export function ModalNovoAgendamento({
+                   </PopoverContent>
+                 </Popover>
+ 
+-                {clienteSelecionado && (
+-                  <p className="text-sm text-muted-foreground mt-2">
+-                    ✓ Cliente:{" "}
+-                    {clientes.find((c) => c.id === clienteSelecionado)?.nome}
+-                  </p>
+-                )}
+               </div>
+             </div>
+ 
+             {/* Step 2: Serviço */}
+-            <div className="space-y-3">
+-              <div className="flex items-center gap-3">
++            <div className="space-y-2">
++              <div className="flex items-center gap-2">
+                 <div
+                   className={cn(
+-                    "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
++                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                     servicoSelecionado
+-                      ? "bg-primary text-primary-foreground"
+-                      : "bg-muted"
++                      ? "bg-[#dd4227] text-white"
++                      : "bg-muted border border-border"
+                   )}
+                 >
+-                  {servicoSelecionado && <Check className="h-4 w-4" />}
++                  {servicoSelecionado && <Check className="w-2.5 h-2.5 text-white" />}
+                 </div>
+-                <h3 className="text-lg font-semibold">Selecione o Serviço</h3>
++                <span className="text-sm font-semibold">Selecione o Serviço</span>
+               </div>
+ 
+               <div>
+@@ -996,39 +985,23 @@ export function ModalNovoAgendamento({
+                   </PopoverContent>
+                 </Popover>
+ 
+-                {servicoSelecionado && (
+-                  <p className="text-sm text-muted-foreground mt-2">
+-                    ✓ Serviço:{" "}
+-                    {servicosFiltrados.find((s) => s.id === servicoSelecionado)?.nome}
+-                    <span className="ml-2 text-xs">
+-                      • Duração base:{" "}
+-                      {
+-                        servicosFiltrados.find((s) => s.id === servicoSelecionado)
+-                          ?.duracao
+-                      }{" "}
+-                      min
+-                    </span>
+-                  </p>
+-                )}
+               </div>
+             </div>
+ 
+             {/* Step 3: Profissional */}
+-            <div className="space-y-3">
+-              <div className="flex items-center gap-3">
++            <div className="space-y-2">
++              <div className="flex items-center gap-2">
+                 <div
+                   className={cn(
+-                    "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
++                    "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
+                     profissionalSelecionado
+-                      ? "bg-primary text-primary-foreground"
+-                      : "bg-muted"
++                      ? "bg-[#dd4227] text-white"
++                      : "bg-muted border border-border"
+                   )}
+                 >
+-                  {profissionalSelecionado && <Check className="h-4 w-4" />}
++                  {profissionalSelecionado && <Check className="w-2.5 h-2.5 text-white" />}
+                 </div>
+-                <h3 className="text-lg font-semibold">
+-                  Selecione o Profissional
+-                </h3>
++                <span className="text-sm font-semibold">Selecione o Profissional</span>
+               </div>
+ 
+               <div>
+@@ -1127,16 +1100,6 @@ export function ModalNovoAgendamento({
+                   </PopoverContent>
+                 </Popover>
+ 
+-                {profissionalSelecionado && (
+-                  <p className="text-sm text-muted-foreground mt-2">
+-                    ✓ Profissional:{" "}
+-                    {getUserDisplayName(
+-                      profissionaisFiltrados.find(
+-                        (p) => p.id === profissionalSelecionado
+-                      )
+-                    )}
+-                  </p>
+-                )}
+                 {servicoSelecionado && profissionaisFiltrados.length === 0 && !loadingProfissionais && (
+                   <p className="text-sm text-amber-600 mt-2">
+                     ⚠️ Nenhum profissional oferece este serviço
+@@ -1146,11 +1109,13 @@ export function ModalNovoAgendamento({
+             </div>
+ 
+             {/* Data do Agendamento */}
+-            <div className="space-y-3">
+-              <Label htmlFor="date" className="flex items-center gap-2">
+-                <Calendar className="h-4 w-4" />
+-                Data do Agendamento *
+-              </Label>
++            <div className="space-y-2">
++              <div className="flex items-center gap-2">
++                <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0", dataSelecionada ? "bg-[#dd4227] text-white" : "bg-muted border border-border")}>
++                  {dataSelecionada && <Check className="w-2.5 h-2.5 text-white" />}
++                </div>
++                <span className="text-sm font-semibold">Selecione a Data</span>
++              </div>
+               <Popover modal={false}>
+                 <PopoverTrigger asChild>
+                   <Button
+@@ -1240,20 +1205,17 @@ export function ModalNovoAgendamento({
+                   {getDateValidationMessage()}
+                 </p>
+               )}
+-                        <p className="text-xs text-muted-foreground mt-1">
+-                          <span className="font-medium">Data selecionada:</span>{" "}
+-                          {(() => {
+-                            const dateObj = parseLocalDate(dataSelecionada);
+-                            if (!dateObj || isNaN(dateObj.getTime())) return "Data inválida";
+-                            return format(dateObj, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
+-                          })()}
+-                        </p>
+             </div>
+ 
+             {/* Horário disponível - mostrar após selecionar profissional e serviço */}
+             {profissionalSelecionado && servicoSelecionado && (
+-              <div className="space-y-3">
+-                <Label>Horário disponível</Label>
++              <div className="space-y-2">
++                <div className="flex items-center gap-2">
++                  <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0", horarioSelecionado ? "bg-[#dd4227] text-white" : "bg-muted border border-border")}>
++                    {horarioSelecionado && <Check className="w-2.5 h-2.5 text-white" />}
++                  </div>
++                  <span className="text-sm font-semibold">Horário disponível</span>
++                </div>
+                 {loadingHorarios ? (
+                   <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md flex items-center gap-2">
+                     <Loader2 className="h-4 w-4 animate-spin" />
+@@ -1339,12 +1301,8 @@ export function ModalNovoAgendamento({
+               profissionalSelecionado &&
+               horarioSelecionado && (
+                 <>
+-                  <hr />
+-                  <Card className="bg-muted/50">
+-                    <CardContent className="pt-6">
+-                      <h3 className="font-semibold mb-4">
+-                        Resumo do Agendamento
+-                      </h3>
++                  <div className="border border-border rounded-lg p-4 bg-muted/30">
++                    <h3 className="font-semibold mb-3 text-foreground">Resumo do Agendamento</h3>
+                       <div className="space-y-2 text-sm">
+                         <div className="flex justify-between">
+                           <span className="text-muted-foreground">
+@@ -1426,32 +1384,71 @@ export function ModalNovoAgendamento({
+                           </span>
+                         </div>
+                       </div>
+-                    </CardContent>
+-                  </Card>
++                  </div>
+                 </>
+               )}
+ 
+-            {/* Footer */}
+-            <div className="flex justify-end gap-3 pt-4">
+-              <Button variant="outline" onClick={onClose}>
+-                Cancelar
+-              </Button>
+-              <Button
+-                onClick={handleAgendar}
+-                disabled={!podeAgendar() || isSaving || !selectedSalon?.active}
+-              >
+-                {isSaving ? (
+-                  <>
+-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+-                    Agendando...
+-                  </>
+-                ) : (
+-                  "Criar agendamento"
+-                )}
+-              </Button>
+-            </div>
+           </div>
+-        )}
++        );
++
++  return isMobile ? (
++    <Drawer open={isOpen} onOpenChange={handleClose}>
++      <DrawerContent className="flex flex-col" style={{ maxHeight: "calc(var(--window-height, 100dvh) - 40px)" }}>
++        <DrawerHeader className="text-left pb-5 border-b border-border flex-shrink-0">
++          <DrawerTitle>Novo Agendamento</DrawerTitle>
++        </DrawerHeader>
++        <div className="flex-1 min-h-0 overflow-y-auto">
++          {formBody}
++        </div>
++        <div className="flex gap-3 px-4 py-6 border-t border-border flex-shrink-0">
++          <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
++          <Button
++            onClick={handleAgendar}
++            disabled={!podeAgendar() || isSaving || !selectedSalon?.active}
++            className="flex-1 bg-[#dd4227] hover:bg-[#c13a22] text-white disabled:opacity-50"
++          >
++            {isSaving ? (
++              <>
++                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
++                Agendando...
++              </>
++            ) : (
++              "Criar agendamento"
++            )}
++          </Button>
++        </div>
++      </DrawerContent>
++    </Drawer>
++  ) : (
++    <Dialog open={isOpen} onOpenChange={handleClose}>
++      <DialogContent
++        className="p-0 flex flex-col"
++        style={{ width: "90vw", maxWidth: "560px", maxHeight: "90vh" }}
++        onInteractOutside={(e) => e.preventDefault()}
++      >
++        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
++          <DialogTitle>Novo Agendamento</DialogTitle>
++        </DialogHeader>
++        <div className="flex-1 overflow-y-auto">
++          {formBody}
++        </div>
++        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border flex-shrink-0">
++          <Button variant="outline" onClick={onClose}>Cancelar</Button>
++          <Button
++            onClick={handleAgendar}
++            disabled={!podeAgendar() || isSaving || !selectedSalon?.active}
++            className="bg-[#dd4227] hover:bg-[#c13a22] text-white disabled:opacity-50"
++          >
++            {isSaving ? (
++              <>
++                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
++                Agendando...
++              </>
++            ) : (
++              "Criar agendamento"
++            )}
++          </Button>
++        </div>
+       </DialogContent>
+     </Dialog>
+   );
+diff --git a/frontend/src/components/layout/Header.tsx b/frontend/src/components/layout/Header.tsx
+index f960ede..71e127e 100644
+--- a/frontend/src/components/layout/Header.tsx
++++ b/frontend/src/components/layout/Header.tsx
+@@ -1,30 +1,31 @@
+ import { SubscriptionAlertModal } from "@/components/modals/SubscriptionAlertModal";
+-import {
+-  DropdownMenu,
+-  DropdownMenuContent,
+-  DropdownMenuItem,
+-  DropdownMenuSeparator,
+-  DropdownMenuTrigger,
+-} from "@/components/ui/dropdown-menu";
+ import { useAuth } from "@/contexts/AuthContext";
+ import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+ import { salonService } from "@/services/salonService";
+ import { Salon } from "@/types/salon";
+ import { getInitials } from "@/utils/imageUtils";
+-import { IconAlertCircle as AlertCircle, IconAppWindow as AppWindow, IconRobot as Bot, IconBuilding as Building2, IconChevronDown as ChevronDown, IconLayoutDashboard as LayoutDashboard, IconLogout as LogOut, IconMenu2 as Menu, IconNetwork as Network, IconUser as User } from "@tabler/icons-react";
+-import { useEffect, useState } from "react";
++import {
++  IconAlertCircle as AlertCircle,
++  IconAppWindow as AppWindow,
++  IconRobot as Bot,
++  IconBuilding as Building2,
++  IconChevronDown as ChevronDown,
++  IconLayoutDashboard as LayoutDashboard,
++  IconLogout as LogOut,
++  IconMenu2 as Menu,
++  IconUser as User,
++} from "@tabler/icons-react";
++import { useEffect, useRef, useState } from "react";
+ import { useLocation, useNavigate } from "react-router-dom";
+ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+-// Using the logo from assets folder
+ import easySalonLogo from "@/assets/easy-logo.svg";
+ 
+ interface HeaderProps {
+-  onMenuClick?: () => void; // RESP: Prop para abrir side menu no mobile
++  onMenuClick?: () => void;
+ }
+ 
+-export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenuClick
++export function Header({ onMenuClick }: HeaderProps) {
+   const navigate = useNavigate();
+-
+   const location = useLocation();
+   const { selectedSalon, updateSelectedSalon } = useSelectedSalon();
+   const { logout, user } = useAuth();
+@@ -33,12 +34,29 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+   const [showExpiredModal, setShowExpiredModal] = useState(false);
+   const [pendingSalon, setPendingSalon] = useState<Salon | null>(null);
+   const [salonDrawerOpen, setSalonDrawerOpen] = useState(false);
++  const [salonDropdownOpen, setSalonDropdownOpen] = useState(false);
++  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+ 
+-  const isSalonArea = location.pathname.startsWith("/salon");
++  const salonDropdownRef = useRef<HTMLDivElement>(null);
++  const userDropdownRef = useRef<HTMLDivElement>(null);
+ 
+-  // Verifica se está na área administrativa
++  const isSalonArea = location.pathname.startsWith("/salon");
+   const isAdminArea = location.pathname.startsWith("/admin");
+ 
++  // Close dropdowns on outside click
++  useEffect(() => {
++    function handleClickOutside(event: MouseEvent) {
++      if (salonDropdownRef.current && !salonDropdownRef.current.contains(event.target as Node)) {
++        setSalonDropdownOpen(false);
++      }
++      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
++        setUserDropdownOpen(false);
++      }
++    }
++    document.addEventListener("mousedown", handleClickOutside);
++    return () => document.removeEventListener("mousedown", handleClickOutside);
++  }, []);
++
+   // Fetch salons on mount
+   useEffect(() => {
+     const fetchSalons = async () => {
+@@ -55,7 +73,6 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+         setLoadingSalons(false);
+       }
+     };
+-
+     fetchSalons();
+   }, [user]);
+ 
+@@ -68,20 +85,15 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+   };
+ 
+   const handleSalonSelect = (salon: Salon) => {
++    setSalonDropdownOpen(false);
+     if (isPlanExpired(salon)) {
+       setPendingSalon(salon);
+       setShowExpiredModal(true);
+       return;
+     }
+-
+     updateSelectedSalon(salon);
+-
+-    // If already on agenda page, reload to fetch new salon data
+     if (location.pathname === "/salon/agenda") {
+-      // Small delay to ensure salon is updated in context before reload
+-      setTimeout(() => {
+-        window.location.reload();
+-      }, 100);
++      setTimeout(() => { window.location.reload(); }, 100);
+     } else {
+       navigate("/salon/agenda");
+     }
+@@ -96,22 +108,56 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+   };
+ 
+   const handleLogout = () => {
++    setUserDropdownOpen(false);
+     logout();
+     navigate("/login");
+   };
+ 
+   const handleProfile = () => {
++    setUserDropdownOpen(false);
+     navigate("/profile");
+   };
+ 
+   const handleAdminPanel = () => {
++    setSalonDropdownOpen(false);
+     navigate("/admin/salons");
+   };
+ 
++  const filteredSalons = salons.filter((s) =>
++    user?.role === "Easy Salon" ||
++    user?.role === "Tenant Admin" ||
++    user?.salonId === s.id
++  );
++
++  const salonListItems = filteredSalons.map((salon) => {
++    const expired = isPlanExpired(salon);
++    const isSelected = selectedSalon?.id === salon.id;
++    return (
++      <button
++        key={salon.id}
++        onClick={() => handleSalonSelect(salon)}
++        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-b-0 ${
++          isSelected ? "bg-primary/10 border-l-2 border-l-primary" : ""
++        } ${expired ? "bg-red-50/50" : ""}`}
++      >
++        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${expired ? "bg-red-100/50" : "bg-primary/10"}`}>
++          <Building2 className={`w-4 h-4 ${expired ? "text-red-500" : "text-primary"}`} />
++        </div>
++        <div className="flex-1 min-w-0">
++          <div className="flex items-center gap-2">
++            <p className="text-sm font-medium text-foreground truncate">{salon.name}</p>
++            {expired && <AlertCircle className="w-3 h-3 text-red-500" />}
++          </div>
++          <p className="text-xs text-muted-foreground">{salon.phone || "(s/ contato)"}</p>
++        </div>
++      </button>
++    );
++  });
++
+   return (
+     <>
+       <header className="h-16 border-b bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0 relative">
+-        {/* Left: hamburger (mobile) + logo */}
++        {/* Left: hamburger (mobile-only) + logo (desktop-only) */}
+         <div className="flex items-center gap-3">
+           <button
+             onClick={onMenuClick}
+@@ -120,61 +166,69 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+           >
+             <Menu className="w-6 h-6 text-foreground" />
+           </button>
+-          <img
+-            src={easySalonLogo}
+-            alt="Easy Salon"
+-            className="h-6 md:h-7 w-auto"
+-          />
++          <img src={easySalonLogo} alt="Easy Salon" className="hidden md:block h-7 w-auto" />
+         </div>
+ 
++        {/* Logo — mobile only, absolutely centered */}
++        <img
++          src={easySalonLogo}
++          alt="Easy Salon"
++          className="md:hidden absolute left-1/2 -translate-x-1/2 h-6 w-auto"
++        />
++
+         {/* Right side controls */}
+         <div className="flex items-center gap-2 md:gap-4">
+-          <div className="hidden md:block">
+-            <DropdownMenu>
+-              <DropdownMenuTrigger asChild>
+-                <button className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg transition-colors hover:bg-muted cursor-pointer h-10">
+-                  <Building2 className="w-4 h-4 text-muted-foreground" />
+-                  <span className="text-sm text-foreground">
+-                    {isAdminArea
+-                      ? "Selecionar Salão"
+-                      : selectedSalon?.name || "Selecionar Salão"}
+-                  </span>
+-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform data-[state=open]:rotate-180" />
+-                </button>
+-              </DropdownMenuTrigger>
+-              <DropdownMenuContent align="end" className="w-72 bg-card border border-border rounded-lg shadow-lg z-50 p-0 overflow-hidden">
++
++          {/* Minha página web + Agendamento IA — desktop only */}
++          {isSalonArea && (
++            <>
++              <button
++                onClick={() => window.open(`/agenda/${selectedSalon?.slug}`, "_blank")}
++                aria-label="Minha página web"
++                className="hidden md:flex w-9 h-9 items-center justify-center border border-[#dd4227] rounded-lg hover:bg-[#dd4227]/10 transition-colors"
++              >
++                <AppWindow className="w-4 h-4 text-[#dd4227]" />
++              </button>
++              <button
++                onClick={() => window.open("https://wa.me/5541992938071", "_blank")}
++                aria-label="Agendamento IA"
++                className="hidden md:flex w-9 h-9 items-center justify-center border border-[#dd4227] rounded-lg hover:bg-[#dd4227]/10 transition-colors"
++              >
++                <Bot className="w-4 h-4 text-[#dd4227]" />
++              </button>
++            </>
++          )}
++
++          {/* Salon selector — desktop only */}
++          <div className="relative hidden md:block" ref={salonDropdownRef}>
++            <button
++              onClick={() => setSalonDropdownOpen(!salonDropdownOpen)}
++              className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg transition-colors hover:bg-muted cursor-pointer h-10"
++            >
++              <Building2 className="w-4 h-4 text-muted-foreground" />
++              <span className="text-sm text-foreground">
++                {isAdminArea ? "Selecionar Salão" : selectedSalon?.name || "Selecionar Salão"}
++              </span>
++              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${salonDropdownOpen ? "rotate-180" : ""}`} />
++            </button>
++
++            {salonDropdownOpen && (
++              <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                 <div className="max-h-96 overflow-y-auto">
+                   {/* Admin/Network panels */}
+                   {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+-                    <>
+-                      <DropdownMenuItem asChild>
+-                        <button
+-                          onClick={handleAdminPanel}
+-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border bg-muted/30 outline-none"
+-                        >
+-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+-                            <LayoutDashboard className="w-4 h-4 text-primary" />
+-                          </div>
+-                          <div className="flex-1 min-w-0">
+-                            <p className="text-sm font-medium text-foreground">Painel da Easy</p>
+-                            <p className="text-xs text-muted-foreground">Voltar à Easy Salon</p>
+-                          </div>
+-                        </button>
+-                      </DropdownMenuItem>
+-                      {(user?.role === "Easy Salon") && (
+-                        <DropdownMenuItem asChild>
+-                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border bg-muted/30 outline-none">
+-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+-                              <Network className="w-4 h-4 text-primary" />
+-                            </div>
+-                            <div className="flex-1 min-w-0">
+-                              <p className="text-sm font-medium text-foreground">Painel da rede</p>
+-                              <p className="text-xs text-muted-foreground">Sua rede</p>
+-                            </div>
+-                          </button>
+-                        </DropdownMenuItem>
+-                      )}
+-                    </>
++                    <button
++                      onClick={handleAdminPanel}
++                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border bg-muted/30"
++                    >
++                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
++                        <LayoutDashboard className="w-4 h-4 text-primary" />
++                      </div>
++                      <div className="flex-1 min-w-0">
++                        <p className="text-sm font-medium text-foreground">Painel da Easy</p>
++                        <p className="text-xs text-muted-foreground">Voltar à Easy Salon</p>
++                      </div>
++                    </button>
+                   )}
+ 
+                   {/* Section header */}
+@@ -182,121 +236,86 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Salões</p>
+                   </div>
+ 
+-                  {/* Loading state */}
+                   {loadingSalons ? (
+-                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+-                      Carregando salões...
+-                    </div>
+-                  ) : salons.length === 0 ? (
+-                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+-                      Nenhum salão disponível
+-                    </div>
++                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">Carregando salões...</div>
++                  ) : filteredSalons.length === 0 ? (
++                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">Nenhum salão disponível</div>
+                   ) : (
+-                    /* Filtrar salões baseado no papel do usuário */
+-                    (() => {
+-                      const filtered = salons.filter((salon) => {
+-                        // Admin e Tenant Admin vêem todos os salões (já filtrados pelo backend)
+-                        if (
+-                          user?.role === "Easy Salon" ||
+-                          user?.role === "Tenant Admin"
+-                        )
+-                          return true;
+-                        // Profissional só vê o seu salão
+-                        return user?.salonId === salon.id;
+-                      });
+-
+-                      return filtered.map((salon) => {
+-                        const expired = isPlanExpired(salon);
+-                        const isSelected = selectedSalon?.id === salon.id;
+-                        return (
+-                          <DropdownMenuItem key={salon.id} asChild>
+-                            <button
+-                              onClick={() => handleSalonSelect(salon)}
+-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-b-0 outline-none ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : ""
+-                                } ${expired ? "bg-red-50/50" : ""}`}
+-                            >
+-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${expired ? "bg-red-100/50" : "bg-primary/10"
+-                                }`}>
+-                                <Building2 className={`w-4 h-4 ${expired ? "text-red-500" : "text-primary"}`} />
+-                              </div>
+-                              <div className="flex-1 min-w-0">
+-                                <div className="flex items-center gap-2">
+-                                  <p className="text-sm font-medium text-foreground truncate">
+-                                    {salon.name}
+-                                  </p>
+-                                  {expired && (
+-                                    <AlertCircle className="w-3 h-3 text-red-500" />
+-                                  )}
+-                                </div>
+-                                <p className="text-xs text-muted-foreground">
+-                                  {salon.phone || "(s/ contato)"}
+-                                </p>
+-                              </div>
+-                            </button>
+-                          </DropdownMenuItem>
+-                        );
+-                      });
+-                    })()
++                    salonListItems
+                   )}
+                 </div>
+-              </DropdownMenuContent>
+-            </DropdownMenu>
++              </div>
++            )}
+           </div>
+ 
+           {/* User dropdown */}
+-          <DropdownMenu>
+-            <DropdownMenuTrigger asChild>
+-              <button className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 hover:bg-muted rounded-lg transition-colors">
+-                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+-                  <span className="text-primary-foreground text-xs font-semibold">
+-                    {getInitials(user?.name || "Usuário")}
+-                  </span>
+-                </div>
+-                <span className="font-medium text-sm hidden sm:inline-block">{user?.name || "Usuário"}</span>
+-                <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
+-              </button>
+-            </DropdownMenuTrigger>
+-            <DropdownMenuContent align="end" className="w-56 bg-card border border-border rounded-lg shadow-lg z-50 p-0">
+-              <DropdownMenuItem onClick={handleProfile} className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border">
+-                <User className="mr-2 h-4 w-4" />
+-                Meu perfil
+-              </DropdownMenuItem>
+-              {/* Selecionar salão — mobile only */}
+-              {isSalonArea && (
+-                <DropdownMenuItem
+-                  className="md:hidden px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border"
+-                  onClick={() => setSalonDrawerOpen(true)}
++          <div className="relative" ref={userDropdownRef}>
++            <button
++              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
++              className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 hover:bg-muted rounded-lg transition-colors"
++            >
++              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
++                <span className="text-primary-foreground text-xs font-semibold">
++                  {getInitials(user?.name || "Usuário")}
++                </span>
++              </div>
++              <span className="font-medium text-sm hidden sm:inline-block">{user?.name || "Usuário"}</span>
++              <ChevronDown className={`h-4 w-4 text-muted-foreground hidden sm:block transition-transform ${userDropdownOpen ? "rotate-180" : ""}`} />
++            </button>
++
++            {userDropdownOpen && (
++              <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-lg z-50">
++                <button
++                  onClick={handleProfile}
++                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border"
+                 >
+-                  <Building2 className="mr-2 h-4 w-4" />
+-                  Selecionar salão
+-                </DropdownMenuItem>
+-              )}
+-              {isSalonArea && (
+-                <>
+-                  <DropdownMenuItem
+-                    className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border"
+-                    onClick={() => window.open("/agenda-online", "_blank")}
+-                  >
+-                    <AppWindow className="mr-2 h-4 w-4" />
+-                    Minha página web
+-                  </DropdownMenuItem>
+-                  <DropdownMenuItem
+-                    className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none border-b border-border"
+-                    onClick={() => window.open("https://wa.me/5541992938071", "_blank")}
++                  <User className="w-4 h-4 text-muted-foreground" />
++                  <span className="text-sm text-foreground">Meu perfil</span>
++                </button>
++
++                {/* Selecionar salão — mobile only */}
++                {isSalonArea && (
++                  <button
++                    onClick={() => { setUserDropdownOpen(false); setSalonDrawerOpen(true); }}
++                    className="md:hidden w-full flex items-center gap-2 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border"
+                   >
+-                    <Bot className="mr-2 h-4 w-4" />
+-                    Agendamento IA
+-                  </DropdownMenuItem>
+-                </>
+-              )}
+-              <DropdownMenuItem onClick={handleLogout} className="px-4 py-3 hover:bg-muted cursor-pointer rounded-none text-[#dd4227] focus:text-[#dd4227]">
+-                <LogOut className="mr-2 h-4 w-4 text-[#dd4227]" />
+-                Log out
+-              </DropdownMenuItem>
+-            </DropdownMenuContent>
+-          </DropdownMenu>
++                    <Building2 className="w-4 h-4 text-muted-foreground" />
++                    <span className="text-sm text-foreground">Selecionar salão</span>
++                  </button>
++                )}
++
++                {isSalonArea && (
++                  <>
++                    <button
++                      onClick={() => { setUserDropdownOpen(false); window.open(`/agenda/${selectedSalon?.slug}`, "_blank"); }}
++                      className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border"
++                    >
++                      <AppWindow className="w-4 h-4 text-muted-foreground" />
++                      <span className="text-sm text-foreground">Minha página web</span>
++                    </button>
++                    <button
++                      onClick={() => { setUserDropdownOpen(false); window.open("https://wa.me/5541992938071", "_blank"); }}
++                      className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border"
++                    >
++                      <Bot className="w-4 h-4 text-muted-foreground" />
++                      <span className="text-sm text-foreground">Agendamento IA</span>
++                    </button>
++                  </>
++                )}
++
++                <button
++                  onClick={handleLogout}
++                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-muted transition-colors text-left"
++                >
++                  <LogOut className="w-4 h-4 text-[#dd4227]" />
++                  <span className="text-sm text-[#dd4227]">Log out</span>
++                </button>
++              </div>
++            )}
++          </div>
+         </div>
+       </header>
++
+       <SubscriptionAlertModal
+         isOpen={showExpiredModal}
+         onConfirm={handleExpiredPlanConfirm}
+@@ -308,7 +327,7 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+           <DrawerHeader className="text-left pb-5 border-b border-border">
+             <DrawerTitle className="text-left">Selecionar salão</DrawerTitle>
+           </DrawerHeader>
+-          <div className="px-4 pb-6 pt-5 space-y-2">
++          <div className="px-4 pb-6 pt-5 space-y-2 overflow-y-auto flex-1 min-h-0">
+             {(user?.role === "Easy Salon" || user?.role === "Tenant Admin") && (
+               <button
+                 onClick={() => { setSalonDrawerOpen(false); navigate("/admin/salons"); }}
+@@ -328,36 +347,30 @@ export function Header({ onMenuClick }: HeaderProps) { // RESP: Recebendo onMenu
+               <p className="text-sm text-muted-foreground text-center py-4">Carregando salões...</p>
+             ) : (
+               <div className="space-y-2">
+-                {salons
+-                  .filter((s) =>
+-                    user?.role === "Easy Salon" ||
+-                    user?.role === "Tenant Admin" ||
+-                    user?.salonId === s.id
+-                  )
+-                  .map((salon) => {
+-                    const expired = isPlanExpired(salon);
+-                    const isSelected = selectedSalon?.id === salon.id;
+-                    return (
+-                      <button
+-                        key={salon.id}
+-                        onClick={() => { setSalonDrawerOpen(false); handleSalonSelect(salon); }}
+-                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border rounded-lg ${
+-                          isSelected ? "bg-primary/10 border-primary" : "border-border"
+-                        } ${expired ? "opacity-70" : ""}`}
+-                      >
+-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+-                          <Building2 className={`w-4 h-4 ${expired ? "text-destructive" : "text-primary"}`} />
+-                        </div>
+-                        <div className="flex-1 min-w-0">
+-                          <div className="flex items-center gap-2">
+-                            <p className="text-sm font-medium text-foreground truncate">{salon.name}</p>
+-                            {expired && <AlertCircle className="w-3 h-3 text-destructive" />}
+-                          </div>
+-                          <p className="text-xs text-muted-foreground">{salon.phone || "(s/ contato)"}</p>
++                {filteredSalons.map((salon) => {
++                  const expired = isPlanExpired(salon);
++                  const isSelected = selectedSalon?.id === salon.id;
++                  return (
++                    <button
++                      key={salon.id}
++                      onClick={() => { setSalonDrawerOpen(false); handleSalonSelect(salon); }}
++                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border rounded-lg ${
++                        isSelected ? "bg-primary/10 border-primary" : "border-border"
++                      } ${expired ? "opacity-70" : ""}`}
++                    >
++                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
++                        <Building2 className={`w-4 h-4 ${expired ? "text-destructive" : "text-primary"}`} />
++                      </div>
++                      <div className="flex-1 min-w-0">
++                        <div className="flex items-center gap-2">
++                          <p className="text-sm font-medium text-foreground truncate">{salon.name}</p>
++                          {expired && <AlertCircle className="w-3 h-3 text-destructive" />}
+                         </div>
+-                      </button>
+-                    );
+-                  })}
++                        <p className="text-xs text-muted-foreground">{salon.phone || "(s/ contato)"}</p>
++                      </div>
++                    </button>
++                  );
++                })}
+               </div>
+             )}
+           </div>
+diff --git a/frontend/src/components/layout/PageHeader.tsx b/frontend/src/components/layout/PageHeader.tsx
+index e49759d..a25d85c 100644
+--- a/frontend/src/components/layout/PageHeader.tsx
++++ b/frontend/src/components/layout/PageHeader.tsx
+@@ -26,14 +26,14 @@ export function PageHeader({
+         {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+       </div>
+ 
+-      <div className="flex items-center gap-3">
++      <div className="flex items-center gap-3 w-full md:w-auto">
+         {children}
+         {action && (
+           <button
+             disabled={disabledActions}
+             onClick={action.onClick}
+             className={cn(
+-              "h-10 px-4 rounded-[14px] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
++              "h-10 px-4 rounded-[14px] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto",
+               action.variant === "secondary"
+                 ? "border border-border bg-card hover:bg-muted text-foreground"
+                 : "bg-[#dd4227] hover:bg-[#c73a22] text-white",
+diff --git a/frontend/src/components/ui/drawer.tsx b/frontend/src/components/ui/drawer.tsx
+index c17b0cc..8149161 100644
+--- a/frontend/src/components/ui/drawer.tsx
++++ b/frontend/src/components/ui/drawer.tsx
+@@ -3,15 +3,9 @@ import { Drawer as DrawerPrimitive } from "vaul"
+ 
+ import { cn } from "@/lib/utils"
+ 
+-const Drawer = ({
+-  shouldScaleBackground = true,
+-  ...props
+-}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
+-  <DrawerPrimitive.Root
+-    shouldScaleBackground={shouldScaleBackground}
+-    {...props}
+-  />
+-)
++function Drawer({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
++  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
++}
+ Drawer.displayName = "Drawer"
+ 
+ const DrawerTrigger = DrawerPrimitive.Trigger
+@@ -20,86 +14,90 @@ const DrawerPortal = DrawerPrimitive.Portal
+ 
+ const DrawerClose = DrawerPrimitive.Close
+ 
+-const DrawerOverlay = React.forwardRef<
+-  React.ElementRef<typeof DrawerPrimitive.Overlay>,
+-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
+->(({ className, ...props }, ref) => (
+-  <DrawerPrimitive.Overlay
+-    ref={ref}
+-    className={cn("fixed inset-0 z-50 bg-black/80", className)}
+-    {...props}
+-  />
+-))
+-DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
+-
+-const DrawerContent = React.forwardRef<
+-  React.ElementRef<typeof DrawerPrimitive.Content>,
+-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
+->(({ className, children, ...props }, ref) => (
+-  <DrawerPortal>
+-    <DrawerOverlay />
+-    <DrawerPrimitive.Content
+-      ref={ref}
++function DrawerOverlay({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Overlay>) {
++  return (
++    <DrawerPrimitive.Overlay
++      data-slot="drawer-overlay"
+       className={cn(
+-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
++        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+         className
+       )}
+       {...props}
+-    >
+-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+-      {children}
+-    </DrawerPrimitive.Content>
+-  </DrawerPortal>
+-))
++    />
++  )
++}
++DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
++
++function DrawerContent({ className, children, ...props }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
++  return (
++    <DrawerPortal data-slot="drawer-portal">
++      <DrawerOverlay />
++      <DrawerPrimitive.Content
++        data-slot="drawer-content"
++        aria-describedby={undefined}
++        className={cn(
++          "group/drawer-content bg-background fixed z-50 flex h-auto flex-col",
++          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t",
++          "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b",
++          "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm",
++          "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm",
++          className
++        )}
++        {...props}
++      >
++        <div className="bg-gray-400/20 mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
++        {children}
++      </DrawerPrimitive.Content>
++    </DrawerPortal>
++  )
++}
+ DrawerContent.displayName = "DrawerContent"
+ 
+-const DrawerHeader = ({
+-  className,
+-  ...props
+-}: React.HTMLAttributes<HTMLDivElement>) => (
+-  <div
+-    className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
+-    {...props}
+-  />
+-)
++function DrawerHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
++  return (
++    <div
++      data-slot="drawer-header"
++      className={cn(
++        "flex flex-col gap-0.5 p-4 group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:gap-1.5 md:text-left",
++        className
++      )}
++      {...props}
++    />
++  )
++}
+ DrawerHeader.displayName = "DrawerHeader"
+ 
+-const DrawerFooter = ({
+-  className,
+-  ...props
+-}: React.HTMLAttributes<HTMLDivElement>) => (
+-  <div
+-    className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+-    {...props}
+-  />
+-)
++function DrawerFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
++  return (
++    <div
++      data-slot="drawer-footer"
++      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
++      {...props}
++    />
++  )
++}
+ DrawerFooter.displayName = "DrawerFooter"
+ 
+-const DrawerTitle = React.forwardRef<
+-  React.ElementRef<typeof DrawerPrimitive.Title>,
+-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
+->(({ className, ...props }, ref) => (
+-  <DrawerPrimitive.Title
+-    ref={ref}
+-    className={cn(
+-      "text-lg font-semibold leading-none tracking-tight",
+-      className
+-    )}
+-    {...props}
+-  />
+-))
++function DrawerTitle({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Title>) {
++  return (
++    <DrawerPrimitive.Title
++      data-slot="drawer-title"
++      className={cn("text-foreground font-semibold", className)}
++      {...props}
++    />
++  )
++}
+ DrawerTitle.displayName = DrawerPrimitive.Title.displayName
+ 
+-const DrawerDescription = React.forwardRef<
+-  React.ElementRef<typeof DrawerPrimitive.Description>,
+-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
+->(({ className, ...props }, ref) => (
+-  <DrawerPrimitive.Description
+-    ref={ref}
+-    className={cn("text-sm text-muted-foreground", className)}
+-    {...props}
+-  />
+-))
++function DrawerDescription({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Description>) {
++  return (
++    <DrawerPrimitive.Description
++      data-slot="drawer-description"
++      className={cn("text-muted-foreground text-sm", className)}
++      {...props}
++    />
++  )
++}
+ DrawerDescription.displayName = DrawerPrimitive.Description.displayName
+ 
+ export {
+diff --git a/frontend/src/pages/salon/AgendaV2Page.tsx b/frontend/src/pages/salon/AgendaV2Page.tsx
+index 7a27a7f..f80eb08 100644
+--- a/frontend/src/pages/salon/AgendaV2Page.tsx
++++ b/frontend/src/pages/salon/AgendaV2Page.tsx
+@@ -2,12 +2,12 @@ import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+ import { format } from "date-fns";
+ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+ import { ptBR } from "date-fns/locale";
+-import { IconCalendar as CalendarIcon, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconFilter as Filter } from "@tabler/icons-react";
++import { IconCalendar as CalendarIcon, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconFilter as Filter, IconX } from "@tabler/icons-react";
+ import { useEffect, useMemo, useState } from "react";
+ import { useLocation, useNavigate } from "react-router-dom";
+ import { toast } from "sonner";
+ 
+-import { AgendaFilters } from "@/components/agenda/AgendaFilters";
++import { AgendaFilters, FilterRemoveSignal, ProfessionalChip } from "@/components/agenda/AgendaFilters";
+ import { ModalComanda } from "@/components/agenda/ModalComanda";
+ import { ModalEditarAgendamento } from "@/components/agenda/ModalEditarAgendamento";
+ import { ModalNovaAusencia } from "@/components/agenda/ModalNovaAusencia";
+@@ -221,16 +221,41 @@ export default function AgendaV2Page(): JSX.Element {
+   const [salonServices, setSalonServices] = useState<any[]>([]);
+ 
+   // Filter states
+-  const [professionalFilter, setProfessionalFilter] = useState<string[] | null>(
+-    null
+-  );
++  const [professionalFilter, setProfessionalFilter] = useState<string[] | null>(null);
+   const [serviceFilter, setServiceFilter] = useState<string[] | null>(null);
+   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+   const [mobileFilterDrawerOpen, setMobileFilterDrawerOpen] = useState(false);
+-  const [filterClearTrigger, setFilterClearTrigger] = useState(0);
++  const [removeSignal, setRemoveSignal] = useState<FilterRemoveSignal | undefined>(undefined);
++  const [specialtyLabel, setSpecialtyLabel] = useState<string | null>(null);
++  const [professionalChips, setProfessionalChips] = useState<ProfessionalChip[]>([]);
+ 
+   const mobileFilterCount = [professionalFilter, statusFilter, serviceFilter].filter(Boolean).length;
+ 
++  const activeFilterChips = useMemo(() => {
++    type ChipType = 'specialty' | 'professional' | 'status';
++    const chips: Array<{ id: string; label: string; type: ChipType }> = [];
++    if (specialtyLabel) chips.push({ id: 'specialty', label: specialtyLabel, type: 'specialty' });
++    professionalChips.forEach(p => chips.push({ id: p.id, label: p.label.split(' ')[0], type: 'professional' }));
++    if (statusFilter) chips.push({ id: statusFilter, label: statusFilter, type: 'status' });
++    return chips;
++  }, [specialtyLabel, professionalChips, statusFilter]);
++
++  const handleRemoveChip = (chip: { id: string; type: 'specialty' | 'professional' | 'status' }): void => {
++    setRemoveSignal(prev => ({ version: (prev?.version ?? 0) + 1, type: chip.type, id: chip.id }));
++    if (chip.type === 'specialty') { setServiceFilter(null); setSpecialtyLabel(null); }
++    else if (chip.type === 'professional') setProfessionalFilter(prev => { const next = (prev ?? []).filter(id => id !== chip.id); return next.length > 0 ? next : null; });
++    else if (chip.type === 'status') setStatusFilter(null);
++  };
++
++  const handleClearAllFilters = (): void => {
++    setRemoveSignal(prev => ({ version: (prev?.version ?? 0) + 1, type: 'all' }));
++    setProfessionalFilter(null);
++    setServiceFilter(null);
++    setStatusFilter(null);
++    setSpecialtyLabel(null);
++    setProfessionalChips([]);
++  };
++
+   // Modal states
+   const [modalNovoAgendamento, setModalNovoAgendamento] = useState(false);
+   const [modalKey, setModalKey] = useState(0);
+@@ -825,12 +850,12 @@ export default function AgendaV2Page(): JSX.Element {
+         action={{
+           label: "Novo Agendamento",
+           onClick: handleNewAppointment,
+-          className: "w-full md:w-auto h-10",
++          className: "h-10",
+         }}
+       />
+ 
+       {/* Mobile: Compact date navigation */}
+-      <div className="md:hidden flex items-center gap-2 mb-4">
++      <div className="md:hidden flex items-center gap-2 mb-3">
+         <button
+           onClick={handlePreviousDay}
+           className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+@@ -875,6 +900,26 @@ export default function AgendaV2Page(): JSX.Element {
+         </button>
+       </div>
+ 
++      {/* Mobile: Active filter chips */}
++      {activeFilterChips.length > 0 && (
++        <div className="md:hidden flex items-center gap-2 flex-wrap mb-3">
++          {activeFilterChips.map((chip) => (
++            <span
++              key={chip.id}
++              className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-foreground"
++            >
++              {chip.label}
++              <button onClick={() => handleRemoveChip(chip)} className="hover:text-destructive">
++                <IconX className="w-3 h-3" />
++              </button>
++            </span>
++          ))}
++          <button onClick={handleClearAllFilters} className="text-xs text-muted-foreground hover:text-foreground underline">
++            Limpar
++          </button>
++        </div>
++      )}
++
+       {/* Desktop: Date navigation and filters */}
+       <div className="hidden md:flex items-center justify-between mb-6">
+         <div className="flex items-center gap-2">
+@@ -896,7 +941,7 @@ export default function AgendaV2Page(): JSX.Element {
+               <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors">
+                 <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                 <span className="text-sm text-foreground">
+-                  {format(selectedDate, "EEEE (d 'de' MMMM 'de' yyyy)", {
++                  {format(selectedDate, "EEEE (d 'de' MMMM)", {
+                     locale: ptBR,
+                   })}
+                 </span>
+@@ -930,9 +975,10 @@ export default function AgendaV2Page(): JSX.Element {
+               .filter(Boolean) as User[];
+             setFilteredProfessionals(userProfs);
+           }}
+-          userRole={
+-            user?.role as "Easy Salon" | "Profissional" | "Recepcionista"
+-          }
++          onSpecialtyLabelChange={setSpecialtyLabel}
++          onProfessionalChipsChange={(chips) => setProfessionalChips(chips ?? [])}
++          userRole={user?.role as "Easy Salon" | "Profissional" | "Recepcionista"}
++          removeSignal={removeSignal}
+         />
+       </div>
+ 
+@@ -987,7 +1033,7 @@ export default function AgendaV2Page(): JSX.Element {
+               <DrawerTitle className="text-left">Filtros</DrawerTitle>
+               {mobileFilterCount > 0 && (
+                 <button
+-                  onClick={() => setFilterClearTrigger((prev) => prev + 1)}
++                  onClick={handleClearAllFilters}
+                   className="text-xs text-[#dd4227] underline"
+                 >
+                   Limpar tudo
+@@ -1006,9 +1052,11 @@ export default function AgendaV2Page(): JSX.Element {
+                   professionals.filter((p) => ids.includes(p.id))
+                 );
+               }}
++              onSpecialtyLabelChange={setSpecialtyLabel}
++              onProfessionalChipsChange={(chips) => setProfessionalChips(chips ?? [])}
+               userRole={user?.role as 'Easy Salon' | 'Profissional' | 'Recepcionista'}
+               variant="mobile"
+-              clearTrigger={filterClearTrigger}
++              removeSignal={removeSignal}
+             />
+           </div>
+         </DrawerContent>

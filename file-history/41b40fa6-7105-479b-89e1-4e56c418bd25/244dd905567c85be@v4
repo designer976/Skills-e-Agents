@@ -1,0 +1,96 @@
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        page: '#1C1411',
+        surface: '#251A16',
+        'surface-2': '#2F2119',
+        'surface-3': '#3A2820',
+        fg: '#F0ECE4',
+        'fg-muted': '#9E8B7A',
+        primary: {
+          DEFAULT: '#C44B3A',
+          dark: '#6B2016',
+          glow: 'rgba(196,75,58,0.25)',
+        },
+        tan: '#D4B896',
+        gold: '#A67C52',
+        border: 'rgba(212,184,150,0.15)',
+      },
+      fontFamily: {
+        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'hero-glow': 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(196,75,58,0.18) 0%, transparent 70%)',
+        'card-gradient': 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.7s ease-out forwards',
+        'slide-up': 'slideUp 0.7s ease-out forwards',
+        'marquee': 'marquee 35s linear infinite',
+        'marquee-reverse': 'marqueeReverse 35s linear infinite',
+        'aurora': 'aurora 12s ease infinite',
+        'meteor': 'meteor 8s linear infinite',
+        'border-beam': 'borderBeam 3s linear infinite',
+        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+        'float': 'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(28px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        marqueeReverse: {
+          '0%': { transform: 'translateX(-50%)' },
+          '100%': { transform: 'translateX(0%)' },
+        },
+        aurora: {
+          '0%, 100%': {
+            backgroundPosition: '0% 50%',
+            backgroundSize: '200% 200%',
+          },
+          '50%': {
+            backgroundPosition: '100% 50%',
+            backgroundSize: '220% 220%',
+          },
+        },
+        meteor: {
+          '0%': { transform: 'rotate(215deg) translateX(0)', opacity: '1' },
+          '70%': { opacity: '1' },
+          '100%': {
+            transform: 'rotate(215deg) translateX(-500px)',
+            opacity: '0',
+          },
+        },
+        borderBeam: {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        pulseGlow: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(196,75,58,0.1)' },
+          '50%': { boxShadow: '0 0 40px rgba(196,75,58,0.25)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+      },
+    },
+  },
+  plugins: [],
+}
+
+export default config

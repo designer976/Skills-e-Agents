@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+
+  <!-- Data Layer Initialization -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'dataLayerReady',
+      'platform': 'Easy Salon',
+      'environment': 'production'
+    });
+  </script>
+  <!-- End Data Layer Initialization -->
+
+  <!-- Google Tag Manager -->
+  <script>
+    (function (w, d, s, l, i) {
+      w[l] = w[l] || [];
+      w[l].push({
+        'gtm.start': new Date().getTime(),
+        event: 'gtm.js'
+      });
+      var f = d.getElementsByTagName(s)[0],
+        j = d.createElement(s),
+        dl = l != 'dataLayer' ? '&l=' + l : '';
+      j.async = true;
+      j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+      f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-NKDV6BQQ');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <title>
+    Easy Salon | Sistema de Gestão e Agendamento Online via WhatsApp para Salões
+  </title>
+
+  <meta name="description"
+    content="Pare de perder clientes no WhatsApp. O Easy Salon transforma mensagens em agendamentos, organiza sua agenda em tempo real e centraliza a gestão do salão." />
+
+  <meta name="keywords"
+    content="sistema salão de beleza, agenda online barbearia, gestão de estética, easy salon, agendamento whatsapp" />
+  <meta name="author" content="Easy Salon" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/lovable-uploads/ccbf1447-2f3a-4098-a9c3-39945b40cf24.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/lovable-uploads/ccbf1447-2f3a-4098-a9c3-39945b40cf24.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://easysalon.waproject.com.br/" />
+  <meta property="og:site_name" content="Easy Salon" />
+  <meta property="og:title" content="Easy Salon | Gestão e agendamentos via WhatsApp para Salões" />
+  <meta property="og:description"
+    content="Pare de perder clientes no WhatsApp. Organize agenda, financeiro e equipe com a plataforma definitiva para salões e barbearias." />
+  <meta property="og:image"
+    content="https://easysalon.waproject.com.br/lovable-uploads/ccbf1447-2f3a-4098-a9c3-39945b40cf24.png" />
+  <meta property="og:image:alt" content="Logo do Easy Salon. Sistema de agendamento e gestão para salões" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Easy Salon | Gestão e agendamentos via WhatsApp para Salões" />
+  <meta name="twitter:description" content="O sistema que organiza seu salão e enche sua agenda 24/7." />
+  <meta name="twitter:image"
+    content="https://easysalon.waproject.com.br/lovable-uploads/ccbf1447-2f3a-4098-a9c3-39945b40cf24.png" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Easy Salon",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "description": "Sistema SaaS para gestão de salões de beleza e barbearias com agendamento online, organização do WhatsApp e controle financeiro.",
+
+        "provider": {
+          "@type": "Organization",
+          "name": "Easy Salon Tecnologia",
+          "url": "https://easysalon.waproject.com.br",
+          "logo": "https://easysalon.waproject.com.br/lovable-uploads/ccbf1447-2f3a-4098-a9c3-39945b40cf24.png"
+        },
+
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Plano Ia",
+            "price": "0",
+            "priceCurrency": "BRL",
+            "description": "Teste gratuito de 60 dias com acesso completo às funcionalidades.",
+            "availability": "https://schema.org/InStock",
+            "url": "https://easysalon.waproject.com.br"
+          },
+          {
+            "@type": "Offer",
+            "name": "Plano Enterprise",
+            "description": "Plano sob medida para redes de salões e franquias. Proposta comercial personalizada.",
+            "availability": "https://schema.org/InStock",
+            "url": "https://easysalon.waproject.com.br/contato-comercial"
+          }
+        ],
+
+        "featureList": [
+          "Agendamento Online 24/7",
+          "Gestão Kanban de Solicitações via WhatsApp",
+          "Controle Financeiro e Multi-unidade",
+          "Validação de CPF integrada"
+        ],
+
+        "audience": {
+          "@type": "BusinessAudience",
+          "audienceType": "Salões de Beleza, Barbearias e Clínicas de Estética"
+        }
+      }
+    </script>
+</head>
+
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript>
+    <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NKDV6BQQ" height="0" width="0"
+      style="display:none;visibility:hidden"></iframe>
+  </noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  <noscript>
+    <h1>Sistema de Gestão e Agendamento Online para Salões e Barbearias</h1>
+    <p>
+      O Easy Salon transforma mensagens do WhatsApp em agendamentos confirmados,
+      automatiza sua agenda e centraliza a gestão do seu salão em uma única
+      plataforma.
+    </p>
+  </noscript>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

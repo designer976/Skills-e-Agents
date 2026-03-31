@@ -1,0 +1,98 @@
+---
+name: all-agents
+description: Pipeline completo do Easy Salon com todos os agentes. Ative para novas telas, componentes ou ajustes visuais do zero. Executa Designer (validacao e plano) seguido de Front-end-UI (implementacao) e Front-end-Code (revisao).
+---
+
+# Pipeline Completo — Easy Salon
+
+Quando este skill for ativado, execute os tres agentes em sequencia:
+
+---
+
+## Etapa 1 — Designer (Validacao e Plano)
+
+Adote o papel do **Designer** e execute as fases de validacao:
+
+### Fase 1 — Recepcao e Validacao
+
+Verifique se a solicitacao contem:
+
+- **Local** onde sera aplicado (rota, arquivo, componente pai)
+- **Especificacao visual** (layout, componentes, cores, comportamento)
+- Se deve **reutilizar** componente existente do DS ou criar novo
+
+Se faltar qualquer informacao → **pergunte ao usuario antes de continuar**.
+Repita quantas vezes for necessario.
+
+### Fase 2 — Analise do Design System
+
+Consulte:
+- `frontend/src/index.css` — tokens CSS
+- `frontend/src/components/ui/` — componentes existentes
+- `frontend/src/pages/DesignSystemPage.tsx` — exemplos de uso
+- `frontend/tailwind.config.ts` — mapeamento Tailwind
+
+### Fase 3 — Plano de Implementacao
+
+Monte e apresente ao usuario um plano com:
+- Componentes do DS a utilizar
+- Tokens obrigatorios para cada elemento
+- Arquivos a criar ou editar
+- Comportamentos esperados
+
+**Avance para a Etapa 2 somente apos confirmacao do usuario.**
+
+---
+
+## Etapa 2 — Front-end-UI (Implementacao)
+
+Adote o papel do **Front-end-UI** e implemente conforme o plano aprovado:
+
+1. Use apenas componentes existentes do DS quando disponivel
+2. Aplique tokens obrigatorios:
+
+| Categoria | Token correto | Proibido |
+|-----------|--------------|---------|
+| Fundo | `bg-background`, `bg-card`, `bg-muted`, `bg-secondary` | `bg-gray-*`, `bg-white` |
+| Texto | `text-foreground`, `text-muted-foreground` | `text-gray-*` |
+| Borda | `border-border` | `border-gray-*` |
+| Radius | `rounded-lg` | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
+| Hover | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*` |
+
+3. Reporte arquivos alterados e tokens aplicados ao concluir
+
+---
+
+## Etapa 3 — Front-end-Code (Revisao)
+
+Adote o papel do **Front-end-Code** e revise os arquivos da Etapa 2:
+
+- **Performance**: re-renders, `useMemo`/`useCallback`, `key` em listas, `useEffect`
+- **TypeScript**: tipos precisos, sem `any`, props tipadas
+- **Design System**: tokens corretos, sem hardcode
+- **Navegabilidade**: sem overflow/layout quebrado, acessibilidade basica
+
+**Regra critica: NAO alterar nenhum elemento visual da Etapa 2.**
+
+Se encontrar problema visual → reportar ao Designer, nao corrigir.
+
+---
+
+## Etapa 4 — Revisao Final do Designer
+
+Retome o papel do **Designer** e verifique o resultado final:
+
+1. Nenhuma cor hardcoded introduzida
+2. Radius usa exclusivamente `rounded-lg`
+3. Componentes seguem o padrao visual existente
+4. HTML/JSX e semantico e acessivel
+
+Se houver inconsistencia → **avise o usuario com detalhes** antes de fechar.
+
+---
+
+## Contexto do Projeto
+
+- Plataforma multi-tenant SaaS para gestao de saloes de beleza
+- Stack: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+- `rounded-lg` = `var(--radius)` = token canonico de border-radius

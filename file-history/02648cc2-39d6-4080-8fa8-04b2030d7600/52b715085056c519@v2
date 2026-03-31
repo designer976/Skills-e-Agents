@@ -1,0 +1,27 @@
+# Configuração temporária para desenvolvimento local
+# Este arquivo NÃO afeta o GitHub - apenas sobrescreve para desenvolvimento
+
+NODE_ENV=development
+PORT=3000
+FRONTEND_PORT=9001
+API_URL=http://localhost:3000
+
+# Database - SQLite temporário (sem Docker)
+DATABASE_URL=sqlite:./easy_salon_dev.db
+DATABASE_TYPE=sqlite
+
+# JWT
+JWT_SECRET=development-secret-key-easy-salon-2026
+JWT_EXPIRES_IN=1d
+JWT_REFRESH_SECRET=development-refresh-secret-key-easy-salon-2026
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Desabilitar Redis temporariamente
+# REDIS_HOST=
+# REDIS_PORT=
+
+# Email desabilitado para dev
+EMAIL_ENABLED=false
+
+# AWS/S3 desabilitado para dev
+AWS_ENABLED=false

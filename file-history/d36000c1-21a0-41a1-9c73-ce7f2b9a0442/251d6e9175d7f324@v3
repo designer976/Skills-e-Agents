@@ -1,0 +1,364 @@
+import { ReceiptIcon } from "@/components/icons/ReceiptIcon";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger
+} from "@/components/ui/collapsible";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { networkFinancialService } from "@/services/networkFinancialService";
+import { NetworkInvoiceGroup, NetworkInvoiceItem } from "@/types/financial";
+import { format, parseISO } from "date-fns";
+import { Calendar, Check, ChevronDown, ChevronRight, Download, Printer, RefreshCw, XCircle } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+interface FinancialInvoicesTableProps {
+    groups: NetworkInvoiceGroup[];
+    isLoading?: boolean;
+    period?: string;
+    onPeriodChange?: (period: string) => void;
+    onRefresh?: () => void;
+}
+
+export function FinancialInvoicesTable({
+    groups,
+    isLoading,
+    period,
+    onPeriodChange,
+    onRefresh
+}: FinancialInvoicesTableProps) {
+    const [selectedInvoice, setSelectedInvoice] = useState<NetworkInvoiceItem | null>(null);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Carregando histórico...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                    <ReceiptIcon className="h-5 w-5" />
+                    <h3 className="text-lg font-semibold">Histórico de Pagamentos</h3>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Select value={period} onValueChange={onPeriodChange}>
+                        <SelectTrigger className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border shadow-xs hover:bg-primary/10 hover:text-primary hover:border-primary/20 h-8 rounded-md px-3 gap-2 bg-transparent border-border w-full sm:w-auto min-w-[170px]">
+                            <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <SelectValue placeholder="Todos os períodos" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos os períodos</SelectItem>
+                            <SelectItem value="30">Últimos 30 dias</SelectItem>
+                            <SelectItem value="90">Últimos 90 dias</SelectItem>
+                            <SelectItem value="180">Últimos 6 meses</SelectItem>
+                            <SelectItem value="365">Último 1 ano</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Button
+                        variant="outline"
+                        onClick={onRefresh}
+                        className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border shadow-xs hover:bg-primary/10 hover:text-primary hover:border-primary/20 h-8 rounded-md px-3 gap-2 bg-transparent border-border"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        Atualizar
+                    </Button>
+                </div>
+            </div>
+
+            {!groups.length ? (
+                <div className="text-center py-12 border rounded-lg bg-card text-muted-foreground">
+                    Nenhuma cobrança encontrada para este período.
+                </div>
+            ) : (
+                <div className="border rounded-lg bg-card text-card-foreground shadow-sm overflow-hidden border-border">
+                    {groups.map((group) => (
+                        <InvoiceGroupItem
+                            key={group.period}
+                            group={group}
+                            onViewReceipt={setSelectedInvoice}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {selectedInvoice && (
+                <PaymentReceiptModal
+                    invoice={selectedInvoice}
+                    onClose={() => setSelectedInvoice(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+function InvoiceGroupItem({
+    group,
+    onViewReceipt
+}: {
+    group: NetworkInvoiceGroup;
+    onViewReceipt: (invoice: NetworkInvoiceItem) => void;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b last:border-b-0 border-border">
+            <CollapsibleTrigger asChild>
+                <div className={cn(
+                    "flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors",
+                    "bg-card"
+                )}>
+                    <div className="flex items-center gap-4">
+                        {isOpen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+
+                        <div>
+                            <p className="font-medium text-foreground">{format(parseISO(group.period + "-01"), "dd/MM/yyyy")}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {group.items.length} salões cobrados
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            {group.paidCount > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                    <Check className="h-3 w-3" />
+                                    {group.paidCount} pagos
+                                </span>
+                            )}
+                            {group.failedCount > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                    <XCircle className="h-3 w-3" />
+                                    {group.failedCount} falha
+                                </span>
+                            )}
+                        </div>
+
+                    </div>
+                </div>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent>
+                <div className="bg-muted/20 border-t border-border overflow-x-auto">
+                    <Table>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow className="hover:bg-transparent border-border">
+                                <TableHead className="px-6 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider h-auto">Salão</TableHead>
+                                <TableHead className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider h-auto">Plano</TableHead>
+                                <TableHead className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider h-auto">Valor</TableHead>
+                                <TableHead className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider h-auto">Método</TableHead>
+                                <TableHead className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider h-auto">Status</TableHead>
+                                <TableHead className="px-4 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider h-auto">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {group.items.map((item, idx) => (
+                                <TableRow key={`${group.period}-${item.id}-${idx}`} className="hover:bg-muted/30 transition-colors border-border">
+                                    <TableCell className="px-6 py-3 text-sm font-medium text-foreground">{item.salon?.name || 'Desconhecido'}</TableCell>
+                                    <TableCell className="px-4 py-3 text-sm text-foreground">{item.plan?.name || 'Personalizado'}</TableCell>
+                                    <TableCell className="px-4 py-3 text-sm text-foreground">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.amount)}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-sm text-muted-foreground">
+                                        {item.paymentMethod ? `${item.paymentMethod.brand} •••• ${item.paymentMethod.last4}` : 'Não informado'}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <StatusBadge status={item.status as any} />
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-center">
+                                        <button
+                                            onClick={() => onViewReceipt(item)}
+                                            className="p-1.5 hover:bg-muted rounded-lg transition-colors inline-flex hover:text-[#dd4227] text-muted-foreground"
+                                            title="Ver recibo"
+                                        >
+                                            <ReceiptIcon className="h-5 w-5" />
+                                        </button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CollapsibleContent>
+        </Collapsible>
+    );
+}
+
+function StatusBadge({ status }: { status: string }) {
+    const s = status.toLowerCase();
+    if (s === 'paid') {
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                <Check className="h-3 w-3" />
+                Pago
+            </span>
+        );
+    }
+    if (s === 'failed' || s === 'unpaid' || s === 'past_due' || s === 'void' || s === 'uncollectible') {
+        const label = s === 'void' ? 'Anulado' : s === 'uncollectible' ? 'Incobrável' : 'Falhou';
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                <XCircle className="h-3 w-3" />
+                {label}
+            </span>
+        );
+    }
+    if (s === 'open') {
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Pendente
+            </span>
+        );
+    }
+    return (
+        <Badge variant="secondary" className="font-normal rounded-full">
+            {status}
+        </Badge>
+    );
+}
+
+function PaymentReceiptModal({
+    invoice,
+    onClose
+}: {
+    invoice: NetworkInvoiceItem;
+    onClose: () => void;
+}) {
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    const handleDownload = async () => {
+        try {
+            setIsDownloading(true);
+            toast.loading("Gerando PDF...", { id: "pdf-download" });
+            await networkFinancialService.downloadReceiptPdf(invoice.id);
+            toast.success("Download concluído!", { id: "pdf-download" });
+        } catch (error) {
+            console.error(error);
+            toast.error("Erro ao baixar PDF. Tente novamente.", { id: "pdf-download" });
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    return (
+        <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-[450px]">
+                <DialogHeader>
+                    <div className="flex items-center gap-2">
+                        <ReceiptIcon className="h-5 w-5" />
+                        <DialogTitle>Recibo de Pagamento</DialogTitle>
+                    </div>
+                </DialogHeader>
+
+                <div className="py-6 space-y-8">
+                    <div className="text-center space-y-1">
+                        <h4 className="text-xl font-bold text-foreground">Easy Salon</h4>
+                        <p className="text-sm text-muted-foreground">Comprovante de Pagamento</p>
+                    </div>
+
+                    <div className="space-y-4 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Nº do Recibo:</span>
+                            <span className="font-medium">{invoice.invoiceNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ID Transação:</span>
+                            <span className="font-medium text-xs font-mono">{invoice.transactionId}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Data:</span>
+                            <span className="font-medium">{format(parseISO(invoice.createdAt), 'dd/MM/yyyy')}</span>
+                        </div>
+
+                        <div className="border-t border-dashed my-2 border-border" />
+
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Salão:</span>
+                            <span className="font-medium">{invoice.salon?.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Plano:</span>
+                            <span className="font-medium">{invoice.plan?.name || 'Personalizado'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Forma de Pagamento:</span>
+                            <span className="font-medium">
+                                {invoice.paymentMethod ? `${invoice.paymentMethod.brand} •••• ${invoice.paymentMethod.last4}` : 'Não informado'}
+                            </span>
+                        </div>
+
+                        <div className="border-t border-dashed my-2 border-border" />
+
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-lg font-semibold">Valor Total:</span>
+                            <span className="text-2xl font-bold text-[#dd4227]">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(invoice.amount)}
+                            </span>
+                        </div>
+                    </div>
+
+                    {invoice.status.toLowerCase() === 'paid' && (
+                        <div className="flex justify-center pt-2">
+                            <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 text-sm font-medium rounded-full">
+                                <Check className="h-4 w-4" />
+                                Pagamento Confirmado
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 pt-4">
+                        <Button variant="default" className="flex-1 gap-2" onClick={() => window.print()}>
+                            <Printer className="h-4 w-4" />
+                            Imprimir
+                        </Button>
+                        <Button
+                            className="flex-1 gap-2 bg-[#dd4227] hover:bg-[#dd4227]/90 text-white border-none"
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                        >
+                            {isDownloading ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            {isDownloading ? 'Baixando...' : 'Baixar PDF'}
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}

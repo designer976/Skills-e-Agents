@@ -1,0 +1,78 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle as AlertTriangle, Loader2 as Loader2 } from "lucide-react";
+
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: "destructive" | "default";
+  isLoading?: boolean;
+}
+
+export function ConfirmationModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  description,
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  variant = "destructive",
+  isLoading = false
+}: ConfirmationModalProps) {
+  const handleConfirm = () => {
+    onConfirm();
+    // Don't close immediately if loading
+    if (!isLoading) {
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent 
+        className="w-[95vw] md:max-w-sm p-0 gap-0 rounded-xl md:rounded-lg border-none shadow-2xl overflow-hidden" 
+        aria-describedby="confirmation-modal-description"
+      >
+        <div className="p-6 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+          </div>
+          
+          <h2 className="text-lg font-semibold mb-2">
+            {title}
+          </h2>
+          
+          <p id="confirmation-modal-description" className="text-sm text-muted-foreground mb-6">
+            {description}
+          </p>
+          
+          <div className="flex flex-col-reverse sm:flex-row justify-center gap-2 sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full sm:min-w-[80px] min-h-[44px]"
+              disabled={isLoading}
+            >
+              {cancelText}
+            </Button>
+            <Button
+              variant={variant}
+              onClick={handleConfirm}
+              className="w-full sm:min-w-[80px] min-h-[44px]"
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {confirmText}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

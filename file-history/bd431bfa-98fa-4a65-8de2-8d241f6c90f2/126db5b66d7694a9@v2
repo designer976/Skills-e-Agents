@@ -1,0 +1,215 @@
+# Guia do Template Dinâmico de Propostas
+
+## Visão Geral
+
+O `proposta-template-dinamico.html` é um sistema flexível para geração automática de propostas comerciais que se adapta ao volume de conteúdo, similar ao comportamento do Google Docs ou Word.
+
+## Principais Funcionalidades
+
+### ✅ Layout Dinâmico
+- **Quebras automáticas** de página baseadas no conteúdo
+- **Numeração automática** de páginas via CSS counters
+- **Background fixo** em todas as páginas
+- **Footer consistente** em todas as páginas
+
+### ✅ Sistema de Variáveis
+- **{{VARIÁVEL}}** — placeholders para substituição dinâmica
+- **Seções modulares** — adicione/remova conforme necessário
+- **Conteúdo flexível** — expande automaticamente
+
+### ✅ Controle de Fluxo
+- **CSS Grid/Flexbox** para layout responsivo
+- **break-inside: avoid** para evitar quebras indesejadas
+- **orphans/widows** para controle tipográfico
+- **page-break controls** otimizados para impressão
+
+## Variáveis Disponíveis
+
+### Informações da Capa
+```
+{{NOME_CLIENTE}}           // Nome do cliente (título principal)
+{{NOME_EMPRESA}}           // Nome da sua empresa
+{{TITULO_PROPOSTA}}        // Ex: "Proposta Comercial"
+{{DATA_PROPOSTA}}          // Ex: "27/03/2026"
+{{DIAS_VALIDADE}}          // Ex: "30"
+{{CLIENTE_EMPRESA}}        // Ex: "Agência XPTO"
+{{TIPO_ESCOPO}}            // Ex: "Escopo fechado"
+{{INFORMACOES_ADICIONAIS_CAPA}}  // Informações extras da capa
+{{CONTEUDO_INICIAL_CAPA}}  // Conteúdo que aparece na capa
+```
+
+### Conteúdo Principal
+```
+{{TITULO_SOBRE_EMPRESA}}   // Ex: "Sobre a Wa Project"
+{{DESCRICAO_EMPRESA}}      // Descrição da empresa
+{{SECAO_SERVICOS}}         // Bloco HTML com lista de serviços
+{{TITULO_CLIENTES}}        // Ex: "Nossos Clientes"
+{{LISTA_CLIENTES}}         // Bloco HTML com lista de clientes
+```
+
+### Projeto e Funcionalidades
+```
+{{TITULO_PROJETO}}         // Ex: "Sobre o Projeto"
+{{SUBTITULO_PROJETO}}      // Subtítulo do projeto
+{{DESCRICAO_PROJETO}}      // Descrição completa (pode ter múltiplos parágrafos)
+{{TITULO_FUNCIONALIDADES}} // Ex: "Funcionalidades"
+{{LISTA_FUNCIONALIDADES}}  // Bloco HTML com funcionalidades
+```
+
+### Execução e Investimento
+```
+{{TITULO_MODELO_TRABALHO}} // Ex: "Modelo de Trabalho"
+{{TITULO_EQUIPE}}          // Ex: "Equipe"
+{{TITULO_CRONOGRAMA}}      // Ex: "Cronograma"
+{{TITULO_INVESTIMENTO}}    // Ex: "Investimento"
+{{VALOR_TOTAL}}            // Ex: "<p class="investment-total">R$ 20.000</p>"
+{{CONDICOES_PAGAMENTO}}    // Bloco HTML com condições
+```
+
+## Como Usar
+
+### 1. Substituição Simples
+```javascript
+// Exemplo de uso básico
+let template = document.documentElement.outerHTML;
+template = template.replace(/\{\{NOME_CLIENTE\}\}/g, "Easy Salon");
+template = template.replace(/\{\{TITULO_PROPOSTA\}\}/g, "Proposta Comercial");
+```
+
+### 2. Substituição em Lote
+```javascript
+const variables = {
+    'NOME_CLIENTE': 'Easy Salon',
+    'DATA_PROPOSTA': '30/03/2026',
+    'VALOR_TOTAL': '<p class="investment-total">Investimento total: R$ 25.000</p>',
+    'LISTA_FUNCIONALIDADES': `
+        <div class="func-item">
+            <p><strong>1. Dashboard Administrativo</strong> - Interface completa...</p>
+        </div>
+        <div class="func-item">
+            <p><strong>2. Sistema de Agendamento</strong> - Calendário integrado...</p>
+        </div>
+    `
+};
+
+let html = template;
+for (const [key, value] of Object.entries(variables)) {
+    html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+}
+```
+
+### 3. Conteúdo HTML Complexo
+```javascript
+// Para listas e conteúdo estruturado
+const servicosHTML = `
+    <h3>Nossos serviços:</h3>
+    <ul>
+        <li>Desenvolvimento de Software.</li>
+        <li>Desenvolvimento de Aplicativos.</li>
+        <li>Soluções de Inteligência Artificial.</li>
+        <li>Alocação de Profissionais.</li>
+    </ul>
+`;
+
+variables['SECAO_SERVICOS'] = servicosHTML;
+```
+
+## Estrutura CSS Responsiva
+
+### Classes Principais
+- `.content-section` — seção de conteúdo com controle de quebra
+- `.content-section.allow-break` — permite quebra dentro da seção
+- `.func-item` — item de funcionalidade (evita quebra)
+- `.team-role` — membro da equipe (evita quebra)
+- `.phase` — fase do projeto (evita quebra)
+
+### Controle de Quebras
+```css
+/* Evita quebra dentro do elemento */
+.no-break {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+}
+
+/* Força quebra antes do elemento */
+.force-break {
+    break-before: page;
+    page-break-before: always;
+}
+```
+
+## Otimizações
+
+### Para Impressão
+- Background fixo otimizado
+- Controles de orphans/widows
+- Numeração automática de páginas
+- Footer consistente
+
+### Para Geração Automática
+```javascript
+// Função opcional para otimizar quebras
+// Adicione ?optimize=true na URL para ativar
+if (window.location.search.includes('optimize=true')) {
+    // Sistema automático de otimização ativado
+}
+```
+
+### Depuração
+```javascript
+// Ver todas as variáveis utilizadas
+console.log(getTemplateVariables());
+// Output: ['{{NOME_CLIENTE}}', '{{TITULO_PROPOSTA}}', ...]
+```
+
+## Exemplo de Integração
+
+```javascript
+// Sistema gerador de propostas
+class PropostaGenerator {
+    constructor(templatePath) {
+        this.template = this.loadTemplate(templatePath);
+    }
+
+    async generate(dadosProposta) {
+        let html = this.template;
+
+        // Substituir variáveis simples
+        for (const [key, value] of Object.entries(dadosProposta)) {
+            html = html.replace(
+                new RegExp(`\\{\\{${key}\\}\\}`, 'g'),
+                value || ''
+            );
+        }
+
+        // Remover variáveis não utilizadas
+        html = html.replace(/\{\{[A-Z_]+\}\}/g, '');
+
+        return html;
+    }
+}
+
+// Uso
+const generator = new PropostaGenerator('proposta-template-dinamico.html');
+const proposta = await generator.generate({
+    NOME_CLIENTE: 'Empresa XYZ',
+    VALOR_TOTAL: '<p class="investment-total">R$ 50.000</p>',
+    // ... outras variáveis
+});
+```
+
+## Vantagens do Sistema
+
+1. **Flexibilidade Total** — adapta-se a qualquer volume de conteúdo
+2. **Layout Consistente** — mantém design profissional independente do tamanho
+3. **Quebras Inteligentes** — evita elementos órfãos ou viúvos
+4. **Numeração Automática** — não precisa controlar manualmente
+5. **Reutilização** — um template para todas as propostas
+6. **Manutenção** — mudanças no template afetam todas as propostas
+
+## Suporte a Navegadores
+
+- ✅ Chrome/Edge (print-ready)
+- ✅ Firefox (print-ready)
+- ✅ Safari (print-ready)
+- ✅ Puppeteer/Playwright (PDF generation)

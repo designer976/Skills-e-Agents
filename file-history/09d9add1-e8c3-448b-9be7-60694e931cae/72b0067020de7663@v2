@@ -1,0 +1,304 @@
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { ProfileImageUpload } from "./ProfileImageUpload";
+import { Control } from "react-hook-form";
+
+interface UserBasicDataFormProps {
+  control: Control<any>;
+  isEditing: boolean;
+  profileImage: File | null;
+  setProfileImage: (file: File | null) => void;
+  currentUserImage?: string;
+  fieldErrors?: Record<string, string>;
+}
+
+export function UserBasicDataForm({
+  control,
+  isEditing,
+  profileImage,
+  setProfileImage,
+  currentUserImage,
+  fieldErrors = {}
+}: UserBasicDataFormProps) {
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  };
+
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  };
+
+  return (
+    <> {/* RESP: Adicionado Fragment para envolver múltiplos elementos e corrigir erro de sintaxe */}
+      {/* Foto do usuário - Centralizada e Responsiva */}
+      <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-xl border border-dashed border-border/60 mb-6"> {/* RESP: Adicionado mb-6 para separação mobile */}
+        <Label className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Foto do Perfil
+        </Label>
+        <div className="relative group">
+          <ProfileImageUpload
+            currentImage={currentUserImage}
+            onChange={setProfileImage}
+          />
+        </div>
+        <p className="mt-3 text-[10px] text-muted-foreground text-center max-w-[200px]">
+          Clique para selecionar ou arraste uma imagem (JPG, PNG). Máx: 2MB.
+        </p>
+      </div>
+
+      <div className="space-y-4 md:space-y-6"> {/* RESP: Espaçamento reduzido no mobile */}
+        {/* Primeira linha - Nome Completo e Perfil */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"> {/* RESP: Grid 1 coluna mobile, gap ajustado */}
+          <FormField
+            control={control}
+            name="fullName"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1"> {/* RESP: Padrão label acima do input */}
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Nome Completo *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Nome completo do usuário" className="salon-input w-full" maxLength={100} />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="accessLevel"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Perfil *</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="salon-input w-full">
+                      <SelectValue placeholder="Selecione o perfil" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Administrador">Administrador</SelectItem>
+                    <SelectItem value="Profissional">Profissional</SelectItem>
+                    <SelectItem value="Recepcionista">Recepcionista</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Segunda linha - Apelido e WhatsApp */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <FormField
+            control={control}
+            name="nickname"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Apelido *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Como é conhecido" className="salon-input w-full" maxLength={50} />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="whatsapp"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">WhatsApp</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="(00) 00000-0000"
+                    className="salon-input w-full"
+                    onChange={(e) => {
+                      const formatted = formatPhone(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                    maxLength={15}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Terceira linha - Email e CPF */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <FormField
+            control={control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">E-mail *</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="email"
+                    placeholder="usuario@exemplo.com"
+                    className={cn(
+                      "salon-input w-full",
+                      fieldErrors.email && "border-destructive/50"
+                    )}
+                    maxLength={100}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+                {fieldErrors.email && (
+                  <p className="text-xs text-destructive font-medium mt-1">{fieldErrors.email}</p>
+                )}
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="cpf"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">CPF</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="000.000.000-00"
+                    className={cn(
+                      "salon-input w-full",
+                      fieldErrors.cpf && "border-destructive/50"
+                    )}
+                    onChange={(e) => {
+                      const formatted = formatCPF(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                    maxLength={14}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+                {fieldErrors.cpf && (
+                  <p className="text-xs text-destructive font-medium mt-1">{fieldErrors.cpf}</p>
+                )}
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Quarta linha - Data de nascimento e CNPJ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <FormField
+            control={control}
+            name="birthDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Data de Nascimento</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    className="salon-input w-full"
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="cnpj"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">CNPJ</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="00.000.000/0000-00"
+                    className="salon-input w-full"
+                    onChange={(e) => {
+                      const formatted = formatCNPJ(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                    maxLength={18}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Quinta linha - Datas de Entrada e Saída */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <FormField
+            control={control}
+            name="admissionDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Data de Entrada *</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    className="salon-input w-full"
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="dismissalDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel className="text-xs font-semibold uppercase tracking-wider">Data de Saída</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    className="salon-input w-full"
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Sexta linha - Descrição ocupando toda a largura */}
+        <FormField
+          control={control}
+          name="description"
+          render={({ field }) => (
+            <FormItem className="flex flex-col gap-1">
+              <FormLabel className="text-xs font-semibold uppercase tracking-wider">Descrição</FormLabel>
+              <FormControl>
+                <Textarea
+                  {...field}
+                  placeholder="Informações adicionais sobre o usuário"
+                  className="salon-input min-h-[120px] w-full resize-none"
+                  maxLength={500}
+                />
+              </FormControl>
+              <FormMessage className="text-[10px]" />
+            </FormItem>
+          )}
+        />
+      </div>
+    </>
+  );
+}

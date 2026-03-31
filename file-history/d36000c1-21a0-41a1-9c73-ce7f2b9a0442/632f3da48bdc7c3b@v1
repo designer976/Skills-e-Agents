@@ -1,0 +1,144 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 as Loader2 } from "lucide-react";
+import { useState } from 'react';
+import { toast } from "sonner";
+
+interface SecureCardInputProps {
+    onTokenHtml: (token: string, brand: string, last4: string, holder: string, exp: string) => void;
+    onCancel: () => void;
+    loading?: boolean;
+}
+
+export function SecureCardInput({ onTokenHtml, onCancel, loading }: SecureCardInputProps) {
+    const [cardData, setCardData] = useState({
+        number: '',
+        holderName: '',
+        expirationDate: '',
+        cvv: ''
+    });
+    const [processing, setProcessing] = useState(false);
+
+    const handleChange = (field: string, value: string) => {
+        let cleanValue = value;
+        if (field === 'number') cleanValue = value.replace(/\D/g, '').slice(0, 16);
+        if (field === 'cvv') cleanValue = value.replace(/\D/g, '').slice(0, 4);
+        if (field === 'expirationDate') {
+            cleanValue = value.replace(/\D/g, '');
+            if (cleanValue.length >= 2) {
+                cleanValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2, 6);
+            }
+            cleanValue = cleanValue.slice(0, 7);
+        }
+        setCardData(prev => ({ ...prev, [field]: cleanValue }));
+    };
+
+    const detectBrand = (number: string) => {
+        const brands = {
+            visa: /^4/,
+            mastercard: /^5[1-5]/,
+            amex: /^3[47]/,
+            elo: /^636368|^438935|^504175|^451416|^636297|^5067|^4576|^4011/
+        };
+        for (const [key, regex] of Object.entries(brands)) {
+            if (regex.test(number)) return key.toUpperCase();
+        }
+        return 'UNKNOWN';
+    };
+
+    const handleSave = async () => {
+        if (!cardData.number || !cardData.holderName || !cardData.expirationDate || !cardData.cvv) {
+            toast.error("Preencha todos os campos do cartão.");
+            return;
+        }
+
+        setProcessing(true);
+        try {
+            // Updated Flow: Send data to Backend Proxy to tokenize (Secure)
+            // Backend talks to Cielo. Frontend doesn't expose keys.
+
+            // Note: Dynamic import to avoid circular dependency if any, or standard import
+            const { subscriptionService } = await import('@/services/subscriptionService');
+
+            const token = await subscriptionService.tokenizeCard({
+                cardNumber: cardData.number,
+                holder: cardData.holderName,
+                expirationDate: cardData.expirationDate,
+                brand: detectBrand(cardData.number)
+            });
+
+            if (token) {
+                onTokenHtml(
+                    token,
+                    detectBrand(cardData.number),
+                    cardData.number.slice(-4),
+                    cardData.holderName,
+                    cardData.expirationDate
+                );
+            } else {
+                throw new Error("Token não retornado");
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            const msg = err.response?.data?.message || err.message || "Erro ao validar cartão.";
+            toast.error(msg);
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+            <div className="grid grid-cols-1 gap-4">
+                <div>
+                    <Label>Número do Cartão</Label>
+                    <Input
+                        placeholder="0000 0000 0000 0000"
+                        value={cardData.number}
+                        onChange={(e) => handleChange('number', e.target.value)}
+                        maxLength={19}
+                    />
+                </div>
+                <div>
+                    <Label>Nome Impresso</Label>
+                    <Input
+                        placeholder="COMO NO CARTAO"
+                        value={cardData.holderName}
+                        onChange={(e) => handleChange('holderName', e.target.value)}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label>Validade (MM/AAAA)</Label>
+                        <Input
+                            placeholder="MM/AAAA"
+                            value={cardData.expirationDate}
+                            onChange={(e) => handleChange('expirationDate', e.target.value)}
+                            maxLength={7}
+                        />
+                    </div>
+                    <div>
+                        <Label>CVV</Label>
+                        <Input
+                            placeholder="123"
+                            value={cardData.cvv}
+                            onChange={(e) => handleChange('cvv', e.target.value)}
+                            maxLength={4}
+                        />
+                    </div>
+                </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={onCancel} disabled={processing || loading}>
+                    Cancelar
+                </Button>
+                <Button onClick={handleSave} disabled={processing || loading}>
+                    {processing ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+                    Confirmar Cartão
+                </Button>
+            </div>
+        </div>
+    );
+}

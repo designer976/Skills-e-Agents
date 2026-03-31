@@ -1,0 +1,419 @@
+# CLAUDE.md — Severino ERP (Wa Project)
+
+## Visão Geral
+
+**Severino** é um ERP/CRM multi-tenant desenvolvido pela **Wa Project** (SAKAMOTO TECNOLOGIA LTDA). Consolida gestão comercial, atendimento, projetos, marketing, RH e financeiro em um único sistema.
+
+**Empresa:** SAKAMOTO TECNOLOGIA LTDA (Wa Project)
+**CNPJ:** 63.201.595/0001-63
+**Endereço:** Al. Rio Negro, 503, Sala 2020, Alphaville, Barueri/SP
+**Domínio:** https://www.severino.ninja
+**empresaId Wa Project:** `00000000-0000-0000-0000-000000000001`
+
+## Stack
+
+- **Framework:** Next.js 16 (App Router) — React 19
+- **Linguagem:** TypeScript 5
+- **Estilização:** Tailwind CSS 4 + shadcn/ui (new-york style, lucide-react icons)
+- **Banco de dados:** Supabase (PostgreSQL + Storage + Realtime)
+- **Gráficos:** Recharts 2.15
+- **Tabelas:** TanStack React Table
+- **Formulários:** react-hook-form + zod
+- **Hosting:** Vercel (com Vercel Analytics e Vercel Blob)
+- **Toasts:** Sonner (único — não usar outras libs de toast)
+- **Telefonia:** Twilio (@twilio/voice-sdk)
+- **WhatsApp:** Meta WhatsApp Business API (Cloud API v21.0)
+- **Notificações:** Slack Incoming Webhooks
+- **IA:** AI SDK (@ai-sdk/groq) + OpenAI API
+- **Email:** Resend
+- **Ads:** Google Ads API
+- **PDF:** jsPDF
+- **Rate Limiting:** Upstash Redis
+- **Compressão de imagem:** TinyPNG API + Sharp
+
+## Design System
+
+- Primary: `#003B71`
+- Secondary: `#0056A3`
+- Accent: `#E8F0FE`
+- Usar variáveis CSS do Tailwind em vez de cores hardcoded
+- Componentes shadcn/ui como base
+- Icons: lucide-react
+
+## Estrutura de Diretórios
+
+```
+/
+├── app/                  # Next.js App Router (rotas + API routes)
+├── components/           # Componentes React (~75 arquivos)
+├── contexts/             # React Contexts (~25 arquivos) — state management
+├── hooks/                # Custom hooks
+├── lib/                  # Utilitários, types, integrações
+├── scripts/              # Migrations e utilitários DB (~58 arquivos)
+├── styles/               # CSS global
+├── public/               # Assets estáticos
+└── middleware.ts          # Auth JWT + controle de acesso por feature
+```
+
+## Estrutura do Menu (Sidebar)
+
+```
+Dashboard
+COMERCIAL: Performance | Leads | Jornadas | Contatos | Atendimento
+TECH: Performance | Gestão (Projetos) | Requisitos | Protótipo | Desenvolvimento | Garantia | Suporte
+MARKETING: Google Ads (7 abas) | Gerador | Cases | Blog
+RH: Gestão de Pessoas | Candidatos | Vagas | Tags
+FINANCEIRO: Relatório de Horas
+CONFIGURAÇÕES: Empresa | Empresas (superAdmin) | Gestão de Acesso | Base de Conhecimento | Eventos | API Docs | Palavras Chave | Tags
+Standalone: Time Sheet | Tarefas
+```
+
+## Rotas do App
+
+### Páginas Públicas
+- `/login`, `/forgot-password`, `/reset-password` — Auth
+- `/login/selecionar-empresa` — Seleção de empresa pós-login
+- `/blog`, `/blog/[slug]` — Blog público
+- `/cases`, `/cases/[slug]` — Cases público
+- `/garantia/login`, `/garantia/painel` — Portal de garantia (clientes)
+- `/privacy`, `/terms` — Legal
+
+### Dashboard (autenticado, `/dashboard/*`)
+**Comercial:** `performance-comercial`, `leads`, `jornadas`, `contatos`, `atendimento`
+**Tech:** `performance-tech`, `projetos`, `requisitos`, `prototipo`, `desenvolvimento`, `garantia`, `suporte`, `produto`
+**Marketing:** `google-ads`, `gerador`, `gerador-de-proposta`, `cases`, `blog`
+**RH:** `gestao-de-pessoas`, `candidatos`, `vagas`, `tags`
+**Financeiro:** `relatorio-de-horas`, `time-sheet` (landing page padrão)
+**Config:** `empresa`, `empresas`, `gestao-de-acesso`, `base-de-conhecimento`, `eventos`, `developer`, `palavras-chave`, `meu-perfil`
+**Outros:** `tarefas`
+
+## Módulos Principais
+
+### COMERCIAL
+**Leads (CRM Kanban):** Colunas customizáveis por empresa via "⚙ Configurar Colunas" (admin only). Colunas têm regras de automação por eventos (AND/OR, contagem). Lead detail com abas: Dashboard, Comercial, Tarefas, Propostas, Eventos, Base de Conhecimento, Ligações.
+
+**Jornadas:** Automação de leads com regras configuráveis, disparo via cron (`/api/cron/jornadas`). Regras com toggle enable/disable.
+
+**Contatos:** Gestão de contatos/clientes vinculados a leads (N:N via `lead_contatos`).
+
+**Atendimento:** WhatsApp (3 painéis: lista de conversas, chat, detalhes do contato) + Telefonia (discador Twilio). Dois canais: Atendimento (número 2010) e Suporte (número 3221).
+
+**Performance Comercial:** Dashboard de métricas de vendas com metas.
+
+### TECH
+**Gestão:** Projetos com 6 fases: Planejamento → Levantamento de Requisitos → Protótipo → Desenvolvimento → Homologação → Go-Live. Controle de acesso por fase. PRDs integrados.
+
+**Garantia:** Disponível em Homologação/Go-Live. Kanban de bugs: Backlog → Em Análise → Corrigindo → Concluído. Convites por email via Resend. Portal cliente simplificado (`/garantia/login`). Comentários, atividades e anexos por bug.
+
+**Suporte:** Canal dedicado com WhatsApp + Twilio (número 3221).
+
+**Produto:** Gestão de produto integrada.
+
+### MARKETING
+**Google Ads:** 7 abas: Metas vs Realizado | Campanhas | Palavras-chave | Termos de Busca | Atribuição | Leads | Insights IA. Inclui gestão de negative keywords.
+
+**Gerador:** IA para geração de conteúdo, sugestão de tópicos, propostas comerciais.
+
+### RH
+Gestão de Pessoas, Candidatos (com comentários), Vagas com Tags.
+
+### FINANCEIRO
+Relatório de Horas + Time Sheet. Time entries por projeto com cálculo de dias úteis.
+
+## Agente Bia (WhatsApp)
+
+Chatbot de qualificação de leads no WhatsApp. Regras:
+- Nunca pedir informação que já tem do contexto do lead
+- Orçamento: só perguntar para empreendedores/startups (R$20-60k, R$60-100k, acima R$100k). Nunca perguntar para empresas estabelecidas
+- Informa que Raissa (comercial) continuará a conversa no mesmo WhatsApp
+- Posta resumo estruturado como observação no lead (autor: "Bia (IA)")
+- Human override: mensagem manual desativa o agente
+
+## Autenticação & Segurança
+
+### Sessão
+- Gerenciada por `@/lib/session.ts` (JWT custom com HMAC-SHA256, Edge-compatible)
+- Cookie: `severino_session` (httpOnly, secure, 7 dias)
+- Exige `SESSION_SECRET` como variável de ambiente
+- Suporte a Bearer token no header Authorization
+
+### Middleware (`middleware.ts`)
+- Verificação JWT via Web Crypto API
+- Controle de acesso baseado em features (`funcionalidades` do usuário)
+- 26 rotas mapeadas para features
+- Rotas abertas (sem feature check): time-sheet, relatorio-de-horas, gestao-de-pessoas, meu-perfil, empresa, acesso-negado
+- Admin/Super Admin: acesso total
+- Whitelist pública: rotas de auth, webhooks, APIs inbound
+
+### APIs Públicas (Inbound)
+- **POST /api/leads/inbound** — Cria lead. Auth via `x-api-key` header (`INBOUND_LEADS_API_KEY` env var)
+- **POST /api/events/inbound** — Registra evento. Auth via `x-api-key` header (api_key da tabela `empresas`)
+
+### Webhooks Externos
+- **Twilio:** Valida `X-Twilio-Signature` com HMAC
+- **WhatsApp Meta:** Valida `X-Hub-Signature-256` com `meta_app_secret`
+
+### Validação de Input (`lib/sanitize.ts`)
+- MAX_STRING_LENGTH: 500
+- Detecção de SQL injection e XSS
+- Validação de telefone, email, UUID
+- CORS com whitelist
+
+## Banco de Dados (Supabase)
+
+### Tabelas Principais
+- `empresas` — empresas cadastradas (multi-tenant)
+- `empresa_configuracoes` — config por empresa (Twilio, Meta, Google Ads, etc.)
+- `empresa_api_keys` — API keys por empresa
+- `usuarios` — usuários do sistema
+- `usuario_empresas` — vínculo N:N usuário ↔ empresa
+- `leads` — leads do pipeline
+- `contatos` — contatos/clientes
+- `lead_contatos` — vínculo lead ↔ contato
+- `lead_observacoes` — observações/notas
+- `lead_propostas` — propostas comerciais
+- `lead_kb_files`, `lead_kb_notas` — base de conhecimento do lead
+- `pipeline_colunas` — colunas do Kanban (dinâmicas por empresa)
+- `pipeline_eventos` — eventos registrados nos leads
+- `eventos` — tipos de eventos cadastrados
+- `whatsapp_conversations` — conversas do WhatsApp
+- `whatsapp_messages` — mensagens do WhatsApp
+- `whatsapp_templates` — templates de mensagens
+- `ligacoes` — registro de chamadas telefônicas
+- `tarefas_boards`, `tarefas_tasks`, `tarefas_tags`, `tarefas_comments` — sistema de tarefas
+- `knowledge_base_pastas`, `knowledge_base_notas`, `knowledge_base_arquivos` — base de conhecimento
+- `projetos`, `projeto_membros`, `projeto_tarefas`, `projeto_kb_files`, `projeto_kb_notas`, `projeto_pesquisas` — gestão de projetos
+- `requisitos`, `prototipos`, `desenvolvimento` — artefatos por fase de projeto
+- `prds`, `prd_sections`, `prd_messages` — PRDs
+- `garantia_bugs`, `garantia_bug_comentarios`, `garantia_bug_atividades`, `garantia_bug_anexos` — garantia
+- `blog_articles` — blog
+- `cases`, `case_imagens` — cases
+- `metas` — metas comerciais
+- `google_ads_*` — tabelas do Google Ads
+- `time_entries` — registro de horas
+- `dias_uteis` — dias úteis (cálculos)
+- `vagas`, `candidatos`, `tags` — RH
+
+### Admin Client
+- `createAdminClient()` de `@/lib/supabase/admin` — usa `SUPABASE_SERVICE_ROLE_KEY`
+- **SOMENTE em API routes** (server-side) — NUNCA em componentes ou contexts
+
+## Pipeline de Leads (Kanban)
+
+### Colunas Dinâmicas
+- Configuradas por empresa em `pipeline_colunas`
+- Cada coluna tem: nome, cor, posição, tipo de movimentação (`manual`, `por_evento`, `entrada_padrao`)
+- Regras de automação por eventos com condições AND/OR e contagem
+
+### Motor de Automação
+- Eventos via API (`/api/events/inbound`) avaliam regras das colunas
+- Movimentação forward-only (só avança)
+- Histórico cumulativo de eventos
+- Jornadas automatizadas via cron
+
+## API Routes Principais
+
+### Auth
+`/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/profile`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/selecionar-empresa`
+
+### CRM & Leads
+`/api/leads`, `/api/leads/inbound`, `/api/leads/propostas`, `/api/leads/observacoes`, `/api/leads/kb-files`, `/api/leads/kb-notas`, `/api/leads/contatos`, `/api/lead-tarefas`, `/api/contatos`
+
+### WhatsApp
+`/api/whatsapp/webhook`, `/api/whatsapp/messages`, `/api/whatsapp/send`, `/api/whatsapp/conversations`, `/api/whatsapp/conversations/[id]/ia`, `/api/whatsapp/templates`, `/api/whatsapp/delete-message`, `/api/whatsapp/media`, `/api/whatsapp/profile-pic`, `/api/whatsapp/contact-leads`
+
+### Twilio
+`/api/twilio/voice`, `/api/twilio/token`, `/api/twilio/incoming`, `/api/twilio/recording`, `/api/twilio/status`, `/api/twilio/transcribe`, `/api/twilio-suporte/*`
+
+### Projetos & Tech
+`/api/projetos`, `/api/projetos/membros`, `/api/projetos/pesquisas`, `/api/projetos/requisitos`, `/api/projetos/prototipos`, `/api/projetos/kb-files`, `/api/projetos/kb-notas`, `/api/projetos/copy-lead-kb`, `/api/prds`
+
+### Garantia
+`/api/garantia/bugs`, `/api/garantia/bugs/[bugId]/comentarios`, `/api/garantia/bugs/[bugId]/atividades`, `/api/garantia/bugs/[bugId]/anexos`, `/api/garantia/file`
+
+### Google Ads
+`/api/google-ads/campaigns`, `/api/google-ads/ad-groups`, `/api/google-ads/keywords`, `/api/google-ads/ads`, `/api/google-ads/search-terms`, `/api/google-ads/leads`, `/api/google-ads/metrics`, `/api/google-ads/negative-keywords`
+
+### Marketing & Conteúdo
+`/api/blog`, `/api/cases`, `/api/gerador`, `/api/ai/generate-content`, `/api/ai/suggest-topics`
+
+### RH
+`/api/candidatos`, `/api/candidatos/comments`, `/api/vagas`
+
+### Admin & Config
+`/api/empresas`, `/api/empresa/configuracoes`, `/api/empresa/api-key`, `/api/empresa/test-ia`, `/api/usuarios`
+
+### Utilitários
+`/api/upload`, `/api/file`, `/api/compress-image`, `/api/compress-image/sharp`, `/api/compress-image/credits`, `/api/pipeline-colunas`, `/api/pipeline-eventos`, `/api/eventos`, `/api/tags`, `/api/keywords`, `/api/metas`, `/api/jornadas/*`, `/api/time-entries`, `/api/relatorio-horas`, `/api/performance-comercial`, `/api/dias-uteis`, `/api/knowledge-base/notas`, `/api/whatsapp-templates`, `/api/ligacoes`, `/api/ligacoes/registrar-falha`, `/api/cron/jornadas`, `/api/events/inbound`
+
+## Integrações
+
+### Meta WhatsApp Business API
+- API: `https://graph.facebook.com/v21.0`
+- App: Severino (ID: 1423319815764190) — Mode: Live
+- Conta Atendimento (Sakamoto Tecnologia, WABA ID: 772501022580399): +551150282010
+- Conta Suporte: +551150283221
+- Webhook: `https://www.severino.ninja/api/whatsapp/webhook`
+- Verify Token: `severino_wa_verify_2026`
+- Credenciais por empresa no banco (multi-tenant)
+
+### Twilio (Telefonia)
+- SDK: @twilio/voice-sdk v2.12.0
+- Atendimento: +551150282010, TwiML App → `/api/twilio/voice`
+- Suporte: +551150283221, TwiML App → `/api/twilio-suporte/voice`
+- Incoming: `/api/twilio/incoming`
+- Features: gravação, transcrição, status de chamada
+
+### Google Ads
+- Developer Token: `13t9zUTfpvKnPTtTe_ipvw`
+- Customer ID: 837-259-583
+- Tracking template com UTMs e custom parameter `_utmcampaign`
+- Conversion: `AW-837259583/ShqsCMDK5fobEL-ino8D`
+
+### Slack
+- `SLACK_WEBHOOK_LEADS` (squad-inbound, Wa)
+- `SLACK_WEBHOOK_EASY_COMERCIAL` (easy-comercial, Easy Salon)
+- `SLACK_WEBHOOK_SUSTENTACAO`
+
+### Resend
+- Convites de usuários-cliente na Garantia
+- Reset de senha
+
+## Contexts (State Management)
+
+O projeto usa React Context API para state management (~25 contexts):
+- `auth-context` — sessão, empresa, usuário
+- `company-context` — dados da empresa
+- `atendimento-context` — estado do atendimento WhatsApp/Twilio
+- `leads-context`, `contatos-context`, `proposals-context` — CRM
+- `projects-context`, `prd-context` — Tech
+- `jornadas-context` — automação de leads
+- `whatsapp-context`, `whatsapp-suporte-context` — WhatsApp
+- `twilio-voice-context`, `twilio-suporte-context`, `suporte-context` — telefonia
+- `blog-context`, `cases-context`, `gerador-context` — marketing
+- `tags-context`, `keywords-context`, `metas-context`, `eventos-context` — config
+- `knowledge-base-context` — KB
+- `breadcrumb-context` — navegação
+
+## Variáveis de Ambiente
+
+```
+INBOUND_LEADS_API_KEY
+NEXT_PUBLIC_SUPABASE_URL | NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_URL | SUPABASE_ANON_KEY | SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_JWT_SECRET | SUPABASE_SECRET_KEY | SUPABASE_PUBLISHABLE_KEY
+WHATSAPP_ACCESS_TOKEN | WHATSAPP_API_TOKEN | WHATSAPP_BUSINESS_ACCOUNT_ID
+WHATSAPP_PHONE_NUMBER_ID | WHATSAPP_SUPORTE_PHONE_NUMBER_ID | WHATSAPP_WEBHOOK_VERIFY_TOKEN
+WHATSAPP_APP_SECRET
+TWILIO_ACCOUNT_SID | TWILIO_AUTH_TOKEN | TWILIO_API_KEY | TWILIO_API_SECRET
+TWILIO_PHONE_NUMBER | TWILIO_TWIML_APP_SID | TWILIO_SUPORTE_PHONE_NUMBER | TWILIO_SUPORTE_TWIML_APP_SID
+SLACK_WEBHOOK_LEADS | SLACK_WEBHOOK_EASY_COMERCIAL | SLACK_WEBHOOK_SUSTENTACAO
+OPENAI_API_KEY | GOOGLE_CLOUD_API_KEY | RESEND_API_KEY | RESEND_FROM_EMAIL
+SESSION_SECRET | SEVERINO_API_KEY | TINYPNG_API_KEY
+NEXT_PUBLIC_APP_URL | NEXT_PUBLIC_BUILD_ID
+```
+
+## Proposta Comercial (Template Universal)
+
+Estrutura fixa: Apresentação → Sobre o Projeto → Escopo → Arquitetura Técnica → Metodologia → Timeline (7 fases) → Time Dedicado → Investimento (valor único) → Pagamento → Garantias → Próximos Passos → Condições Gerais → Contato.
+
+Gerador de propostas com assistente IA (`/dashboard/gerador-de-proposta`).
+
+## Padrões de Código
+
+### Headers de Página
+Usar componente `<PageHeader>` de `@/components/ui/page-header`:
+```tsx
+<PageHeader title="Nome" description="DESCRIÇÃO EM CAPS" />
+```
+
+### Componentes
+- Toasts: `import { toast } from "sonner"`
+- Modais: `<Dialog>` do shadcn
+- Listas: `<FilterBar>` + `<SearchInput>` + `<TablePagination>`
+- Loading: preferir `<Skeleton>`
+- Drawers: `<Drawer>` (vaul) para painéis laterais
+- Comandos: `<Command>` (cmdk) para command palette
+- Markdown: `<MarkdownRenderer>` para renderização
+
+### Formulários
+- shadcn: `<Label>`, `<Input>`, `<Select>`, `<Textarea>`
+- Validação: zod + react-hook-form + @hookform/resolvers
+- Campos sensíveis: componente `SensitiveField` com mascaramento
+
+### Idioma
+- Interface em **pt-BR**
+- Código em inglês
+- Comentários podem ser em português
+
+### Arquivos de Types
+Types organizados em `lib/` por domínio: `lead-types.ts`, `proposal-types.ts`, `prd-types.ts`, `garantia-types.ts`, `gerador-types.ts`, `blog-types.ts`, `atendimento-types.ts`, `case-types.ts`, `task-types.ts`, `tags-types.ts`, `timesheet-types.ts`, `metas-types.ts`, `keyword-types.ts`, `knowledge-base-types.ts`, `contato-types.ts`, `company-types.ts`, `types.ts` (core).
+
+## Padrões de API Route
+
+### Autenticação
+- TODA rota autenticada DEVE usar `requireAuth()` de `@/lib/auth-guard`
+- Rotas admin DEVEM usar `requireAuth(request, { requireAdmin: true })`
+- NUNCA usar `getSession()` direto — usar `requireAuth()`
+- Webhooks (Twilio/WhatsApp) DEVEM validar assinatura antes de processar
+
+### Multi-tenant
+- TODA query DEVE filtrar por `empresa_id` da sessão
+- NUNCA aceitar `empresaId` do query string/body sem validar com `hasEmpresaAccess()`
+- NUNCA usar `select("*")` — listar colunas explicitamente
+
+### Error Handling
+- TODA rota DEVE ter try/catch com `console.error("[NomeDaRota]", error)`
+- TODA query Supabase DEVE verificar `error` antes de usar `data`
+- Catch blocks NUNCA genéricos — sempre logar o erro real
+- Sem `console.log` em produção — apenas `console.error` e `console.warn`
+
+### Validação
+- POST/PUT DEVEM validar campos obrigatórios com mensagem em pt-BR
+- Inputs externos (inbound) DEVEM ser sanitizados com `sanitize.ts`
+- Conteúdo HTML DEVE ser sanitizado com `sanitizeHtml()` antes de salvar
+
+## Padrões de Frontend
+
+### Páginas
+- TODA página DEVE usar `<PageHeader title="..." description="CAPS" />`
+- Loading DEVE usar `<Skeleton>` — NUNCA texto "Carregando..."
+- Componentes >100 linhas DEVEM ser extraídos para `/components/`
+
+### Data Fetching
+- Padrão primário: Context (useLeads, useBlog, etc.)
+- Padrão secundário: `apiFetch()` para chamadas pontuais
+- NUNCA `fetch()` direto — sempre `apiFetch()`
+
+### Formatação
+- TODA formatação DEVE vir de `@/lib/format-utils`
+- NUNCA definir formatDateBR, formatPhone, etc. localmente
+- Funções: `formatDateBR`, `formatDateTimeBR`, `formatPhoneBR`, `formatPhoneNational`, `formatPhoneInput`, `formatDuration`, `formatMinutesToHours`, `formatFileSize`, `slugify`
+
+### Segurança no Frontend
+- NUNCA usar `dangerouslySetInnerHTML` sem `sanitizeHtml()`
+- NUNCA importar `createAdminClient` em componentes ou contexts
+- NUNCA exibir secrets em plain text (usar componente `SensitiveField`)
+
+## Checklist Rápido (antes de cada PR)
+
+1. `requireAuth()` em toda rota? (com `requireAdmin` se admin-only)
+2. `empresa_id` filtrado em toda query?
+3. Select com colunas explícitas (sem `*`)?
+4. Try/catch com `console.error`?
+5. PageHeader + Skeleton na página?
+6. Formatação via format-utils (sem inline)?
+7. `npx next build` passa?
+
+## Regras Importantes
+
+1. **Nunca expor secrets no client** — service_role_key, tokens nunca no frontend
+2. **Multi-tenant** — toda query filtra por `empresa_id`
+3. **Sonner como única lib de toast**
+4. **Colunas do Kanban são dinâmicas** — nunca hardcodar nomes de etapas
+5. **pt-BR** — toda interface em português
+6. **createAdminClient() só em API routes** — nunca em componentes ou contexts
+7. **Bia** — nunca perguntar o que já sabe, orçamento só para empreendedores
+8. **Seguir o DS existente** — usar shadcn/ui, não inventar layouts
+9. **Feature-based access** — respeitar `funcionalidades` do usuário no middleware
+10. **Documentação completa** — ver `ARCHITECTURE.md` para convenções detalhadas

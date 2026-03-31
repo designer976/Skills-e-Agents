@@ -1,0 +1,231 @@
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+export type QualidadeSelo = "green" | "yellow" | "red"
+export type Prioridade = "p1" | "p2" | "p3"
+export type NivelVistoriador = "Júnior" | "Pleno" | "Sênior"
+
+export type PendenciaGravidade = "ok" | "leve" | "grave"
+
+export interface PendenciaItem {
+  descricao: string
+  gravidade: PendenciaGravidade
+}
+
+export interface VistoriaQualidade {
+  id: string
+  imobiliaria: string
+  endereco: string
+  tipo: "Entrada" | "Saída"
+  dataHora: string
+  vistoriadorNome: string
+  vistoriadorNivel: NivelVistoriador
+  prioridade: Prioridade
+  selo: QualidadeSelo
+  // Diagnóstico
+  pendencias: PendenciaItem[]
+  // Dados extras para o modal
+  cidade: string
+  uf: string
+  complemento?: string
+  anotacoesInternas?: string
+}
+
+// ─── Mocks ────────────────────────────────────────────────────────────────────
+
+export const VISTORIAS_QUALIDADE: VistoriaQualidade[] = [
+  // ── P1 ──────────────────────────────────────────────────────────────────────
+  {
+    id: "VQ-2026-001",
+    imobiliaria: "Construtora Alfa Ltda",
+    endereco: "Av. Paulista, 1000, Apto 42",
+    cidade: "São Paulo",
+    uf: "SP",
+    tipo: "Entrada",
+    dataHora: "26/03/2026 09:00",
+    vistoriadorNome: "Carlos Mendonça",
+    vistoriadorNivel: "Sênior",
+    prioridade: "p1",
+    selo: "green",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Vídeos de todos os cômodos", gravidade: "ok" },
+      { descricao: "Itens com foto + estado preenchidos", gravidade: "ok" },
+      { descricao: "Estado regular ou ruim, com obs.", gravidade: "ok" },
+    ],
+  },
+  {
+    id: "VQ-2026-002",
+    imobiliaria: "Imobiliária Verde Vale",
+    endereco: "Rua das Flores, 200",
+    cidade: "Campinas",
+    uf: "SP",
+    complemento: "Bloco B",
+    tipo: "Saída",
+    dataHora: "26/03/2026 11:00",
+    vistoriadorNome: "Ana Lima",
+    vistoriadorNivel: "Pleno",
+    prioridade: "p1",
+    selo: "yellow",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Duplicidade de foto em 1 item", gravidade: "leve" },
+      { descricao: "Falta de vídeo em 1 cômodo", gravidade: "leve" },
+      { descricao: "Itens com foto + estado preenchidos", gravidade: "ok" },
+    ],
+  },
+  {
+    id: "VQ-2026-003",
+    imobiliaria: "Grupo Habitar",
+    endereco: "Rua XV de Novembro, 50",
+    cidade: "Santos",
+    uf: "SP",
+    tipo: "Entrada",
+    dataHora: "26/03/2026 14:00",
+    vistoriadorNome: "Felipe Souza",
+    vistoriadorNivel: "Júnior",
+    prioridade: "p1",
+    selo: "red",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Item marcado como Ruim sem observação", gravidade: "grave" },
+      { descricao: "Foto obrigatória ausente em área geral", gravidade: "grave" },
+      { descricao: "Faltando fotos em mais de 3 itens", gravidade: "grave" },
+    ],
+  },
+  // ── P2 ──────────────────────────────────────────────────────────────────────
+  {
+    id: "VQ-2026-004",
+    imobiliaria: "Rio Imóveis",
+    endereco: "Av. Atlântica, 300, Apto 10",
+    cidade: "Rio de Janeiro",
+    uf: "RJ",
+    tipo: "Saída",
+    dataHora: "27/03/2026 09:30",
+    vistoriadorNome: "Mariana Costa",
+    vistoriadorNivel: "Sênior",
+    prioridade: "p2",
+    selo: "green",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Vídeos de todos os cômodos", gravidade: "ok" },
+      { descricao: "Itens com foto + estado preenchidos", gravidade: "ok" },
+      { descricao: "Estado regular ou ruim, com obs.", gravidade: "ok" },
+    ],
+  },
+  {
+    id: "VQ-2026-005",
+    imobiliaria: "Casa Certa Negócios",
+    endereco: "Rua Amazonas, 780",
+    cidade: "Belo Horizonte",
+    uf: "MG",
+    tipo: "Entrada",
+    dataHora: "27/03/2026 13:00",
+    vistoriadorNome: "Rafael Torres",
+    vistoriadorNivel: "Pleno",
+    prioridade: "p2",
+    selo: "yellow",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Falta de fotos em 2 itens", gravidade: "leve" },
+      { descricao: "Falta de vídeo em 2 cômodos", gravidade: "leve" },
+    ],
+  },
+  {
+    id: "VQ-2026-006",
+    imobiliaria: "Imobiliária Sol Nascente",
+    endereco: "Rua das Palmeiras, 99",
+    cidade: "Curitiba",
+    uf: "PR",
+    complemento: "Casa 3",
+    tipo: "Saída",
+    dataHora: "27/03/2026 16:00",
+    vistoriadorNome: "Juliana Faria",
+    vistoriadorNivel: "Júnior",
+    prioridade: "p2",
+    selo: "red",
+    pendencias: [
+      { descricao: "Vídeo ausente em múltiplos cômodos", gravidade: "grave" },
+      { descricao: "Item marcado como Regular sem observação", gravidade: "grave" },
+      { descricao: "Faltando fotos em mais de 3 itens", gravidade: "grave" },
+    ],
+  },
+  // ── P3 ──────────────────────────────────────────────────────────────────────
+  {
+    id: "VQ-2026-007",
+    imobiliaria: "Construtora Sul",
+    endereco: "Av. Beira Mar, 1500",
+    cidade: "Florianópolis",
+    uf: "SC",
+    tipo: "Entrada",
+    dataHora: "28/03/2026 10:00",
+    vistoriadorNome: "Diego Martins",
+    vistoriadorNivel: "Sênior",
+    prioridade: "p3",
+    selo: "green",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Vídeos de todos os cômodos", gravidade: "ok" },
+      { descricao: "Itens com foto + estado preenchidos", gravidade: "ok" },
+    ],
+  },
+  {
+    id: "VQ-2026-008",
+    imobiliaria: "Inovare Imóveis",
+    endereco: "Rua José Bonifácio, 321",
+    cidade: "Porto Alegre",
+    uf: "RS",
+    tipo: "Saída",
+    dataHora: "28/03/2026 14:30",
+    vistoriadorNome: "Patrícia Nunes",
+    vistoriadorNivel: "Pleno",
+    prioridade: "p3",
+    selo: "yellow",
+    pendencias: [
+      { descricao: "Fotos gerais completas", gravidade: "ok" },
+      { descricao: "Duplicidade de foto em 2 itens", gravidade: "leve" },
+    ],
+    anotacoesInternas: "Vistoriadora solicitou revisão das fotos do banheiro.",
+  },
+]
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+export const SELO_CONFIG: Record<QualidadeSelo, {
+  label: string
+  subLabel: string
+  bg: string
+  border: string
+  text: string
+  iconBg: string
+}> = {
+  green: {
+    label: "GREEN PASS",
+    subLabel: "Vistoria completa – revisão rápida",
+    bg: "bg-green-50",
+    border: "border-green-200",
+    text: "text-green-700",
+    iconBg: "bg-green-100",
+  },
+  yellow: {
+    label: "PENDÊNCIA LEVE",
+    subLabel: "Ajustes simples detectados",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    text: "text-amber-700",
+    iconBg: "bg-amber-100",
+  },
+  red: {
+    label: "PENDÊNCIA GRAVE",
+    subLabel: "Correção obrigatória antes do envio",
+    bg: "bg-red-50",
+    border: "border-red-200",
+    text: "text-red-700",
+    iconBg: "bg-red-100",
+  },
+}
+
+export const PRIORIDADE_ABAS = [
+  { id: "p1", label: "P1 – Prioridade 1" },
+  { id: "p2", label: "P2 – Prioridade 2" },
+  { id: "p3", label: "P3 – Prioridade 3" },
+] as const

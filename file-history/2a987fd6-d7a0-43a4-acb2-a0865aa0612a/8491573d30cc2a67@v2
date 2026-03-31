@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Template Refatorado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .bg-card { background: #f8f9fa; }
+        .text-card-foreground { color: #1f2937; }
+        .text-muted-foreground { color: #6b7280; }
+        .border { border: 1px solid #e5e7eb; }
+        .shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg border shadow-sm p-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">🚀 Template de Proposta - REFATORADO</h1>
+            <p class="text-gray-600">Sistema novo vs antigo - comparação</p>
+        </div>
+
+        <!-- Comparação Visual -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- ANTES -->
+            <div class="bg-white rounded-lg border shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-red-600 mb-4">❌ ANTES (Problemático)</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="bg-red-50 p-3 rounded border border-red-200">
+                        <strong>Template HTML:</strong><br>
+                        <code class="text-red-700">
+                            &lt;h1&gt;{{TITULO_PROPOSTA}}&lt;/h1&gt;<br>
+                            &lt;p&gt;Cliente: {{NOME_CLIENTE}}&lt;/p&gt;<br>
+                            &lt;p&gt;Valor: {{VALOR_TOTAL}}&lt;/p&gt;
+                        </code>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded border border-red-200">
+                        <strong>IA Confusa:</strong><br>
+                        <span class="text-red-700">• Strings ambíguas</span><br>
+                        <span class="text-red-700">• Sem validação</span><br>
+                        <span class="text-red-700">• Propenso a erros</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEPOIS -->
+            <div class="bg-white rounded-lg border shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-green-600 mb-4">✅ AGORA (Refatorado)</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="bg-green-50 p-3 rounded border border-green-200">
+                        <strong>Interface TypeScript:</strong><br>
+                        <code class="text-green-700">
+                            interface PropostaTemplateData {<br>
+                            &nbsp;&nbsp;capa: { titulo: string; cliente: {...} }<br>
+                            &nbsp;&nbsp;investimento: { valorTotal: string }<br>
+                            }
+                        </code>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded border border-green-200">
+                        <strong>IA Inteligente:</strong><br>
+                        <span class="text-green-700">• Dados estruturados</span><br>
+                        <span class="text-green-700">• Validação automática</span><br>
+                        <span class="text-green-700">• Type-safe</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exemplo de Dados -->
+        <div class="bg-white rounded-lg border shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-blue-600 mb-4">📄 Exemplo de Proposta Gerada</h3>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <strong>Cliente:</strong> Empresa Cliente LTDA<br>
+                    <strong>Projeto:</strong> Sistema de Gestão Empresarial<br>
+                    <strong>Valor:</strong> R$ 50.000
+                </div>
+                <div>
+                    <strong>Prazo:</strong> 8 semanas<br>
+                    <strong>Tipo:</strong> Escopo fechado<br>
+                    <strong>Data:</strong> 30/03/2026
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <strong>Funcionalidades:</strong>
+                <ul class="list-disc ml-4 mt-2 space-y-1 text-gray-600">
+                    <li>1. Dashboard Administrativo - Painel completo com métricas e KPIs da empresa.</li>
+                    <li>Sistema estruturado com validação automática</li>
+                    <li>Geração de PDF funcional</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-white rounded-lg border shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-purple-600 mb-4">🎯 Status da Implementação</h3>
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="text-center p-3 bg-green-50 rounded border border-green-200">
+                    <div class="text-2xl font-bold text-green-600">✓</div>
+                    <div class="text-sm text-green-700">Interface TypeScript</div>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded border border-green-200">
+                    <div class="text-2xl font-bold text-green-600">✓</div>
+                    <div class="text-sm text-green-700">Componentes React</div>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded border border-green-200">
+                    <div class="text-2xl font-bold text-green-600">✓</div>
+                    <div class="text-sm text-green-700">Geração de PDF</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instruções -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-blue-800 mb-2">📋 Para testar no localhost:</h3>
+            <ol class="list-decimal ml-4 space-y-1 text-blue-700">
+                <li>Acesse: <code class="bg-white px-2 py-1 rounded">http://localhost:3000</code></li>
+                <li>Faça login no sistema</li>
+                <li>No dashboard principal, role até o final da página</li>
+                <li>Você verá uma seção "🚀 Novo Template de Proposta - REFATORADO"</li>
+                <li>Ou acesse diretamente: <code class="bg-white px-2 py-1 rounded">http://localhost:3000/dashboard/template-proposta</code></li>
+            </ol>
+        </div>
+
+        <div class="text-center text-gray-500 text-sm">
+            Template refatorado - Muito mais robusto para integração com IA! 🤖✨
+        </div>
+    </div>
+</body>
+</html>

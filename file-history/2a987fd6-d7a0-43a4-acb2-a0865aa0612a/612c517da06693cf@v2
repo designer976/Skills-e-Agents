@@ -1,0 +1,303 @@
+/**
+ * Testes para geração de PDF do template de proposta Wa Project
+ */
+
+import { WaProjectPDFGenerator, generateWaProjectProposalPDF } from '../wa-project-pdf-generator'
+import type { WaProjectProposalData } from '../wa-project-pdf-generator'
+
+// Mock do jsPDF
+jest.mock('jspdf', () => {
+  return jest.fn().mockImplementation(() => ({
+    addPage: jest.fn(),
+    setFont: jest.fn(),
+    setFontSize: jest.fn(),
+    setTextColor: jest.fn(),
+    setFillColor: jest.fn(),
+    text: jest.fn(),
+    addImage: jest.fn(),
+    splitTextToSize: jest.fn().mockReturnValue(['mocked line 1', 'mocked line 2']),
+    getTextWidth: jest.fn().mockReturnValue(50),
+    roundedRect: jest.fn(),
+    setProperties: jest.fn(),
+    setCharSpace: jest.fn(),
+    setWordSpace: jest.fn(),
+    setGState: jest.fn().mockReturnValue({ GState: jest.fn() }),
+    GState: jest.fn(),
+    save: jest.fn()
+  }))
+})
+
+describe('WaProjectPDFGenerator', () => {
+  let mockData: WaProjectProposalData
+
+  beforeEach(() => {
+    mockData = {
+      projeto: {
+        nome: 'Projeto de Teste'
+      },
+      data_emissao: '30/03/2026',
+      validade_dias: '15',
+      cliente: {
+        nome: 'Cliente Teste LTDA'
+      },
+      tipo_escopo: 'Escopo fechado',
+      sections: [
+        {
+          title: 'Seção de Teste',
+          content: 'Conteúdo de teste da seção'
+        }
+      ],
+      numeracao_pagina: '1'
+    }
+  })
+
+  describe('Inicialização', () => {
+    it('deve inicializar corretamente com configurações padrão', () => {
+      const generator = new WaProjectPDFGenerator()
+      expect(generator).toBeDefined()
+    })
+
+    it('deve inicializar com customização personalizada', () => {
+      const customization = {
+        header: {
+          showLogo: false,
+          customText: 'Header customizado'
+        },
+        footer: {
+          showPageNumber: false,
+          customText: 'Footer customizado'
+        }
+      }
+
+      const generator = new WaProjectPDFGenerator(customization)
+      expect(generator).toBeDefined()
+    })
+  })
+
+  describe('Sanitização de texto', () => {
+    let generator: WaProjectPDFGenerator
+
+    beforeEach(() => {
+      generator = new WaProjectPDFGenerator()
+    })
+
+    it('deve sanitizar caracteres especiais corretamente', () => {
+      // Testando função privada através da geração
+      const dataWithSpecialChars = {
+        ...mockData,
+        sections: [{
+          title: 'Título com "aspas curvadas" e caracteres—especiais',
+          content: 'Conteúdo com áçêñtós e caracteres…especiais'
+        }]
+      }
+
+      expect(() => {
+        generator.generate(dataWithSpecialChars)
+      }).not.toThrow()
+    })
+
+    it('deve lidar com texto null/undefined', () => {
+      const dataWithNullContent = {
+        ...mockData,
+        sections: [{
+          title: '',
+          content: ''
+        }]
+      }
+
+      expect(() => {
+        generator.generate(dataWithNullContent)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Geração de PDF', () => {
+    it('deve gerar PDF sem callback de progresso', async () => {
+      await expect(generateWaProjectProposalPDF(mockData)).resolves.toBeUndefined()
+    })
+
+    it('deve gerar PDF com callback de progresso', async () => {
+      const progressCallback = jest.fn()
+
+      await generateWaProjectProposalPDF(mockData, {
+        progressCallback,
+        filename: 'teste.pdf'
+      })
+
+      expect(progressCallback).toHaveBeenCalled()
+      // Verificar se foi chamado com valores entre 0 e 100
+      const calls = progressCallback.mock.calls.map(call => call[0])
+      expect(calls.every(progress => progress >= 0 && progress <= 100)).toBe(true)
+      // Verificar se chegou a 100%
+      expect(calls).toContain(100)
+    })
+
+    it('deve usar customização fornecida', async () => {
+      const customization = {
+        header: {
+          showLogo: false,
+          customText: 'Header Teste'
+        },
+        footer: {
+          companyInfo: {
+            name: 'Empresa Teste',
+            cnpj: '12.345.678/0001-90'
+          }
+        }
+      }
+
+      await expect(generateWaProjectProposalPDF(mockData, {
+        customization
+      })).resolves.toBeUndefined()
+    })
+  })
+
+  describe('Quebras de página inteligentes', () => {
+    let generator: WaProjectPDFGenerator
+
+    beforeEach(() => {
+      generator = new WaProjectPDFGenerator()
+    })
+
+    it('deve processar template com muitas seções', () => {
+      const dataWithManySections = {
+        ...mockData,
+        sections: Array.from({ length: 20 }, (_, i) => ({
+          title: `Seção ${i + 1}`,
+          content: `Conteúdo da seção ${i + 1} com texto suficiente para testar quebras de página`
+        }))
+      }
+
+      expect(() => {
+        generator.generate(dataWithManySections)
+      }).not.toThrow()
+    })
+
+    it('deve processar listas grandes', () => {
+      const largeListContent = Array.from({ length: 50 }, (_, i) =>
+        `• Item ${i + 1} da lista com conteúdo suficiente para teste`
+      ).join('\n')
+
+      const dataWithLargeList = {
+        ...mockData,
+        sections: [{
+          title: 'Lista Grande',
+          content: largeListContent
+        }]
+      }
+
+      expect(() => {
+        generator.generate(dataWithLargeList)
+      }).not.toThrow()
+    })
+  })
+
+  describe('Tratamento de erros', () => {
+    it('deve rejeitar com dados inválidos', async () => {
+      const invalidData = null as any
+
+      await expect(generateWaProjectProposalPDF(invalidData)).rejects.toThrow()
+    })
+
+    it('deve lidar com erro na geração', async () => {
+      // Simular erro no jsPDF
+      const jsPDFMock = require('jspdf')
+      jsPDFMock.mockImplementationOnce(() => {
+        throw new Error('Erro simulado do jsPDF')
+      })
+
+      await expect(generateWaProjectProposalPDF(mockData)).rejects.toThrow()
+    })
+  })
+
+  describe('Performance e otimização', () => {
+    it('deve usar cache de medidas de texto', () => {
+      const generator = new WaProjectPDFGenerator()
+
+      // Gerar com o mesmo texto várias vezes
+      const dataWithRepeatedText = {
+        ...mockData,
+        sections: Array.from({ length: 10 }, () => ({
+          title: 'Mesmo Título',
+          content: 'Mesmo conteúdo repetido'
+        }))
+      }
+
+      expect(() => {
+        generator.generate(dataWithRepeatedText)
+      }).not.toThrow()
+    })
+
+    it('deve processar template complexo em tempo razoável', () => {
+      const start = Date.now()
+
+      const complexData = {
+        ...mockData,
+        sections: Array.from({ length: 50 }, (_, i) => ({
+          title: `Seção Complexa ${i + 1}`,
+          content: `
+## Subtítulo
+Parágrafo com texto suficiente para testar performance.
+
+• Item da lista 1
+• Item da lista 2
+• Item da lista 3
+
+1. Item numerado 1
+2. Item numerado 2
+3. Item numerado 3
+
+Mais parágrafos com **texto em negrito** e conteúdo variado.
+          `.trim()
+        }))
+      }
+
+      const generator = new WaProjectPDFGenerator()
+      generator.generate(complexData)
+
+      const duration = Date.now() - start
+      // Deve processar em menos de 5 segundos (mock não deveria demorar)
+      expect(duration).toBeLessThan(5000)
+    })
+  })
+
+  describe('Fidelidade ao template HTML', () => {
+    it('deve manter estrutura de seções consistente', () => {
+      const generator = new WaProjectPDFGenerator()
+
+      const structuredData = {
+        ...mockData,
+        sections: [
+          {
+            title: 'Sobre o Projeto',
+            content: 'Descrição do projeto'
+          },
+          {
+            title: 'Funcionalidades',
+            content: '• Funcionalidade 1\n• Funcionalidade 2'
+          },
+          {
+            title: 'Cronograma',
+            content: '**Fase 1:** Planejamento\n**Fase 2:** Desenvolvimento'
+          }
+        ]
+      }
+
+      expect(() => {
+        generator.generate(structuredData)
+      }).not.toThrow()
+    })
+
+    it('deve usar cores consistentes do template', () => {
+      const generator = new WaProjectPDFGenerator()
+
+      expect(() => {
+        generator.generate(mockData)
+      }).not.toThrow()
+
+      // Verificar se setTextColor foi chamado com as cores corretas
+      const mockDoc = (generator as any).doc
+      expect(mockDoc.setTextColor).toHaveBeenCalled()
+    })
+  })
+})

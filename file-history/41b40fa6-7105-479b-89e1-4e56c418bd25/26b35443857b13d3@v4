@@ -1,0 +1,138 @@
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { CalendarCheck, BotMessageSquare, TrendingUp, Zap } from 'lucide-react'
+
+interface Step {
+  number: string
+  icon: React.ElementType
+  title: string
+  description: string
+  tag: string
+}
+
+const steps: Step[] = [
+  {
+    number: '01',
+    icon: CalendarCheck,
+    title: 'Comece pela agenda',
+    tag: 'Organização',
+    description:
+      'A partir da agenda, tudo mais começa. A Easy resolve o maior gargalo da gestão: clientes que não aparecem, horários sobrepostos e remarcações de última hora.',
+  },
+  {
+    number: '02',
+    icon: BotMessageSquare,
+    title: 'IA que sempre responde',
+    tag: 'Inteligência',
+    description:
+      'Uma experiência rápida e moderna: a agenda com IA da Easy transforma a rotina em vitrine do negócio. Tudo sem limites de mensagens — uma IA que agenda para você.',
+  },
+  {
+    number: '03',
+    icon: Zap,
+    title: 'Sem grandes mudanças',
+    tag: 'Simplicidade',
+    description:
+      'Sem exigir treinamentos complexos, a Easy evolui junto com o profissional: primeiro a agenda, depois os percentuais, o financeiro, a equipe e, por fim, a expansão.',
+  },
+  {
+    number: '04',
+    icon: TrendingUp,
+    title: 'Operação mais inteligente',
+    tag: 'Crescimento',
+    description:
+      'O resultado é uma operação mais simples e inteligente, na qual o dono ou gestor volta a ter tempo e clareza para a gestão com tranquilidade total.',
+  },
+]
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+}
+
+export default function HowItWorks() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  return (
+    <section className="relative py-24 lg:py-32 bg-page overflow-hidden">
+      {/* Subtle background glow */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] opacity-10 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(196,75,58,0.4) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+
+        {/* Header */}
+        <motion.div
+          ref={ref}
+          className="mb-16 text-center lg:text-left max-w-2xl"
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="section-label mb-4 block">Como funciona</span>
+          <h2 className="display-title text-3xl lg:text-5xl text-fg">
+            Como organizamos negócios{' '}
+            <span className="gradient-text">da beleza</span>
+          </h2>
+        </motion.div>
+
+        {/* Steps grid */}
+        <motion.div
+          className="grid sm:grid-cols-2 gap-4 lg:gap-5"
+          variants={containerVariants}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+        >
+          {steps.map((step) => {
+            const Icon = step.icon
+            return (
+              <motion.div
+                key={step.number}
+                variants={itemVariants}
+                className="group relative glass-card p-7 overflow-hidden cursor-default"
+              >
+                {/* Hover glow */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                  style={{ background: 'radial-gradient(ellipse at 20% 20%, rgba(196,75,58,0.08) 0%, transparent 60%)' }}
+                />
+
+                {/* Decorative number */}
+                <span className="absolute right-4 top-2 font-display font-black text-[88px] leading-none pointer-events-none select-none text-tan/5 group-hover:text-primary/8 transition-colors duration-500">
+                  {step.number}
+                </span>
+
+                <div className="relative z-10">
+                  {/* Top row */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-[background-color,border-color] duration-300">
+                      <Icon size={18} className="text-primary" />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-gold border border-tan/15 bg-surface-2 px-2.5 py-1 rounded-full">
+                      {step.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="font-semibold text-lg text-fg mb-3 leading-snug">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-fg-muted leading-relaxed">{step.description}</p>
+                </div>
+              </motion.div>
+            )
+          })}
+        </motion.div>
+      </div>
+    </section>
+  )
+}

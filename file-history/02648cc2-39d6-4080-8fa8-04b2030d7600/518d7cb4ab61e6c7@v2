@@ -1,0 +1,43 @@
+# Claude Memory - Easy Salon Project
+
+## Project Overview
+**Easy Salon** - Complete beauty salon management system with multi-tenant architecture
+
+### Project Location
+- Main Path: `C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo`
+- Frontend URL: `http://localhost:8080`
+- Backend URL: `http://localhost:3000/api`
+- Client Management: `http://localhost:8080/salon/clients`
+
+### Architecture Stack
+- **Frontend**: React 18 + TypeScript + Vite + shadcn/ui + Tailwind CSS
+- **Backend**: NestJS + TypeScript + TypeORM
+- **Database**: PostgreSQL (multi-tenant with schema per tenant)
+- **Cache/Session**: Redis
+- **Authentication**: JWT
+- **Routing**: React Router DOM
+
+### Design System
+- Primary Color: `#dd4227` (Easy Salon Red)
+- Secondary: `#f5f2ed`
+- Component Classes: salon-button, salon-input, salon-card, salon-table-header
+- Status Badges: salon-badge-active, salon-badge-inactive
+- Border Radius: 14px (--radius: 0.875rem)
+- Dark mode support with HSL color system
+
+### Multi-Tenant Strategy
+- Schema per tenant approach
+- Platform schema: shared data (tenants, users, plans)
+- Tenant schemas: isolated tenant data (tenant_xyz format)
+
+### Development Ports
+- Frontend: 8080
+- Backend: 3000
+- PostgreSQL: 5432
+- Redis: 6379
+
+### Key Features Context
+- Client management system at `/salon/clients`
+- Complete salon business management
+- Multi-tenant SaaS architecture
+- Modern React/NestJS stack

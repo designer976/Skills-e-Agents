@@ -1,0 +1,175 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BookingService } from '@/types/booking';
+import { cn } from '@/lib/utils';
+
+interface ServiceSelectionProps {
+  services: BookingService[];
+  selectedServices: BookingService[];
+  primaryColor: string;
+  onServicesChange: (services: BookingService[]) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+export function ServiceSelection({
+  services,
+  selectedServices,
+  primaryColor,
+  onServicesChange,
+  onNext,
+  onBack,
+}: ServiceSelectionProps) {
+  // Agrupar serviços por categoria
+  const servicesByCategory = services.reduce((acc, service) => {
+    if (!acc[service.category]) {
+      acc[service.category] = [];
+    }
+    acc[service.category].push(service);
+    return acc;
+  }, {} as Record<string, BookingService[]>);
+
+  const handleServiceToggle = (service: BookingService) => {
+    const isSelected = selectedServices.some(s => s.id === service.id);
+    
+    if (isSelected) {
+      onServicesChange(selectedServices.filter(s => s.id !== service.id));
+    } else {
+      onServicesChange([...selectedServices, service]);
+    }
+  };
+
+  const getTotalPrice = () => {
+    return selectedServices.reduce((total, service) => total + service.price, 0);
+  };
+
+  const getTotalDuration = () => {
+    return selectedServices.reduce((total, service) => total + service.duration, 0);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Escolha os serviços
+        </h2>
+        <p className="text-gray-600">
+          Selecione um ou mais serviços para seu agendamento
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Lista de Serviços */}
+        <div className="lg:col-span-2">
+          <div className="space-y-6">
+            {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
+              <div key={category}>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  {category}
+                </h3>
+                
+                <div className="space-y-2">
+                  {categoryServices.map((service) => {
+                    const isSelected = selectedServices.some(s => s.id === service.id);
+                    
+                    return (
+                      <Card
+                        key={service.id}
+                        className={cn(
+                          "cursor-pointer transition-all hover:shadow-md",
+                          isSelected && "ring-2"
+                        )}
+                        style={{
+                          ...(isSelected && { borderColor: primaryColor }),
+                        }}
+                        onClick={() => handleServiceToggle(service)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              checked={isSelected}
+                              style={{
+                                backgroundColor: isSelected ? primaryColor : undefined,
+                                borderColor: isSelected ? primaryColor : undefined,
+                              }}
+                            />
+                            
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">
+                                {service.name}
+                              </h4>
+                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                <span>{service.duration} min</span>
+                                <span>R$ {service.price.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Resumo da Seleção */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-8">
+            <CardHeader>
+              <CardTitle>Resumo do Pedido</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedServices.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">
+                  Nenhum serviço selecionado
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedServices.map((service) => (
+                    <div key={service.id} className="flex justify-between text-sm">
+                      <span className="font-medium">{service.name}</span>
+                      <span>R$ {service.price.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  
+                  <hr className="my-3" />
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Duração total:</span>
+                      <span>{getTotalDuration()} min</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Total:</span>
+                      <span>R$ {getTotalPrice().toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8">
+        <Button variant="outline" onClick={onBack}>
+          Voltar
+        </Button>
+        
+        <Button
+          disabled={selectedServices.length === 0}
+          style={{ backgroundColor: primaryColor }}
+          className="text-white"
+          onClick={onNext}
+        >
+          Continuar
+        </Button>
+      </div>
+    </div>
+  );
+}

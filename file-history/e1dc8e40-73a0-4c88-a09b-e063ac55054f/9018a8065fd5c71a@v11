@@ -1,0 +1,1222 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import { ColumnDef } from "@tanstack/react-table"
+import { AdminDashboardLayout } from "@/components/admin/admin-dashboard-layout"
+import { AdminTable, AdminTableSortHeader } from "@/components/admin/admin-table"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminInput } from "@/components/admin/admin-input"
+import { AdminModal, AdminModalHeader, AdminModalBody, AdminModalFooter } from "@/components/admin/admin-modal"
+import { AdminTabs } from "@/components/admin/admin-tabs"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { AdminSelect, AdminSelectContent, AdminSelectItem } from "@/components/admin/admin-select"
+import {
+  Users, Briefcase, Building2, User, Mail, MapPin,
+  CheckCircle2, Clock, XCircle, Plus, Search, ToggleLeft,
+  ToggleRight, Download, ShieldOff, Pencil, Gift, Calendar, Percent, Settings,
+} from "lucide-react"
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+type ClienteStatus    = "ativo" | "pendente" | "inativo"
+type StatusFinanceiro = "em_dia" | "vencido" | "bloqueado"
+type Aba = "clientes" | "condicoes" | "configuracao"
+
+interface Cliente {
+  id: string
+  nome: string
+  tipo: "pj" | "pf"
+  plano: "basico" | "profissional" | "empresarial"
+  documento: string
+  email: string
+  telefone: string
+  cidade: string
+  status: ClienteStatus
+  statusFinanceiro: StatusFinanceiro
+  desde: string
+}
+
+interface Condicao {
+  id: string
+  clienteId: string
+  clienteNome: string
+  clienteTipo: "pf" | "pj"
+  tipoCondicao: "funcoes_pj" | "desconto" | "prazo_especial"
+  desconto: number
+  prazo: number
+  vigenciaInicio: string
+  vigenciaFim: string
+  status: "ativo" | "expirado"
+}
+
+interface FaixaPreco {
+  de: string
+  ate: string
+  preco: string
+}
+
+interface PrecosImovel {
+  semMobilia: string
+  semiMobiliado: string
+  mobiliado: string
+}
+
+interface TabelaPrecos {
+  tipoConta: "pf" | "pj"
+  faixas: FaixaPreco[]
+  aptosEComerciais: PrecosImovel
+  casas: PrecosImovel
+}
+
+// ─── Defaults ─────────────────────────────────────────────────────────────────
+const FAIXAS_PADRAO: FaixaPreco[] = [
+  { de: "0.00", ate: "70.00", preco: "179.90" },
+  { de: "70.00", ate: "120.00", preco: "179.90" },
+]
+
+const PRECOS_PADRAO_PJ = {
+  faixas: FAIXAS_PADRAO.map((f) => ({ ...f })),
+  aptosEComerciais: { semMobilia: "2.50", semiMobiliado: "3.00", mobiliado: "3.50" },
+  casas:            { semMobilia: "3.00", semiMobiliado: "3.05", mobiliado: "4.00" },
+}
+
+const PRECOS_PADRAO_PF = {
+  faixas: FAIXAS_PADRAO.map((f) => ({ ...f })),
+  aptosEComerciais: { semMobilia: "2.00", semiMobiliado: "2.50", mobiliado: "3.00" },
+  casas:            { semMobilia: "2.50", semiMobiliado: "2.80", mobiliado: "3.50" },
+}
+
+// ─── Configs ──────────────────────────────────────────────────────────────────
+const planoConfig: Record<Cliente["plano"], { label: string; className: string }> = {
+  basico:       { label: "Básico",       className: "bg-gray-100 text-gray-700"    },
+  profissional: { label: "Profissional", className: "bg-blue-50 text-blue-700"     },
+  empresarial:  { label: "Empresarial",  className: "bg-purple-50 text-purple-700" },
+}
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+const CLIENTES: Cliente[] = [
+  { id: "1", nome: "Construtora Alfa Ltda",    tipo: "pj", plano: "empresarial",  documento: "12.345.678/0001-90", email: "contato@alfa.com.br",     telefone: "(11) 99999-0001", cidade: "São Paulo, SP",      status: "ativo",    statusFinanceiro: "em_dia",   desde: "Jan 2023" },
+  { id: "2", nome: "Imobiliária Beta S.A.",     tipo: "pj", plano: "profissional", documento: "98.765.432/0001-10", email: "admin@beta.com.br",       telefone: "(21) 98888-0002", cidade: "Rio de Janeiro, RJ", status: "ativo",    statusFinanceiro: "vencido",  desde: "Mar 2023" },
+  { id: "3", nome: "Carlos Eduardo Mendes",    tipo: "pf", plano: "basico",       documento: "321.654.987-00",     email: "carlos.m@gmail.com",      telefone: "(31) 97777-0003", cidade: "Belo Horizonte, MG", status: "pendente", statusFinanceiro: "em_dia",   desde: "Nov 2023" },
+  { id: "4", nome: "Administradora Gama Ltda", tipo: "pj", plano: "empresarial",  documento: "55.444.333/0001-22", email: "gama@administradora.com", telefone: "(41) 96666-0004", cidade: "Curitiba, PR",       status: "inativo",  statusFinanceiro: "bloqueado", desde: "Jul 2022" },
+  { id: "5", nome: "Ana Paula Ferreira",       tipo: "pf", plano: "profissional", documento: "111.222.333-44",     email: "ana.ferreira@email.com",  telefone: "(51) 95555-0005", cidade: "Porto Alegre, RS",   status: "ativo",    statusFinanceiro: "em_dia",   desde: "Fev 2024" },
+  { id: "6", nome: "Roberto Lima ME",          tipo: "pj", plano: "basico",       documento: "77.888.999/0001-55", email: "roberto@limame.com.br",   telefone: "(11) 94444-0006", cidade: "Campinas, SP",       status: "ativo",    statusFinanceiro: "vencido",  desde: "Ago 2023" },
+  { id: "7", nome: "Mariana Costa",            tipo: "pf", plano: "basico",       documento: "999.888.777-66",     email: "mari.costa@email.com",    telefone: "(11) 93333-0007", cidade: "São Paulo, SP",      status: "ativo",    statusFinanceiro: "em_dia",   desde: "Mai 2024" },
+  { id: "8", nome: "Delta Engenharia Ltda",    tipo: "pj", plano: "profissional", documento: "22.333.444/0001-88", email: "contato@deltaeng.com",    telefone: "(41) 92222-0008", cidade: "Curitiba, PR",       status: "inativo",  statusFinanceiro: "bloqueado", desde: "Jan 2022" },
+]
+
+const CONDICOES: Condicao[] = [
+  { id: "1", clienteId: "1", clienteNome: "Construtora Alfa Ltda",  clienteTipo: "pj", tipoCondicao: "desconto",       desconto: 15, prazo: 30, vigenciaInicio: "01/01/2025", vigenciaFim: "31/12/2025", status: "ativo" },
+  { id: "2", clienteId: "2", clienteNome: "Imobiliária Beta S.A.",  clienteTipo: "pj", tipoCondicao: "prazo_especial", desconto: 10, prazo: 45, vigenciaInicio: "01/01/2025", vigenciaFim: "30/06/2025", status: "ativo" },
+  { id: "3", clienteId: "3", clienteNome: "Carlos Eduardo Mendes",  clienteTipo: "pf", tipoCondicao: "funcoes_pj",    desconto:  5, prazo: 15, vigenciaInicio: "01/11/2024", vigenciaFim: "28/02/2025", status: "ativo" },
+  { id: "4", clienteId: "5", clienteNome: "Ana Paula Ferreira",     clienteTipo: "pf", tipoCondicao: "funcoes_pj",    desconto:  0, prazo:  7, vigenciaInicio: "01/12/2024", vigenciaFim: "01/06/2025", status: "ativo" },
+]
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const statusConfig: Record<ClienteStatus, { label: string; className: string; icon: React.ElementType }> = {
+  ativo:    { label: "Ativo",    className: "bg-green-50 text-green-700",   icon: CheckCircle2 },
+  pendente: { label: "Pendente", className: "bg-yellow-50 text-yellow-700", icon: Clock },
+  inativo:  { label: "Inativo",  className: "bg-gray-100 text-gray-500",    icon: XCircle },
+}
+
+const financeiroConfig: Record<StatusFinanceiro, { label: string; className: string }> = {
+  em_dia:    { label: "Em dia",    className: "bg-green-50 text-green-700"   },
+  vencido:   { label: "Vencido",   className: "bg-orange-50 text-orange-600" },
+  bloqueado: { label: "Bloqueado", className: "bg-red-50 text-red-600"       },
+}
+
+const tipoCondicaoConfig: Record<Condicao["tipoCondicao"], { label: string; className: string }> = {
+  funcoes_pj:     { label: "Funções PJ",     className: "bg-purple-50 text-purple-700"  },
+  desconto:       { label: "Desconto",       className: "bg-emerald-50 text-emerald-700" },
+  prazo_especial: { label: "Prazo Especial", className: "bg-blue-50 text-blue-700"      },
+}
+
+// ─── TabelaPrecosForm ─────────────────────────────────────────────────────────
+function TabelaPrecosForm({
+  tabela,
+  onChange,
+}: {
+  tabela: TabelaPrecos
+  onChange: (t: TabelaPrecos) => void
+}) {
+  const setFaixa = (idx: number, field: keyof FaixaPreco, val: string) => {
+    const faixas = tabela.faixas.map((f, i) => (i === idx ? { ...f, [field]: val } : f))
+    onChange({ ...tabela, faixas })
+  }
+
+  const setAptos = (field: keyof PrecosImovel, val: string) =>
+    onChange({ ...tabela, aptosEComerciais: { ...tabela.aptosEComerciais, [field]: val } })
+
+  const setCasas = (field: keyof PrecosImovel, val: string) =>
+    onChange({ ...tabela, casas: { ...tabela.casas, [field]: val } })
+
+  return (
+    <div className="space-y-6">
+      {/* Faixas de preço */}
+      <div>
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Tabela de preços</h3>
+        <div className="space-y-2">
+          {tabela.faixas.map((faixa, idx) => (
+            <div key={idx} className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">De (m²)</label>
+                <AdminInput
+                  variant="form"
+                  type="number"
+                  value={faixa.de}
+                  onChange={(e) => setFaixa(idx, "de", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Até (m²)</label>
+                <AdminInput
+                  variant="form"
+                  type="number"
+                  value={faixa.ate}
+                  onChange={(e) => setFaixa(idx, "ate", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Preço (R$)</label>
+                <AdminInput
+                  variant="form"
+                  type="number"
+                  value={faixa.preco}
+                  onChange={(e) => setFaixa(idx, "preco", e.target.value)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Para imóveis acima de 120m² */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          Para imóveis acima de 120m²
+        </p>
+        <div className="space-y-6">
+          {/* Apartamentos + Imóveis Comerciais */}
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-gray-800">Apartamentos</p>
+              <p className="text-sm font-medium text-gray-800 mt-1">Imóveis comerciais</p>
+              <ul className="text-sm text-gray-400 ml-3 mt-0.5 space-y-0.5">
+                <li>• Sala</li>
+                <li>• Galpão</li>
+                <li>• Loja</li>
+              </ul>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Sem mobília (Preço por M²)</label>
+              <AdminInput
+                variant="form"
+                type="number"
+                value={tabela.aptosEComerciais.semMobilia}
+                onChange={(e) => setAptos("semMobilia", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Semi-mobiliado (Preço por M²)</label>
+              <AdminInput
+                variant="form"
+                type="number"
+                value={tabela.aptosEComerciais.semiMobiliado}
+                onChange={(e) => setAptos("semiMobiliado", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Mobiliado (Preço por M²)</label>
+              <AdminInput
+                variant="form"
+                type="number"
+                value={tabela.aptosEComerciais.mobiliado}
+                onChange={(e) => setAptos("mobiliado", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Casas */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-gray-800">Casas</p>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Sem mobília (Preço por M²)</label>
+              <AdminInput
+                variant="form"
+                type="number"
+                value={tabela.casas.semMobilia}
+                onChange={(e) => setCasas("semMobilia", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Semi-mobiliado (Preço por M²)</label>
+              <AdminInput
+                variant="form"
+                type="number"
+                value={tabela.casas.semiMobiliado}
+                onChange={(e) => setCasas("semiMobiliado", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Mobiliado (Preço por M²)</label>
+              <AdminInput
+                variant="form"
+                type="number"
+                value={tabela.casas.mobiliado}
+                onChange={(e) => setCasas("mobiliado", e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function BackofficeClientesPage() {
+  const [aba, setAba] = useState<Aba>("clientes")
+
+  // Filtros
+  const [busca, setBusca] = useState("")
+  const [filtroTipo, setFiltroTipo] = useState("all")
+  const [filtroFinanceiro, setFiltroFinanceiro] = useState("all")
+
+  // Seleção em lote
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+
+  // Modal novo cliente
+  const [showModalNovoCliente, setShowModalNovoCliente] = useState(false)
+  const [novoCliente, setNovoCliente] = useState({
+    tipo: "pf", nome: "", documento: "", email: "",
+    estado: "", unidade: "", cobranca: "avulso", enviarEmail: true,
+  })
+
+  // Modal editar cliente
+  const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null)
+  const [dadosEdicao, setDadosEdicao] = useState({
+    nome: "", documento: "", email: "", telefone: "", cidade: "",
+    tipo: "pf", status: "ativo" as ClienteStatus,
+  })
+
+  const abrirEdicao = (c: Cliente) => {
+    setDadosEdicao({
+      nome: c.nome, documento: c.documento, email: c.email,
+      telefone: c.telefone, cidade: c.cidade,
+      tipo: c.tipo, status: c.status,
+    })
+    setClienteEditando(c)
+  }
+
+  const handleSalvarEdicao = () => setClienteEditando(null)
+
+  // ─── Condições Comerciais ────────────────────────────────────────────────────
+  const [buscaCondicao, setBuscaCondicao] = useState("")
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
+  const [showModalCondicao, setShowModalCondicao] = useState(false)
+  const [novaCondicao, setNovaCondicao] = useState({
+    tipoCondicao: "funcoes_pj" as Condicao["tipoCondicao"],
+    desconto: 0,
+    prazo: 7,
+    vigenciaInicio: "",
+    vigenciaFim: "",
+  })
+
+  const clientesBuscados = useMemo(() => {
+    if (!buscaCondicao.trim()) return []
+    const termo = buscaCondicao.toLowerCase()
+    return CLIENTES.filter((c) =>
+      [c.nome, c.documento, c.email].some((v) => v.toLowerCase().includes(termo))
+    ).slice(0, 5)
+  }, [buscaCondicao])
+
+  const handleSelecionarCliente = (cliente: Cliente) => {
+    setClienteSelecionado(cliente)
+    setBuscaCondicao("")
+    setNovaCondicao({
+      tipoCondicao: cliente.tipo === "pf" ? "funcoes_pj" : "desconto",
+      desconto: cliente.tipo === "pj" ? 10 : 0,
+      prazo: 7,
+      vigenciaInicio: new Date().toLocaleDateString("pt-BR"),
+      vigenciaFim: "",
+    })
+    setShowModalCondicao(true)
+  }
+
+  const handleSalvarCondicao = () => {
+    setShowModalCondicao(false)
+    setClienteSelecionado(null)
+    setNovaCondicao({ tipoCondicao: "funcoes_pj", desconto: 0, prazo: 7, vigenciaInicio: "", vigenciaFim: "" })
+  }
+
+  const handleCancelarCondicao = () => {
+    setShowModalCondicao(false)
+    setClienteSelecionado(null)
+  }
+
+  const isCondicaoFormValid = novaCondicao.vigenciaFim !== ""
+
+  // Filtros condições
+  const [buscaListaCondicoes, setBuscaListaCondicoes] = useState("")
+  const [filtroCondicaoTipo, setFiltroCondicaoTipo] = useState("all")
+  const [filtroCondicaoDesconto, setFiltroCondicaoDesconto] = useState("all")
+  const [filtroCondicaoPrazo, setFiltroCondicaoPrazo] = useState("all")
+  const [filtroCondicaoVigencia, setFiltroCondicaoVigencia] = useState("all")
+  const [filtroCondicaoStatus, setFiltroCondicaoStatus] = useState("all")
+
+  const condicoesFiltradas = useMemo(() => {
+    return CONDICOES.filter((c) => {
+      const matchBusca = !buscaListaCondicoes || c.clienteNome.toLowerCase().includes(buscaListaCondicoes.toLowerCase())
+      const matchTipo = filtroCondicaoTipo === "all" || c.tipoCondicao === filtroCondicaoTipo
+      const matchDesconto = filtroCondicaoDesconto === "all"
+        || (filtroCondicaoDesconto === "com" && c.desconto > 0)
+        || (filtroCondicaoDesconto === "sem" && c.desconto === 0)
+      const matchPrazo = filtroCondicaoPrazo === "all"
+        || (filtroCondicaoPrazo === "curto" && c.prazo <= 15)
+        || (filtroCondicaoPrazo === "medio" && c.prazo > 15 && c.prazo <= 30)
+        || (filtroCondicaoPrazo === "longo" && c.prazo > 30)
+      const hoje = new Date()
+      const [d, m, y] = c.vigenciaFim.split("/").map(Number)
+      const fimDate = new Date(y, m - 1, d)
+      const matchVigencia = filtroCondicaoVigencia === "all"
+        || (filtroCondicaoVigencia === "vence30" && fimDate > hoje && (fimDate.getTime() - hoje.getTime()) / 86400000 <= 30)
+        || (filtroCondicaoVigencia === "vigente" && fimDate >= hoje)
+        || (filtroCondicaoVigencia === "expirado" && fimDate < hoje)
+      const matchStatus = filtroCondicaoStatus === "all" || c.status === filtroCondicaoStatus
+      return matchBusca && matchTipo && matchDesconto && matchPrazo && matchVigencia && matchStatus
+    })
+  }, [buscaListaCondicoes, filtroCondicaoTipo, filtroCondicaoDesconto, filtroCondicaoPrazo, filtroCondicaoVigencia, filtroCondicaoStatus])
+
+  // ─── Tabela de Preços por Cliente ────────────────────────────────────────────
+  const [showModalTabelaPrecos, setShowModalTabelaPrecos] = useState(false)
+  const [condicaoTabela, setCondicaoTabela] = useState<Condicao | null>(null)
+  const [tabelaPrecos, setTabelaPrecos] = useState<TabelaPrecos>({
+    tipoConta: "pj",
+    ...PRECOS_PADRAO_PJ,
+    faixas: PRECOS_PADRAO_PJ.faixas.map((f) => ({ ...f })),
+  })
+
+  const abrirTabelaPrecos = (cond: Condicao) => {
+    const defaults = cond.clienteTipo === "pj" ? PRECOS_PADRAO_PJ : PRECOS_PADRAO_PF
+    setTabelaPrecos({
+      tipoConta: cond.clienteTipo,
+      faixas: defaults.faixas.map((f) => ({ ...f })),
+      aptosEComerciais: { ...defaults.aptosEComerciais },
+      casas: { ...defaults.casas },
+    })
+    setCondicaoTabela(cond)
+    setShowModalTabelaPrecos(true)
+  }
+
+  // ─── Config Padrão ───────────────────────────────────────────────────────────
+  const [configPF, setConfigPF] = useState<TabelaPrecos>({
+    tipoConta: "pf",
+    faixas: PRECOS_PADRAO_PF.faixas.map((f) => ({ ...f })),
+    aptosEComerciais: { ...PRECOS_PADRAO_PF.aptosEComerciais },
+    casas: { ...PRECOS_PADRAO_PF.casas },
+  })
+
+  const [configPJ, setConfigPJ] = useState<TabelaPrecos>({
+    tipoConta: "pj",
+    faixas: PRECOS_PADRAO_PJ.faixas.map((f) => ({ ...f })),
+    aptosEComerciais: { ...PRECOS_PADRAO_PJ.aptosEComerciais },
+    casas: { ...PRECOS_PADRAO_PJ.casas },
+  })
+
+  // ─── Form validation ─────────────────────────────────────────────────────────
+  const isFormValid = novoCliente.nome && novoCliente.documento && novoCliente.email && novoCliente.estado && novoCliente.unidade
+
+  const handleCriarCliente = () => {
+    setShowModalNovoCliente(false)
+    setNovoCliente({ tipo: "pf", nome: "", documento: "", email: "", estado: "", unidade: "", cobranca: "avulso", enviarEmail: true })
+  }
+
+  // Dados filtrados
+  const clientesFiltrados = useMemo(() => {
+    const termo = busca.toLowerCase()
+    return CLIENTES.filter((c) => {
+      const matchBusca = !termo || [c.nome, c.documento, c.email, c.cidade].some((v) => v.toLowerCase().includes(termo))
+      const matchTipo = filtroTipo === "all" || c.tipo === filtroTipo
+      const matchFin  = filtroFinanceiro === "all" || c.statusFinanceiro === filtroFinanceiro
+      return matchBusca && matchTipo && matchFin
+    })
+  }, [busca, filtroTipo, filtroFinanceiro])
+
+  const todosSelected = clientesFiltrados.length > 0 && clientesFiltrados.every((c) => selecionados.has(c.id))
+
+  const toggleAll = () => {
+    if (todosSelected) {
+      setSelecionados((prev) => { const next = new Set(prev); clientesFiltrados.forEach((c) => next.delete(c.id)); return next })
+    } else {
+      setSelecionados((prev) => { const next = new Set(prev); clientesFiltrados.forEach((c) => next.add(c.id)); return next })
+    }
+  }
+
+  const toggleOne = (id: string) => {
+    setSelecionados((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+  }
+
+  // ─── Colunas Clientes ────────────────────────────────────────────────────────
+  const colunasClientes: ColumnDef<Cliente>[] = [
+    {
+      id: "select",
+      meta: { className: "w-4 min-w-4 max-w-4 !p-0 !pr-3" },
+      header: () => <Checkbox checked={todosSelected} onCheckedChange={toggleAll} className="cursor-pointer" />,
+      cell: ({ row }) => <Checkbox checked={selecionados.has(row.original.id)} onCheckedChange={() => toggleOne(row.original.id)} className="cursor-pointer" />,
+    },
+    {
+      accessorKey: "nome",
+      meta: { className: "w-[260px]" },
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Cliente" />,
+      cell: ({ row }) => {
+        const c = row.original
+        return (
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center shrink-0">
+              {c.tipo === "pj" ? <Building2 size={15} className="text-[#0B7A8F]" /> : <User size={15} className="text-[#0B7A8F]" />}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-gray-800 truncate">{c.nome}</p>
+                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 uppercase tracking-wide shrink-0">
+                  {c.tipo === "pf" ? "PF" : "PJ"}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                <span className="text-xs text-gray-400 truncate">{c.documento}</span>
+                <span className="hidden xl:flex items-center gap-1 text-xs text-gray-400 truncate"><Mail size={11} />{c.email}</span>
+                <span className="hidden lg:flex items-center gap-1 text-xs text-gray-400 truncate"><MapPin size={11} />{c.cidade}</span>
+              </div>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "statusFinanceiro",
+      meta: { className: "w-[110px]" },
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Financeiro" />,
+      cell: ({ row }) => {
+        const f = financeiroConfig[row.original.statusFinanceiro]
+        return <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${f.className}`}>{f.label}</span>
+      },
+    },
+    {
+      accessorKey: "status",
+      meta: { className: "w-[100px]" },
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Status" />,
+      cell: ({ row }) => {
+        const s = statusConfig[row.original.status]
+        const Icon = s.icon
+        return (
+          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${s.className}`}>
+            <Icon size={11} />{s.label}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: "desde",
+      meta: { className: "hidden lg:table-cell w-[90px]" },
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Desde" />,
+      cell: ({ row }) => <span className="text-xs text-gray-400">{row.original.desde}</span>,
+    },
+    {
+      id: "acoes",
+      meta: { className: "w-[52px] min-w-[52px]" },
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <button
+            onClick={() => abrirEdicao(row.original)}
+            className="p-1.5 text-gray-500 hover:text-[#0B7A8F] transition-colors rounded hover:bg-gray-100"
+            title="Editar cliente"
+          >
+            <Pencil size={16} />
+          </button>
+        </div>
+      ),
+    },
+  ]
+
+  // ─── Colunas Condições ────────────────────────────────────────────────────────
+  const colunasCondicoes: ColumnDef<Condicao>[] = [
+    {
+      accessorKey: "clienteNome",
+      meta: { className: "w-[200px]" },
+      header: ({ column }) => <AdminTableSortHeader column={column} label="Cliente" />,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-9 w-9 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center shrink-0">
+            {row.original.clienteTipo === "pj" ? <Building2 size={15} className="text-[#0B7A8F]" /> : <User size={15} className="text-[#0B7A8F]" />}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-800 truncate">{row.original.clienteNome}</p>
+            <span className="text-xs text-gray-400 uppercase truncate block">{row.original.clienteTipo === "pf" ? "Pessoa Física" : "Pessoa Jurídica"}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "tipoCondicao",
+      meta: { className: "w-[130px]" },
+      header: "Condição",
+      cell: ({ row }) => {
+        const cfg = tipoCondicaoConfig[row.original.tipoCondicao]
+        return <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${cfg.className}`}>{cfg.label}</span>
+      },
+    },
+    {
+      accessorKey: "desconto",
+      meta: { className: "hidden lg:table-cell w-[90px]" },
+      header: "Desconto",
+      cell: ({ row }) => (
+        <span className="text-sm font-semibold text-gray-800">
+          {row.original.desconto > 0 ? `${row.original.desconto}%` : "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "prazo",
+      meta: { className: "hidden lg:table-cell w-[100px]" },
+      header: "Prazo pgto.",
+      cell: ({ row }) => <span className="text-sm text-gray-600">{row.original.prazo} dias</span>,
+    },
+    {
+      accessorKey: "vigenciaFim",
+      meta: { className: "hidden xl:table-cell w-[160px]" },
+      header: "Vigência",
+      cell: ({ row }) => (
+        <div className="text-xs text-gray-500">
+          <span>{row.original.vigenciaInicio}</span>
+          <span className="mx-1">→</span>
+          <span className="font-medium text-gray-700">{row.original.vigenciaFim}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      meta: { className: "w-[90px]" },
+      header: "Status",
+      cell: ({ row }) => (
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+          row.original.status === "ativo" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+        }`}>
+          {row.original.status === "ativo" ? "Ativo" : "Expirado"}
+        </span>
+      ),
+    },
+    {
+      id: "acoes",
+      meta: { className: "w-[52px] min-w-[52px]" },
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <button
+            onClick={() => abrirTabelaPrecos(row.original)}
+            className="p-1.5 text-gray-500 hover:text-[#0B7A8F] transition-colors rounded hover:bg-gray-100"
+            title="Ver tabela de preços"
+          >
+            <Pencil size={16} />
+          </button>
+        </div>
+      ),
+    },
+  ]
+
+  // ─── Tabs ────────────────────────────────────────────────────────────────────
+  const abas: { id: Aba; label: string; icon: React.ElementType }[] = [
+    { id: "clientes",      label: "Clientes",             icon: Users    },
+    { id: "condicoes",     label: "Condições comerciais", icon: Briefcase },
+    { id: "configuracao",  label: "Config. Padrão",       icon: Settings  },
+  ]
+
+  return (
+    <AdminDashboardLayout profile="backoffice" title="Clientes">
+      <div className="space-y-4">
+
+        {/* Abas */}
+        <AdminTabs value={aba} onChange={(v) => setAba(v as Aba)} tabs={abas} />
+
+        {/* ── Aba Clientes ─────────────────────────────────────────────────── */}
+        {aba === "clientes" && (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <AdminInput
+                  variant="form"
+                  placeholder="Nome, CNPJ/CPF ou e-mail…"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  icon={<Search size={15} />}
+                />
+              </div>
+
+              <div className="w-36">
+              <AdminSelect
+                placeholder="Todos"
+                value={filtroTipo}
+                onValueChange={setFiltroTipo}
+              >
+                <AdminSelectContent>
+                  <AdminSelectItem value="all">Todos</AdminSelectItem>
+                  <AdminSelectItem value="pf">Pessoa Física</AdminSelectItem>
+                  <AdminSelectItem value="pj">Pessoa Jurídica</AdminSelectItem>
+                </AdminSelectContent>
+              </AdminSelect>
+              </div>
+
+              <div className="w-36">
+              <AdminSelect
+                placeholder="Todos"
+                value={filtroFinanceiro}
+                onValueChange={setFiltroFinanceiro}
+              >
+                <AdminSelectContent>
+                  <AdminSelectItem value="all">Todos</AdminSelectItem>
+                  <AdminSelectItem value="em_dia">Em dia</AdminSelectItem>
+                  <AdminSelectItem value="vencido">Vencido</AdminSelectItem>
+                  <AdminSelectItem value="bloqueado">Bloqueado</AdminSelectItem>
+                </AdminSelectContent>
+              </AdminSelect>
+              </div>
+
+              <AdminButton variant="primary" icon={<Plus size={16} />} onClick={() => setShowModalNovoCliente(true)}>
+                Novo Cliente
+              </AdminButton>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{clientesFiltrados.length}</span>
+              {clientesFiltrados.length !== CLIENTES.length && (
+                <> de <span className="font-semibold text-foreground">{CLIENTES.length}</span></>
+              )}
+              {" "}cliente{clientesFiltrados.length !== 1 ? "s" : ""} cadastrado{clientesFiltrados.length !== 1 ? "s" : ""}
+            </p>
+
+            {selecionados.size > 0 && (
+              <div className="flex items-center gap-2 bg-[#0B7A8F]/5 border border-[#0B7A8F]/20 rounded-lg px-3 py-1.5 w-fit">
+                <span className="text-xs font-medium text-[#0B7A8F]">{selecionados.size} selecionado(s)</span>
+                <div className="w-px h-4 bg-[#0B7A8F]/20" />
+                <AdminButton variant="ghost" size="sm" icon={<ToggleRight size={14} />} onClick={() => {}}>Ativar</AdminButton>
+                <AdminButton variant="ghost" size="sm" icon={<ToggleLeft size={14} />} onClick={() => {}}>Desativar</AdminButton>
+                <AdminButton variant="ghost" size="sm" icon={<Download size={14} />} onClick={() => {}}>Exportar</AdminButton>
+                <AdminButton variant="ghost" size="sm" icon={<ShieldOff size={14} />} onClick={() => {}}>Bloquear</AdminButton>
+              </div>
+            )}
+
+            <AdminTable
+              data={clientesFiltrados}
+              columns={colunasClientes}
+              showSearch={false}
+              emptyMessage="Nenhum cliente encontrado."
+              emptyIcon={<Users size={32} className="opacity-30" />}
+            />
+          </>
+        )}
+
+        {/* ── Aba Condições Comerciais ─────────────────────────────────────── */}
+        {aba === "condicoes" && (
+          <>
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <Gift size={20} className="text-[#0B7A8F]" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">Nova Condição Especial</h3>
+                  <p className="text-sm text-gray-500">Busque um cliente para aplicar condições especiais</p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <AdminInput
+                  variant="form"
+                  placeholder="Buscar cliente por nome, CPF/CNPJ ou e-mail..."
+                  value={buscaCondicao}
+                  onChange={(e) => setBuscaCondicao(e.target.value)}
+                  icon={<Search size={15} />}
+                />
+                {clientesBuscados.length > 0 && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden">
+                    {clientesBuscados.map((cliente) => (
+                      <button
+                        key={cliente.id}
+                        onClick={() => handleSelecionarCliente(cliente)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <div className="h-9 w-9 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center shrink-0">
+                          {cliente.tipo === "pj" ? <Building2 size={15} className="text-[#0B7A8F]" /> : <User size={15} className="text-[#0B7A8F]" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-800 truncate">{cliente.nome}</p>
+                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 uppercase">
+                              {cliente.tipo === "pf" ? "PF" : "PJ"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-400">{cliente.documento}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700">Condições Comerciais Ativas</h3>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[200px]">
+                  <AdminInput variant="form" placeholder="Nome do cliente..." value={buscaListaCondicoes} onChange={(e) => setBuscaListaCondicoes(e.target.value)} icon={<Search size={15} />} />
+                </div>
+                <div className="w-36">
+                <AdminSelect
+                  placeholder="Todas"
+                  value={filtroCondicaoTipo}
+                  onValueChange={setFiltroCondicaoTipo}
+                >
+                  <AdminSelectContent>
+                    <AdminSelectItem value="all">Todas</AdminSelectItem>
+                    <AdminSelectItem value="funcoes_pj">Funções PJ</AdminSelectItem>
+                    <AdminSelectItem value="desconto">Desconto</AdminSelectItem>
+                    <AdminSelectItem value="prazo_especial">Prazo Especial</AdminSelectItem>
+                  </AdminSelectContent>
+                </AdminSelect>
+                </div>
+                <div className="w-36">
+                <AdminSelect
+                  placeholder="Todos"
+                  value={filtroCondicaoDesconto}
+                  onValueChange={setFiltroCondicaoDesconto}
+                >
+                  <AdminSelectContent>
+                    <AdminSelectItem value="all">Todos</AdminSelectItem>
+                    <AdminSelectItem value="com">Com desconto</AdminSelectItem>
+                    <AdminSelectItem value="sem">Sem desconto</AdminSelectItem>
+                  </AdminSelectContent>
+                </AdminSelect>
+                </div>
+                <div className="w-36">
+                <AdminSelect
+                  placeholder="Todos"
+                  value={filtroCondicaoPrazo}
+                  onValueChange={setFiltroCondicaoPrazo}
+                >
+                  <AdminSelectContent>
+                    <AdminSelectItem value="all">Todos</AdminSelectItem>
+                    <AdminSelectItem value="curto">Até 15 dias</AdminSelectItem>
+                    <AdminSelectItem value="medio">16 a 30 dias</AdminSelectItem>
+                    <AdminSelectItem value="longo">Acima de 30 dias</AdminSelectItem>
+                  </AdminSelectContent>
+                </AdminSelect>
+                </div>
+                <div className="w-36">
+                <AdminSelect
+                  placeholder="Todas"
+                  value={filtroCondicaoVigencia}
+                  onValueChange={setFiltroCondicaoVigencia}
+                >
+                  <AdminSelectContent>
+                    <AdminSelectItem value="all">Todas</AdminSelectItem>
+                    <AdminSelectItem value="vigente">Vigente</AdminSelectItem>
+                    <AdminSelectItem value="vence30">Vence em 30 dias</AdminSelectItem>
+                    <AdminSelectItem value="expirado">Expirado</AdminSelectItem>
+                  </AdminSelectContent>
+                </AdminSelect>
+                </div>
+                <div className="w-36">
+                <AdminSelect
+                  placeholder="Todos"
+                  value={filtroCondicaoStatus}
+                  onValueChange={setFiltroCondicaoStatus}
+                >
+                  <AdminSelectContent>
+                    <AdminSelectItem value="all">Todos</AdminSelectItem>
+                    <AdminSelectItem value="ativo">Ativo</AdminSelectItem>
+                    <AdminSelectItem value="expirado">Expirado</AdminSelectItem>
+                  </AdminSelectContent>
+                </AdminSelect>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{condicoesFiltradas.length}</span>
+                {condicoesFiltradas.length !== CONDICOES.length && (
+                  <> de <span className="font-semibold text-foreground">{CONDICOES.length}</span></>
+                )}
+                {" "}condição{condicoesFiltradas.length !== 1 ? "ções" : ""} encontrada{condicoesFiltradas.length !== 1 ? "s" : ""}
+              </p>
+
+              <AdminTable
+                data={condicoesFiltradas}
+                columns={colunasCondicoes}
+                showSearch={false}
+                emptyMessage="Nenhuma condição encontrada."
+                emptyIcon={<Gift size={32} className="opacity-30" />}
+              />
+            </div>
+          </>
+        )}
+
+        {/* ── Aba Config. Padrão ────────────────────────────────────────────── */}
+        {aba === "configuracao" && (
+          <div className="space-y-6">
+            {/* PF */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-5">
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div className="h-9 w-9 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center">
+                  <User size={18} className="text-[#0B7A8F]" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-900">Configuração Padrão — Pessoa Física</h2>
+                  <p className="text-xs text-gray-500">Valores aplicados automaticamente a novos clientes PF</p>
+                </div>
+              </div>
+              <TabelaPrecosForm tabela={configPF} onChange={setConfigPF} />
+              <div className="flex justify-end pt-2">
+                <AdminButton variant="primary" onClick={() => {}}>Salvar</AdminButton>
+              </div>
+            </div>
+
+            {/* PJ */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-5">
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div className="h-9 w-9 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center">
+                  <Building2 size={18} className="text-[#0B7A8F]" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-900">Configuração Padrão — Pessoa Jurídica</h2>
+                  <p className="text-xs text-gray-500">Valores aplicados automaticamente a novos clientes PJ</p>
+                </div>
+              </div>
+              <TabelaPrecosForm tabela={configPJ} onChange={setConfigPJ} />
+              <div className="flex justify-end pt-2">
+                <AdminButton variant="primary" onClick={() => {}}>Salvar</AdminButton>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Modal Novo Cliente ───────────────────────────────────────────────── */}
+      {showModalNovoCliente && (
+        <AdminModal onClose={() => setShowModalNovoCliente(false)} size="md">
+          <AdminModalHeader title="Novo Cliente" subtitle="Cadastre um novo cliente no sistema" onClose={() => setShowModalNovoCliente(false)} />
+          <AdminModalBody>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tipo de Cliente</label>
+              <RadioGroup
+                value={novoCliente.tipo}
+                onValueChange={(v) => setNovoCliente((p) => ({ ...p, tipo: v }))}
+                className="flex gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="pf" id="tipo-pf" />
+                  <Label htmlFor="tipo-pf">Pessoa Física</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="pj" id="tipo-pj" />
+                  <Label htmlFor="tipo-pj">Pessoa Jurídica</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">{novoCliente.tipo === "pf" ? "Nome completo" : "Razão social"}</label>
+                <AdminInput variant="form" placeholder={novoCliente.tipo === "pf" ? "Nome completo" : "Razão social"} value={novoCliente.nome} onChange={(e) => setNovoCliente((p) => ({ ...p, nome: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">{novoCliente.tipo === "pf" ? "CPF" : "CNPJ"}</label>
+                <AdminInput variant="form" placeholder={novoCliente.tipo === "pf" ? "000.000.000-00" : "00.000.000/0000-00"} value={novoCliente.documento} onChange={(e) => setNovoCliente((p) => ({ ...p, documento: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">E-mail principal</label>
+              <AdminInput variant="form" placeholder="email@empresa.com.br" value={novoCliente.email} onChange={(e) => setNovoCliente((p) => ({ ...p, email: e.target.value }))} icon={<Mail size={15} />} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <AdminSelect
+                label="Estado"
+                placeholder="Selecione o estado"
+                value={novoCliente.estado}
+                onValueChange={(v) => setNovoCliente((p) => ({ ...p, estado: v }))}
+                variant="form"
+              >
+                <AdminSelectContent>
+                  <AdminSelectItem value="SP">São Paulo</AdminSelectItem>
+                  <AdminSelectItem value="RJ">Rio de Janeiro</AdminSelectItem>
+                  <AdminSelectItem value="MG">Minas Gerais</AdminSelectItem>
+                  <AdminSelectItem value="PR">Paraná</AdminSelectItem>
+                  <AdminSelectItem value="RS">Rio Grande do Sul</AdminSelectItem>
+                  <AdminSelectItem value="SC">Santa Catarina</AdminSelectItem>
+                  <AdminSelectItem value="BA">Bahia</AdminSelectItem>
+                  <AdminSelectItem value="DF">Distrito Federal</AdminSelectItem>
+                </AdminSelectContent>
+              </AdminSelect>
+              <AdminSelect
+                label="Unidade"
+                placeholder="Selecione a unidade"
+                value={novoCliente.unidade}
+                onValueChange={(v) => setNovoCliente((p) => ({ ...p, unidade: v }))}
+                variant="form"
+              >
+                <AdminSelectContent>
+                  <AdminSelectItem value="matriz">Matriz</AdminSelectItem>
+                  <AdminSelectItem value="filial-sp">Filial SP</AdminSelectItem>
+                  <AdminSelectItem value="filial-rj">Filial RJ</AdminSelectItem>
+                  <AdminSelectItem value="filial-mg">Filial MG</AdminSelectItem>
+                </AdminSelectContent>
+              </AdminSelect>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tipo de cobrança inicial</label>
+              <RadioGroup value={novoCliente.cobranca} onValueChange={(v) => setNovoCliente((p) => ({ ...p, cobranca: v }))} className="flex gap-4">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="avulso" id="cobranca-avulso" />
+                  <div>
+                    <Label htmlFor="cobranca-avulso">Avulso</Label>
+                    <p className="text-xs text-gray-400">Pagamento por vistoria</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="faturado" id="cobranca-faturado" />
+                  <div>
+                    <Label htmlFor="cobranca-faturado">Faturado</Label>
+                    <p className="text-xs text-gray-400">Faturamento mensal</p>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <Checkbox id="enviarEmail" checked={novoCliente.enviarEmail} onCheckedChange={(v) => setNovoCliente((p) => ({ ...p, enviarEmail: !!v }))} />
+              <Label htmlFor="enviarEmail" className="text-sm text-blue-800 cursor-pointer">
+                Enviar acesso ao sistema via e-mail para o cliente
+              </Label>
+            </div>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <AdminButton variant="outline" onClick={() => setShowModalNovoCliente(false)}>Cancelar</AdminButton>
+            <AdminButton variant="primary" onClick={handleCriarCliente} disabled={!isFormValid}>Cadastrar Cliente</AdminButton>
+          </AdminModalFooter>
+        </AdminModal>
+      )}
+
+      {/* ── Modal Editar Cliente ─────────────────────────────────────────────── */}
+      {clienteEditando && (
+        <AdminModal onClose={() => setClienteEditando(null)} size="md">
+          <AdminModalHeader
+            title="Editar Cliente"
+            subtitle={`Atualize os dados de ${clienteEditando.nome}`}
+            onClose={() => setClienteEditando(null)}
+          />
+          <AdminModalBody>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tipo de Cliente</label>
+              <RadioGroup
+                value={dadosEdicao.tipo}
+                onValueChange={(v) => setDadosEdicao((p) => ({ ...p, tipo: v }))}
+                className="flex gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="pf" id="edit-tipo-pf" />
+                  <Label htmlFor="edit-tipo-pf">Pessoa Física</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="pj" id="edit-tipo-pj" />
+                  <Label htmlFor="edit-tipo-pj">Pessoa Jurídica</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">{dadosEdicao.tipo === "pf" ? "Nome completo" : "Razão social"}</label>
+                <AdminInput variant="form" value={dadosEdicao.nome} onChange={(e) => setDadosEdicao((p) => ({ ...p, nome: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">{dadosEdicao.tipo === "pf" ? "CPF" : "CNPJ"}</label>
+                <AdminInput variant="form" value={dadosEdicao.documento} onChange={(e) => setDadosEdicao((p) => ({ ...p, documento: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">E-mail principal</label>
+              <AdminInput variant="form" value={dadosEdicao.email} onChange={(e) => setDadosEdicao((p) => ({ ...p, email: e.target.value }))} icon={<Mail size={15} />} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Telefone</label>
+                <AdminInput variant="form" value={dadosEdicao.telefone} onChange={(e) => setDadosEdicao((p) => ({ ...p, telefone: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Cidade / Estado</label>
+                <AdminInput variant="form" value={dadosEdicao.cidade} onChange={(e) => setDadosEdicao((p) => ({ ...p, cidade: e.target.value }))} icon={<MapPin size={15} />} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Status</label>
+              <select
+                value={dadosEdicao.status}
+                onChange={(e) => setDadosEdicao((p) => ({ ...p, status: e.target.value as ClienteStatus }))}
+                className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0B7A8F]/20 focus:border-[#0B7A8F]"
+              >
+                <option value="ativo">Ativo</option>
+                <option value="pendente">Pendente</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <AdminButton variant="outline" onClick={() => setClienteEditando(null)}>Cancelar</AdminButton>
+            <AdminButton variant="primary" onClick={handleSalvarEdicao}>Salvar alterações</AdminButton>
+          </AdminModalFooter>
+        </AdminModal>
+      )}
+
+      {/* ── Modal Condição Especial ──────────────────────────────────────────── */}
+      {showModalCondicao && clienteSelecionado && (
+        <AdminModal onClose={handleCancelarCondicao} size="md">
+          <AdminModalHeader
+            title="Condição Especial"
+            subtitle={`Aplicar condição para ${clienteSelecionado.nome}`}
+            onClose={handleCancelarCondicao}
+          />
+          <AdminModalBody>
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div className="h-12 w-12 rounded-full bg-[#0B7A8F]/10 flex items-center justify-center">
+                {clienteSelecionado.tipo === "pj" ? <Building2 size={20} className="text-[#0B7A8F]" /> : <User size={20} className="text-[#0B7A8F]" />}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900">{clienteSelecionado.nome}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-200 text-gray-600 uppercase">
+                    {clienteSelecionado.tipo === "pf" ? "Pessoa Física" : "Pessoa Jurídica"}
+                  </span>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${planoConfig[clienteSelecionado.plano].className}`}>
+                    Plano {planoConfig[clienteSelecionado.plano].label}
+                  </span>
+                  <span className="text-xs text-gray-500">{clienteSelecionado.documento}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tipo de Condição</label>
+              <RadioGroup
+                value={novaCondicao.tipoCondicao}
+                onValueChange={(v) => setNovaCondicao((p) => ({ ...p, tipoCondicao: v as Condicao["tipoCondicao"] }))}
+                className="flex flex-col gap-3"
+              >
+                {clienteSelecionado.tipo === "pf" && (
+                  <div className="flex items-start gap-3 p-3 border border-gray-200 rounded-xl hover:border-[#0B7A8F] transition-colors cursor-pointer">
+                    <RadioGroupItem value="funcoes_pj" id="cond-funcoes-pj" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="cond-funcoes-pj" className="font-medium cursor-pointer">Funções de PJ</Label>
+                      <p className="text-xs text-gray-500 mt-0.5">Habilita funcionalidades de pessoa jurídica para este cliente PF</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-3 p-3 border border-gray-200 rounded-xl hover:border-[#0B7A8F] transition-colors cursor-pointer">
+                  <RadioGroupItem value="desconto" id="cond-desconto" className="mt-0.5" />
+                  <div>
+                    <Label htmlFor="cond-desconto" className="font-medium cursor-pointer">Desconto Especial</Label>
+                    <p className="text-xs text-gray-500 mt-0.5">Aplica um percentual de desconto em todas as vistorias</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 border border-gray-200 rounded-xl hover:border-[#0B7A8F] transition-colors cursor-pointer">
+                  <RadioGroupItem value="prazo_especial" id="cond-prazo" className="mt-0.5" />
+                  <div>
+                    <Label htmlFor="cond-prazo" className="font-medium cursor-pointer">Prazo Especial</Label>
+                    <p className="text-xs text-gray-500 mt-0.5">Estende o prazo de pagamento para este cliente</p>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {(novaCondicao.tipoCondicao === "desconto" || novaCondicao.tipoCondicao === "funcoes_pj") && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2"><Percent size={14} />Desconto (%)</label>
+                  <AdminInput variant="form" type="number" min={0} max={100} value={novaCondicao.desconto} onChange={(e) => setNovaCondicao((p) => ({ ...p, desconto: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Prazo de pagamento (dias)</label>
+                  <AdminInput variant="form" type="number" min={1} value={novaCondicao.prazo} onChange={(e) => setNovaCondicao((p) => ({ ...p, prazo: Number(e.target.value) }))} />
+                </div>
+              </div>
+            )}
+
+            {novaCondicao.tipoCondicao === "prazo_especial" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Prazo de pagamento (dias)</label>
+                <AdminInput variant="form" type="number" min={1} value={novaCondicao.prazo} onChange={(e) => setNovaCondicao((p) => ({ ...p, prazo: Number(e.target.value) }))} />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2"><Calendar size={14} />Vigência da Condição</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-500">Data início</span>
+                  <AdminInput variant="form" type="date" value={novaCondicao.vigenciaInicio} onChange={(e) => setNovaCondicao((p) => ({ ...p, vigenciaInicio: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-500">Data fim</span>
+                  <AdminInput variant="form" type="date" value={novaCondicao.vigenciaFim} onChange={(e) => setNovaCondicao((p) => ({ ...p, vigenciaFim: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-[#0B7A8F]/5 border border-[#0B7A8F]/20 rounded-xl">
+              <p className="text-sm font-medium text-[#0B7A8F]">Resumo da Condição</p>
+              <ul className="mt-2 space-y-1 text-sm text-gray-600">
+                <li>• Tipo: <span className="font-medium">{tipoCondicaoConfig[novaCondicao.tipoCondicao].label}</span></li>
+                {novaCondicao.desconto > 0 && <li>• Desconto: <span className="font-medium">{novaCondicao.desconto}%</span></li>}
+                <li>• Prazo: <span className="font-medium">{novaCondicao.prazo} dias</span></li>
+                {novaCondicao.vigenciaFim && <li>• Válido até: <span className="font-medium">{novaCondicao.vigenciaFim}</span></li>}
+              </ul>
+            </div>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <AdminButton variant="outline" onClick={handleCancelarCondicao}>Cancelar</AdminButton>
+            <AdminButton variant="primary" onClick={handleSalvarCondicao} disabled={!isCondicaoFormValid}>Salvar Condição</AdminButton>
+          </AdminModalFooter>
+        </AdminModal>
+      )}
+
+      {/* ── Modal Tabela de Preços ───────────────────────────────────────────── */}
+      {showModalTabelaPrecos && condicaoTabela && (
+        <AdminModal onClose={() => setShowModalTabelaPrecos(false)} size="lg">
+          <AdminModalHeader
+            title="Tabela de Preços"
+            subtitle={`Valores de ${condicaoTabela.clienteNome}`}
+            onClose={() => setShowModalTabelaPrecos(false)}
+          />
+          <AdminModalBody>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tipo de Cliente</label>
+              <RadioGroup
+                value={tabelaPrecos.tipoConta}
+                onValueChange={(v) => setTabelaPrecos((p) => ({ ...p, tipoConta: v as "pf" | "pj" }))}
+                className="flex gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="pf" id="tabela-tipo-pf" />
+                  <Label htmlFor="tabela-tipo-pf">Pessoa Física</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="pj" id="tabela-tipo-pj" />
+                  <Label htmlFor="tabela-tipo-pj">Pessoa Jurídica</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <TabelaPrecosForm tabela={tabelaPrecos} onChange={setTabelaPrecos} />
+          </AdminModalBody>
+          <AdminModalFooter>
+            <AdminButton variant="outline" onClick={() => setShowModalTabelaPrecos(false)}>Cancelar</AdminButton>
+            <AdminButton variant="primary" onClick={() => setShowModalTabelaPrecos(false)}>Salvar</AdminButton>
+          </AdminModalFooter>
+        </AdminModal>
+      )}
+    </AdminDashboardLayout>
+  )
+}

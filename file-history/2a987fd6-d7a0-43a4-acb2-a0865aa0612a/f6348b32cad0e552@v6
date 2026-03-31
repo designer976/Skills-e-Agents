@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>Proposta Comercial - Wa Project</title>
+
+    <!-- Meta tags para melhor impressão -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="author" content="Wa Project">
+    <meta name="description" content="Proposta Comercial - Sistema E-commerce Premium">
+    <style>
+        /* Reset e base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Variáveis CSS - cores do Wa Project */
+        :root {
+            --wa-brand-primary: #0047ba;
+            --wa-brand-secondary: #0056A3;
+            --wa-brand-accent: #E8F0FE;
+            --text-foreground: #1f2937;
+            --text-muted-foreground: #6b7280;
+            --border-color: #e5e7eb;
+            --background: #ffffff;
+            --card-background: #f8f9fa;
+        }</thinking>
+
+<parameter name="new_string">        /* Variáveis CSS - cores do Wa Project */
+        :root {
+            --wa-brand-primary: #0047ba;
+            --wa-brand-secondary: #0056A3;
+            --wa-brand-accent: #E8F0FE;
+            --text-foreground: #1f2937;
+            --text-muted-foreground: #6b7280;
+            --border-color: #e5e7eb;
+            --background: #ffffff;
+            --card-background: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-foreground);
+            background: var(--background);
+        }
+
+        /* Container principal */
+        .proposal-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: var(--background);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Background watermark */
+        .proposal-container::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: url('fundo-center.png') no-repeat center;
+            background-size: contain;
+            opacity: 0.03;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Conteúdo */
+        .content {
+            position: relative;
+            z-index: 1;
+            padding: 56px;
+        }
+
+        /* Header/Capa */
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 32px;
+            display: block;
+        }
+
+        .logo img {
+            width: 80px;
+            height: auto;
+            display: block;
+        }
+
+        .main-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--wa-brand-primary);
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--wa-brand-primary);
+            line-height: 1.2;
+            margin-bottom: 32px;
+        }
+
+        .info-section {
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-line {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .info-line strong {
+            color: var(--text-foreground);
+        }
+
+        /* Seções */
+        .section {
+            margin-bottom: 32px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--wa-brand-primary);
+            margin-bottom: 16px;
+            page-break-after: avoid;
+        }
+
+        .section-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted-foreground);
+            margin-bottom: 16px;
+        }
+
+        /* Listas */
+        .service-list, .client-list, .feature-list, .steps-list {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .service-list li, .client-list li, .feature-list li, .steps-list li {
+            font-size: 14px;
+            color: var(--text-muted-foreground);
+            margin-bottom: 4px;
+            line-height: 1.5;
+        }
+
+        .client-list {
+            columns: 2;
+            column-gap: 20px;
+        }
+
+        /* Funcionalidades */
+        .functionality-item {
+            margin-bottom: 16px;
+        }
+
+        .functionality-title {
+            font-weight: bold;
+            color: var(--text-foreground);
+            font-size: 14px;
+        }
+
+        /* Equipe */
+        .team-member {
+            margin-bottom: 20px;
+        }
+
+        .member-role {
+            font-weight: bold;
+            color: var(--wa-brand-primary);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .member-description {
+            font-size: 14px;
+            color: var(--text-muted-foreground);
+            line-height: 1.5;
+        }
+
+        /* Investimento */
+        .investment-total {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-foreground);
+            margin-bottom: 16px;
+        }
+
+        .payment-condition {
+            font-size: 14px;
+            color: var(--text-muted-foreground);
+            margin-bottom: 4px;
+        }
+
+        .payment-condition strong {
+            color: var(--text-foreground);
+        }
+
+        /* Encerramento */
+        .closing {
+            text-align: center;
+            padding: 32px 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .quote {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--wa-brand-primary);
+            margin-bottom: 16px;
+        }
+
+        .company-info {
+            margin: 24px 0;
+        }
+
+        .company-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--text-foreground);
+            margin-bottom: 8px;
+        }
+
+        .company-details {
+            font-size: 12px;
+            color: var(--text-muted-foreground);
+            line-height: 1.4;
+        }
+
+        .validity {
+            font-size: 11px;
+            color: var(--text-muted-foreground);
+            margin-top: 16px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .content {
+                padding: 24px;
+            }
+
+            .main-title {
+                font-size: 24px;
+            }
+
+            .subtitle {
+                font-size: 20px;
+            }
+
+            .client-list {
+                columns: 1;
+            }
+        }
+
+        /* Estilos de impressão otimizados */
+        @media print {
+            /* Reset completo para impressão */
+            * {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 12mm 15mm 12mm 15mm;
+            }
+
+            @page :first {
+                margin-top: 15mm;
+            }
+
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                background: white !important;
+                font-size: 11pt !important;
+                line-height: 1.4 !important;
+                color: #1f2937 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .proposal-container {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+
+            .content {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            /* Header otimizado */
+            .header {
+                margin-bottom: 15pt !important;
+            }
+
+            .logo {
+                width: 80pt !important;
+                height: auto !important;
+                margin-bottom: 15pt !important;
+                display: block !important;
+            }
+
+            .logo img {
+                width: 80pt !important;
+                height: auto !important;
+                display: block !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .main-title {
+                font-size: 18pt !important;
+                margin-bottom: 4pt !important;
+                color: #0047ba !important;
+            }
+
+            .subtitle {
+                font-size: 14pt !important;
+                margin-bottom: 15pt !important;
+                color: #0047ba !important;
+            }
+
+            .info-section {
+                margin-bottom: 12pt !important;
+                padding-top: 8pt !important;
+                border-top: 0.5pt solid #e5e7eb !important;
+            }
+
+            .info-line {
+                font-size: 10pt !important;
+                margin-bottom: 2pt !important;
+                color: #1f2937 !important;
+            }
+
+            /* Seções */
+            .section {
+                margin-bottom: 12pt !important;
+                page-break-inside: avoid !important;
+            }
+
+            .section:last-child {
+                margin-bottom: 8pt !important;
+            }
+
+            .section-title {
+                font-size: 13pt !important;
+                font-weight: bold !important;
+                color: #0047ba !important;
+                margin-bottom: 8pt !important;
+                page-break-after: avoid !important;
+            }
+
+            .section-content {
+                font-size: 10pt !important;
+                color: #6b7280 !important;
+                margin-bottom: 8pt !important;
+                line-height: 1.4 !important;
+            }
+
+            /* Listas */
+            .service-list, .client-list, .feature-list, .steps-list {
+                margin-bottom: 8pt !important;
+                padding-left: 12pt !important;
+            }
+
+            .service-list li, .client-list li, .feature-list li, .steps-list li {
+                font-size: 10pt !important;
+                margin-bottom: 2pt !important;
+                color: #6b7280 !important;
+            }
+
+            .client-list {
+                columns: 2 !important;
+                column-gap: 15pt !important;
+            }
+
+            /* Funcionalidades e equipe */
+            .functionality-item, .team-member {
+                margin-bottom: 10pt !important;
+                page-break-inside: avoid !important;
+            }
+
+            .functionality-title, .member-role {
+                font-size: 10pt !important;
+                font-weight: bold !important;
+                color: #1f2937 !important;
+                margin-bottom: 2pt !important;
+            }
+
+            .member-role {
+                color: #0047ba !important;
+            }
+
+            .member-description {
+                font-size: 9pt !important;
+                color: #6b7280 !important;
+            }
+
+            /* Investimento */
+            .investment-total {
+                font-size: 12pt !important;
+                font-weight: bold !important;
+                color: #1f2937 !important;
+                margin-bottom: 8pt !important;
+            }
+
+            .payment-condition {
+                font-size: 10pt !important;
+                margin-bottom: 2pt !important;
+                color: #6b7280 !important;
+            }
+
+            .payment-condition strong {
+                color: #1f2937 !important;
+            }
+
+            /* Encerramento */
+            .closing {
+                text-align: center !important;
+                page-break-inside: avoid !important;
+                margin-top: 20pt !important;
+                padding-top: 15pt !important;
+                border-top: 0.5pt solid #e5e7eb !important;
+            }
+
+            .quote {
+                font-size: 12pt !important;
+                font-weight: bold !important;
+                color: #0047ba !important;
+                margin-bottom: 8pt !important;
+            }
+
+            .company-info {
+                margin: 12pt 0 !important;
+            }
+
+            .company-name {
+                font-size: 10pt !important;
+                font-weight: bold !important;
+                color: #1f2937 !important;
+                margin-bottom: 4pt !important;
+            }
+
+            .company-details {
+                font-size: 9pt !important;
+                color: #6b7280 !important;
+                line-height: 1.3 !important;
+            }
+
+            .validity {
+                font-size: 8pt !important;
+                color: #6b7280 !important;
+                margin-top: 8pt !important;
+            }
+
+            /* Watermark para impressão */
+            .proposal-container::before {
+                content: '';
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                width: 300pt !important;
+                height: 300pt !important;
+                background: url('fundo-center.png') no-repeat center !important;
+                background-size: contain !important;
+                opacity: 0.05 !important;
+                z-index: -1 !important;
+                pointer-events: none !important;
+            }
+
+            /* Quebras de página estratégicas */
+            .main-sections {
+                page-break-before: always !important;
+            }
+
+            /* Ocultar elementos desnecessários na impressão */
+            .no-print {
+                display: none !important;
+            }
+
+            /* Forçar cores para impressão */
+            .section-title, .main-title, .subtitle, .quote, .member-role {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        /* Utilitários */
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+
+        /* Botão de impressão */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--wa-brand-primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 59, 113, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .print-button:hover {
+            background: var(--wa-brand-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 59, 113, 0.4);
+        }
+
+        @media print {
+            .print-button {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Botão de impressão flutuante -->
+    <button class="print-button" onclick="printDocument()" title="Imprimir/Gerar PDF (Ctrl+P)">
+        🖨️ Gerar PDF
+    </button>
+
+    <div class="proposal-container">
+        <div class="content">
+            <!-- HEADER/CAPA -->
+            <header class="header">
+                <div class="logo">
+                    <img src="Logo completa.png" alt="Wa Project" width="80" height="auto" />
+                </div>
+
+                <div>
+                    <h1 class="main-title">Proposta Comercial</h1>
+                    <h2 class="subtitle">Sistema E-commerce Premium</h2>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-line">30/03/2026 | Válido por 15 dias</div>
+                    <div class="info-line"><strong>Para:</strong> Fashion Store LTDA</div>
+                    <div class="info-line"><strong>Contato:</strong> Maria Silva</div>
+                    <div class="info-line"><strong>Tipo:</strong> Escopo fechado</div>
+                </div>
+            </header>
+
+            <!-- SOBRE A EMPRESA -->
+            <section class="section">
+                <h2 class="section-title">Sobre a Wa Project</h2>
+                <p class="section-content">
+                    A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas. Especializada em projetos de alta complexidade e qualidade, atendemos desde startups até grandes corporações.
+                </p>
+
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2" style="font-size: 14px;">Nossos serviços:</h3>
+                    <ul class="service-list">
+                        <li>Desenvolvimento de Software</li>
+                        <li>Desenvolvimento de Aplicativos</li>
+                        <li>Soluções de Inteligência Artificial</li>
+                        <li>Alocação de Profissionais</li>
+                        <li>Consultoria Tecnológica</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-bold mb-2" style="font-size: 14px;">Nossos Clientes:</h3>
+                    <ul class="client-list">
+                        <li>PepsiCo</li>
+                        <li>Vtex</li>
+                        <li>Santillana</li>
+                        <li>Dasa</li>
+                        <li>WideLabs</li>
+                        <li>Confederação Brasileira de Hipismo</li>
+                        <li>Forbes</li>
+                        <li>Easy Salon</li>
+                        <li>InstaCarro</li>
+                        <li>Antilhas</li>
+                        <li>Fundação Carlos Chagas</li>
+                        <li>Funarbe</li>
+                    </ul>
+                    <p class="section-content">Cases completos: waproject.com.br/cases</p>
+                </div>
+            </section>
+
+            <!-- SOBRE O PROJETO -->
+            <section class="section main-sections">
+                <h2 class="section-title">Sobre o Projeto</h2>
+                <h3 class="font-bold mb-2" style="font-size: 14px;">Sistema E-commerce Premium</h3>
+                <p class="section-content">
+                    Desenvolvimento completo de loja virtual responsiva com carrinho de compras, sistema de pagamento integrado e painel administrativo para gestão de produtos e pedidos. A solução incluirá todas as funcionalidades necessárias para digitalizar as vendas da empresa.
+                </p>
+                <p class="section-content">
+                    <strong>Objetivo:</strong> Digitalizar as vendas da empresa e expandir o alcance de mercado para todo o território nacional, proporcionando uma experiência de compra moderna e segura para os clientes.
+                </p>
+            </section>
+
+            <!-- FUNCIONALIDADES -->
+            <section class="section">
+                <h2 class="section-title">Funcionalidades</h2>
+
+                <div class="functionality-item">
+                    <p class="functionality-title">1. Vitrine de Produtos</p>
+                    <p class="section-content">Catálogo completo com filtros por categoria, tamanho, cor e faixa de preço. Fotos em alta resolução com zoom e galeria interativa.</p>
+                </div>
+
+                <div class="functionality-item">
+                    <p class="functionality-title">2. Carrinho e Checkout</p>
+                    <p class="section-content">Carrinho inteligente com cálculo automático de frete, aplicação de cupons de desconto e múltiplas formas de pagamento (PIX, cartão, boleto).</p>
+                </div>
+
+                <div class="functionality-item">
+                    <p class="functionality-title">3. Painel Administrativo</p>
+                    <p class="section-content">Gestão completa de produtos, estoque, pedidos e relatórios de vendas com dashboard analítico e métricas de performance.</p>
+                </div>
+
+                <div class="functionality-item">
+                    <p class="functionality-title">4. Sistema de Usuários</p>
+                    <p class="section-content">Cadastro e login de clientes, histórico de pedidos, lista de desejos e área do cliente personalizada.</p>
+                </div>
+
+                <div class="functionality-item">
+                    <p class="functionality-title">5. Integração de Pagamentos</p>
+                    <p class="section-content">Integração com gateways de pagamento (Mercado Pago, PagSeguro), processamento seguro e notificações automáticas.</p>
+                </div>
+            </section>
+
+            <!-- MODELO DE TRABALHO -->
+            <section class="section">
+                <h2 class="section-title">Modelo de Trabalho</h2>
+                <p class="section-content">
+                    <strong>Escopo Fechado</strong> - Desenvolvimento completo com especificações detalhadas e entregas pré-definidas, garantindo previsibilidade de prazo e investimento.
+                </p>
+
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2" style="font-size: 14px;">Fases do Projeto:</h3>
+                    <div class="section-content">
+                        <div class="mb-2"><strong>Fase 1:</strong> Discovery e Planejamento - Levantamento detalhado de requisitos e definição da arquitetura</div>
+                        <div class="mb-2"><strong>Fase 2:</strong> Design e Prototipagem - Criação do layout e protótipo interativo</div>
+                        <div class="mb-2"><strong>Fase 3:</strong> Desenvolvimento Backend - APIs, banco de dados e integrações</div>
+                        <div class="mb-2"><strong>Fase 4:</strong> Desenvolvimento Frontend - Interface do usuário e painel administrativo</div>
+                        <div class="mb-2"><strong>Fase 5:</strong> Testes e Homologação - Testes completos e validação com o cliente</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- EQUIPE -->
+            <section class="section">
+                <h2 class="section-title">Equipe Dedicada</h2>
+                <p class="section-content">Time especializado em e-commerce com experiência comprovada:</p>
+
+                <div class="team-member">
+                    <div class="member-role">UX/UI Designer</div>
+                    <p class="member-description">Design da experiência de compra, prototipagem e interface responsiva otimizada para conversão.</p>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-role">Desenvolvedor Full Stack Sênior</div>
+                    <p class="member-description">Implementação da loja, integrações de pagamento, painel administrativo e otimizações de performance.</p>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-role">Especialista em E-commerce</div>
+                    <p class="member-description">Consultoria em estratégias de vendas online, SEO e otimização de conversão.</p>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-role">QA Tester</div>
+                    <p class="member-description">Testes automatizados, validação de funcionalidades e garantia de qualidade.</p>
+                </div>
+            </section>
+
+            <!-- CRONOGRAMA -->
+            <section class="section">
+                <h2 class="section-title">Cronograma</h2>
+                <p class="investment-total">Prazo total estimado: 8 semanas</p>
+
+                <div class="section-content">
+                    <div class="mb-2"><strong>Semanas 1-2:</strong> Discovery e Design - Definição de requisitos e criação do layout</div>
+                    <div class="mb-2"><strong>Semanas 3-4:</strong> Desenvolvimento Backend - APIs e estrutura base</div>
+                    <div class="mb-2"><strong>Semanas 5-6:</strong> Desenvolvimento Frontend - Interface e funcionalidades</div>
+                    <div class="mb-2"><strong>Semanas 7-8:</strong> Integrações - Pagamentos, frete e testes finais</div>
+                </div>
+
+                <p class="section-content">
+                    <strong>Observação:</strong> O cronograma considera 2 semanas para homologação e ajustes após a entrega inicial, garantindo que todos os requisitos sejam atendidos perfeitamente.
+                </p>
+            </section>
+
+            <!-- INVESTIMENTO -->
+            <section class="section">
+                <h2 class="section-title">Investimento</h2>
+                <p class="investment-total">Investimento total: R$ 45.000</p>
+
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2" style="font-size: 14px;">Condições de Pagamento:</h3>
+                    <div class="payment-condition">
+                        <strong>1ª Parcela:</strong> Na assinatura do contrato: <strong>R$ 22.500</strong>
+                    </div>
+                    <div class="payment-condition">
+                        <strong>2ª Parcela:</strong> Na entrega final: <strong>R$ 22.500</strong>
+                    </div>
+                </div>
+
+                <p class="section-content">
+                    O investimento inclui todo o desenvolvimento, testes, homologação e 30 dias de suporte pós go-live sem custo adicional.
+                </p>
+            </section>
+
+            <!-- ENTREGÁVEIS -->
+            <section class="section">
+                <h2 class="section-title">Entregáveis</h2>
+                <ul class="feature-list">
+                    <li>Código fonte completo da aplicação</li>
+                    <li>Banco de dados estruturado e documentado</li>
+                    <li>Painel administrativo para gestão</li>
+                    <li>Documentação técnica completa</li>
+                    <li>Manual do usuário administrador</li>
+                    <li>Treinamento da equipe (2 horas)</li>
+                    <li>Deploy em ambiente de produção</li>
+                    <li>30 dias de suporte pós go-live</li>
+                </ul>
+            </section>
+
+            <!-- PRÓXIMOS PASSOS -->
+            <section class="section">
+                <h2 class="section-title">Próximos Passos</h2>
+                <ol class="steps-list">
+                    <li>Aprovação desta proposta comercial</li>
+                    <li>Assinatura do contrato de prestação de serviços</li>
+                    <li>Reunião de kick-off do projeto</li>
+                    <li>Início da fase de discovery e planejamento</li>
+                </ol>
+
+                <p class="section-content">
+                    Estamos à disposição para esclarecer dúvidas e ansiosos para iniciar esta parceria!
+                </p>
+            </section>
+
+            <!-- ENCERRAMENTO -->
+            <footer class="closing">
+                <div class="quote">"Não é sobre desenvolvimento, é sobre envolvimento."</div>
+                <div class="quote">Obrigado por confiar na Wa Project!</div>
+
+                <div class="company-info">
+                    <div class="company-name">Wa Project Soluções Tecnológicas LTDA.</div>
+                    <div class="company-details">
+                        CNPJ: 19.317.018/0001-40<br>
+                        Website: waproject.com.br<br>
+                        Email: comercial@waproject.com.br<br>
+                        Telefone/WhatsApp: (11) 5028-2010
+                    </div>
+                </div>
+
+                <div class="validity">
+                    Proposta válida por 15 dias a partir da data de emissão
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Função para imprimir com configurações otimizadas
+        function printDocument() {
+            // Mostrar dicas antes de imprimir
+            const confirmPrint = confirm(`📋 DICAS PARA PDF PERFEITO:
+
+✅ Configure no preview:
+• Destino: "Salvar como PDF"
+• Papel: A4
+• Margens: Mínimas (ou 15mm personalizadas)
+• ☑️ Gráficos de plano de fundo
+
+Continuar para impressão?`);
+
+            if (confirmPrint) {
+                window.print();
+            }
+        }
+
+        // Script para melhorar a experiência de impressão
+        document.addEventListener('DOMContentLoaded', function() {
+            // Detectar quando o usuário vai imprimir
+            window.addEventListener('beforeprint', function() {
+                document.body.classList.add('printing');
+                console.log('🖨️ Preparando para impressão...');
+
+                // Ajustar página para impressão
+                document.documentElement.style.setProperty('--print-mode', '1');
+            });
+
+            window.addEventListener('afterprint', function() {
+                document.body.classList.remove('printing');
+                document.documentElement.style.removeProperty('--print-mode');
+                console.log('✅ Impressão finalizada');
+            });
+
+            // Atalho de teclado
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                    e.preventDefault();
+                    printDocument();
+                }
+            });
+
+            // Adicionar indicador visual de que é otimizado para impressão
+            console.log('🎯 Template de Proposta Wa Project carregado');
+            console.log('🖨️ Use Ctrl+P ou clique no botão para gerar PDF');
+            console.log('📋 Configurações recomendadas: A4, Margens mínimas, Gráficos ativados');
+
+            // Mostrar aviso inicial
+            setTimeout(() => {
+                const banner = document.createElement('div');
+                banner.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 80px;
+                        right: 20px;
+                        background: #E8F0FE;
+                        border: 2px solid #003B71;
+                        padding: 15px;
+                        border-radius: 8px;
+                        z-index: 999;
+                        max-width: 250px;
+                        font-size: 12px;
+                        line-height: 1.4;
+                        box-shadow: 0 4px 12px rgba(0,59,113,0.2);
+                    ">
+                        <strong style="color: #003B71;">💡 Dica:</strong><br>
+                        Para PDF perfeito:<br>
+                        • Ctrl+P<br>
+                        • Margens: Mínimas<br>
+                        • ☑️ Gráficos de fundo<br>
+                        <button onclick="this.parentElement.parentElement.remove()"
+                                style="margin-top: 8px; background: #003B71; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                            Entendi
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(banner);
+
+                // Auto-remover após 10 segundos
+                setTimeout(() => {
+                    if (banner.parentElement) {
+                        banner.remove();
+                    }
+                }, 10000);
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

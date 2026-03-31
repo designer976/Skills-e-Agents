@@ -1,0 +1,345 @@
+import { useRef, useMemo, useEffect, useState, useCallback } from "react";
+import { isBefore, startOfDay } from "date-fns";
+import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { cn } from "@/lib/utils";
+import { getUserDisplayName } from "@/utils/userHelpers";
+import { EasyCalendarProps, ProfessionalColumn as ProfessionalColumnType, TimeSlot } from "./types";
+import { TimeGrid } from "./TimeGrid";
+import { ProfessionalColumn } from "./ProfessionalColumn";
+
+const BASE_SLOT_HEIGHT = 50; // px per 15-minute slot
+const BASE_SLOT_MINUTES = 15;
+
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
+const generateTimeSlots = (
+  startHour: number,
+  endHour: number,
+  slotMinutes: number
+): TimeSlot[] => {
+  const slots: TimeSlot[] = [];
+  let currentHour = startHour;
+  let currentMinute = 0;
+
+  while (
+    currentHour < endHour ||
+    (currentHour === endHour && currentMinute === 0)
+  ) {
+    const label = `${currentHour.toString().padStart(2, "0")}:${currentMinute
+      .toString()
+      .padStart(2, "0")}`;
+    const time = `${currentHour}:${currentMinute.toString().padStart(2, "0")}`;
+
+    slots.push({
+      hour: currentHour,
+      minute: currentMinute,
+      label,
+      time,
+    });
+
+    currentMinute += slotMinutes;
+    if (currentMinute >= 60) {
+      currentMinute = 0;
+      currentHour += 1;
+    }
+  }
+
+  return slots;
+};
+
+const calculateCurrentTimePosition = (
+  currentDate: Date,
+  timeSlots: TimeSlot[],
+  slotHeight: number,
+  timezone?: string
+): number | undefined => {
+  if (timeSlots.length === 0) return undefined;
+
+  const currentHour = timezone
+    ? parseInt(formatInTimeZone(currentDate, timezone, "HH"), 10)
+    : currentDate.getHours();
+  const currentMinute = timezone
+    ? parseInt(formatInTimeZone(currentDate, timezone, "mm"), 10)
+    : currentDate.getMinutes();
+
+  const firstSlot = timeSlots[0];
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+  const firstSlotMinutes = firstSlot.hour * 60 + firstSlot.minute;
+
+  if (currentTotalMinutes < firstSlotMinutes) return 0;
+
+  const minutesFromFirst = currentTotalMinutes - firstSlotMinutes;
+
+  const slotMinutes =
+    timeSlots.length > 1
+      ? timeSlots[1].hour * 60 + timeSlots[1].minute - firstSlotMinutes
+      : 15;
+
+  return (minutesFromFirst / slotMinutes) * slotHeight;
+};
+
+export const EasyCalendar: React.FC<EasyCalendarProps> = ({
+  date,
+  columns,
+  events,
+  startHour = 8,
+  endHour = 20,
+  slotMinutes = 15,
+  primaryColor,
+  salonTimezone = "America/Sao_Paulo",
+  onEventClick,
+  onSlotClick,
+  onAbsenceClick,
+  onAbsenceBlockClick,
+  loading = false,
+  isSalonClosed = false,
+  focusAppointment = null,
+  onFocusConsumed,
+  containerClassName,
+}) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyWrapperRef = useRef<HTMLDivElement>(null);
+  const footerScrollRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const timeSlots = useMemo(
+    () => generateTimeSlots(startHour, endHour, slotMinutes),
+    [startHour, endHour, slotMinutes]
+  );
+
+  const slotHeight = useMemo(
+    () => (slotMinutes / BASE_SLOT_MINUTES) * BASE_SLOT_HEIGHT,
+    [slotMinutes]
+  );
+
+  const calendarDate = useMemo(
+    () => new Date(date + "T00:00:00.000Z"),
+    [date]
+  );
+
+  const isTodayDate = useMemo(() => {
+    const nowInSalonTz = toZonedTime(new Date(), salonTimezone);
+    const todayInSalonTz = formatInTimeZone(
+      nowInSalonTz,
+      salonTimezone,
+      "yyyy-MM-dd"
+    );
+    return date === todayInSalonTz;
+  }, [date, salonTimezone]);
+
+  const isPastDay = useMemo(
+    () => isBefore(startOfDay(calendarDate), startOfDay(new Date())),
+    [calendarDate]
+  );
+
+  const currentTimePosition = useMemo(() => {
+    if (!isTodayDate) return undefined;
+    return calculateCurrentTimePosition(
+      currentTime,
+      timeSlots,
+      slotHeight,
+      salonTimezone
+    );
+  }, [isTodayDate, currentTime, timeSlots, slotHeight, salonTimezone]);
+
+  useEffect(() => {
+    if (!isTodayDate) return;
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, [isTodayDate]);
+
+  // Sync header and footer scrollbars when body scrolls horizontally
+  const handleBodyScroll = useCallback(() => {
+    const left = scrollContainerRef.current?.scrollLeft ?? 0;
+    if (headerScrollRef.current) headerScrollRef.current.scrollLeft = left;
+    if (footerScrollRef.current) footerScrollRef.current.scrollLeft = left;
+  }, []);
+
+  // Sync body and header when user drags the footer scrollbar
+  const handleFooterScroll = useCallback(() => {
+    const left = footerScrollRef.current?.scrollLeft ?? 0;
+    if (scrollContainerRef.current) scrollContainerRef.current.scrollLeft = left;
+    if (headerScrollRef.current) headerScrollRef.current.scrollLeft = left;
+  }, []);
+
+  // Focus and Scroll Effect
+  useEffect(() => {
+    if (!focusAppointment || loading) return;
+
+    const timer = setTimeout(() => {
+      const profColumn = scrollContainerRef.current?.querySelector(
+        `[data-professional-id="${focusAppointment.professionalId}"]`
+      );
+      if (profColumn) {
+        profColumn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+      }
+
+      const timeLabel = bodyWrapperRef.current?.querySelector(
+        `[data-time-slot="${focusAppointment.time}"]`
+      );
+      if (timeLabel) {
+        timeLabel.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      setTimeout(() => onFocusConsumed?.(), 4000);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [focusAppointment, loading, onFocusConsumed]);
+
+  const outerClass =
+    containerClassName ?? "border border-border bg-card rounded-lg h-[calc(100vh-280px)] w-full";
+
+  if (loading) {
+    return (
+      <div className={outerClass}>
+        <div className="flex items-center justify-center h-full">
+          <LoadingSpinner size="md" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isSalonClosed) {
+    return (
+      <div className={outerClass}>
+        <div className="flex flex-col items-center justify-center h-full px-4 text-center">
+          <h3 className="text-section-title font-semibold text-foreground mb-2">
+            Salão fechado neste dia
+          </h3>
+          <p className="text-body text-muted-foreground max-w-md">
+            O salão não está aberto na data selecionada. Verifique os horários
+            de funcionamento ou selecione outro dia.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (columns.length === 0) {
+    return (
+      <div className={outerClass}>
+        <div className="flex flex-col items-center justify-center h-full px-4 text-center">
+          <h3 className="text-section-title font-semibold text-foreground mb-2">
+            Nenhum profissional cadastrado
+          </h3>
+          <p className="text-body text-muted-foreground max-w-md">
+            Para utilizar a agenda, é necessário cadastrar pelo menos um
+            profissional no salão.
+          </p>
+          <p className="text-body text-muted-foreground mt-2">
+            Acesse <span className="font-semibold">Gestão de Acesso</span> para
+            cadastrar profissionais.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(outerClass, "flex flex-col overflow-hidden")}>
+
+      {/* ── Row 1: Fixed professional header ── */}
+      <div className="flex-shrink-0 border-b border-border flex">
+        <div className="w-20 flex-shrink-0 bg-secondary border-r border-border" />
+        <div ref={headerScrollRef} className="flex-1 overflow-x-scroll scrollbar-none">
+          <div className="flex w-full">
+            {columns.map((column: ProfessionalColumnType, index: number) => (
+              <div
+                key={column.id}
+                className={cn(
+                  "flex-1 min-w-0 px-2 py-2 md:px-4 md:py-3 text-center flex flex-col justify-center border-r border-border last:border-r-0",
+                  columns.length > 1 && "min-w-[160px] md:min-w-[300px]",
+                  index % 2 === 0 ? "bg-secondary" : "bg-card"
+                )}
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="text-primary font-semibold text-body">
+                    {getInitials(getUserDisplayName(column))}
+                  </span>
+                </div>
+                <div className="text-button text-muted-foreground mt-1 font-normal break-words leading-tight">
+                  {getUserDisplayName(column)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Scrollable body (vertical only) ── */}
+      <div ref={bodyWrapperRef} className="flex-1 flex overflow-y-auto overflow-x-hidden">
+        <TimeGrid
+          timeSlots={timeSlots}
+          slotHeight={slotHeight}
+          currentTimePosition={currentTimePosition}
+        />
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-x-scroll overflow-y-clip scrollbar-none"
+          onScroll={handleBodyScroll}
+        >
+          <div className="flex min-h-full w-full">
+            {columns.map((column: ProfessionalColumnType, index: number) => {
+              const columnEvents = events.filter(
+                (event) => event.professionalId === column.id
+              );
+              return (
+                <ProfessionalColumn
+                  key={column.id}
+                  professional={column}
+                  columnIndex={index}
+                  totalColumns={columns.length}
+                  events={columnEvents}
+                  timeSlots={timeSlots}
+                  slotHeight={slotHeight}
+                  primaryColor={primaryColor}
+                  onEventClick={onEventClick}
+                  onSlotClick={onSlotClick}
+                  onAbsenceClick={onAbsenceClick}
+                  onAbsenceBlockClick={onAbsenceBlockClick}
+                  isPastDay={isPastDay}
+                  selectedDate={calendarDate}
+                  highlightAppointmentId={focusAppointment?.id ?? null}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 3: Fixed horizontal scrollbar footer ── */}
+      {/* Mirror div with identical width to scrollContainerRef inner content.
+          Visible scrollbar stays fixed at the bottom regardless of vertical scroll. */}
+      <div className="flex-shrink-0 flex border-t border-border">
+        <div className="w-20 flex-shrink-0" />
+        <div
+          ref={footerScrollRef}
+          className="flex-1 overflow-x-scroll overflow-y-hidden"
+          onScroll={handleFooterScroll}
+        >
+          <div className="flex w-full">
+            {columns.map((column: ProfessionalColumnType, index: number) => (
+              <div
+                key={column.id}
+                className={cn(
+                  "flex-1 min-w-0 h-0",
+                  columns.length > 1 && "min-w-[160px] md:min-w-[300px]"
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};

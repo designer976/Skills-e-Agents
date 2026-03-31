@@ -1,0 +1,163 @@
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Plus as Plus } from "lucide-react";
+import { CalendarEvent } from '@/components/ui/EasyCalendar';
+import { EventCard } from './EventCard';
+import { cn } from '@/lib/utils';
+
+interface TimeSlotGridProps {
+    date: Date;
+    events: CalendarEvent[];
+    startHour: number;
+    endHour: number;
+    slotMinutes: number;
+    onEventClick: (event: CalendarEvent) => void;
+    onSlotClick: (time: string) => void;
+    highlightAppointmentId?: string | null;
+}
+
+const SLOT_HEIGHT = 60; // pixels per slot
+
+/**
+ * Grid de timeline vertical
+ * - Renderiza horários na esquerda
+ * - Posiciona eventos absolutamente
+ * - Slots vazios clicáveis
+ * - Feedback visual de toque
+ */
+export function TimeSlotGrid({
+    date,
+    events,
+    startHour,
+    endHour,
+    slotMinutes,
+    onEventClick,
+    onSlotClick,
+    highlightAppointmentId,
+}: TimeSlotGridProps) {
+    // Gera slots de tempo
+    const timeSlots = useMemo(() => {
+        const slots: string[] = [];
+        const totalMinutes = (endHour - startHour) * 60;
+        const slotsCount = Math.ceil(totalMinutes / slotMinutes);
+
+        for (let i = 0; i < slotsCount; i++) {
+            const hour = startHour + Math.floor((i * slotMinutes) / 60);
+            const minute = (i * slotMinutes) % 60;
+            slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
+        }
+
+        return slots;
+    }, [startHour, endHour, slotMinutes]);
+
+    // Calcula posição do evento
+    const getEventPosition = (event: CalendarEvent) => {
+        const eventStart = new Date(event.start);
+        const eventEnd = new Date(event.end);
+
+        const startMinutes = eventStart.getHours() * 60 + eventStart.getMinutes();
+        const endMinutes = eventEnd.getHours() * 60 + eventEnd.getMinutes();
+        const gridStartMinutes = startHour * 60;
+
+        const top = ((startMinutes - gridStartMinutes) / slotMinutes) * SLOT_HEIGHT;
+        const height = ((endMinutes - startMinutes) / slotMinutes) * SLOT_HEIGHT;
+
+        return { top, height };
+    };
+
+    // Verifica se slot está no passado
+    const isSlotPast = (slotTime: string): boolean => {
+        const now = new Date();
+        const [hour, minute] = slotTime.split(':').map(Number);
+        const slotDate = new Date(date);
+        slotDate.setHours(hour, minute, 0, 0);
+        return slotDate < now;
+    };
+
+    return (
+        <div className="relative bg-background">
+            {/* Grid de horários */}
+            <div className="flex">
+                {/* Coluna de horários (fixa) */}
+                <div className="flex-shrink-0 w-16 border-r bg-muted/30">
+                    {timeSlots.map((time) => (
+                        <div
+                            key={time}
+                            className="flex items-center justify-center text-xs font-medium text-muted-foreground border-b border-border"
+                            style={{ height: `${SLOT_HEIGHT}px` }}
+                        >
+                            {time}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Área de eventos */}
+                <div className="flex-1 relative flex flex-col">
+                    {/* Linhas do grid */}
+                    {timeSlots.map((time, index) => {
+                        const isPast = isSlotPast(time);
+
+                        return (
+                            <motion.button
+                                key={time}
+                                onClick={() => !isPast && onSlotClick(time)}
+                                disabled={isPast}
+                                className={cn(
+                                    "w-full border-b transition-all relative group",
+                                    isPast
+                                        ? "bg-muted/60 cursor-not-allowed"
+                                        : "bg-background hover:bg-primary/5 active:bg-primary/10 cursor-pointer"
+                                )}
+                                style={{ height: `${SLOT_HEIGHT}px` }}
+                                whileTap={!isPast ? { scale: 0.995 } : {}}
+                            >
+                                {/* Ícone de + para slots disponíveis */}
+                                {!isPast && (
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-1.5 text-primary">
+                                            <Plus className="h-5 w-5" />
+                                            <span className="text-xs font-medium">Agendar</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Indicador sutil sempre visível para slots disponíveis */}
+                                {!isPast && (
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-40 group-hover:opacity-0 transition-opacity">
+                                        <Plus className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                )}
+                            </motion.button>
+                        );
+                    })}
+
+                    {/* Eventos posicionados absolutamente */}
+                    <div className="absolute inset-0 left-2 right-2 pointer-events-none">
+                        {events.map((event, index) => {
+                            const { top, height } = getEventPosition(event);
+
+                            return (
+                                <div
+                                    key={event.id}
+                                    className="absolute w-full pointer-events-auto"
+                                    style={{
+                                        top: `${top}px`,
+                                        height: `${height - 4}px`, // -4px para margem
+                                    }}
+                                >
+                                    <EventCard
+                                        event={event}
+                                        onClick={() => onEventClick(event)}
+                                        index={index}
+                                        isCompact={height < 50}
+                                        isHighlighted={event.id === highlightAppointmentId}
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

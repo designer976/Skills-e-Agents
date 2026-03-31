@@ -1,0 +1,518 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import { AdminDashboardLayout } from "@/components/admin/admin-dashboard-layout"
+import { AdminButton } from "@/components/admin/admin-button"
+import { AdminTable } from "@/components/admin/admin-table"
+import { AdminInput } from "@/components/admin/admin-input"
+import { vistorias } from "@/lib/mock-vistorias"
+import { type ColumnDef } from "@tanstack/react-table"
+import { Star, MessageSquare, Send, X, CheckCircle2, Search } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+// ─── Tipos ─────────────────────────────────────────────────────────────────
+type VistoriaParaAvaliar = {
+  id: string
+  endereco: string
+  tipo: string
+  data: string
+  responsavel: string
+  avaliada: boolean
+}
+
+type Avaliacao = {
+  atendimento: number // 1-5
+  qualidadeRelatorio: number // 1-5
+  qualidadeVistoriador: number // 1-5
+  nps: number // 0-10
+  comentario: string
+  problemas: string[]
+}
+
+const PROBLEMAS_OPCOES = [
+  "Atraso no agendamento",
+  "Falta de comunicação",
+  "Relatório incompleto",
+  "Fotos de baixa qualidade",
+  "Vistoriador não compareceu",
+  "Informações incorretas",
+  "Demora na entrega do relatório",
+  "Outro",
+]
+
+// ─── Mock de vistorias concluídas para avaliação ───────────────────────────
+const vistoriasParaAvaliar: VistoriaParaAvaliar[] = vistorias
+  .filter((v) => v.status === "Concluído")
+  .map((v, i) => ({
+    id: v.id,
+    endereco: v.endereco,
+    tipo: v.tipo,
+    data: v.data,
+    responsavel: v.responsavel,
+    avaliada: i === 0,
+  }))
+  .sort((a, b) => Number(a.avaliada) - Number(b.avaliada)) // Pendentes primeiro
+
+// ─── Avaliação de exemplo (para exibir no modal de vistorias já avaliadas) ─
+const AVALIACAO_EXEMPLO: Avaliacao = {
+  atendimento: 4,
+  qualidadeRelatorio: 5,
+  qualidadeVistoriador: 4,
+  nps: 9,
+  comentario: "Ótimo atendimento, vistoriador pontual e relatório completo. Recomendo!",
+  problemas: ["Demora na entrega do relatório"],
+}
+
+// ─── Componente de Rating com Estrelas ─────────────────────────────────────
+function StarRating({
+  value,
+  onChange,
+  max = 5,
+  label,
+  readOnly = false,
+}: {
+  value: number
+  onChange: (v: number) => void
+  max?: number
+  label: string
+  readOnly?: boolean
+}) {
+  const [hover, setHover] = useState(0)
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
+      <div className="flex gap-1">
+        {Array.from({ length: max }, (_, i) => i + 1).map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => !readOnly && onChange(star)}
+            onMouseEnter={() => !readOnly && setHover(star)}
+            onMouseLeave={() => !readOnly && setHover(0)}
+            className={`p-0.5 transition-transform ${!readOnly ? "hover:scale-110" : "cursor-default"}`}
+          >
+            <Star
+              size={28}
+              className={`transition-colors ${
+                star <= (hover || value)
+                  ? "fill-amber-400 text-amber-400"
+                  : "fill-gray-200 text-gray-200"
+              }`}
+            />
+          </button>
+        ))}
+        <span className="ml-2 text-sm text-gray-500 self-center">
+          {value > 0 ? `${value}/${max}` : "Selecione"}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Componente de NPS ─────────────────────────────────────────────────────
+function NPSRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700 mb-2">
+        NPS - Em uma escala de 0 a 10, qual a probabilidade de recomendar nossos serviços?
+      </p>
+      <div className="flex gap-1">
+        {Array.from({ length: 11 }, (_, i) => i).map((num) => {
+          const filled = value !== -1 && num <= value
+          const activeColor = value <= 6
+            ? "bg-red-500 text-white"
+            : value <= 8
+              ? "bg-amber-500 text-white"
+              : "bg-green-500 text-white"
+          return (
+            <button
+              key={num}
+              type="button"
+              onClick={() => onChange(num)}
+              className={`flex-1 h-12 rounded-lg text-sm font-semibold transition-all ${
+                filled ? activeColor : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {num}
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex justify-between text-xs text-gray-400 mt-2 px-0.5">
+        <span>Nada provável</span>
+        <span>Muito provável</span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modal de Avaliação ────────────────────────────────────────────────────
+function ModalAvaliacao({
+  vistoria,
+  readOnly = false,
+  initialData,
+  onClose,
+  onSubmit,
+}: {
+  vistoria: VistoriaParaAvaliar
+  readOnly?: boolean
+  initialData?: Avaliacao
+  onClose: () => void
+  onSubmit: (avaliacao: Avaliacao) => void
+}) {
+  const [avaliacao, setAvaliacao] = useState<Avaliacao>(
+    initialData ?? {
+      atendimento: 0,
+      qualidadeRelatorio: 0,
+      qualidadeVistoriador: 0,
+      nps: -1,
+      comentario: "",
+      problemas: [],
+    }
+  )
+
+  const toggleProblema = (problema: string) => {
+    setAvaliacao((prev) => ({
+      ...prev,
+      problemas: prev.problemas.includes(problema)
+        ? prev.problemas.filter((p) => p !== problema)
+        : [...prev.problemas, problema],
+    }))
+  }
+
+  const isValid =
+    avaliacao.atendimento > 0 &&
+    avaliacao.qualidadeRelatorio > 0 &&
+    avaliacao.qualidadeVistoriador > 0 &&
+    avaliacao.nps >= 0
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+            {readOnly ? "Vistoria avaliada" : "Avaliar Vistoria"}
+          </h2>
+            <p className="text-sm text-gray-500">
+              {vistoria.id} - {vistoria.endereco}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="p-6 space-y-6">
+          {readOnly && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-green-50 rounded-xl border border-green-100">
+              <CheckCircle2 size={16} className="text-green-600" />
+              <p className="text-sm font-medium text-green-700">Esta vistoria já foi avaliada.</p>
+            </div>
+          )}
+
+          {/* Atendimento */}
+          <StarRating
+            label="Como você avalia o atendimento?"
+            value={avaliacao.atendimento}
+            onChange={(v) => setAvaliacao((prev) => ({ ...prev, atendimento: v }))}
+            readOnly={readOnly}
+          />
+
+          {/* Qualidade do Relatório */}
+          <StarRating
+            label="Qualidade do relatório"
+            value={avaliacao.qualidadeRelatorio}
+            onChange={(v) => setAvaliacao((prev) => ({ ...prev, qualidadeRelatorio: v }))}
+            readOnly={readOnly}
+          />
+
+          {/* Qualidade do Vistoriador */}
+          <StarRating
+            label="Qualidade do vistoriador"
+            value={avaliacao.qualidadeVistoriador}
+            onChange={(v) => setAvaliacao((prev) => ({ ...prev, qualidadeVistoriador: v }))}
+            readOnly={readOnly}
+          />
+
+          {/* NPS */}
+          <NPSRating
+            value={avaliacao.nps}
+            onChange={(v) => !readOnly && setAvaliacao((prev) => ({ ...prev, nps: v }))}
+          />
+
+          {/* Problemas */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Teve algum problema? (selecione todos que se aplicam)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PROBLEMAS_OPCOES.map((problema) => (
+                <button
+                  key={problema}
+                  type="button"
+                  onClick={() => !readOnly && toggleProblema(problema)}
+                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                    readOnly ? "cursor-default" : ""
+                  } ${
+                    avaliacao.problemas.includes(problema)
+                      ? "bg-red-100 text-red-700 border border-red-200"
+                      : "bg-gray-100 text-gray-600 border border-transparent" + (!readOnly ? " hover:bg-gray-200" : "")
+                  }`}
+                >
+                  {problema}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Comentário */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Comentários adicionais (opcional)
+            </p>
+            <textarea
+              value={avaliacao.comentario}
+              onChange={(e) =>
+                !readOnly && setAvaliacao((prev) => ({ ...prev, comentario: e.target.value }))
+              }
+              readOnly={readOnly}
+              placeholder="Compartilhe sua experiência..."
+              className={`w-full h-24 px-4 py-3 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none ${
+                readOnly
+                  ? "bg-gray-50 text-gray-600 cursor-default"
+                  : "focus:ring-2 focus:ring-[#0B7A8F]/30 focus:border-[#0B7A8F]"
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        {!readOnly && (
+          <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-end gap-3">
+            <AdminButton variant="outline" onClick={onClose}>
+              Cancelar
+            </AdminButton>
+            <AdminButton
+              variant="primary"
+              icon={<Send size={16} />}
+              onClick={() => onSubmit(avaliacao)}
+              disabled={!isValid}
+            >
+              Enviar Avaliação
+            </AdminButton>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Página Principal ──────────────────────────────────────────────────────
+export default function QualidadePage() {
+  const [vistoriaSelecionada, setVistoriaSelecionada] = useState<VistoriaParaAvaliar | null>(null)
+  const [avaliacoes, setAvaliacoes] = useState<Record<string, boolean>>(
+    Object.fromEntries(vistoriasParaAvaliar.map((v) => [v.id, v.avaliada]))
+  )
+  const [busca, setBusca] = useState("")
+  const [filtroTipo, setFiltroTipo] = useState("all")
+  const [filtroStatus, setFiltroStatus] = useState("all")
+
+  // Opções únicas para os selects
+  const tiposUnicos = useMemo(() =>
+    Array.from(new Set(vistoriasParaAvaliar.map((v) => v.tipo))).sort(), [])
+
+  // Dados filtrados
+  const dadosFiltrados = useMemo(() => {
+    const termo = busca.toLowerCase()
+    return vistoriasParaAvaliar.filter((v) => {
+      const isAvaliada = avaliacoes[v.id]
+      const matchBusca = !termo || [v.id, v.endereco, v.data, v.responsavel]
+        .some((campo) => campo.toLowerCase().includes(termo))
+      const matchTipo = filtroTipo === "all" || v.tipo === filtroTipo
+      const matchStatus = filtroStatus === "all"
+        || (filtroStatus === "pendente" && !isAvaliada)
+        || (filtroStatus === "avaliada" && isAvaliada)
+      return matchBusca && matchTipo && matchStatus
+    })
+  }, [busca, filtroTipo, filtroStatus, avaliacoes])
+
+  const handleSubmitAvaliacao = (avaliacao: Avaliacao) => {
+    if (vistoriaSelecionada) {
+      setAvaliacoes((prev) => ({ ...prev, [vistoriaSelecionada.id]: true }))
+      setVistoriaSelecionada(null)
+    }
+  }
+
+  const columns: ColumnDef<VistoriaParaAvaliar, unknown>[] = [
+    {
+      accessorKey: "id",
+      header: "Código",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs text-gray-500">{row.original.id}</span>
+      ),
+    },
+    {
+      accessorKey: "endereco",
+      header: "Endereço",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-700">{row.original.endereco}</span>
+      ),
+    },
+    {
+      accessorKey: "tipo",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-500">{row.original.tipo}</span>
+      ),
+    },
+    {
+      accessorKey: "data",
+      header: "Data",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-500">{row.original.data}</span>
+      ),
+    },
+    {
+      accessorKey: "responsavel",
+      header: "Vistoriador",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-500">{row.original.responsavel}</span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const avaliada = avaliacoes[row.original.id]
+        return avaliada ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
+            <CheckCircle2 size={12} /> Avaliada
+          </span>
+        ) : (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">
+            Pendente
+          </span>
+        )
+      },
+    },
+    {
+      id: "acoes",
+      header: "",
+      cell: ({ row }) => {
+        const avaliada = avaliacoes[row.original.id]
+        return (
+          <AdminButton
+            variant={avaliada ? "ghost" : "outline"}
+            size="sm"
+            icon={avaliada ? <MessageSquare size={14} /> : <Star size={14} />}
+            onClick={() => setVistoriaSelecionada(row.original)}
+            className={avaliada ? "text-gray-400" : "text-[#0B7A8F]"}
+          >
+            {avaliada ? "Ver" : "Avaliar"}
+          </AdminButton>
+        )
+      },
+    },
+  ]
+
+  const pendentes = vistoriasParaAvaliar.filter((v) => !avaliacoes[v.id]).length
+  const avaliadas = vistoriasParaAvaliar.filter((v) => avaliacoes[v.id]).length
+
+  return (
+    <AdminDashboardLayout
+      profile="cliente"
+      title="Avaliação"
+      breadcrumbs={[
+        { label: "Minha Empresa", href: "/admin/cliente/empresa" },
+      ]}
+    >
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total de Vistorias</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{vistoriasParaAvaliar.length}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Avaliadas</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">{avaliadas}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Pendentes</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{pendentes}</p>
+        </div>
+      </div>
+
+      {/* Busca + Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-xs font-medium text-gray-500">Buscar</label>
+          <AdminInput
+            variant="form"
+            placeholder="Código, endereço, data ou vistoriador..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            icon={<Search size={15} />}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-500">Tipo</label>
+          <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+            <SelectTrigger className="w-44 h-10 px-3">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {tiposUnicos.map((tipo) => (
+                <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-500">Status</label>
+          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <SelectTrigger className="w-40 h-10 px-3">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="pendente">Pendente</SelectItem>
+              <SelectItem value="avaliada">Avaliada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Tabela */}
+      <div className="overflow-hidden">
+        <AdminTable
+          data={dadosFiltrados}
+          columns={columns}
+          showSearch={false}
+        />
+      </div>
+
+      {/* Modal de avaliação */}
+      {vistoriaSelecionada && (
+        <ModalAvaliacao
+          vistoria={vistoriaSelecionada}
+          readOnly={avaliacoes[vistoriaSelecionada.id]}
+          initialData={avaliacoes[vistoriaSelecionada.id] ? AVALIACAO_EXEMPLO : undefined}
+          onClose={() => setVistoriaSelecionada(null)}
+          onSubmit={handleSubmitAvaliacao}
+        />
+      )}
+    </AdminDashboardLayout>
+  )
+}

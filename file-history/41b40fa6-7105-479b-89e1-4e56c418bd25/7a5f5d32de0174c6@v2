@@ -1,0 +1,51 @@
+import { ReactNode } from 'react'
+
+interface MarqueeProps {
+  children: ReactNode
+  reverse?: boolean
+  pauseOnHover?: boolean
+  className?: string
+  speed?: 'slow' | 'normal' | 'fast'
+}
+
+const speedMap = {
+  slow: '50s',
+  normal: '35s',
+  fast: '20s',
+}
+
+export default function Marquee({
+  children,
+  reverse = false,
+  pauseOnHover = true,
+  className = '',
+  speed = 'normal',
+}: MarqueeProps) {
+  const duration = speedMap[speed]
+
+  return (
+    <div
+      className={`relative flex overflow-hidden select-none ${className}`}
+      style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}
+    >
+      <div
+        className={`flex shrink-0 gap-6 ${pauseOnHover ? 'group-hover:[animation-play-state:paused]' : ''}`}
+        style={{
+          animation: `${reverse ? 'marqueeReverse' : 'marquee'} ${duration} linear infinite`,
+        }}
+      >
+        {children}
+      </div>
+      {/* Duplicate for seamless loop */}
+      <div
+        className={`flex shrink-0 gap-6 ${pauseOnHover ? 'group-hover:[animation-play-state:paused]' : ''}`}
+        aria-hidden="true"
+        style={{
+          animation: `${reverse ? 'marqueeReverse' : 'marquee'} ${duration} linear infinite`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}

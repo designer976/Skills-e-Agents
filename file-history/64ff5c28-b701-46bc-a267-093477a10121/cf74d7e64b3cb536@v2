@@ -1,0 +1,135 @@
+# Plano: Padronização de Loading com LoadingSpinner
+
+## Contexto
+O projeto possui 57+ implementações de loading inconsistentes: raw divs com `animate-spin`, ícones `Loader2`/`RefreshCw` inline e outros padrões. Apenas 1 arquivo (DashboardPage.tsx) usa o componente oficial `@/components/ui/loading-spinner`. O objetivo é padronizar tudo usando esse componente do Design System.
+
+---
+
+## Análise dos Padrões Encontrados
+
+### Padrão A — Full loaders (standalone, centralizados)
+Substituir por `<LoadingSpinner size="md|lg" />` diretamente.
+Exemplos atuais:
+```tsx
+// raw div
+<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+// Loader2 solto
+<Loader2 className="h-8 w-8 animate-spin text-primary" />
+```
+
+### Padrão B — Button inline loaders
+Dentro de `<Button>`: `{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}`.
+O componente atual **não suporta inline** (tem wrapper div). Requer extensão do componente.
+
+---
+
+## Passo 1 — Estender `loading-spinner.tsx`
+
+**Arquivo:** `frontend/src/components/ui/loading-spinner.tsx`
+
+Adicionar prop `inline` para renderizar apenas o ícone (sem wrapper div), para uso em botões.
+Adicionar `className` para customização de margem.
+
+```tsx
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+
+interface LoadingSpinnerProps {
+  size?: "sm" | "md" | "lg";
+  text?: string;
+  inline?: boolean;
+  className?: string;
+}
+
+const SIZE_CLASSES: Record<NonNullable<LoadingSpinnerProps["size"]>, string> = {
+  sm: "h-4 w-4",
+  md: "h-8 w-8",
+  lg: "h-12 w-12",
+};
+
+export function LoadingSpinner({ size = "md", text, inline, className }: LoadingSpinnerProps) {
+  if (inline) {
+    return <Loader2 className={cn(SIZE_CLASSES[size], "animate-spin text-primary", className)} />;
+  }
+  return (
+    <div className="flex flex-col items-center justify-center gap-3">
+      <Loader2 className={cn(SIZE_CLASSES[size], "animate-spin text-primary")} />
+      {text && <p className="text-sm text-muted-foreground">{text}</p>}
+    </div>
+  );
+}
+```
+
+---
+
+## Passo 2 — Substituir Full Loaders (Padrão A)
+
+Substituir raw divs e Loader2 soltos por `<LoadingSpinner>`:
+
+| Arquivo | Linhas aprox. | Substituição |
+|---------|--------------|--------------|
+| `frontend/src/App.tsx` | 20 | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/auth/ProtectedRoute.tsx` | 108 | `<LoadingSpinner size="lg" />` |
+| `frontend/src/components/booking/BookingServiceRecommendations.tsx` | 92 | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/ui/EasyCalendar/EasyCalendar.tsx` | 232 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/NewBookingPage.tsx` | 392 | `<LoadingSpinner size="lg" />` |
+| `frontend/src/pages/admin/AdminDashboardPage.tsx` | 284, 397 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/FinancialPage.tsx` | 88 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/SalonsPage.tsx` | 168, 209 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/SpecialtiesPage.tsx` | 188 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/SpecialtyServicesPage.tsx` | 213 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/UsersPage.tsx` | 403 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/CreateSalonPage.tsx` | 211, 331 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/CreateUserPage.tsx` | 466, 560 | `<LoadingSpinner size="md" />` |
+| `frontend/src/pages/admin/EditUserPage.tsx` | 173, 414 | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/agenda/ModalNovoAgendamento.tsx` | múltiplas | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/agenda/ModalEditarAgendamento.tsx` | múltiplas | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/agenda/mobile/NewAppointmentBottomSheet.tsx` | múltiplas | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/modals/AppointmentModal.tsx` | 1631, 1762 | `<LoadingSpinner size="md" />` |
+| `frontend/src/components/modals/TransformarSolicitacaoModal.tsx` | 858 | `<LoadingSpinner size="md" />` |
+
+---
+
+## Passo 3 — Substituir Button Inline Loaders (Padrão B)
+
+Substituir `{cond && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}` por `{cond && <LoadingSpinner size="sm" inline className="mr-2" />}`:
+
+| Arquivo |
+|---------|
+| `frontend/src/components/forms/AdminSpecialtyForm.tsx` |
+| `frontend/src/components/forms/ServiceForm.tsx` |
+| `frontend/src/components/forms/SpecialtyForm.tsx` |
+| `frontend/src/components/forms/UserServicesForm.tsx` |
+| `frontend/src/components/modals/CancelSubscriptionModal.tsx` |
+| `frontend/src/components/modals/ChangePlanModal.tsx` |
+| `frontend/src/components/modals/ClientModal.tsx` |
+| `frontend/src/components/modals/ConfirmationModal.tsx` |
+| `frontend/src/components/modals/ReplaceCardModal.tsx` |
+| `frontend/src/components/modals/ServiceConfigModal.tsx` |
+| `frontend/src/components/salon/subscription/SecureCardInput.tsx` |
+| `frontend/src/components/salon/subscription/SubscriptionConfirmationModal.tsx` |
+| `frontend/src/components/booking/steps/BookingReceipt.tsx` |
+| `frontend/src/components/booking/steps/NewBookingConfirmation.tsx` |
+| `frontend/src/components/booking/steps/ServiceConfiguration.tsx` |
+| `frontend/src/pages/Register.tsx` |
+| `frontend/src/pages/admin/AbsencesPage.tsx` |
+
+---
+
+## Observação: Casos especiais
+
+- `ConnectionStatus.tsx` — usa `RefreshCw` com animate-spin como ícone de status de conexão. **Manter como está** (não é um loading genérico, é ícone funcional de reconexão).
+- `AbsencesPage.tsx` linha de `Clock animate-spin` — substituir por `LoadingSpinner size="sm" inline`.
+
+---
+
+## Verificação
+
+1. `cd frontend && npm run build` — sem erros de TypeScript
+2. `cd frontend && npm run lint` — sem warnings de imports não usados
+3. Verificar visualmente no browser: http://localhost:8084
+   - Login/loading de autenticação (`App.tsx`, `ProtectedRoute.tsx`)
+   - Dashboard Admin
+   - Agendamentos (modais novo e editar)
+   - Booking público
+   - Formulários com botões de salvar

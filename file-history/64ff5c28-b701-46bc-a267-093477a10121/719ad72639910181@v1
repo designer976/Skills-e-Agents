@@ -1,0 +1,860 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { useSelectedSalon } from "@/hooks/useSelectedSalon";
+import { serviceService } from "@/services/serviceService";
+import { specialtyService } from "@/services/specialtyService";
+import { userService } from "@/services/userService";
+import { UserRole } from "@/types/user";
+import { getUserDisplayName } from "@/utils/userHelpers";
+import { Button } from "@/components/ui/button";
+import { Check as Check, ChevronDown as ChevronDown, Filter as Filter, Search as Search } from "lucide-react";
+import { useEffect, useState } from "react";
+
+interface Specialty {
+  id: string;
+  name: string;
+  services: Service[];
+}
+
+interface Service {
+  id: string;
+  name: string;
+}
+
+interface Professional {
+  id: string;
+  name: string;
+  nickname?: string;
+}
+
+interface Status {
+  id: string;
+  name: string;
+}
+
+export type FilterRemoveSignal = {
+  version: number;
+  type: 'specialty' | 'professional' | 'status' | 'all';
+  id?: string;
+};
+
+export type ProfessionalChip = {
+  id: string;
+  label: string;
+};
+
+interface AgendaFiltersProps {
+  onProfessionalFilter: (professionalIds: string[] | null) => void;
+  onStatusFilter: (status: string | null) => void;
+  onServiceFilter?: (serviceIds: string[] | null) => void;
+  onFilteredProfessionalsChange?: (professionals: Professional[]) => void;
+  onSpecialtyLabelChange?: (label: string | null) => void;
+  onProfessionalChipsChange?: (chips: ProfessionalChip[] | null) => void;
+  userRole?: 'Easy Salon' | 'Profissional' | 'Recepcionista';
+  variant?: 'desktop' | 'mobile';
+  removeSignal?: FilterRemoveSignal;
+}
+
+// Status data remains static as it's a predefined list
+const statusList: Status[] = [
+  { id: "Agendado", name: "Agendado" },
+  { id: "Atendendo", name: "Atendendo" },
+  { id: "Pgto Pendente", name: "Pgto Pendente" },
+  { id: "Pago", name: "Pago" },
+  { id: "Cancelado", name: "Cancelado" },
+];
+
+// Função de busca inteligente que ignora case, acentos e permite busca parcial
+const normalizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9\s]/g, ''); // Remove caracteres especiais
+};
+
+// Função de busca flexível que funciona com diferentes formatos de texto
+const smartSearch = (searchTerm: string, target: string): boolean => {
+  const normalizedSearch = normalizeString(searchTerm);
+  const normalizedTarget = normalizeString(target);
+
+  // Busca exata
+  if (normalizedTarget.includes(normalizedSearch)) {
+    return true;
+  }
+
+  // Busca por palavras separadas (permite buscar "jo si" para encontrar "João Silva")
+  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length > 0);
+  return searchWords.every(word => normalizedTarget.includes(word));
+};
+
+export function AgendaFilters({
+  onProfessionalFilter,
+  onStatusFilter,
+  onServiceFilter,
+  onFilteredProfessionalsChange,
+  onSpecialtyLabelChange,
+  onProfessionalChipsChange,
+  userRole,
+  variant = 'desktop',
+  removeSignal,
+}: AgendaFiltersProps) {
+  // Chave para localStorage
+  const FILTERS_STORAGE_KEY = 'agendaFilters';
+
+  // Função para carregar filtros salvos
+  const loadSavedFilters = () => {
+    try {
+      const saved = localStorage.getItem(FILTERS_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar filtros salvos:', error);
+    }
+    return null;
+  };
+
+  // Função para salvar filtros
+  const saveFilters = (filters: any) => {
+    try {
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    } catch (error) {
+      console.error('Erro ao salvar filtros:', error);
+    }
+  };
+
+  // Carregar filtros salvos na inicialização
+  const savedFilters = loadSavedFilters();
+
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(savedFilters?.selectedSpecialty || null);
+  const [selectedServices, setSelectedServices] = useState<string[]>(savedFilters?.selectedServices || []);
+  const [selectedProfessionals, setSelectedProfessionals] = useState<string[]>(savedFilters?.selectedProfessionals || []);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(savedFilters?.selectedStatus || null);
+  const [professionalsDropdownOpen, setProfessionalsDropdownOpen] = useState(false);
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [professionalSearchQuery, setProfessionalSearchQuery] = useState<string>("");
+
+  // State for real data
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [allProfessionals, setAllProfessionals] = useState<Professional[]>([]); // Armazena todos os profissionais
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cache para profissionais por serviço
+  const [professionalsByServiceCache] = useState<Map<string, Professional[]>>(new Map());
+  
+  // Get selected salon
+  const { selectedSalon } = useSelectedSalon();
+  
+  // Salvar filtros sempre que mudarem
+  useEffect(() => {
+    const filters = {
+      selectedSpecialty,
+      selectedServices,
+      selectedProfessionals,
+      selectedStatus,
+    };
+    saveFilters(filters);
+  }, [selectedSpecialty, selectedServices, selectedProfessionals, selectedStatus]);
+
+  // Aplicar filtros salvos ao carregar
+  useEffect(() => {
+    if (savedFilters) {
+      // Aplicar filtros aos callbacks
+      if (savedFilters.selectedServices?.length > 0 && onServiceFilter) {
+        onServiceFilter(savedFilters.selectedServices);
+      }
+      if (savedFilters.selectedProfessionals?.length > 0 && userRole !== 'Profissional') {
+        onProfessionalFilter(savedFilters.selectedProfessionals);
+      }
+      if (savedFilters.selectedStatus) {
+        onStatusFilter(savedFilters.selectedStatus);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Executar apenas na montagem do componente
+  
+  // Load real data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      // Wait for salon to be selected
+      if (!selectedSalon) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Load specialties and services
+        const specialtiesResponse = await specialtyService.listSalonSpecialties();
+        let specialtiesData: Specialty[] = [];
+        
+        // Check different response formats
+        if (specialtiesResponse?.data && Array.isArray(specialtiesResponse.data)) {
+          // New format: { data: [...], total: ... }
+          specialtiesData = specialtiesResponse.data.map((spec: { id: string; name: string }) => ({
+            id: spec.id,
+            name: spec.name,
+            services: []
+          }));
+        } else if (specialtiesResponse?.standardSpecialties || specialtiesResponse?.customSpecialties) {
+          // Old format with separate arrays
+          const allSpecialties = [
+            ...(specialtiesResponse.standardSpecialties || []),
+            ...(specialtiesResponse.customSpecialties || [])
+          ];
+          specialtiesData = allSpecialties.map((spec: { id: string; name: string }) => ({
+            id: spec.id,
+            name: spec.name,
+            services: []
+          }));
+        } else if (Array.isArray(specialtiesResponse)) {
+          // Direct array format
+          specialtiesData = specialtiesResponse.map((spec: { id: string; name: string }) => ({
+            id: spec.id,
+            name: spec.name,
+            services: []
+          }));
+        }
+        
+        // Load all services
+        const servicesResponse = await serviceService.getAll({ active: true });
+
+        // Handle the response structure - it returns {customServices, standardServices}
+        let servicesData = [];
+        if (servicesResponse?.customServices || servicesResponse?.standardServices) {
+          servicesData = [
+            ...(servicesResponse.customServices || []),
+            ...(servicesResponse.standardServices || [])
+          ];
+        } else if (Array.isArray(servicesResponse)) {
+          servicesData = servicesResponse;
+        } else {
+          servicesData = [];
+        }
+
+        setServices(servicesData);
+        
+        // Map services to their specialties
+        // Note: The database uses 'categoryId' for the specialty relationship
+        specialtiesData = specialtiesData.map(spec => ({
+          ...spec,
+          services: servicesData
+            .filter((service: any) => {
+              // Check multiple possible field names for the specialty relationship
+              const serviceSpecialtyId = service.categoryId || service.specialtyId || service.category_id || service.specialty_id;
+              return serviceSpecialtyId === spec.id;
+            })
+            .map((service: any) => ({
+              id: service.id,
+              name: service.name
+            }))
+        })).filter(spec => spec.services.length > 0);
+
+        setSpecialties(specialtiesData);
+        
+        // Load professionals if user is not a professional
+        if (userRole !== 'Profissional' && selectedSalon?.id) {
+          try {
+            const professionalsResponse = await userService.list({
+              salonId: selectedSalon.id,
+              role: UserRole.PROFESSIONAL,
+              status: 'active'
+            });
+
+            const professionalsData = professionalsResponse.data
+              .filter((prof) => prof && prof.id)
+              .map((prof) => ({
+                id: prof.id,
+                name: prof.nickname || prof.name || 'Profissional'
+              }))
+              .sort((a, b) => a.name.localeCompare(b.name));
+
+            setProfessionals(professionalsData);
+            setAllProfessionals(professionalsData);
+          } catch (err) {
+            console.error('Erro ao carregar profissionais:', err);
+            setProfessionals([]);
+            setAllProfessionals([]);
+          }
+        }
+
+      } catch (err) {
+        setError('Erro ao carregar dados dos filtros');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [userRole, selectedSalon]);
+
+  // Filtrar profissionais baseado na especialidade/serviço selecionado
+  useEffect(() => {
+    const filterProfessionalsBySpecialty = async () => {
+      let filteredProfessionals: Professional[] = allProfessionals;
+
+      // Se há serviços específicos selecionados, buscar profissionais desses serviços
+      if (selectedServices.length > 0) {
+        try {
+          // Buscar profissionais para cada serviço selecionado
+          const professionalsByService = await Promise.all(
+            selectedServices.map(async (serviceId) => {
+              // Verificar cache primeiro
+              if (professionalsByServiceCache.has(serviceId)) {
+                return professionalsByServiceCache.get(serviceId)!;
+              }
+
+              try {
+                const serviceProfessionals = await serviceService.getProfessionals(serviceId);
+                const mappedProfessionals = serviceProfessionals
+                  .filter((prof: any) => prof.userId || prof.professionalId || prof.id)
+                  .map((prof: any) => ({
+                    id: prof.userId || prof.professionalId || prof.id,
+                    name: prof.userName || prof.professionalName || prof.name || 'Profissional'
+                  }));
+
+                // Adicionar ao cache
+                professionalsByServiceCache.set(serviceId, mappedProfessionals);
+                return mappedProfessionals;
+              } catch {
+                return [];
+              }
+            })
+          );
+
+          // Combinar e remover duplicatas (profissionais que atendem qualquer um dos serviços)
+          const allServiceProfessionals = professionalsByService.flat();
+          filteredProfessionals = Array.from(
+            new Map(allServiceProfessionals.map(prof => [prof.id, prof])).values()
+          );
+
+          setProfessionals(filteredProfessionals);
+          onFilteredProfessionalsChange?.(filteredProfessionals);
+        } catch (err) {
+          setProfessionals(allProfessionals);
+          onFilteredProfessionalsChange?.(allProfessionals);
+        }
+        return;
+      }
+
+      // Se não há especialidade selecionada ou é "all", mostra todos os profissionais
+      if (!selectedSpecialty || selectedSpecialty === "all") {
+        setProfessionals(allProfessionals);
+        onFilteredProfessionalsChange?.(allProfessionals);
+        return;
+      }
+
+      // Caso especial para "Outros"
+      if (selectedSpecialty === 'outros') {
+        setProfessionals(allProfessionals);
+        onFilteredProfessionalsChange?.(allProfessionals);
+        return;
+      }
+
+      // Se há apenas especialidade selecionada (sem serviço específico)
+      // Buscar todos os profissionais que trabalham com qualquer serviço desta especialidade
+      const specialty = specialties.find(s => s.id === selectedSpecialty);
+
+      if (!specialty) {
+        setProfessionals(allProfessionals);
+        onFilteredProfessionalsChange?.(allProfessionals);
+        return;
+      }
+
+      // Se a especialidade não tem serviços, mostra lista vazia (nenhum profissional trabalha com ela)
+      if (specialty.services.length === 0) {
+        setProfessionals([]);
+        onFilteredProfessionalsChange?.([]);
+        return;
+      }
+
+      // Buscar profissionais para cada serviço da especialidade
+      try {
+        const professionalsByService = await Promise.all(
+          specialty.services.map(async (service) => {
+            // Usar cache se disponível
+            if (professionalsByServiceCache.has(service.id)) {
+              const cachedProfs = professionalsByServiceCache.get(service.id)!;
+              return cachedProfs;
+            }
+
+            try {
+              const profs = await serviceService.getProfessionals(service.id);
+              const mappedProfs = profs.map((prof: any) => ({
+                id: prof.userId || prof.professionalId || prof.id,
+                name: prof.userName || prof.professionalName || prof.name || 'Profissional'
+              }));
+
+              // Adicionar ao cache
+              professionalsByServiceCache.set(service.id, mappedProfs);
+
+              return mappedProfs;
+            } catch {
+              return [];
+            }
+          })
+        );
+
+        // Combinar e remover duplicatas
+        const allServiceProfessionals = professionalsByService.flat();
+        filteredProfessionals = Array.from(
+          new Map(allServiceProfessionals.map(prof => [prof.id, prof])).values()
+        );
+
+        // Sempre usa os profissionais filtrados, mesmo que vazio
+        // Isso garante que a mensagem "Nenhum profissional disponível" apareça quando apropriado
+        setProfessionals(filteredProfessionals);
+        onFilteredProfessionalsChange?.(filteredProfessionals);
+      } catch (err) {
+        setProfessionals(allProfessionals);
+        onFilteredProfessionalsChange?.(allProfessionals);
+      }
+    };
+
+    // Só executar se não for um profissional (profissionais não veem o filtro)
+    if (userRole !== 'Profissional' && allProfessionals.length > 0) {
+      filterProfessionalsBySpecialty();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSpecialty, selectedServices, allProfessionals, specialties, userRole, professionalsByServiceCache]); // onFilteredProfessionalsChange omitido intencionalmente para evitar loops
+
+  const handleSpecialtySelect = (specialtyId: string): void => {
+    if (specialtyId === "all") {
+      setSelectedSpecialty(null);
+      setSelectedServices([]);
+      if (onServiceFilter) onServiceFilter(null);
+      onSpecialtyLabelChange?.(null);
+      return;
+    }
+
+    const specialty = specialties.find(s => s.id === specialtyId);
+    const serviceIds = specialty ? specialty.services.map(s => s.id) : [];
+
+    setSelectedSpecialty(specialtyId);
+    setSelectedServices(serviceIds);
+    if (onServiceFilter) onServiceFilter(serviceIds.length > 0 ? serviceIds : null);
+    onSpecialtyLabelChange?.(specialty?.name ?? null);
+  };
+
+  const handleServiceToggle = (serviceId: string): void => {
+    const newSelection = selectedServices.includes(serviceId)
+      ? selectedServices.filter(id => id !== serviceId)
+      : [...selectedServices, serviceId];
+
+    setSelectedServices(newSelection);
+    if (onServiceFilter) {
+      onServiceFilter(newSelection.length > 0 ? newSelection : null);
+    }
+  };
+
+  const handleProfessionalToggle = (professionalId: string): void => {
+    if (professionalId === "all") {
+      setSelectedProfessionals([]);
+      onProfessionalFilter(null);
+      onProfessionalChipsChange?.(null);
+    } else {
+      const newSelection = selectedProfessionals.includes(professionalId)
+        ? selectedProfessionals.filter(id => id !== professionalId)
+        : [...selectedProfessionals, professionalId];
+
+      setSelectedProfessionals(newSelection);
+      onProfessionalFilter(newSelection.length > 0 ? newSelection : null);
+
+      const chips = newSelection
+        .map(id => allProfessionals.find(p => p.id === id))
+        .filter((p): p is Professional => p !== undefined)
+        .map(p => ({ id: p.id, label: getUserDisplayName(p) }));
+      onProfessionalChipsChange?.(chips.length > 0 ? chips : null);
+    }
+  };
+
+  const handleStatusSelect = (status: string): void => {
+    const finalStatus = status === "all" ? null : status;
+    setSelectedStatus(finalStatus);
+    onStatusFilter(finalStatus);
+  };
+
+  const clearFilters = (): void => {
+    setSelectedSpecialty(null);
+    setSelectedServices([]);
+    setSelectedStatus(null);
+    setSearchQuery("");
+    setProfessionalSearchQuery("");
+    onStatusFilter(null);
+    if (onServiceFilter) onServiceFilter(null);
+    onSpecialtyLabelChange?.(null);
+    onProfessionalChipsChange?.(null);
+
+    if (userRole !== 'Profissional') {
+      setSelectedProfessionals([]);
+      setProfessionals(allProfessionals);
+      onProfessionalFilter(null);
+      onFilteredProfessionalsChange?.(allProfessionals);
+    }
+
+    try {
+      localStorage.removeItem(FILTERS_STORAGE_KEY);
+    } catch (error) {
+      console.error('Erro ao limpar filtros salvos:', error);
+    }
+  };
+
+  // Reage a sinais de remoção de filtro individuais ou total
+  useEffect(() => {
+    if (!removeSignal) return;
+    if (removeSignal.type === 'all') clearFilters();
+    else if (removeSignal.type === 'specialty') handleSpecialtySelect("all");
+    else if (removeSignal.type === 'professional' && removeSignal.id) handleProfessionalToggle(removeSignal.id);
+    else if (removeSignal.type === 'status') { setSelectedStatus(null); onStatusFilter(null); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [removeSignal?.version]);
+
+  const getFilteredSpecialties = (): Specialty[] => {
+    if (!searchQuery.trim()) return specialties;
+
+    return specialties.map(specialty => {
+      const filteredServices = specialty.services.filter(service =>
+        smartSearch(searchQuery, service.name)
+      );
+
+      if (smartSearch(searchQuery, specialty.name)) {
+        return specialty;
+      }
+
+      if (filteredServices.length > 0) {
+        return {
+          ...specialty,
+          services: filteredServices
+        };
+      }
+
+      return null;
+    }).filter(Boolean) as Specialty[];
+  };
+
+  const getFilteredProfessionals = (): Professional[] => {
+    if (!professionalSearchQuery.trim()) return professionals;
+
+    return professionals.filter(professional =>
+      smartSearch(professionalSearchQuery, professional.name)
+    );
+  };
+
+  const getSelectedSpecialtyName = (): string => {
+    if (!selectedSpecialty) return "Especialidades";
+    return specialties.find(s => s.id === selectedSpecialty)?.name || "Especialidade";
+  };
+
+  const getSelectedProfessionalName = (): string => {
+    if (selectedProfessionals.length === 0) return "Profissionais";
+    if (selectedProfessionals.length === 1) {
+      return professionals.find(p => p.id === selectedProfessionals[0])?.name || "Profissional";
+    }
+    return `${selectedProfessionals.length} selecionados`;
+  };
+
+  const hasActiveFilters = selectedSpecialty || (userRole !== 'Profissional' && selectedProfessionals.length > 0) || selectedStatus;
+
+  if (variant === 'mobile') {
+    return (
+      <div className="space-y-6 max-h-[calc(100vh-150px)] overflow-y-auto pb-2">
+        {/* Especialidades */}
+        <div>
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Especialidades</p>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar serviços..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9"
+            />
+          </div>
+          <button
+            onClick={() => { handleSpecialtySelect("all"); setSearchQuery(""); }}
+            className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+          >
+            <span className="text-body">Todos</span>
+            {!selectedSpecialty && <Check className="w-4 h-4 text-primary" />}
+          </button>
+          {loading ? (
+            <p className="text-body text-muted-foreground px-3 py-2">Carregando...</p>
+          ) : (
+            getFilteredSpecialties().map((specialty) => (
+              <button
+                key={specialty.id}
+                onClick={() => { handleSpecialtySelect(specialty.id); setSearchQuery(""); }}
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+              >
+                <span className="text-body">{specialty.name}</span>
+                {selectedSpecialty === specialty.id && <Check className="w-4 h-4 text-primary" />}
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* Profissionais */}
+        {userRole !== 'Profissional' && (
+          <div>
+            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Profissionais</p>
+            <div className="relative mb-2">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar profissional..."
+                value={professionalSearchQuery}
+                onChange={(e) => setProfessionalSearchQuery(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
+            {getFilteredProfessionals().map((professional) => (
+              <button
+                key={professional.id}
+                onClick={() => handleProfessionalToggle(professional.id)}
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+              >
+                <span className="text-body">{getUserDisplayName(professional)}</span>
+                {selectedProfessionals.includes(professional.id) && <Check className="w-4 h-4 text-primary" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Status */}
+        <div>
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Status</p>
+          <button
+            onClick={() => handleStatusSelect("all")}
+            className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+          >
+            <span className="text-body">Todos</span>
+            {!selectedStatus && <Check className="w-4 h-4 text-primary" />}
+          </button>
+          {statusList.map((status) => (
+            <button
+              key={status.id}
+              onClick={() => handleStatusSelect(status.id)}
+              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+            >
+              <span className="text-body">{status.name}</span>
+              {selectedStatus === status.id && <Check className="w-4 h-4 text-primary" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      {/* Filtro por Especialidade/Serviços */}
+      <DropdownMenu open={servicesDropdownOpen} onOpenChange={setServicesDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className={selectedSpecialty ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+            <Filter className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">{loading ? "Carregando..." : getSelectedSpecialtyName()}</span>
+            <ChevronDown className="h-4 w-4 flex-shrink-0" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56 p-0 bg-card border border-border shadow-lg" align="end">
+          {/* Campo de busca fixo no topo */}
+          <div className="sticky top-0 p-2 bg-background border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+
+          {/* Opção para limpar seleção */}
+          {selectedServices.length > 0 && (
+            <>
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedServices([]);
+                  setSelectedSpecialty(null);
+                  setSearchQuery("");
+                  if (onServiceFilter) {
+                    onServiceFilter(null);
+                  }
+                }}
+                className="text-body text-muted-foreground"
+              >
+                Limpar seleção
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+
+          <DropdownMenuItem onClick={() => {
+            handleSpecialtySelect("all");
+            setSearchQuery(""); // Limpa a busca ao selecionar "Todos"
+          }}>
+            Todos
+          </DropdownMenuItem>
+          {loading ? (
+            <DropdownMenuItem disabled>Carregando especialidades...</DropdownMenuItem>
+          ) : specialties.length === 0 ? (
+            <DropdownMenuItem disabled>Nenhuma especialidade encontrada</DropdownMenuItem>
+          ) : (
+            <>
+              <DropdownMenuSeparator />
+              {(() => {
+                const filteredSpecialties = getFilteredSpecialties();
+
+                if (filteredSpecialties.length === 0) {
+                  return (
+                    <div className="p-2 text-center text-muted-foreground text-body">
+                      Nenhum resultado para "{searchQuery}"
+                    </div>
+                  );
+                }
+
+                return filteredSpecialties.map((specialty) => (
+                  <DropdownMenuItem
+                    key={specialty.id}
+                    onClick={() => {
+                      handleSpecialtySelect(specialty.id);
+                      setSearchQuery("");
+                    }}
+                    className={selectedSpecialty === specialty.id ? "bg-accent" : ""}
+                  >
+                    {specialty.name}
+                  </DropdownMenuItem>
+                ));
+              })()}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Filtro por Profissional - Oculto para profissionais */}
+      {userRole !== 'Profissional' && (
+        <DropdownMenu open={professionalsDropdownOpen} onOpenChange={setProfessionalsDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className={selectedProfessionals.length > 0 ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+              <span className="truncate">{getSelectedProfessionalName()}</span>
+              <ChevronDown className="h-4 w-4 flex-shrink-0" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 p-0 bg-card border border-border shadow-lg" align="end">
+            {/* Campo de busca fixo no topo */}
+            <div className="sticky top-0 p-2 bg-background border-b">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar profissional..."
+                  value={professionalSearchQuery}
+                  onChange={(e) => setProfessionalSearchQuery(e.target.value)}
+                  className="pl-8 h-9"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+
+            {/* Opção para limpar seleção */}
+            {selectedProfessionals.length > 0 && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => {
+                    handleProfessionalToggle("all");
+                    setProfessionalSearchQuery(""); // Limpa a busca ao limpar seleção
+                  }}
+                  className="text-body text-muted-foreground"
+                >
+                  Limpar seleção
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+
+            {(() => {
+              const filteredProfessionals = getFilteredProfessionals();
+
+              if (professionals.length === 0) {
+                return <DropdownMenuItem disabled>Nenhum profissional encontrado</DropdownMenuItem>;
+              }
+
+              if (filteredProfessionals.length === 0) {
+                return (
+                  <div className="p-3 text-center text-muted-foreground text-body">
+                    Nenhum resultado para "{professionalSearchQuery}"
+                  </div>
+                );
+              }
+
+              return filteredProfessionals.map((professional) => (
+                <DropdownMenuItem
+                  key={professional.id}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    handleProfessionalToggle(professional.id);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Checkbox
+                    checked={selectedProfessionals.includes(professional.id)}
+                    className="pointer-events-none"
+                  />
+                  <span className="flex-1">{getUserDisplayName(professional)}</span>
+                </DropdownMenuItem>
+              ));
+            })()}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {/* Filtro por Status */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className={selectedStatus ? "bg-primary/10 border-primary/40 text-primary" : ""}>
+            <span className="truncate">{selectedStatus || "Status"}</span>
+            <ChevronDown className="h-4 w-4 flex-shrink-0" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48 p-0 bg-card border border-border shadow-lg" align="end">
+          <DropdownMenuItem onClick={() => handleStatusSelect("all")}>
+            Todos
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {statusList.map((status) => (
+            <DropdownMenuItem
+              key={status.id}
+              onClick={() => handleStatusSelect(status.id)}
+              className={selectedStatus === status.id ? "bg-accent" : ""}
+            >
+              {status.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Botão para limpar filtros */}
+      {hasActiveFilters && (
+        <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-foreground">
+          Limpar
+        </Button>
+      )}
+    </div>
+  );
+}

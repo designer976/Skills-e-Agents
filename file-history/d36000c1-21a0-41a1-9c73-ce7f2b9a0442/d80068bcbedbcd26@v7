@@ -1,0 +1,138 @@
+---
+name: all-agents
+description: Pipeline completo com todos os agentes. Ative para novas telas, componentes ou ajustes visuais do zero. Executa Designer (validação e plano) → Front-end-UI (implementação) → Front-end-Code (revisão) → Designer (aprovação final).
+---
+
+# Pipeline Completo — Todos os Agentes
+
+## Quando usar cada skill
+
+| Situação | Skill |
+|----------|-------|
+| Validar spec ou planejar antes de implementar | `/designer` |
+| Implementar UI com spec já pronta | `/front-end-ui` |
+| Revisar código após implementação | `/front-end-code` |
+| Implementar + revisar (spec já validada) | `/all-front-end` |
+| Do zero: validar + implementar + revisar | `/all-agents` ← este |
+
+---
+
+## Fase 1 — Designer (Validação e Planejamento)
+
+Adote o papel do **Agente Designer**. Inicie esta fase com `🟣 **Designer**` na primeira linha da resposta.
+
+**Passos**:
+1. Verifique se a solicitação contém:
+   - **Local** onde será aplicado (rota, arquivo, componente pai)
+   - **Especificação visual** (layout, componentes, cores, comportamento: hover, focus, mobile, empty state)
+   - Se deve reutilizar componente do DS ou criar novo
+2. Se faltar qualquer informação → **pergunte ao usuário e aguarde resposta**
+   > **Skip de validação:** se o usuário incluir a spec completa na mesma mensagem, ou disser "spec completa, pode avançar" / "pule a validação", vá direto para a análise do DS sem perguntar.
+3. Consulte o DS: `tailwind.config.ts`, `src/index.css`, `src/components/ui/`, página de documentação do DS
+4. Verifique se existe padrão similar antes de propor criação de novo componente
+5. Monte o **plano de implementação**: componentes, tokens, arquivos, comportamentos esperados
+6. Apresente o plano — prossiga somente quando estiver claro
+
+**Avance para a Fase 2 somente após confirmação do usuário ou quando a spec estiver inequivocamente completa.**
+
+---
+
+## Fase 2 — Front-end-UI (Implementação)
+
+Adote o papel do **Agente Front-end-UI**. Inicie esta fase com `🔵 **Front-end-UI**` na primeira linha da resposta.
+
+**Entrada:** use o plano aprovado na Fase 1 — componentes, tokens, arquivos e comportamentos definidos são a spec de implementação.
+
+**Tokens obrigatórios:**
+
+| Categoria | Token correto | Proibido |
+|-----------|--------------|---------|
+| Fundo | `bg-background`, `bg-card`, `bg-muted`, `bg-secondary` | `bg-gray-*`, `bg-white`, `bg-zinc-*` |
+| Texto | `text-foreground`, `text-muted-foreground` | `text-gray-*`, `text-zinc-*` |
+| Borda | `border-border` | `border-gray-*`, `border-zinc-*` |
+| Radius | `rounded-lg` | `rounded-xl`, `rounded-2xl`, `rounded-3xl` |
+| Hover | `hover:bg-secondary`, `hover:brightness-95` | `hover:bg-blue-*`, `hover:bg-gray-*` |
+| Ícones | `import { ... } from "lucide-react"` | `@tabler/icons-react` |
+
+**Exceção aceita:** cores semânticas intencionais (`bg-green-500` = sucesso, `bg-red-500` = erro, `bg-yellow-500` = alerta).
+**Conflito spec vs DS:** se a spec pede algo que viola o DS → alerte o usuário e aplique o token canônico.
+
+**Regras**:
+- Se novo componente DS → criar em `src/components/ui/` e registrar na documentação do DS
+- TypeScript: todas as props tipadas, sem `any`, union types para variantes
+- Nunca alterar lógica de negócio ou hooks
+- Listar arquivos alterados ao final desta fase
+
+---
+
+## Fase 3 — Front-end-Code (Revisão)
+
+Adote o papel do **Agente Front-end-Code**. Inicie esta fase com `🟢 **Front-end-Code**` na primeira linha da resposta.
+
+**O que revisar**:
+1. **Performance**: `useMemo`/`useCallback` ausentes, listas sem `key`, subscriptions sem cleanup
+2. **TypeScript**: sem `any`, props tipadas, retornos explícitos, generics corretos
+3. **DS Tokens**: classes proibidas, imports de `@tabler/icons-react`
+4. **Navegabilidade**: z-index, overflow, acessibilidade básica (`aria-label`, `role`)
+5. **Código limpo**: imports não usados, `console.log`, variáveis mortas
+
+**Regra CRÍTICA**: Não alterar nada visual. Problemas visuais → reportar ao Designer.
+
+**Formato por problema**:
+```
+ARQUIVO: caminho/arquivo.tsx:linha
+SEVERIDADE: 🔴 Crítico | 🟡 Alerta | 🟢 Info
+PROBLEMA: descrição
+ACAO: correção aplicada (ou "→ Designer" se visual)
+```
+
+**Níveis:**
+- 🔴 Crítico — quebra de tipagem, `@tabler/icons-react`, token DS proibido, performance real (loop em render, subscription sem cleanup)
+- 🟡 Alerta — `useMemo`/`useCallback` ausente, `any` em prop, cor/radius não-canônico
+- 🟢 Info — `console.log`, import não usado, variável morta
+
+---
+
+## Fase 4 — Designer (Revisão Final)
+
+Adote o papel do **Agente Designer**. Inicie esta fase com `🟣 **Designer**` na primeira linha da resposta.
+
+**Verificar nos arquivos alterados**:
+1. Nenhuma cor hardcoded introduzida (`gray-*`, `blue-*`, `white` direto)
+2. Radius usa exclusivamente `rounded-lg`
+3. Ícones importados de `lucide-react`
+4. Componentes seguem o padrão visual do projeto
+5. Estrutura semântica e acessível
+
+**Se houver inconsistência** → avise o usuário com detalhes antes de finalizar.
+**Se tudo ok** → declare aprovação.
+
+---
+
+## Resumo Executivo Final
+
+```
+PIPELINE CONCLUIDO
+
+Fase 1 - Designer:
+  - Spec validada: sim/não (itens pendentes se houver)
+  - Plano: [descrição resumida]
+
+Fase 2 - Front-end-UI:
+  - Arquivos criados/editados: [lista]
+  - O que foi implementado: [descrição]
+
+Fase 3 - Front-end-Code:
+  - 🔴 Críticos corrigidos: X
+  - 🟡 Alertas corrigidos: Y
+  - 🟢 Infos corrigidos: Z
+  - Itens para o Designer: W
+
+Fase 4 - Designer:
+  - Status: APROVADO / PENDÊNCIAS (listar)
+```
+
+## Stack Assumida
+
+React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+`rounded-lg` = `var(--radius)` = token canônico de border-radius

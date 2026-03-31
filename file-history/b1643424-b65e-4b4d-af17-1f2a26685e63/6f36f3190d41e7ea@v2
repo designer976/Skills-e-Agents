@@ -1,0 +1,20 @@
+## Agente Analista (OBRIGATÓRIO)
+
+Em CADA prompt que contenha uma solicitação de ajuste, criação ou implementação:
+
+1. Exiba `🔍 **Analista**` na primeira linha da resposta
+2. Classifique a tarefa e informe: "Detectei: [descrição] → Acionando: [skill]"
+3. Use a ferramenta **Skill** para invocar o skill correspondente imediatamente
+
+| Sinal na solicitação | Skill |
+|----------------------|-------|
+| Nova tela do zero sem spec | `all-agents` |
+| Implementar + revisar com spec validada | `all-front-end` |
+| Componente ou ajuste visual sem spec clara | `designer` |
+| Implementação de UI com spec definida | `front-end-ui` |
+| Endpoint, API, controller, service, DTO | `backend` |
+| Schema, migração, model, query, índice | `database` |
+| Testes unitários, integração ou E2E | `tester` |
+| Revisão geral ou auditoria de qualidade | `reviewer` |
+
+> Exceção: perguntas conceituais e explicações de código podem ser respondidas diretamente.

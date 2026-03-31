@@ -1,0 +1,85 @@
+---
+description: Pipeline front-end completo — Front-end-UI implementa, Front-end-Code revisa
+---
+
+# /all-front-end Command
+
+Execute o pipeline completo de **implementação e revisão front-end** para a tarefa solicitada, em duas fases sequenciais.
+
+---
+
+## Fase 1 — Front-end-UI (Implementacao)
+
+Adote o papel do **Agente Front-end-UI**.
+
+**Objetivo**: Implementar a UI conforme a spec, aplicando exclusivamente tokens do Design System.
+
+**Passos**:
+1. Leia a spec fornecida
+2. Consulte componentes existentes em `frontend/src/components/ui/`
+3. Se o componente já existe no DS → use-o sem modificar
+4. Se precisa criar → aplique os tokens obrigatórios:
+   - Fundo: `bg-background`, `bg-card`, `bg-muted`, `bg-secondary`
+   - Texto: `text-foreground`, `text-muted-foreground`
+   - Borda: `border-border`
+   - Radius: `rounded-lg` (único permitido)
+   - Hover: `hover:bg-secondary`, `hover:brightness-95`
+5. Aplique no arquivo/local indicado
+6. Liste os arquivos alterados antes de passar para a Fase 2
+
+**Regras**:
+- Nunca usar cores Tailwind hardcoded (`gray-*`, `blue-*`, `white`, etc.)
+- Nunca alterar lógica de negócio ou hooks
+- Exceção aceita: cores semânticas intencionais (`bg-green-500`, `bg-red-500`, `bg-yellow-500`)
+
+---
+
+## Fase 2 — Front-end-Code (Revisao)
+
+Adote o papel do **Agente Front-end-Code**.
+
+**Objetivo**: Revisar todo o código implementado na Fase 1 sem alterar nada visual.
+
+**O que revisar**:
+1. **Performance**: re-renders, `useMemo`/`useCallback` ausentes, listas sem `key`
+2. **TypeScript**: tipos corretos, sem `any`, props tipadas
+3. **DS Tokens**: verificar se há classes proibidas nos arquivos da Fase 1
+4. **Navegabilidade**: z-index, overflow, acessibilidade básica
+5. **Código limpo**: imports sem uso, `console.log`, variáveis não usadas
+
+**Regras CRITICAS**:
+- Nao alterar nada visual — nenhum margin, padding, cor, layout
+- Se problema exige mudança visual → reportar, nao corrigir
+
+**Formato de report por problema**:
+```
+ARQUIVO: caminho/arquivo.tsx:linha
+PROBLEMA: descricao
+ACAO: correcao aplicada (ou "reportar ao Designer" se visual)
+```
+
+---
+
+## Resumo Final
+
+Ao concluir as duas fases, apresente:
+
+```
+PIPELINE CONCLUIDO
+Fase 1 - Front-end-UI:
+  - Arquivos criados/editados: [lista]
+  - O que foi implementado: [descricao]
+
+Fase 2 - Front-end-Code:
+  - Problemas corrigidos: X
+  - Itens para o Designer: Y
+  - Arquivos alterados: [lista]
+```
+
+## Contexto do Projeto — Easy Salon
+
+- Design System: `frontend/src/pages/DesignSystemPage.tsx`
+- Tokens CSS: `frontend/src/index.css`
+- Mapeamento Tailwind: `frontend/tailwind.config.ts`
+- Componentes UI: `frontend/src/components/ui/`
+- `rounded-lg` = `var(--radius)` = token canônico

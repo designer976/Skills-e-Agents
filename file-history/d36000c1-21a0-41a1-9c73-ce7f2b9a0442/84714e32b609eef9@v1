@@ -1,0 +1,60 @@
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+
+interface ServicesAccordionProps {
+  items: Array<{
+    id: string;
+    title: string;
+    content: React.ReactNode;
+    serviceCount?: number;
+  }>;
+  defaultOpenIndex?: number;
+  className?: string;
+}
+
+export function ServicesAccordion({
+  items,
+  defaultOpenIndex = 0,
+  className,
+}: ServicesAccordionProps) {
+  const defaultValue = items[defaultOpenIndex]?.id || "";
+
+  return (
+    <Accordion
+      type="single"
+      collapsible
+      defaultValue={defaultValue}
+      className={cn("w-full space-y-4", className)}
+    >
+      {items.map((item) => (
+        <div key={item.id} className="bg-card border border-border rounded-3xl overflow-hidden">
+          <AccordionItem value={item.id} className="border-none">
+            <AccordionTrigger className="hover:no-underline px-6 py-4 w-full text-left flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-md">
+                  <h3 className="font-semibold text-sm">{item.title}</h3>
+                </div>
+                {item.serviceCount !== undefined && item.serviceCount > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {item.serviceCount}{" "}
+                    {item.serviceCount === 1 ? "serviço" : "serviços"}
+                  </Badge>
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-0 pt-2">
+              <div className="px-6 pb-6">{item.content}</div>
+            </AccordionContent>
+          </AccordionItem>
+        </div>
+      ))}
+    </Accordion>
+  );
+}

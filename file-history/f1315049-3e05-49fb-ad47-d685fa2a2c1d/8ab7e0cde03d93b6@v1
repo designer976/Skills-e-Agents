@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Template de Proposta Wa Project - Easy Salon</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        :root {
+            /* Cores extraídas do PDF oficial Wa Project */
+            --wa-blue: #1E5B96;
+            --wa-blue-light: #E8F0FE;
+            --text-dark: #333333;
+            --text-gray: #666666;
+            --text-light-gray: #888888;
+            --background: #FFFFFF;
+            --border: #DDDDDD;
+            --card-bg: #FAFBFC;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--background);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        /* Container principal */
+        .proposal-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--background);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .proposal-header {
+            background-color: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .proposal-header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Button */
+        .download-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background-color: var(--wa-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            text-decoration: none;
+        }
+
+        .download-button:hover {
+            background-color: #1a4c8c;
+            transform: translateY(-1px);
+        }
+
+        .download-button:disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .download-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .download-button.loading svg.download {
+            display: none;
+        }
+
+        .download-button.loading svg.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Document content */
+        .document-content {
+            padding: 40px;
+        }
+
+        /* Logo e cabeçalho */
+        .document-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+        }
+
+        /* Logo hexagonal Wa Project */
+        .logo-wa {
+            width: 120px;
+            height: auto;
+            margin: 0 auto 20px;
+        }
+
+        .logo-hex {
+            fill: var(--wa-blue);
+        }
+
+        .logo-text {
+            fill: white;
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
+            font-size: 28px;
+        }
+
+        .document-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--wa-blue);
+            margin-bottom: 8px;
+        }
+
+        .project-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--wa-blue);
+            margin-bottom: 25px;
+        }
+
+        .document-info {
+            font-size: 1rem;
+            color: var(--text-gray);
+            margin-bottom: 20px;
+        }
+
+        .document-info p {
+            margin-bottom: 4px;
+        }
+
+        .document-info strong {
+            color: var(--text-dark);
+        }
+
+        .separator {
+            width: 60px;
+            height: 2px;
+            background-color: var(--wa-blue);
+            margin: 30px auto;
+        }
+
+        /* Seções */
+        .section {
+            margin-bottom: 35px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--wa-blue);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-content {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-dark);
+        }
+
+        .section-content p {
+            margin-bottom: 12px;
+        }
+
+        .section-content ul {
+            margin: 15px 0;
+            padding-left: 0;
+        }
+
+        .section-content li {
+            list-style: none;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .section-content li:before {
+            content: '•';
+            color: var(--wa-blue);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .section-content .numbered-list {
+            counter-reset: item;
+            padding-left: 0;
+        }
+
+        .section-content .numbered-list li {
+            counter-increment: item;
+            padding-left: 25px;
+        }
+
+        .section-content .numbered-list li:before {
+            content: counter(item) '.';
+            color: var(--wa-blue);
+            font-weight: 600;
+            width: 20px;
+        }
+
+        .section-content strong {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .section-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--wa-blue);
+            margin: 20px 0 10px 0;
+        }
+
+        /* Destaque especial */
+        .highlight-box {
+            background-color: var(--wa-blue-light);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--wa-blue);
+            margin: 20px 0;
+        }
+
+        /* Investimento */
+        .investment-box {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid var(--wa-blue);
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .investment-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--wa-blue);
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        .document-footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+        }
+
+        .footer-quote {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--wa-blue);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .footer-thanks {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            margin-bottom: 30px;
+        }
+
+        .company-info {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+            line-height: 1.6;
+        }
+
+        .company-info p {
+            margin-bottom: 4px;
+        }
+
+        .company-info strong {
+            color: var(--text-dark);
+        }
+
+        .validity {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: var(--text-light-gray);
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .proposal-container {
+                margin: 10px;
+            }
+
+            .document-content {
+                padding: 25px;
+            }
+
+            .proposal-header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .document-title {
+                font-size: 1.8rem;
+            }
+
+            .project-title {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .proposal-header {
+                display: none;
+            }
+
+            .proposal-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="proposal-container">
+        <!-- Header com botão de download -->
+        <div class="proposal-header">
+            <h1>Proposta Comercial - Wa Project</h1>
+            <button class="download-button" id="downloadBtn" onclick="handleDownload()">
+                <svg class="download" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7,10 12,15 17,10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <svg class="loading" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c.239 0 .474.01.706.03"/>
+                    <path d="M12 2v1"/>
+                </svg>
+                Baixar PDF
+            </button>
+        </div>
+
+        <!-- Conteúdo do documento -->
+        <div class="document-content">
+            <!-- Cabeçalho -->
+            <div class="document-header">
+                <!-- Logo Wa Project -->
+                <div class="logo-container">
+                    <img src="logo-wa-project-oficial.png" alt="Wa Project" style="width: 120px; height: auto;">
+                </div>
+
+                <h1 class="document-title">Proposta Comercial</h1>
+                <h2 class="project-title">Easy Salon</h2>
+
+                <div class="document-info">
+                    <p><strong>27/03/2026</strong> | Válido por 30 dias</p>
+                    <p><strong>Para:</strong> Agência XPTO</p>
+                    <p><strong>Tipo:</strong> Escopo fechado</p>
+                </div>
+
+                <div class="separator"></div>
+            </div>
+
+            <!-- Sobre a Wa Project -->
+            <div class="section">
+                <h2 class="section-title">Sobre a Wa Project</h2>
+                <div class="section-content">
+                    <p>A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.</p>
+
+                    <h3>Nossos serviços:</h3>
+                    <ul>
+                        <li>Desenvolvimento de Software.</li>
+                        <li>Desenvolvimento de Aplicativos.</li>
+                        <li>Soluções de Inteligência Artificial.</li>
+                        <li>Alocação de Profissionais.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Nossos Clientes -->
+            <div class="section">
+                <h2 class="section-title">Nossos Clientes</h2>
+                <div class="section-content">
+                    <ul>
+                        <li>PepsiCo</li>
+                        <li>Vtex</li>
+                        <li>Santillana</li>
+                        <li>Dasa</li>
+                        <li>WideLabs</li>
+                        <li>Confederação Brasileira de Hipismo</li>
+                        <li>Forbes</li>
+                        <li>Easy Salon</li>
+                        <li>InstaCarro</li>
+                        <li>Antilhas</li>
+                        <li>Fundação Carlos Chagas</li>
+                        <li>Funarbe</li>
+                    </ul>
+                    <p><strong>Cases completos:</strong> waproject.com.br/cases</p>
+                </div>
+            </div>
+
+            <!-- Sobre o Projeto -->
+            <div class="section">
+                <h2 class="section-title">Sobre o Projeto</h2>
+                <div class="section-content">
+                    <h3>Quiz Interativo Easy Salon — Coleta de Leads em TV Touch</h3>
+
+                    <p>O Easy Salon participará de um evento no dia 20 de abril e deseja aumentar sua base de contatos de forma engajante e eficiente. Para isso, será desenvolvido um quiz interativo instalado em uma TV touch dentro do stand da marca.</p>
+
+                    <p>A solução consiste em uma aplicação web responsiva, otimizada para interação por toque, que guia o visitante por um fluxo simples: Preenchimento de dados de contato, resposta a 3 perguntas e exibição de uma tela de agradecimento.</p>
+
+                    <p>Ao final do evento, todos os leads coletados serão exportados em arquivo Excel e entregues ao cliente.</p>
+                </div>
+            </div>
+
+            <!-- Funcionalidades -->
+            <div class="section">
+                <h2 class="section-title">Funcionalidades</h2>
+                <div class="section-content">
+                    <ol class="numbered-list">
+                        <li><strong>Formulário de Captura de Leads</strong> - Tela inicial do quiz com campos para preenchimento de Nome, E-mail e Telefone, com validação básica de dados e visual alinhado ao Key Visual (KV) fornecido pelo cliente. Garante a coleta estruturada de informações dos visitantes antes do início do quiz.</li>
+
+                        <li><strong>Quiz com 3 Perguntas</strong> - Interface otimizada para toque em TV, exibindo uma pergunta por vez com alternativa sem formato de botões grandes e responsivos. Navegação clara entre perguntas e design visual consistente com o branding do Easy Salon. Torna a experiência de coleta de dados engajante e interativa para o visitante.</li>
+
+                        <li><strong>Tela de Agradecimento</strong> - Mensagem de encerramento exibida ao visitante após a conclusão do quiz, com retorno automático à tela inicial após um intervalo de tempo configurável. Encerra a experiência de forma positiva e reinicia o fluxo para o próximo participante.</li>
+                    </ol>
+
+                    <div class="highlight-box">
+                        <strong>Exportação de Dados</strong> - Geração automática de arquivo Excel com todos os leads coletados durante o evento, contendo os campos: Nome, E-mail, Telefone e Data/Hora do preenchimento. Entregue ao final do evento, permitindo que o Easy Salon utilize os dados imediatamente para ações de follow-up.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integrações Previstas -->
+            <div class="section">
+                <h2 class="section-title">Integrações Previstas</h2>
+                <div class="section-content">
+                    <p><strong>AWS (Hospedagem)</strong> - Armazenamento seguro dos dados coletados e disponibilização da aplicação web durante o período do evento, gerenciada pela Wa Project.</p>
+                </div>
+            </div>
+
+            <!-- Modelo de Trabalho -->
+            <div class="section">
+                <h2 class="section-title">Modelo de Trabalho</h2>
+                <div class="section-content">
+                    <p><strong>Escopo Fechado</strong> - Prazo e valor definidos previamente.</p>
+                    <p>Processo orientado a entregas contínuas, previsibilidade e colaboração.</p>
+
+                    <h3>Fases do Projeto:</h3>
+                    <ul>
+                        <li><strong>Fase 1:</strong> Planejamento - Priorização de demandas e alinhamento de objetivos e escopo.</li>
+                        <li><strong>Fase 2:</strong> Levantamento de Requisitos - Detalhamento funcional e técnico validado com stakeholders.</li>
+                        <li><strong>Fase 3:</strong> Protótipo - Criação de protótipos navegáveis de alta fidelidade validados antes do desenvolvimento.</li>
+                        <li><strong>Fase 4:</strong> Desenvolvimento - Implementação técnica com boas práticas, testes e code review.</li>
+                        <li><strong>Fase 5:</strong> Homologação - Testes completos e validação do cliente em ambiente de homologação.</li>
+                        <li><strong>Fase 6:</strong> Go-Live - Publicação em produção com monitoramento e acompanhamento inicial.</li>
+                        <li><strong>Fase 7:</strong> Garantia - 90 dias de suporte técnico gratuito após o go-live.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Cronograma -->
+            <div class="section">
+                <h2 class="section-title">Cronograma</h2>
+                <div class="section-content">
+                    <p><strong>Prazo total estimado: 4,5 semanas</strong></p>
+
+                    <ul>
+                        <li><strong>Fase 1:</strong> Concepção do produto: Semanas 1-2</li>
+                        <li><strong>Fase 2:</strong> Validação do produto: Semanas 3-4</li>
+                        <li><strong>Fase 3:</strong> Desenvolvimento: Semanas 5-11</li>
+                        <li><strong>Fase 4:</strong> Lançamento: Semanas 12-13</li>
+                    </ul>
+
+                    <p><em>O cronograma acima é uma estimativa inicial e poderá ser ajustado após o planejamento detalhado, conforme validações e fornecimento de informações pelo cliente.</em></p>
+                </div>
+            </div>
+
+            <!-- Investimento -->
+            <div class="section">
+                <h2 class="section-title">Investimento</h2>
+                <div class="section-content">
+                    <div class="investment-box">
+                        <div class="investment-value">R$ 20.000</div>
+                        <p><strong>Investimento total</strong></p>
+                    </div>
+
+                    <h3>Condições de Pagamento:</h3>
+                    <ul>
+                        <li><strong>1ª Parcela:</strong> Na assinatura do contrato: R$ 6.667</li>
+                        <li><strong>2ª Parcela:</strong> 30 dias após a assinatura: R$ 6.667</li>
+                        <li><strong>3ª Parcela:</strong> Pós-homologação: R$ 6.666</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Entregáveis -->
+            <div class="section">
+                <h2 class="section-title">Entregáveis</h2>
+                <div class="section-content">
+                    <ul>
+                        <li>Protótipos de Alta Fidelidade (Figma).</li>
+                        <li>Documentação Funcional.</li>
+                        <li>Documentação Técnica.</li>
+                        <li>Código Fonte Completo (repositório Git).</li>
+                        <li>Sistema em Produção.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Próximos Passos -->
+            <div class="section">
+                <h2 class="section-title">Próximos Passos</h2>
+                <div class="section-content">
+                    <ol class="numbered-list">
+                        <li>Alinhamento Final.</li>
+                        <li>Aprovação da Proposta.</li>
+                        <li>Assinatura do Contrato.</li>
+                        <li>Kickoff do Projeto.</li>
+                        <li>Início do desenvolvimento.</li>
+                    </ol>
+
+                    <p>Estamos à disposição para qualquer esclarecimento e ansiosos para iniciar esta parceria.</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="document-footer">
+                <p class="footer-quote">Não é sobre desenvolvimento, é sobre envolvimento.</p>
+                <p class="footer-thanks">Obrigado por confiar na Wa Project!</p>
+
+                <div class="company-info">
+                    <p><strong>Wa Project Soluções Tecnológicas LTDA.</strong></p>
+                    <p>CNPJ: 19.317.018/0001-40</p>
+                    <p>Website: waproject.com.br</p>
+                    <p>Email: comercial@waproject.com.br</p>
+                    <p>Telefone/WhatsApp: (11) 5028-2010</p>
+
+                    <p class="validity">Proposta válida por 30 dias a partir da data de emissão</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleDownload() {
+            const button = document.getElementById('downloadBtn');
+            const downloadIcon = button.querySelector('.download');
+            const loadingIcon = button.querySelector('.loading');
+
+            // Simular loading
+            button.disabled = true;
+            button.classList.add('loading');
+            downloadIcon.style.display = 'none';
+            loadingIcon.style.display = 'inline-block';
+
+            // Simular geração de PDF
+            setTimeout(() => {
+                // Reset button state
+                button.disabled = false;
+                button.classList.remove('loading');
+                downloadIcon.style.display = 'inline-block';
+                loadingIcon.style.display = 'none';
+
+                // Simular download
+                alert('PDF gerado com sucesso!\n\nEsta é uma demonstração. No sistema real, o arquivo "Proposta_Easy_Salon_27-03-2026.pdf" seria baixado automaticamente.');
+            }, 2500);
+        }
+
+        // Aplicar animação suave ao scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scroll behavior
+            document.documentElement.style.scrollBehavior = 'smooth';
+
+            // Fade in animation
+            const sections = document.querySelectorAll('.section');
+            sections.forEach((section, index) => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(20px)';
+                section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+
+                setTimeout(() => {
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

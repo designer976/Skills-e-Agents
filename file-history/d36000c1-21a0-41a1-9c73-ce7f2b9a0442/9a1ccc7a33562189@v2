@@ -1,0 +1,348 @@
+import { useRef, useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from "lucide-react";
+import { User } from '@/types/user';
+import { CalendarEvent } from '@/components/ui/EasyCalendar';
+import { Calendar } from '@/components/ui/calendar';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { ProfessionalCarousel } from './ProfessionalCarousel';
+import { TimeSlotGrid } from './TimeSlotGrid';
+import { SmartFAB } from './SmartFAB';
+import { NewAppointmentBottomSheet } from './NewAppointmentBottomSheet';
+
+interface MobileAgendaViewProps {
+    date: Date;
+    professionals: User[];
+    events: CalendarEvent[];
+    startHour: number;
+    endHour: number;
+    slotMinutes: number;
+    onEventClick: (event: CalendarEvent) => void;
+    onSlotClick: (professionalId: string, time: string) => void;
+    onNewAppointment: (args?: { clientId?: string; professionalId?: string }) => void;
+    onAppointmentCreated: (appointment?: { id: string; date: string; time: string; professionalId: string }) => void;
+    onPreviousDay: () => void;
+    onNextDay: () => void;
+    onToday: () => void;
+    onDateChange?: (date: Date) => void;
+    onOpenDatePicker: () => void;
+    filterCount?: number;
+    onOpenFilterDrawer?: () => void;
+    initialOpen?: boolean;
+    initialClientId?: string;
+    initialProfessionalId?: string;
+    focusAppointment?: {
+        id: string;
+        time: string;
+        professionalId: string;
+    } | null;
+    onFocusConsumed?: () => void;
+}
+
+/**
+ * Visualização mobile da agenda com Fluid UI
+ * - Swipe lateral para trocar profissional
+ * - Professional carousel com snap scroll
+ * - Timeline vertical limpa
+ * - Smart FAB que esconde no scroll
+ * - Animações suaves com framer-motion
+ */
+export function MobileAgendaView({
+    date,
+    professionals,
+    events,
+    startHour,
+    endHour,
+    slotMinutes,
+    onEventClick,
+    onSlotClick,
+    onNewAppointment,
+    onAppointmentCreated,
+    onPreviousDay,
+    onNextDay,
+    onToday,
+    onDateChange,
+    onOpenDatePicker,
+    filterCount,
+    onOpenFilterDrawer,
+    initialOpen,
+    initialClientId,
+    initialProfessionalId,
+    focusAppointment,
+    onFocusConsumed,
+}: MobileAgendaViewProps) {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [calendarDrawerOpen, setCalendarDrawerOpen] = useState(false);
+    const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>(
+        professionals[0]?.id || ''
+    );
+    const [swipeDirection, setSwipeDirection] = useState<number>(0);
+
+    // Sync selected professional when professionals list loads asynchronously
+    useEffect(() => {
+        if (!selectedProfessionalId && professionals.length > 0) {
+            setSelectedProfessionalId(professionals[0].id);
+        }
+    }, [professionals, selectedProfessionalId]);
+
+    // Bottom sheet state
+    const [showNewAppointment, setShowNewAppointment] = useState(false);
+    const [appointmentInitialData, setAppointmentInitialData] = useState<{
+        professionalId?: string;
+        date?: string;
+        time?: string;
+        clientId?: string;
+    }>({});
+
+    // Handle initial open from props (e.g. from onboarding)
+    useEffect(() => {
+        if (initialOpen) {
+            setAppointmentInitialData({
+                clientId: initialClientId,
+                professionalId: initialProfessionalId
+            });
+            setShowNewAppointment(true);
+        }
+    }, [initialOpen, initialClientId, initialProfessionalId]);
+
+    // Focus and Scroll Effect
+    useEffect(() => {
+        if (!focusAppointment) return;
+
+        // 1. Selecionar profissional no carrossel
+        setSelectedProfessionalId(focusAppointment.professionalId);
+
+        // 2. Aguardar re-render + animação do carrossel, depois rolar verticalmente
+        const timer = setTimeout(() => {
+            const [hour, minute] = focusAppointment.time.split(':').map(Number);
+            const startHourValue = startHour;
+            const slotIndex = Math.floor(((hour * 60 + minute) - startHourValue * 60) / slotMinutes);
+            const SLOT_HEIGHT = 60; // Definido em TimeSlotGrid.tsx
+            const scrollTop = slotIndex * SLOT_HEIGHT;
+
+            scrollContainerRef.current?.scrollTo({ top: scrollTop, behavior: 'smooth' });
+
+            // Limpar após animação completar (4s para o ping)
+            setTimeout(() => onFocusConsumed?.(), 4000);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [focusAppointment, startHour, slotMinutes, onFocusConsumed]);
+
+    // Filtra eventos do profissional selecionado
+    const selectedProfessionalEvents = useMemo(
+        () => events.filter((event) => event.professionalId === selectedProfessionalId),
+        [events, selectedProfessionalId]
+    );
+
+    // Conta eventos por profissional
+    const eventCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        professionals.forEach((prof) => {
+            counts[prof.id] = events.filter((e) => e.professionalId === prof.id).length;
+        });
+        return counts;
+    }, [professionals, events]);
+
+    // Handle slot click - open bottom sheet with pre-filled data
+    const handleSlotClick = (time: string) => {
+        setAppointmentInitialData({
+            professionalId: selectedProfessionalId,
+            date: format(date, 'yyyy-MM-dd'),
+            time,
+            clientId: undefined,
+        });
+        setShowNewAppointment(true);
+    };
+
+    // Handle FAB click - open bottom sheet
+    const handleNewAppointment = () => {
+        setAppointmentInitialData({});
+        setShowNewAppointment(true);
+    };
+
+    // Navegar entre profissionais
+    const goToPreviousProfessional = () => {
+        const currentIndex = professionals.findIndex((p) => p.id === selectedProfessionalId);
+        if (currentIndex > 0) {
+            setSwipeDirection(-1);
+            setSelectedProfessionalId(professionals[currentIndex - 1].id);
+        }
+    };
+
+    const goToNextProfessional = () => {
+        const currentIndex = professionals.findIndex((p) => p.id === selectedProfessionalId);
+        if (currentIndex < professionals.length - 1) {
+            setSwipeDirection(1);
+            setSelectedProfessionalId(professionals[currentIndex + 1].id);
+        }
+    };
+
+    // Handler de swipe
+    const handleDragEnd = (event: any, info: PanInfo) => {
+        const threshold = 100;
+        const velocity = info.velocity.x;
+        const offset = info.offset.x;
+
+        if (offset > threshold && velocity > 0) {
+            goToPreviousProfessional();
+        } else if (offset < -threshold && velocity < 0) {
+            goToNextProfessional();
+        }
+    };
+
+    if (professionals.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100dvh-64px)] px-6 text-center">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                    Nenhum profissional cadastrado
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                    Para utilizar a agenda, é necessário cadastrar pelo menos um profissional no salão.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-[calc(100dvh-64px)] bg-background overflow-hidden w-full max-w-full">
+            {/* Header — linha única: prev | data | next | Hoje */}
+            <div className="flex-shrink-0 border-b border-border bg-background w-full max-w-full">
+                <div className="flex items-center gap-2 px-4 py-3 w-full">
+                    <button
+                        onClick={onPreviousDay}
+                        className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+                    >
+                        <ChevronLeft className="h-4 w-4 text-foreground" />
+                    </button>
+
+                    <button
+                        onClick={() => setCalendarDrawerOpen(true)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors min-w-0"
+                    >
+                        <CalendarIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm font-medium text-foreground truncate">
+                            {format(date, "d 'de' MMMM", { locale: ptBR })}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0 capitalize">
+                            ({format(date, "EEE", { locale: ptBR })})
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={onNextDay}
+                        className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+                    >
+                        <ChevronRight className="h-4 w-4 text-foreground" />
+                    </button>
+
+                    <button
+                        onClick={onToday}
+                        className="px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm text-foreground flex-shrink-0"
+                    >
+                        Hoje
+                    </button>
+
+                    <button
+                        onClick={onOpenFilterDrawer}
+                        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg transition-colors text-sm flex-shrink-0 ${
+                            filterCount && filterCount > 0
+                                ? "bg-primary/10 border-primary/40 text-primary"
+                                : "border-border hover:bg-muted text-foreground"
+                        }`}
+                    >
+                        <Filter className="w-4 h-4" />
+                        {filterCount && filterCount > 0 && (
+                            <span className="font-medium">{filterCount}</span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Calendar Drawer (mobile) */}
+            <Drawer open={calendarDrawerOpen} onOpenChange={setCalendarDrawerOpen}>
+                <DrawerContent>
+                    <DrawerHeader className="text-left pb-5 border-b border-border">
+                        <DrawerTitle className="text-left">Selecionar data</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="flex justify-center px-4 pt-5 pb-8">
+                        <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={(selected) => {
+                                if (selected) {
+                                    onDateChange?.(selected);
+                                    setCalendarDrawerOpen(false);
+                                }
+                            }}
+                            initialFocus
+                        />
+                    </div>
+                </DrawerContent>
+            </Drawer>
+
+            {/* Professional Carousel */}
+            <ProfessionalCarousel
+                professionals={professionals}
+                selectedId={selectedProfessionalId}
+                onSelect={setSelectedProfessionalId}
+                eventCounts={eventCounts}
+            />
+
+            {/* Timeline com Swipe */}
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+                <AnimatePresence mode="wait" custom={swipeDirection}>
+                    <motion.div
+                        key={selectedProfessionalId}
+                        custom={swipeDirection}
+                        initial={{ opacity: 0, x: swipeDirection > 0 ? 300 : -300 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: swipeDirection > 0 ? -300 : 300 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                            opacity: { duration: 0.2 }
+                        }}
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={handleDragEnd}
+                        className="min-h-full"
+                    >
+                        <TimeSlotGrid
+                            date={date}
+                            events={selectedProfessionalEvents}
+                            startHour={startHour}
+                            endHour={endHour}
+                            slotMinutes={slotMinutes}
+                            onEventClick={onEventClick}
+                            onSlotClick={handleSlotClick}
+                            highlightAppointmentId={focusAppointment?.id ?? null}
+                        />
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            {/* Smart FAB */}
+            <SmartFAB onClick={handleNewAppointment} />
+
+            {/* New Appointment Bottom Sheet */}
+            <NewAppointmentBottomSheet
+                isOpen={showNewAppointment}
+                onClose={() => setShowNewAppointment(false)}
+                initialProfessionalId={appointmentInitialData.professionalId}
+                initialDate={appointmentInitialData.date}
+                initialTime={appointmentInitialData.time}
+                initialClientId={appointmentInitialData.clientId}
+                onSuccess={(appointment) => {
+                    setShowNewAppointment(false);
+                    // Pequeno delay para permitir o fechamento suave do modal antes de atualizar a agenda
+                    setTimeout(() => onAppointmentCreated(appointment), 200);
+                }}
+            />
+        </div>
+    );
+}

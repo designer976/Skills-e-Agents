@@ -1,0 +1,335 @@
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Clock, DollarSign, Sparkles, Plus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BookingService } from "@/types/booking-new";
+import { bookingService } from "@/services/bookingService";
+
+interface ServiceRecommendation {
+  id: string;
+  recommendedService: {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    duration: number;
+    priceType?: string;
+    maxValue?: number | null;
+    categoryName?: string;
+  };
+  customDescription?: string;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+interface BookingServiceRecommendationsProps {
+  salonSlug: string;
+  serviceId: string;
+  serviceName: string;
+  primaryColor: string;
+  onAddRecommendations: (services: BookingService[]) => void;
+  selectedServiceIds: string[];
+}
+
+export function BookingServiceRecommendations({
+  salonSlug,
+  serviceId,
+  serviceName,
+  primaryColor,
+  onAddRecommendations,
+  selectedServiceIds,
+}: BookingServiceRecommendationsProps) {
+  const [recommendations, setRecommendations] = useState<ServiceRecommendation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchRecommendations = async (): Promise<void> => {
+      try {
+        setLoading(true);
+        const data = await bookingService.getServiceRecommendations(
+          salonSlug,
+          serviceId
+        );
+        setRecommendations(data || []);
+      } catch (error) {
+        console.error("Erro ao carregar recomendações:", error);
+        setRecommendations([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (serviceId && salonSlug) {
+      fetchRecommendations();
+    }
+  }, [salonSlug, serviceId]);
+
+  // Filtrar apenas recomendações ativas e que não estão já selecionadas
+  const availableRecommendations = recommendations.filter(
+    (rec) =>
+      rec.isActive &&
+      !selectedServiceIds.includes(rec.recommendedService.id)
+  );
+
+  if (loading) {
+    return (
+      <Card className="border-primary/20">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (availableRecommendations.length === 0) {
+    return null;
+  }
+
+  const selectedRecommendations = availableRecommendations.filter((rec) =>
+    selectedIds.has(rec.id)
+  );
+
+  const totalPrice = selectedRecommendations.reduce(
+    (sum, rec) => sum + Number(rec.recommendedService.price),
+    0
+  );
+
+  const totalDuration = selectedRecommendations.reduce(
+    (sum, rec) => sum + Number(rec.recommendedService.duration),
+    0
+  );
+
+  const formatPrice = (price: number | string): string => {
+    const numPrice = typeof price === "string" ? parseFloat(price) : price;
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(numPrice);
+  };
+
+  const handleToggle = (recommendationId: string, checked: boolean): void => {
+    const newSelected = new Set(selectedIds);
+
+    if (checked) {
+      newSelected.add(recommendationId);
+    } else {
+      newSelected.delete(recommendationId);
+    }
+
+    setSelectedIds(newSelected);
+  };
+
+  const handleAddToBooking = (): void => {
+    const servicesToAdd: BookingService[] = selectedRecommendations.map((rec) => ({
+      id: rec.recommendedService.id,
+      name: rec.recommendedService.name,
+      category: rec.recommendedService.categoryName || "Geral",
+      duration: Number(rec.recommendedService.duration),
+      price: Number(rec.recommendedService.price),
+      priceType: rec.recommendedService.priceType || "Fixo",
+      maxValue: rec.recommendedService.maxValue ? Number(rec.recommendedService.maxValue) : null,
+      isActive: true,
+      isRequestOnly: false,
+      professionals: [],
+    }));
+
+    onAddRecommendations(servicesToAdd);
+    setSelectedIds(new Set()); // Limpar seleção
+  };
+
+  return (
+    <Card className="border-primary/20" style={{ borderColor: primaryColor }}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" style={{ color: primaryColor }} />
+              <CardTitle className="text-lg">Recomendações</CardTitle>
+            </div>
+            <CardDescription>
+              Serviços que combinam bem com "{serviceName}"
+            </CardDescription>
+          </div>
+          {selectedIds.size > 0 && (
+            <div className="text-right">
+              <div className="text-sm font-medium" style={{ color: primaryColor }}>
+                {formatPrice(totalPrice)}
+              </div>
+              <div className="text-xs text-muted-foreground">{totalDuration}min</div>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+
+      <Separator />
+
+      <CardContent className="pt-4">
+        <ScrollArea className="h-full max-h-[400px]">
+          <div className="space-y-3">
+            {availableRecommendations.map((rec) => {
+              const isSelected = selectedIds.has(rec.id);
+
+              return (
+                <div
+                  key={rec.id}
+                  className={`
+                    flex items-start gap-3 p-3 rounded-lg border transition-all
+                    ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-accent/50"
+                    }
+                  `}
+                  style={
+                    isSelected
+                      ? { borderColor: primaryColor, backgroundColor: `${primaryColor}10` }
+                      : undefined
+                  }
+                >
+                  <Checkbox
+                    id={`rec-${rec.id}`}
+                    checked={isSelected}
+                    onCheckedChange={(checked): void =>
+                      handleToggle(rec.id, checked as boolean)
+                    }
+                    className="mt-1"
+                    style={
+                      isSelected
+                        ? {
+                            backgroundColor: primaryColor,
+                            borderColor: primaryColor,
+                          }
+                        : undefined
+                    }
+                  />
+
+                  <label
+                    htmlFor={`rec-${rec.id}`}
+                    className="flex-1 cursor-pointer select-none"
+                  >
+                    <div className="space-y-2">
+                      {/* Nome e badges */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-medium text-sm">
+                          {rec.recommendedService.name}
+                        </h4>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Badge variant="secondary" className="text-xs">
+                            <DollarSign className="h-3 w-3 mr-0.5" />
+                            {formatPrice(rec.recommendedService.price)}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <Clock className="h-3 w-3 mr-0.5" />
+                            {rec.recommendedService.duration}min
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Descrição do serviço */}
+                      {rec.recommendedService.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {rec.recommendedService.description}
+                        </p>
+                      )}
+
+                      {/* Descrição customizada */}
+                      {rec.customDescription && (
+                        <Alert className="mt-2">
+                          <AlertDescription className="text-xs">
+                            💡 {rec.customDescription}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {/* Categoria */}
+                      {rec.recommendedService.categoryName && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <span>{rec.recommendedService.categoryName}</span>
+                        </div>
+                      )}
+
+                      {/* Tipo de preço */}
+                      {rec.recommendedService.priceType === "A partir de" && (
+                        <Badge variant="outline" className="text-xs">
+                          A partir de
+                          {rec.recommendedService.maxValue &&
+                            ` até ${formatPrice(rec.recommendedService.maxValue)}`}
+                        </Badge>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </CardContent>
+
+      {selectedIds.size > 0 && (
+        <>
+          <Separator />
+          <CardFooter className="pt-4">
+            <div className="w-full space-y-3">
+              {/* Resumo */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {selectedIds.size}{" "}
+                  {selectedIds.size === 1
+                    ? "serviço selecionado"
+                    : "serviços selecionados"}
+                </span>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{totalDuration}min</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{formatPrice(totalPrice)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botão de ação */}
+              <Button
+                onClick={handleAddToBooking}
+                className="w-full text-white"
+                size="lg"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar ao Agendamento
+              </Button>
+            </div>
+          </CardFooter>
+        </>
+      )}
+
+      {selectedIds.size === 0 && (
+        <>
+          <Separator />
+          <CardFooter className="pt-4">
+            <p className="text-xs text-muted-foreground w-full text-center">
+              Selecione os serviços que deseja adicionar
+            </p>
+          </CardFooter>
+        </>
+      )}
+    </Card>
+  );
+}

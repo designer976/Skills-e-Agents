@@ -1,0 +1,1082 @@
+     1→"use client"
+     2→
+     3→import { useState, useEffect } from "react"
+     4→import {
+     5→  IconSearch,
+     6→  IconUsers,
+     7→  IconEdit,
+     8→  IconTrash,
+     9→  IconX,
+    10→  IconHistory,
+    11→  IconCalendar,
+    12→  IconChevronDown,
+    13→  IconCreditCard,
+    14→  IconCheck,
+    15→} from "@tabler/icons-react"
+    16→import { Button } from "@/components/ui/button"
+    17→import { Input } from "@/components/ui/input"
+    18→import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
+    19→import { useSubscription } from "@/contexts/subscription-context"
+    20→import { useSalonData, type Cliente as SalonCliente } from "@/contexts/salon-data-context"
+    21→import { useAuth } from "@/contexts/auth-context"
+    22→
+    23→interface Cliente {
+    24→  id: string
+    25→  nome: string
+    26→  email: string
+    27→  telefone: string
+    28→  cpf: string
+    29→  ultimaVisita: string
+    30→  dataNascimento?: string
+    31→  genero?: string
+    32→  instagram?: string
+    33→  observacoes?: string
+    34→  totalVisitas: number
+    35→  totalGasto: number
+    36→  ticketMedio: number
+    37→}
+    38→
+    39→interface Atendimento {
+    40→  id: string
+    41→  dataHora: string
+    42→  servicos: { nome: string; valor: number }[]
+    43→  profissionais: string[]
+    44→  valorTotal: number
+    45→  metodoPagamento: string
+    46→  status: "concluido" | "cancelado" | "nao_compareceu"
+    47→  observacoes?: string
+    48→}
+    49→
+    50→const atendimentosMock: Record<string, Atendimento[]> = {
+    51→  "1": [
+    52→    {
+    53→      id: "1",
+    54→      dataHora: "2025-01-25T09:00:00",
+    55→      servicos: [
+    56→        { nome: "Corte Masculino", valor: 80 },
+    57→        { nome: "Barba", valor: 40 },
+    58→      ],
+    59→      profissionais: ["João Silva"],
+    60→      valorTotal: 120,
+    61→      metodoPagamento: "Dinheiro",
+    62→      status: "concluido",
+    63→    },
+    64→    {
+    65→      id: "2",
+    66→      dataHora: "2024-12-20T15:30:00",
+    67→      servicos: [{ nome: "Corte Masculino", valor: 80 }],
+    68→      profissionais: ["João Silva"],
+    69→      valorTotal: 80,
+    70→      metodoPagamento: "PIX",
+    71→      status: "concluido",
+    72→    },
+    73→    {
+    74→      id: "3",
+    75→      dataHora: "2024-11-15T11:00:00",
+    76→      servicos: [
+    77→        { nome: "Corte Masculino", valor: 80 },
+    78→        { nome: "Barba", valor: 40 },
+    79→      ],
+    80→      profissionais: ["Carlos Mendes"],
+    81→      valorTotal: 120,
+    82→      metodoPagamento: "Cartão de Débito",
+    83→      status: "concluido",
+    84→      observacoes: "Cliente preferiu degradê alto",
+    85→    },
+    86→  ],
+    87→  "3": [
+    88→    {
+    89→      id: "1",
+    90→      dataHora: "2025-01-20T16:00:00",
+    91→      servicos: [
+    92→        { nome: "Escova Progressiva", valor: 280 },
+    93→        { nome: "Corte Feminino", valor: 120 },
+    94→      ],
+    95→      profissionais: ["Ana Carolina"],
+    96→      valorTotal: 400,
+    97→      metodoPagamento: "Cartão de Crédito",
+    98→      status: "concluido",
+    99→    },
+   100→    {
+   101→      id: "2",
+   102→      dataHora: "2024-10-10T14:00:00",
+   103→      servicos: [{ nome: "Hidratação", valor: 80 }],
+   104→      profissionais: ["Aline de Abreu"],
+   105→      valorTotal: 80,
+   106→      metodoPagamento: "PIX",
+   107→      status: "concluido",
+   108→    },
+   109→  ],
+   110→  "4": [
+   111→    {
+   112→      id: "1",
+   113→      dataHora: "2025-01-28T13:00:00",
+   114→      servicos: [
+   115→        { nome: "Manicure", valor: 45 },
+   116→        { nome: "Pedicure", valor: 50 },
+   117→      ],
+   118→      profissionais: ["Maria Santos"],
+   119→      valorTotal: 95,
+   120→      metodoPagamento: "PIX",
+   121→      status: "concluido",
+   122→    },
+   123→  ],
+   124→  "5": [
+   125→    {
+   126→      id: "1",
+   127→      dataHora: "2025-01-07T14:30:00",
+   128→      servicos: [
+   129→        { nome: "Corte Feminino", valor: 120 },
+   130→        { nome: "Escova", valor: 50 },
+   131→      ],
+   132→      profissionais: ["Ana Carolina"],
+   133→      valorTotal: 170,
+   134→      metodoPagamento: "Cartão de Crédito",
+   135→      status: "concluido",
+   136→    },
+   137→    {
+   138→      id: "2",
+   139→      dataHora: "2024-12-15T10:00:00",
+   140→      servicos: [
+   141→        { nome: "Corte Feminino", valor: 120 },
+   142→        { nome: "Hidratação", valor: 80 },
+   143→      ],
+   144→      profissionais: ["Aline de Abreu"],
+   145→      valorTotal: 200,
+   146→      metodoPagamento: "PIX",
+   147→      status: "concluido",
+   148→      observacoes: "Cliente pediu para cortar 5cm",
+   149→    },
+   150→    {
+   151→      id: "3",
+   152→      dataHora: "2024-11-05T09:30:00",
+   153→      servicos: [
+   154→        { nome: "Coloração", valor: 180 },
+   155→        { nome: "Corte Feminino", valor: 120 },
+   156→      ],
+   157→      profissionais: ["Ana Carolina"],
+   158→      valorTotal: 300,
+   159→      metodoPagamento: "Cartão de Crédito",
+   160→      status: "concluido",
+   161→    },
+   162→    {
+   163→      id: "4",
+   164→      dataHora: "2024-10-12T16:00:00",
+   165→      servicos: [{ nome: "Escova", valor: 50 }],
+   166→      profissionais: ["Aline de Abreu"],
+   167→      valorTotal: 50,
+   168→      metodoPagamento: "Dinheiro",
+   169→      status: "concluido",
+   170→    },
+   171→  ],
+   172→}
+   173→
+   174→const clientesMock: Cliente[] = [
+   175→  {
+   176→    id: "1",
+   177→    nome: "Alexandre Baptista",
+   178→    email: "alexandre.baptista@email.com",
+   179→    telefone: "(41) 99904-1650",
+   180→    cpf: "123.456.789-00",
+   181→    ultimaVisita: "25/01/2025",
+   182→    totalVisitas: 3,
+   183→    totalGasto: 320,
+   184→    ticketMedio: 106.67,
+   185→  },
+   186→  {
+   187→    id: "2",
+   188→    nome: "Alexandre Baptista",
+   189→    email: "alex.baptista2@email.com",
+   190→    telefone: "(41) 99961-0516",
+   191→    cpf: "987.654.321-00",
+   192→    ultimaVisita: "Nunca",
+   193→    totalVisitas: 0,
+   194→    totalGasto: 0,
+   195→    ticketMedio: 0,
+   196→  },
+   197→  {
+   198→    id: "3",
+   199→    nome: "Grazielly Barboza",
+   200→    email: "grazielly.barboza@email.com",
+   201→    telefone: "(41) 99868-3795",
+   202→    cpf: "456.789.123-45",
+   203→    ultimaVisita: "20/01/2025",
+   204→    totalVisitas: 2,
+   205→    totalGasto: 480,
+   206→    ticketMedio: 240,
+   207→  },
+   208→  {
+   209→    id: "4",
+   210→    nome: "Raissa Antunes",
+   211→    email: "raissa.antunes@email.com",
+   212→    telefone: "(13) 33444-4444",
+   213→    cpf: "251.987.530-50",
+   214→    ultimaVisita: "28/01/2025",
+   215→    totalVisitas: 1,
+   216→    totalGasto: 95,
+   217→    ticketMedio: 95,
+   218→  },
+   219→  {
+   220→    id: "5",
+   221→    nome: "Raissa Antunes",
+   222→    email: "raissa.antunes2@email.com",
+   223→    telefone: "(14) 99131-2552",
+   224→    cpf: "484.948.908-75",
+   225→    ultimaVisita: "07/01/2025",
+   226→    totalVisitas: 4,
+   227→    totalGasto: 720,
+   228→    ticketMedio: 180,
+   229→  },
+   230→  {
+   231→    id: "6",
+   232→    nome: "Raissa Fernanda",
+   233→    email: "raissa.fernanda@email.com",
+   234→    telefone: "(14) 99131-2552",
+   235→    cpf: "321.654.987-22",
+   236→    ultimaVisita: "Nunca",
+   237→    totalVisitas: 0,
+   238→    totalGasto: 0,
+   239→    ticketMedio: 0,
+   240→  },
+   241→  {
+   242→    id: "7",
+   243→    nome: "Raissa Teste",
+   244→    email: "raissa.teste@email.com",
+   245→    telefone: "(11) 99999-9999",
+   246→    cpf: "111.222.333-44",
+   247→    ultimaVisita: "Nunca",
+   248→    totalVisitas: 0,
+   249→    totalGasto: 0,
+   250→    ticketMedio: 0,
+   251→  },
+   252→]
+   253→
+   254→export function ClientesPage() {
+   255→  const { isBlocked } = useSubscription()
+   256→  const { salonData, isNewSalon, updateClientes } = useSalonData()
+   257→  const { selectedSalon } = useAuth()
+   258→
+   259→  const [searchQuery, setSearchQuery] = useState("")
+   260→  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
+   261→  const [showDetails, setShowDetails] = useState(false)
+   262→  const [isDeleting, setIsDeleting] = useState(false)
+   263→  const [activeTab, setActiveTab] = useState<"informacoes" | "historico">("informacoes")
+   264→  const [currentPage, setCurrentPage] = useState(1)
+   265→  const [isMobileView, setIsMobileView] = useState(false)
+   266→
+   267→  const itemsPerPage = isMobileView ? 20 : 10
+   268→
+   269→  useEffect(() => {
+   270→    const check = () => setIsMobileView(window.innerWidth < 768)
+   271→    check()
+   272→    window.addEventListener("resize", check)
+   273→    return () => window.removeEventListener("resize", check)
+   274→  }, [])
+   275→
+   276→  useEffect(() => { setCurrentPage(1) }, [searchQuery])
+   277→
+   278→  // Use salon data context for new salons, mock data for existing mock salons
+   279→  const isMockSalon = selectedSalon && ["1", "2", "3", "4", "5"].includes(selectedSalon.id)
+   280→  const clientes: Cliente[] = isBlocked 
+   281→    ? [] 
+   282→    : isMockSalon 
+   283→      ? clientesMock 
+   284→      : (salonData?.clientes?.map(c => ({
+   285→          ...c,
+   286→          dataNascimento: undefined,
+   287→          genero: undefined,
+   288→          instagram: undefined,
+   289→          observacoes: undefined,
+   290→        })) || [])
+   291→
+   292→  const [clienteForm, setClienteForm] = useState({
+   293→    nome: "",
+   294→    cpf: "",
+   295→    dataNascimento: "",
+   296→    genero: "",
+   297→    telefone: "",
+   298→    email: "",
+   299→    instagram: "",
+   300→    observacoes: "",
+   301→  })
+   302→
+   303→  const filteredClientes = clientes.filter(
+   304→    (cliente) =>
+   305→      cliente.nome.toLowerCase().includes(searchQuery.toLowerCase()) || cliente.telefone.includes(searchQuery),
+   306→  )
+   307→
+   308→  const totalPages = Math.ceil(filteredClientes.length / itemsPerPage)
+   309→  const startIndex = (currentPage - 1) * itemsPerPage
+   310→  const pagedClientes = filteredClientes.slice(startIndex, startIndex + itemsPerPage)
+   311→
+   312→  const handleOpenNewModal = () => {
+   313→    setClienteForm({
+   314→      nome: "",
+   315→      cpf: "",
+   316→      dataNascimento: "",
+   317→      genero: "",
+   318→      telefone: "",
+   319→      email: "",
+   320→      instagram: "",
+   321→      observacoes: "",
+   322→    })
+   323→    setShowDetails(true)
+   324→  }
+   325→
+   326→  const handleOpenEditModal = (cliente: Cliente) => {
+   327→    setSelectedCliente(cliente)
+   328→    setActiveTab("informacoes")
+   329→    setClienteForm({
+   330→      nome: cliente.nome,
+   331→      cpf: cliente.cpf === "N/A" ? "" : cliente.cpf,
+   332→      dataNascimento: cliente.dataNascimento || "",
+   333→      genero: cliente.genero || "",
+   334→      telefone: cliente.telefone,
+   335→      email: cliente.email === "N/A" ? "" : cliente.email,
+   336→      instagram: cliente.instagram || "",
+   337→      observacoes: cliente.observacoes || "",
+   338→    })
+   339→    setShowDetails(true)
+   340→  }
+   341→
+   342→  const handleSaveNewCliente = () => {
+   343→    const newCliente: Cliente = {
+   344→      id: Date.now().toString(),
+   345→      nome: clienteForm.nome,
+   346→      email: clienteForm.email || "N/A",
+   347→      telefone: clienteForm.telefone,
+   348→      cpf: clienteForm.cpf || "N/A",
+   349→      ultimaVisita: "Nunca",
+   350→      dataNascimento: clienteForm.dataNascimento,
+   351→      genero: clienteForm.genero,
+   352→      instagram: clienteForm.instagram,
+   353→      observacoes: clienteForm.observacoes,
+   354→      totalVisitas: 0,
+   355→      totalGasto: 0,
+   356→      ticketMedio: 0,
+   357→    }
+   358→    
+   359→    if (isMockSalon) {
+   360→      clientesMock.push(newCliente)
+   361→    } else if (salonData) {
+   362→      const salonCliente: SalonCliente = {
+   363→        id: newCliente.id,
+   364→        nome: newCliente.nome,
+   365→        email: newCliente.email,
+   366→        telefone: newCliente.telefone,
+   367→        cpf: newCliente.cpf,
+   368→        ultimaVisita: newCliente.ultimaVisita,
+   369→        totalVisitas: 0,
+   370→        totalGasto: 0,
+   371→        ticketMedio: 0,
+   372→      }
+   373→      updateClientes([...salonData.clientes, salonCliente])
+   374→    }
+   375→    setShowDetails(false)
+   376→  }
+   377→
+   378→  const handleSaveEditCliente = () => {
+   379→    if (!selectedCliente) return
+   380→    
+   381→    if (isMockSalon) {
+   382→      const index = clientesMock.findIndex((c) => c.id === selectedCliente.id)
+   383→      if (index !== -1) {
+   384→        clientesMock[index] = {
+   385→          ...selectedCliente,
+   386→          nome: clienteForm.nome,
+   387→          email: clienteForm.email || "N/A",
+   388→          telefone: clienteForm.telefone,
+   389→          cpf: clienteForm.cpf || "N/A",
+   390→          dataNascimento: clienteForm.dataNascimento,
+   391→          genero: clienteForm.genero,
+   392→          instagram: clienteForm.instagram,
+   393→          observacoes: clienteForm.observacoes,
+   394→        }
+   395→      }
+   396→    } else if (salonData) {
+   397→      const updatedClientes = salonData.clientes.map((c) =>
+   398→        c.id === selectedCliente.id
+   399→          ? {
+   400→              ...c,
+   401→              nome: clienteForm.nome,
+   402→              email: clienteForm.email || "N/A",
+   403→              telefone: clienteForm.telefone,
+   404→              cpf: clienteForm.cpf || "N/A",
+   405→            }
+   406→          : c
+   407→      )
+   408→      updateClientes(updatedClientes)
+   409→    }
+   410→    setShowDetails(false)
+   411→  }
+   412→
+   413→  const handleDeleteCliente = () => {
+   414→    if (!selectedCliente) return
+   415→    
+   416→    if (isMockSalon) {
+   417→      const index = clientesMock.findIndex((c) => c.id === selectedCliente.id)
+   418→      if (index !== -1) {
+   419→        clientesMock.splice(index, 1)
+   420→      }
+   421→    } else if (salonData) {
+   422→      const updatedClientes = salonData.clientes.filter((c) => c.id !== selectedCliente.id)
+   423→      updateClientes(updatedClientes)
+   424→    }
+   425→    setShowDetails(false)
+   426→  }
+   427→
+   428→  const formatarData = (dataISO: string) => {
+   429→    const data = new Date(dataISO)
+   430→    return data.toLocaleDateString("pt-BR", {
+   431→      day: "2-digit",
+   432→      month: "2-digit",
+   433→      year: "numeric",
+   434→    })
+   435→  }
+   436→
+   437→  const formatarHora = (dataISO: string) => {
+   438→    const data = new Date(dataISO)
+   439→    return data.toLocaleTimeString("pt-BR", {
+   440→      hour: "2-digit",
+   441→      minute: "2-digit",
+   442→    })
+   443→  }
+   444→
+   445→  const getHistoricoCliente = (): Atendimento[] => {
+   446→    if (!selectedCliente) return []
+   447→    return atendimentosMock[selectedCliente.id] || []
+   448→  }
+   449→
+   450→  return (
+   451→    <div className="flex-1 w-full p-4 md:p-6 pb-5 overflow-auto">
+   452→      {/* Header */}
+   453→      <div className="mb-4">
+   454→        <h1 className="text-xl md:text-2xl font-semibold text-foreground mb-3">Clientes</h1>
+   455→        <Button
+   456→          onClick={handleOpenNewModal}
+   457→          className="w-full h-10 rounded-[14px] bg-[#dd4227] hover:bg-[#c73a22] text-white"
+   458→        >
+   459→          Novo Cliente
+   460→        </Button>
+   461→      </div>
+   462→
+   463→      {/* Search and Counter */}
+   464→      <div className="flex flex-row items-center gap-3 mb-6">
+   465→        <div className="relative flex-1">
+   466→          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   467→          <Input
+   468→            type="text"
+   469→            placeholder="Buscar por nome ou telefone"
+   470→            value={searchQuery}
+   471→            onChange={(e) => setSearchQuery(e.target.value)}
+   472→            className="pl-9"
+   473→          />
+   474→        </div>
+   475→        <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+   476→          <IconUsers className="w-4 h-4" />
+   477→          Total: {clientes.length}
+   478→        </div>
+   479→      </div>
+   480→
+   481→      {/* Desktop Table */}
+   482→      <div className="hidden md:block bg-card border border-border overflow-hidden rounded-3xl">
+   483→        <table className="w-full">
+   484→          <thead>
+   485→            <tr className="bg-[#f5ebe6]">
+   486→              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Nome</th>
+   487→              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">E-mail</th>
+   488→              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Telefone</th>
+   489→              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">CPF</th>
+   490→              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Última Visita</th>
+   491→              <th className="text-center py-3 px-4 text-sm font-medium text-foreground">Ações</th>
+   492→            </tr>
+   493→          </thead>
+   494→          <tbody>
+   495→            {pagedClientes.length === 0 ? (
+   496→              <tr>
+   497→                <td colSpan={6} className="py-12 text-center text-muted-foreground">
+   498→                  Nenhum cliente cadastrado.
+   499→                </td>
+   500→              </tr>
+   501→            ) : (
+   502→              pagedClientes.map((cliente) => (
+   503→                <tr key={cliente.id} className="border-t border-border hover:bg-muted/30">
+   504→                  <td className="py-3 px-4 text-sm text-foreground">{cliente.nome}</td>
+   505→                  <td className="py-3 px-4 text-sm text-muted-foreground truncate max-w-[160px]">{cliente.email}</td>
+   506→                  <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">{cliente.telefone}</td>
+   507→                  <td className="py-3 px-4 text-sm text-muted-foreground">{cliente.cpf}</td>
+   508→                  <td className="py-3 px-4 text-sm text-muted-foreground">{cliente.ultimaVisita}</td>
+   509→                  <td className="py-3 px-4 text-center">
+   510→                    <button
+   511→                      onClick={() => handleOpenEditModal(cliente)}
+   512→                      className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+   513→                    >
+   514→                      <IconEdit className="w-5 h-5 text-muted-foreground hover:text-[#dd4227] transition-colors" />
+   515→                    </button>
+   516→                  </td>
+   517→                </tr>
+   518→              ))
+   519→            )}
+   520→          </tbody>
+   521→        </table>
+   522→      </div>
+   523→
+   524→      {/* Mobile Cards */}
+   525→      <div className="flex md:hidden flex-col gap-3">
+   526→        {pagedClientes.length === 0 ? (
+   527→          <p className="text-center text-muted-foreground py-12">Nenhum cliente cadastrado.</p>
+   528→        ) : (
+   529→          pagedClientes.map((cliente) => (
+   530→            <div key={cliente.id} className="bg-card border border-border rounded-3xl p-4">
+   531→              <div className="flex items-start justify-between mb-2">
+   532→                <div>
+   533→                  <p className="text-sm font-semibold text-foreground">{cliente.nome}</p>
+   534→                  <p className="text-xs text-muted-foreground">{cliente.telefone}</p>
+   535→                </div>
+   536→                <button
+   537→                  onClick={() => handleOpenEditModal(cliente)}
+   538→                  className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+   539→                >
+   540→                  <IconEdit className="w-4 h-4 text-muted-foreground" />
+   541→                </button>
+   542→              </div>
+   543→              <div className="space-y-1">
+   544→                {cliente.email !== "N/A" && (
+   545→                  <div className="flex items-center gap-2">
+   546→                    <span className="text-xs text-muted-foreground w-20">E-mail</span>
+   547→                    <span className="text-xs text-foreground truncate">{cliente.email}</span>
+   548→                  </div>
+   549→                )}
+   550→                {cliente.cpf !== "N/A" && (
+   551→                  <div className="flex items-center gap-2">
+   552→                    <span className="text-xs text-muted-foreground w-20">CPF</span>
+   553→                    <span className="text-xs text-foreground">{cliente.cpf}</span>
+   554→                  </div>
+   555→                )}
+   556→                <div className="flex items-center gap-2">
+   557→                  <span className="text-xs text-muted-foreground w-20">Última visita</span>
+   558→                  <span className="text-xs text-foreground">{cliente.ultimaVisita}</span>
+   559→                </div>
+   560→              </div>
+   561→            </div>
+   562→          ))
+   563→        )}
+   564→      </div>
+   565→
+   566→      {/* Pagination */}
+   567→      <div className="flex flex-col md:flex-row items-center justify-between gap-3 mt-4">
+   568→        <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+   569→          <span>Itens por página:</span>
+   570→          <span className="flex items-center gap-1 px-3 py-1.5 border border-border rounded-lg text-sm">{itemsPerPage}</span>
+   571→          <span>
+   572→            Mostrando {filteredClientes.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredClientes.length)} de {filteredClientes.length} clientes
+   573→          </span>
+   574→        </div>
+   575→        <p className="md:hidden text-xs text-muted-foreground">
+   576→          {filteredClientes.length} clientes encontrados
+   577→        </p>
+   578→        <div className="flex items-center gap-2">
+   579→          <button
+   580→            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+   581→            disabled={currentPage === 1}
+   582→            className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+   583→          >
+   584→            {"<"}
+   585→            <span className="hidden md:inline"> Anterior</span>
+   586→          </button>
+   587→          <button className="w-8 h-8 rounded-lg bg-primary text-primary-foreground text-sm font-medium">{currentPage}</button>
+   588→          <button
+   589→            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+   590→            disabled={currentPage === totalPages || totalPages === 0}
+   591→            className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+   592→          >
+   593→            <span className="hidden md:inline">Próxima </span>
+   594→            {">"}
+   595→          </button>
+   596→        </div>
+   597→      </div>
+   598→
+   599→      {/* Modal / Drawer Novo Cliente */}
+   600→      {showDetails && !selectedCliente && (
+   601→        isMobileView ? (
+   602→          <Drawer open={showDetails} onOpenChange={setShowDetails}>
+   603→            <DrawerContent className="max-h-[95vh]">
+   604→              <DrawerHeader className="px-4 pt-4 pb-2 text-left">
+   605→                <DrawerTitle>Cadastrar Novo Cliente</DrawerTitle>
+   606→              </DrawerHeader>
+   607→              <div className="overflow-y-auto px-4 pb-4 space-y-4">
+   608→                <div>
+   609→                  <label className="text-sm font-medium text-foreground">Nome Completo <span className="text-red-500">*</span></label>
+   610→                  <Input type="text" placeholder="Digite o nome completo" value={clienteForm.nome}
+   611→                    onChange={(e) => setClienteForm({ ...clienteForm, nome: e.target.value })}
+   612→                    className="mt-1" />
+   613→                </div>
+   614→                <div className="grid grid-cols-2 gap-4">
+   615→                  <div>
+   616→                    <label className="text-sm font-medium text-foreground">CPF</label>
+   617→                    <Input type="text" placeholder="000.000.000-00" value={clienteForm.cpf}
+   618→                      onChange={(e) => setClienteForm({ ...clienteForm, cpf: e.target.value })}
+   619→                      className="mt-1" />
+   620→                  </div>
+   621→                  <div>
+   622→                    <label className="text-sm font-medium text-foreground">Data de Nascimento</label>
+   623→                    <div className="relative mt-1">
+   624→                      <IconCalendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   625→                      <Input type="date" value={clienteForm.dataNascimento}
+   626→                        onChange={(e) => setClienteForm({ ...clienteForm, dataNascimento: e.target.value })}
+   627→                        className="pl-10" />
+   628→                    </div>
+   629→                  </div>
+   630→                </div>
+   631→                <div className="grid grid-cols-2 gap-4">
+   632→                  <div>
+   633→                    <label className="text-sm font-medium text-foreground">Gênero</label>
+   634→                    <div className="relative mt-1">
+   635→                      <select value={clienteForm.genero} onChange={(e) => setClienteForm({ ...clienteForm, genero: e.target.value })}
+   636→                        className="appearance-none w-full px-4 pr-10 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#dd4227]">
+   637→                        <option value="">Selecione</option>
+   638→                        <option value="masculino">Masculino</option>
+   639→                        <option value="feminino">Feminino</option>
+   640→                        <option value="outro">Outro</option>
+   641→                        <option value="prefiro_nao_informar">Prefiro não informar</option>
+   642→                      </select>
+   643→                      <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+   644→                    </div>
+   645→                  </div>
+   646→                  <div>
+   647→                    <label className="text-sm font-medium text-foreground">Celular com DDD <span className="text-red-500">*</span></label>
+   648→                    <Input type="text" placeholder="(00) 00000-0000" value={clienteForm.telefone}
+   649→                      onChange={(e) => setClienteForm({ ...clienteForm, telefone: e.target.value })}
+   650→                      className="mt-1" />
+   651→                  </div>
+   652→                </div>
+   653→                <div className="grid grid-cols-2 gap-4">
+   654→                  <div>
+   655→                    <label className="text-sm font-medium text-foreground">E-mail</label>
+   656→                    <Input type="email" placeholder="cliente@email.com" value={clienteForm.email}
+   657→                      onChange={(e) => setClienteForm({ ...clienteForm, email: e.target.value })}
+   658→                      className="mt-1" />
+   659→                  </div>
+   660→                  <div>
+   661→                    <label className="text-sm font-medium text-foreground">Instagram</label>
+   662→                    <Input type="text" placeholder="@usuario" value={clienteForm.instagram}
+   663→                      onChange={(e) => setClienteForm({ ...clienteForm, instagram: e.target.value })}
+   664→                      className="mt-1" />
+   665→                  </div>
+   666→                </div>
+   667→                <div>
+   668→                  <label className="text-sm font-medium text-foreground">Observações sobre o cliente (alergias, preferências, etc.)</label>
+   669→                  <textarea placeholder="Digite observações relevantes sobre o cliente..." value={clienteForm.observacoes}
+   670→                    onChange={(e) => setClienteForm({ ...clienteForm, observacoes: e.target.value })}
+   671→                    rows={3}
+   672→                    className="mt-1 w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#dd4227] focus:border-[#dd4227] resize-none" />
+   673→                </div>
+   674→              </div>
+   675→              <div className="flex items-center justify-end gap-3 px-4 py-4 border-t border-border">
+   676→                <Button variant="outline" onClick={() => setShowDetails(false)}>Cancelar</Button>
+   677→                <Button onClick={handleSaveNewCliente} disabled={!clienteForm.nome || !clienteForm.telefone}
+   678→                  className="bg-[#dd4227] hover:bg-[#c73a22] text-white">
+   679→                  Salvar Cliente
+   680→                </Button>
+   681→              </div>
+   682→            </DrawerContent>
+   683→          </Drawer>
+   684→        ) : (
+   685→        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDetails(false)}>
+   686→          <div className="bg-card rounded-3xl w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+   687→            <div className="flex items-center justify-between p-6 border-b border-border">
+   688→              <h2 className="text-lg font-semibold text-foreground">Cadastrar Novo Cliente</h2>
+   689→              <button onClick={() => setShowDetails(false)} className="p-1 hover:bg-muted rounded-lg">
+   690→                <IconX className="w-5 h-5 text-muted-foreground" />
+   691→              </button>
+   692→            </div>
+   693→            <div className="p-6 space-y-4">
+   694→              <div>
+   695→                <label className="text-sm font-medium text-foreground">Nome Completo <span className="text-red-500">*</span></label>
+   696→                <Input type="text" placeholder="Digite o nome completo" value={clienteForm.nome}
+   697→                  onChange={(e) => setClienteForm({ ...clienteForm, nome: e.target.value })}
+   698→                  className="mt-1" />
+   699→              </div>
+   700→              <div className="grid grid-cols-2 gap-4">
+   701→                <div>
+   702→                  <label className="text-sm font-medium text-foreground">CPF</label>
+   703→                  <Input type="text" placeholder="000.000.000-00" value={clienteForm.cpf}
+   704→                    onChange={(e) => setClienteForm({ ...clienteForm, cpf: e.target.value })}
+   705→                    className="mt-1" />
+   706→                </div>
+   707→                <div>
+   708→                  <label className="text-sm font-medium text-foreground">Data de Nascimento</label>
+   709→                  <div className="relative mt-1">
+   710→                    <IconCalendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   711→                    <Input type="date" value={clienteForm.dataNascimento}
+   712→                      onChange={(e) => setClienteForm({ ...clienteForm, dataNascimento: e.target.value })}
+   713→                      className="pl-10" />
+   714→                  </div>
+   715→                </div>
+   716→              </div>
+   717→              <div className="grid grid-cols-2 gap-4">
+   718→                <div>
+   719→                  <label className="text-sm font-medium text-foreground">Gênero</label>
+   720→                  <div className="relative mt-1">
+   721→                    <select value={clienteForm.genero} onChange={(e) => setClienteForm({ ...clienteForm, genero: e.target.value })}
+   722→                      className="appearance-none w-full px-4 pr-10 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#dd4227] focus:border-[#dd4227]">
+   723→                      <option value="">Selecione o gênero</option>
+   724→                      <option value="masculino">Masculino</option>
+   725→                      <option value="feminino">Feminino</option>
+   726→                      <option value="outro">Outro</option>
+   727→                      <option value="prefiro_nao_informar">Prefiro não informar</option>
+   728→                    </select>
+   729→                    <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+   730→                  </div>
+   731→                </div>
+   732→                <div>
+   733→                  <label className="text-sm font-medium text-foreground">Celular com DDD <span className="text-red-500">*</span></label>
+   734→                  <Input type="text" placeholder="(00) 00000-0000" value={clienteForm.telefone}
+   735→                    onChange={(e) => setClienteForm({ ...clienteForm, telefone: e.target.value })}
+   736→                    className="mt-1" />
+   737→                </div>
+   738→              </div>
+   739→              <div className="grid grid-cols-2 gap-4">
+   740→                <div>
+   741→                  <label className="text-sm font-medium text-foreground">E-mail</label>
+   742→                  <Input type="email" placeholder="cliente@email.com" value={clienteForm.email}
+   743→                    onChange={(e) => setClienteForm({ ...clienteForm, email: e.target.value })}
+   744→                    className="mt-1" />
+   745→                </div>
+   746→                <div>
+   747→                  <label className="text-sm font-medium text-foreground">Instagram</label>
+   748→                  <Input type="text" placeholder="@usuario" value={clienteForm.instagram}
+   749→                    onChange={(e) => setClienteForm({ ...clienteForm, instagram: e.target.value })}
+   750→                    className="mt-1" />
+   751→                </div>
+   752→              </div>
+   753→              <div>
+   754→                <label className="text-sm font-medium text-foreground">Observações sobre o cliente (alergias, preferências, etc.)</label>
+   755→                <textarea placeholder="Digite observações relevantes sobre o cliente..." value={clienteForm.observacoes}
+   756→                  onChange={(e) => setClienteForm({ ...clienteForm, observacoes: e.target.value })}
+   757→                  rows={4}
+   758→                  className="mt-1 w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#dd4227] focus:border-[#dd4227] resize-none" />
+   759→              </div>
+   760→            </div>
+   761→            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+   762→              <Button variant="outline" onClick={() => setShowDetails(false)}>Cancelar</Button>
+   763→              <Button onClick={handleSaveNewCliente} disabled={!clienteForm.nome || !clienteForm.telefone}
+   764→                className="bg-[#dd4227] hover:bg-[#c73a22] text-white">
+   765→                Salvar Cliente
+   766→              </Button>
+   767→            </div>
+   768→          </div>
+   769→        </div>
+   770→        )
+   771→      )}
+   772→
+   773→      {/* Modal Editar Cliente */}
+   774→      {showDetails && selectedCliente && (
+   775→        <div
+   776→          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+   777→          onClick={() => setShowDetails(false)}
+   778→        >
+   779→          <div
+   780→            className="bg-card rounded-3xl w-full max-w-xl mx-4 max-h-[90vh] overflow-y-auto"
+   781→            onClick={(e) => e.stopPropagation()}
+   782→          >
+   783→            <div className="flex items-center justify-between p-6 border-b border-border">
+   784→              <h2 className="text-lg font-semibold text-foreground">Editar Dados do Cliente</h2>
+   785→              <button onClick={() => setShowDetails(false)} className="p-1 hover:bg-muted rounded-lg">
+   786→                <IconX className="w-5 h-5 text-muted-foreground" />
+   787→              </button>
+   788→            </div>
+   789→
+   790→            <div className="px-6 pt-4">
+   791→              <div className="flex bg-muted rounded-lg p-1">
+   792→                <button
+   793→                  onClick={() => setActiveTab("informacoes")}
+   794→                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+   795→                    activeTab === "informacoes"
+   796→                      ? "bg-background text-foreground shadow-sm"
+   797→                      : "text-muted-foreground hover:text-foreground"
+   798→                  }`}
+   799→                >
+   800→                  Informações
+   801→                </button>
+   802→                <button
+   803→                  onClick={() => setActiveTab("historico")}
+   804→                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 ${
+   805→                    activeTab === "historico"
+   806→                      ? "bg-background text-foreground shadow-sm"
+   807→                      : "text-muted-foreground hover:text-foreground"
+   808→                  }`}
+   809→                >
+   810→                  <IconHistory className="w-4 h-4" />
+   811→                  Histórico
+   812→                </button>
+   813→              </div>
+   814→            </div>
+   815→
+   816→            {activeTab === "informacoes" ? (
+   817→              <>
+   818→                <div className="p-6 space-y-4">
+   819→                  {/* Nome Completo */}
+   820→                  <div>
+   821→                    <label className="text-sm font-medium text-foreground">
+   822→                  Nome Completo <span className="text-[#dd4227]">*</span>
+   823→                    </label>
+   824→                    <Input
+   825→                      type="text"
+   826→                      value={clienteForm.nome}
+   827→                      onChange={(e) => setClienteForm({ ...clienteForm, nome: e.target.value })}
+   828→                      className="mt-1"
+   829→                    />
+   830→                  </div>
+   831→
+   832→                  <div className="grid grid-cols-2 gap-4">
+   833→                    <div>
+   834→                      <label className="text-sm font-medium text-foreground">CPF</label>
+   835→                      <Input
+   836→                        type="text"
+   837→                        placeholder="000.000.000-00"
+   838→                        value={clienteForm.cpf}
+   839→                        onChange={(e) => setClienteForm({ ...clienteForm, cpf: e.target.value })}
+   840→                        className="mt-1"
+   841→                      />
+   842→                    </div>
+   843→                    <div>
+   844→                      <label className="text-sm font-medium text-foreground">Data de Nascimento</label>
+   845→                      <div className="relative mt-1">
+   846→                        <IconCalendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   847→                        <Input
+   848→                          type="date"
+   849→                          value={clienteForm.dataNascimento}
+   850→                          onChange={(e) => setClienteForm({ ...clienteForm, dataNascimento: e.target.value })}
+   851→                          className="pl-10"
+   852→                        />
+   853→                      </div>
+   854→                    </div>
+   855→                  </div>
+   856→
+   857→                  <div className="grid grid-cols-2 gap-4">
+   858→                    <div>
+   859→                      <label className="text-sm font-medium text-foreground">Gênero</label>
+   860→                      <div className="relative mt-1">
+   861→                        <select
+   862→                          value={clienteForm.genero}
+   863→                          onChange={(e) => setClienteForm({ ...clienteForm, genero: e.target.value })}
+   864→                          className="appearance-none w-full px-4 pr-10 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#dd4227] focus:border-[#dd4227]"
+   865→                        >
+   866→                          <option value="">Selecione o gênero</option>
+   867→                          <option value="masculino">Masculino</option>
+   868→                          <option value="feminino">Feminino</option>
+   869→                          <option value="outro">Outro</option>
+   870→                          <option value="prefiro_nao_informar">Prefiro não informar</option>
+   871→                        </select>
+   872→                        <IconChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+   873→                      </div>
+   874→                    </div>
+   875→                    <div>
+   876→                      <label className="text-sm font-medium text-foreground">
+   877→                        Celular com DDD <span className="text-red-500">*</span>
+   878→                      </label>
+   879→                      <Input
+   880→                        type="text"
+   881→                        placeholder="(00) 00000-0000"
+   882→                        value={clienteForm.telefone}
+   883→                        onChange={(e) => setClienteForm({ ...clienteForm, telefone: e.target.value })}
+   884→                        className="mt-1"
+   885→                      />
+   886→                    </div>
+   887→                  </div>
+   888→
+   889→                  <div className="grid grid-cols-2 gap-4">
+   890→                    <div>
+   891→                      <label className="text-sm font-medium text-foreground">E-mail</label>
+   892→                      <Input
+   893→                        type="email"
+   894→                        placeholder="cliente@email.com"
+   895→                        value={clienteForm.email}
+   896→                        onChange={(e) => setClienteForm({ ...clienteForm, email: e.target.value })}
+   897→                        className="mt-1"
+   898→                      />
+   899→                    </div>
+   900→                    <div>
+   901→                      <label className="text-sm font-medium text-foreground">Instagram</label>
+   902→                      <Input
+   903→                        type="text"
+   904→                        placeholder="@usuario"
+   905→                        value={clienteForm.instagram}
+   906→                        onChange={(e) => setClienteForm({ ...clienteForm, instagram: e.target.value })}
+   907→                        className="mt-1"
+   908→                      />
+   909→                    </div>
+   910→                  </div>
+   911→
+   912→                  <div>
+   913→                    <label className="text-sm font-medium text-foreground">
+   914→                      Observações sobre o cliente (alergias, preferências, etc.)
+   915→                    </label>
+   916→                    <textarea
+   917→                      placeholder="Digite observações relevantes sobre o cliente..."
+   918→                      value={clienteForm.observacoes}
+   919→                      onChange={(e) => setClienteForm({ ...clienteForm, observacoes: e.target.value })}
+   920→                      rows={4}
+   921→                      className="mt-1 w-full px-4 py-2.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-[#dd4227] focus:border-[#dd4227] resize-none"
+   922→                    />
+   923→                  </div>
+   924→                </div>
+   925→
+   926→                <div className="flex items-center justify-between p-6 border-t border-border">
+   927→                  <Button
+   928→                    variant="outline"
+   929→                    onClick={() => {
+   930→                      setIsDeleting(true)
+   931→                      setTimeout(() => {
+   932→                        handleDeleteCliente()
+   933→                        setIsDeleting(false)
+   934→                      }, 1000)
+   935→                    }}
+   936→                    disabled={isDeleting}
+   937→                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+   938→                  >
+   939→                    <IconTrash className="w-4 h-4 mr-2" />
+   940→                    Excluir Cliente
+   941→                  </Button>
+   942→                  <div className="flex gap-3">
+   943→                    <Button variant="outline" onClick={() => setShowDetails(false)}>
+   944→                      Cancelar
+   945→                    </Button>
+   946→                    <Button
+   947→                      onClick={handleSaveEditCliente}
+   948→                      disabled={!clienteForm.nome || !clienteForm.telefone}
+   949→                      className="bg-[#dd4227] hover:bg-[#c73a22] text-white"
+   950→                    >
+   951→                      Salvar Alterações
+   952→                    </Button>
+   953→                  </div>
+   954→                </div>
+   955→              </>
+   956→            ) : (
+   957→              <>
+   958→                <div className="p-6 space-y-6">
+   959→                  {/* Cards de Métricas */}
+   960→                  <div className="grid grid-cols-4 gap-3">
+   961→                    <div className="bg-background border border-border rounded-lg p-4">
+   962→                      <div className="text-xs text-muted-foreground mb-1">Total de Visitas</div>
+   963→                      <div className="font-semibold text-foreground text-base">{selectedCliente.totalVisitas}</div>
+   964→                    </div>
+   965→                    <div className="bg-background border border-border rounded-lg p-4">
+   966→                      <div className="text-xs text-muted-foreground mb-1">Total Gasto</div>
+   967→                      <div className="font-semibold text-foreground text-base">
+   968→                        R$ {selectedCliente.totalGasto.toFixed(2)}
+   969→                      </div>
+   970→                    </div>
+   971→                    <div className="bg-background border border-border rounded-lg p-4">
+   972→                      <div className="text-xs text-muted-foreground mb-1">Ticket Médio</div>
+   973→                      <div className="font-semibold text-foreground text-base">
+   974→                        R$ {selectedCliente.ticketMedio.toFixed(2)}
+   975→                      </div>
+   976→                    </div>
+   977→                    <div className="bg-background border border-border rounded-lg p-4">
+   978→                      <div className="text-xs text-muted-foreground mb-1">Última Visita</div>
+   979→                      <div className="font-semibold text-foreground text-base">{selectedCliente.ultimaVisita}</div>
+   980→                    </div>
+   981→                  </div>
+   982→
+   983→                  {/* Histórico de Atendimentos */}
+   984→                  <div>
+   985→                    <h3 className="text-sm font-semibold text-foreground mb-3">Histórico de Atendimentos</h3>
+   986→
+   987→                    {getHistoricoCliente().length === 0 ? (
+   988→                      <div className="text-center py-8 text-muted-foreground text-sm">
+   989→                        Nenhum atendimento registrado
+   990→                      </div>
+   991→                    ) : (
+   992→                      <div className="space-y-3">
+   993→                        {getHistoricoCliente().map((atendimento) => (
+   994→                          <div key={atendimento.id} className="border border-border rounded-lg p-4 bg-background">
+   995→                            {/* Cabeçalho do Atendimento */}
+   996→                            <div className="flex items-start justify-between mb-3">
+   997→                              <div>
+   998→                                <div className="flex items-center gap-2 mb-1">
+   999→                                  <IconCalendar className="w-4 h-4 text-muted-foreground" />
+  1000→                                  <span className="text-sm font-medium text-foreground">
+  1001→                                    {formatarData(atendimento.dataHora)}
+  1002→                                  </span>
+  1003→                                  <span className="text-sm text-muted-foreground">
+  1004→                                    às {formatarHora(atendimento.dataHora)}
+  1005→                                  </span>
+  1006→                                </div>
+  1007→                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+  1008→                                  <span>Profissional: {atendimento.profissionais.join(", ")}</span>
+  1009→                                </div>
+  1010→                              </div>
+  1011→                              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-medium">
+  1012→                                <IconCheck className="w-3 h-3" />
+  1013→                                Concluído
+  1014→                              </div>
+  1015→                            </div>
+  1016→
+  1017→                            {/* Serviços */}
+  1018→                            <div className="space-y-1 mb-3">
+  1019→                              {atendimento.servicos.map((servico, idx) => (
+  1020→                                <div key={idx} className="flex items-center justify-between text-sm">
+  1021→                                  <span className="text-foreground">{servico.nome}</span>
+  1022→                                  <span className="text-muted-foreground">R$ {servico.valor.toFixed(2)}</span>
+  1023→                                </div>
+  1024→                              ))}
+  1025→                            </div>
+  1026→
+  1027→                            {/* Rodapé */}
+  1028→                            <div className="flex items-center justify-between pt-3 border-t border-border">
+  1029→                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+  1030→                                <IconCreditCard className="w-3 h-3" />
+  1031→                                {atendimento.metodoPagamento}
+  1032→                              </div>
+  1033→                              <div className="text-sm font-semibold text-foreground">
+  1034→                                Total: R$ {atendimento.valorTotal.toFixed(2)}
+  1035→                              </div>
+  1036→                            </div>
+  1037→
+  1038→                            {atendimento.observacoes && (
+  1039→                              <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+  1040→                                <span className="font-medium">Obs:</span> {atendimento.observacoes}
+  1041→                              </div>
+  1042→                            )}
+  1043→                          </div>
+  1044→                        ))}
+  1045→                      </div>
+  1046→                    )}
+  1047→                  </div>
+  1048→                </div>
+  1049→
+  1050→                <div className="flex items-center justify-between p-6 border-t border-border">
+  1051→                  <Button
+  1052→                    variant="outline"
+  1053→                    onClick={() => {
+  1054→                      setIsDeleting(true)
+  1055→                      setTimeout(() => {
+  1056→                        handleDeleteCliente()
+  1057→                        setIsDeleting(false)
+  1058→                      }, 1000)
+  1059→                    }}
+  1060→                    disabled={isDeleting}
+  1061→                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+  1062→                  >
+  1063→                    <IconTrash className="w-4 h-4 mr-2 text-red-600" />
+  1064→                    Excluir Cliente
+  1065→                  </Button>
+  1066→                  <Button variant="outline" onClick={() => setShowDetails(false)}>
+  1067→                    Fechar
+  1068→                  </Button>
+  1069→                </div>
+  1070→              </>
+  1071→            )}
+  1072→          </div>
+  1073→        </div>
+  1074→      )}
+  1075→    </div>
+  1076→  )
+  1077→}
+  1078→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

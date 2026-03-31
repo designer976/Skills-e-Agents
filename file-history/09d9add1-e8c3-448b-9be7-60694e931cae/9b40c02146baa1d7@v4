@@ -1,0 +1,501 @@
+import { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { FormField } from '@/components/forms/FormField';
+import { ProfileImageUpload } from '@/components/forms/ProfileImageUpload';
+import { PasswordInput } from '@/components/ui/password-input';
+import { PasswordRequirements } from '@/components/PasswordRequirements';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { EasySalonLayout } from '@/components/layout/EasySalonLayout';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SelectPopover } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { getAdminNavItems, getSalonNavItems } from '@/config/navigation';
+import { toast } from 'sonner';
+import { validatePassword } from '@/utils/validation';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Calendar as CalendarIcon, ArrowLeft as ArrowLeft, Lock as Lock, Save as Save } from "lucide-react";
+import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import { formatPhone, formatDate, parseDate, formatDateToString, formatCPF } from '@/utils/formatters';
+import { usersService } from '@/services/usersService';
+
+export default function ProfilePage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Estados para informações pessoais
+  const [profileData, setProfileData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    cpf: '',
+  });
+
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [currentProfileImage, setCurrentProfileImage] = useState<string>('');
+  const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
+  const [birthDateInput, setBirthDateInput] = useState<string>('');
+
+  // Estados para alteração de senha
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPassword, setIsLoadingPassword] = useState(false);
+
+  // Carregar dados do usuário ao montar o componente
+  useEffect(() => {
+    if (user?.id) {
+      loadUserData();
+    }
+  }, [user?.id]);
+
+  const loadUserData = async () => {
+    if (!user?.id) return;
+
+    try {
+      const userData = await usersService.getUserById(user.id);
+
+      setProfileData({
+        fullName: userData.name || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        cpf: userData.cpf || '',
+      });
+
+      if (userData.profileImage) {
+        setCurrentProfileImage(userData.profileImage);
+      }
+
+      if (userData.birthDate) {
+        const date = new Date(userData.birthDate);
+        setBirthDate(date);
+        setBirthDateInput(formatDateToString(date));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do usuário:', error);
+      // Se falhar, usa os dados do contexto de autenticação
+      setProfileData({
+        fullName: user?.name || '',
+        email: user?.email || '',
+        phone: '',
+        cpf: '',
+      });
+    }
+  };
+
+  const handleProfileChange = (field: string, value: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handlePasswordChange = (field: string, value: string) => {
+    setPasswordData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const validateProfileForm = () => {
+    if (!profileData.fullName.trim()) {
+      toast.error('Nome completo é obrigatório');
+      return false;
+    }
+    return true;
+  };
+
+  const validatePasswordForm = () => {
+    if (!passwordData.currentPassword) {
+      toast.error('Senha atual é obrigatória');
+      return false;
+    }
+
+    const passwordValidation = validatePassword(passwordData.newPassword);
+    if (!passwordValidation.isValid) {
+      toast.error('Nova senha não atende aos requisitos de segurança');
+      return false;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('Nova senha e confirmação não coincidem');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleRemoveImage = async () => {
+    if (!user?.id) {
+      toast.error('Usuário não identificado');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await usersService.deleteAvatar(user.id);
+      setCurrentProfileImage('');
+      setProfileImage(null);
+      toast.success('Imagem removida com sucesso!');
+
+      // Recarregar dados do usuário
+      await loadUserData();
+    } catch (error: any) {
+      console.error('Erro ao remover imagem:', error);
+      toast.error(error.response?.data?.message || 'Erro ao remover imagem. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!validateProfileForm()) return;
+    if (!user?.id) {
+      toast.error('Usuário não identificado');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Upload da imagem de perfil se houver
+      if (profileImage) {
+        const formData = new FormData();
+        formData.append('file', profileImage);
+
+        try {
+          const response = await usersService.uploadAvatar(user.id, formData);
+          if (response?.profileImage) {
+            setCurrentProfileImage(response.profileImage);
+            toast.success('Imagem de perfil atualizada!');
+          }
+        } catch (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          toast.error('Erro ao fazer upload da imagem');
+        }
+      }
+
+      // Atualizar dados do perfil
+      const updateData: any = {
+        name: profileData.fullName,
+        phone: profileData.phone,
+      };
+
+      if (birthDate) {
+        updateData.birthDate = birthDate.toISOString();
+      }
+
+      await usersService.updateUser(user.id, updateData);
+      toast.success('Perfil atualizado com sucesso!');
+
+      // Recarregar dados do usuário
+      await loadUserData();
+    } catch (error: any) {
+      console.error('Erro ao salvar perfil:', error);
+      toast.error(error.response?.data?.message || 'Erro ao salvar perfil. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!validatePasswordForm()) return;
+    if (!user?.id) {
+      toast.error('Usuário não identificado');
+      return;
+    }
+
+    setIsLoadingPassword(true);
+
+    try {
+      await usersService.updatePassword(user.id, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      toast.success('Senha alterada com sucesso!');
+
+      // Limpar campos de senha após salvar
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      toast.error(error.response?.data?.message || 'Erro ao alterar senha. Verifique a senha atual.');
+    } finally {
+      setIsLoadingPassword(false);
+    }
+  };
+
+  // Criar navegação customizada apenas com "Voltar"
+  const profileNavItems = [
+    {
+      title: "Voltar",
+      href: "#",
+      icon: ArrowLeft,
+      onClick: () => navigate(-1)
+    }
+  ];
+
+  const navTitle = user?.role === 'Easy Salon' ? 'Easy Salon' : 'Gestão do Salão';
+
+  return (
+    <EasySalonLayout 
+      sideNavItems={profileNavItems}
+      sideNavTitle={navTitle}
+    >
+      <PageHeader title="Meu Perfil" />
+      <div className="space-y-6">
+        {/* Seção 1: Informações Pessoais */}
+        <div className="bg-card border border-border rounded-3xl">
+          <div className="px-6 pt-6 pb-0">
+            <h2 className="text-base font-semibold">Informações Pessoais</h2>
+          </div>
+          <div className="p-6 space-y-6">
+            {/* Foto de Perfil */}
+            <div className="flex justify-center">
+              <ProfileImageUpload
+                onChange={setProfileImage}
+                currentImage={currentProfileImage}
+                onRemove={handleRemoveImage}
+              />
+            </div>
+
+            {/* Nome Completo */}
+            <FormField
+              label="Nome Completo"
+              name="fullName"
+              value={profileData.fullName}
+              onChange={(e) => handleProfileChange('fullName', e.target.value)}
+              required
+              maxLength={100}
+            />
+
+            {/* CPF e Email lado a lado */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* CPF (readonly) */}
+              <FormField
+                label="CPF"
+                name="cpf"
+                value={profileData.cpf}
+                onChange={() => {}} // readonly
+              >
+                <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-base ring-offset-background text-muted-foreground">
+                  {formatCPF(profileData.cpf) || 'Não informado'}
+                </div>
+              </FormField>
+
+              {/* E-mail (readonly) */}
+              <FormField
+                label="Email"
+                name="email"
+                type="email"
+                value={profileData.email}
+                onChange={() => {}} // readonly
+              >
+                <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-base ring-offset-background text-muted-foreground">
+                  {profileData.email}
+                </div>
+              </FormField>
+            </div>
+
+            {/* Data de Nascimento e Telefone lado a lado */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Data de Nascimento */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Data de Nascimento
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={birthDateInput}
+                        onChange={(e) => {
+                          const formatted = formatDate(e.target.value);
+                          setBirthDateInput(formatted);
+                          
+                          // Tenta fazer o parse quando a data está completa
+                          if (formatted.length === 10) {
+                            const parsedDate = parseDate(formatted);
+                            if (parsedDate) {
+                              setBirthDate(parsedDate);
+                            }
+                          }
+                        }}
+                        placeholder="##/##/####"
+                        maxLength={10}
+                        className="pr-10"
+                      />
+                      <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-3 space-y-2">
+                      {/* Seletor de Ano e Mês */}
+                      <div className="flex gap-2">
+                        <SelectPopover
+                          value={String(birthDate?.getMonth() ?? new Date().getMonth())}
+                          onValueChange={(val) => {
+                            const newDate = birthDate ? new Date(birthDate) : new Date();
+                            newDate.setMonth(parseInt(val));
+                            setBirthDate(newDate);
+                            setBirthDateInput(formatDateToString(newDate));
+                          }}
+                          options={Array.from({ length: 12 }, (_, i) => ({
+                            value: String(i),
+                            label: format(new Date(2000, i, 1), 'MMMM', { locale: ptBR }),
+                          }))}
+                        />
+                        <SelectPopover
+                          value={String(birthDate?.getFullYear() ?? new Date().getFullYear())}
+                          onValueChange={(val) => {
+                            const newDate = birthDate ? new Date(birthDate) : new Date();
+                            newDate.setFullYear(parseInt(val));
+                            setBirthDate(newDate);
+                            setBirthDateInput(formatDateToString(newDate));
+                          }}
+                          options={Array.from({ length: 100 }, (_, i) => {
+                            const year = new Date().getFullYear() - i;
+                            return { value: String(year), label: String(year) };
+                          })}
+                        />
+                      </div>
+                      <Calendar
+                        mode="single"
+                        selected={birthDate}
+                        onSelect={(date) => {
+                          if (date) {
+                            setBirthDate(date);
+                            setBirthDateInput(formatDateToString(date));
+                          }
+                        }}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date("1900-01-01")
+                        }
+                        month={birthDate}
+                        onMonthChange={setBirthDate}
+                        locale={ptBR}
+                        className="rounded-md border"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Telefone */}
+              <FormField
+                label="Telefone para contato"
+                name="phone"
+                type="tel"
+                value={profileData.phone}
+                onChange={(e) => {
+                  const formattedPhone = formatPhone(e.target.value);
+                  handleProfileChange('phone', formattedPhone);
+                }}
+                placeholder="(##) #####-####"
+                maxLength={15}
+              />
+            </div>
+
+            {/* Botão Salvar Alterações das Informações Pessoais */}
+            <Button
+              onClick={handleSaveProfile}
+              disabled={isLoading}
+              className="w-full salon-button-primary"
+              size="lg"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Seção 2: Alteração de Senha */}
+        <div className="bg-card border border-border rounded-3xl">
+          <div className="px-6 pt-6 pb-0">
+            <h2 className="text-base font-semibold">Alterar Senha</h2>
+          </div>
+          <div className="p-6 space-y-6">
+            {/* Senha Atual */}
+            <FormField
+              label="Senha Atual"
+              name="currentPassword"
+              value={passwordData.currentPassword}
+              onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+            >
+              <PasswordInput
+                value={passwordData.currentPassword}
+                onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+                placeholder="Digite sua senha atual"
+                maxLength={50}
+              />
+            </FormField>
+
+            {/* Nova Senha */}
+            <FormField
+              label="Nova Senha"
+              name="newPassword"
+              value={passwordData.newPassword}
+              onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+            >
+              <PasswordInput
+                value={passwordData.newPassword}
+                onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                placeholder="Digite sua nova senha"
+                maxLength={50}
+              />
+            </FormField>
+
+            {/* Confirmar Nova Senha */}
+            <FormField
+              label="Confirme sua nova senha"
+              name="confirmPassword"
+              value={passwordData.confirmPassword}
+              onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+            >
+              <PasswordInput
+                value={passwordData.confirmPassword}
+                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                placeholder="Confirme sua nova senha"
+                maxLength={50}
+              />
+            </FormField>
+
+            {/* Requisitos da Senha */}
+            {passwordData.newPassword && (
+              <PasswordRequirements
+                password={passwordData.newPassword}
+                confirmPassword={passwordData.confirmPassword}
+              />
+            )}
+
+            {/* Botão Alterar Senha */}
+            <Button
+              onClick={handleChangePassword}
+              disabled={isLoadingPassword || !passwordData.currentPassword || !passwordData.newPassword}
+              className="w-full"
+              variant="default"
+              size="lg"
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              {isLoadingPassword ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </EasySalonLayout>
+  );
+}

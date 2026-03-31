@@ -1,0 +1,164 @@
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-17-import { DataTable } from "@/components/ui/data-table";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-18-import { Button } from "@/components/ui/button";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:19:import { Badge } from "@/components/ui/badge";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-20-import { Input } from "@/components/ui/input";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-21-import {
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-76-          salonId: selectedSalon?.id,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-77-          search: searchParam,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:78:          status: status && status !== "all" ? (status as "active" | "inactive") : undefined,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-79-          page,
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-80-          limit,
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-223-      header: "Status",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-224-      render: (value: boolean): JSX.Element => (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:225:        <Badge variant={value ? "default" : "secondary"} className={value ? "bg-green-100 text-green-800 border-green-200" : ""}>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-226-          {value ? "Ativo" : "Inativo"}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:227:        </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-228-      ),
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-229-    },
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-283-              row.active
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-284-                ? "text-orange-600 hover:text-orange-700"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:285:                : "text-green-600 hover:text-green-700"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-286-            }`}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-287-            title={row.active ? "Desativar usuário" : "Ativar usuário"}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-395-              title: "nickname",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-396-              subtitle: "email",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:397:              badge: "role",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-398-            }}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-399-          />
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-459-                        "w-8 h-8 p-0 text-xs rounded-lg",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-460-                        pageNum === currentPage
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx:461:                          ? "bg-[#dd4227] text-white"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-462-                          : "border border-border hover:bg-muted text-foreground"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonUsersPage.tsx-463-                      )}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx-295-                        absence.blockSchedule
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx-296-                          ? "bg-red-100 text-red-800"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx:297:                          : "bg-green-100 text-green-800"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx-298-                      )}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\AbsencesPage.tsx-299-                    >
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-17-import { Service } from "@/types/service";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-18-import { Specialty } from "@/types/specialty";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx:19:import { Badge } from "@/components/ui/badge";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-20-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-21-interface ServiceWithConfig extends Service {
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-463-          <span>{row.name}</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-464-          {row.type === "standard" && (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx:465:            <Badge variant="secondary" className="text-xs">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-466-              Padrão
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx:467:            </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-468-          )}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-469-        </div>
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-642-          title: "name",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-643-          subtitle: (row) => row.type === "standard" ? "Serviço Padrão" : "Serviço Personalizado",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx:644:          badge: (row) => row.active ? "Ativo" : "Inativo",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-645-        }}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SalonSpecialtyServicesPage.tsx-646-      />
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ClientsPage.tsx-409-                        "w-10 h-10 rounded-lg text-sm",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ClientsPage.tsx-410-                        pageNum === currentPage
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ClientsPage.tsx:411:                          ? "bg-[#dd4227] text-white"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ClientsPage.tsx-412-                          : "border border-border hover:bg-muted text-foreground"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ClientsPage.tsx-413-                      )}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-5-import { TransformarSolicitacaoModal } from "@/components/modals/TransformarSolicitacaoModal";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-6-import { SolicitacaoKanban } from "@/components/solicitacoes/SolicitacaoKanban";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:7:import { Badge } from "@/components/ui/badge";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-8-import { Button } from "@/components/ui/button";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-9-import { Calendar } from "@/components/ui/calendar";
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-501-                Abertas
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-502-                {stats.abertas > 0 && (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:503:                  <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-5 min-w-5 flex items-center justify-center p-0.5 text-[10px] font-bold border-2 border-white">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-504-                    {stats.abertas}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:505:                  </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-506-                )}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-507-              </TabsTrigger>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-508-              <TabsTrigger
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-509-                value="scheduled"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:510:                className="relative rounded-xl data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200 data-[state=active]:shadow-sm border border-transparent transition-all"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-511-              >
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-512-                Agendadas
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-513-                {stats.agendadas > 0 && (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:514:                  <Badge className="absolute -top-1.5 -right-1.5 h-5 min-w-5 flex items-center justify-center p-0.5 text-[10px] font-bold bg-green-500 text-white border-2 border-white">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-515-                    {stats.agendadas}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:516:                  </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-517-                )}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-518-              </TabsTrigger>
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-574-          <div className="grid grid-cols-3 gap-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-575-            <StatsCard label="Total" value={stats.total} icon={ClipboardList} color="text-muted-foreground" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:576:            <StatsCard label="Abertas" value={stats.abertas} icon={null} color="text-red-600" badgeColor="bg-red-100 text-red-800" badgeValue={stats.abertas} />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:577:            <StatsCard label="Agendadas" value={stats.agendadas} icon={null} color="text-green-600" badgeColor="bg-green-100 text-green-800" badgeValue={stats.agendadas} />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-578-          </div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-579-
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-664-// --- Componentes Auxiliares ---
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-665-
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:666:function StatsCard({ label, value, icon: Icon, color, badgeColor, badgeValue }: any) {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-667-  return (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-668-    <div className="bg-card border border-border rounded-3xl shadow-sm">
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-676-            <Icon className="h-8 w-8 text-muted-foreground/30" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-677-          ) : (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:678:            badgeValue !== undefined && (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:679:              <Badge className={cn("h-7 min-w-7 flex items-center justify-center font-bold text-xs p-1", badgeColor)}>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:680:                {badgeValue}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:681:              </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-682-            )
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-683-          )}
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-691-  const statusColors = {
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-692-    open: "border-l-red-500 bg-red-50/10",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx:693:    scheduled: "border-l-green-500 bg-green-50/10",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-694-    cancelled: "border-l-border bg-muted/20"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SolicitacoesPage.tsx-695-  };
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-8-import { Input } from "@/components/ui/input";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-9-import { DataTable } from "@/components/ui/data-table";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:10:import { Badge } from "@/components/ui/badge";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-11-import { ServicesAccordion } from "@/components/ui/services-accordion";
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-12-import { ServicePricingModal } from "@/components/modals/ServicePricingModal";
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-371-          <span className="font-medium">{row.name}</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-372-          {row.isDefaultService && (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:373:            <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-374-              Padrão
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:375:            </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-376-          )}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-377-        </div>
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-405-      width: "100px",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-406-      render: (value: unknown) => (
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:407:        <Badge
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:408:          className={value ? "salon-badge-active" : "salon-badge-inactive"}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-409-        >
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-410-          {value ? "Ativo" : "Inativo"}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx:411:        </Badge>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-412-      ),
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\ServicesPage.tsx-413-    },
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SpecialtiesPage.tsx-347-            title: "name",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SpecialtiesPage.tsx-348-            subtitle: (row) => row.requestOnly ? "Somente Solicitação" : "Público",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SpecialtiesPage.tsx:349:            badge: (row) => row.isActive !== false ? "Ativo" : "Inativo"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SpecialtiesPage.tsx-350-          }}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\SpecialtiesPage.tsx-351-        />
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1019-                <Button
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1020-                  onClick={isLastTab ? handleSave : handleNext}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:1021:                  className="bg-[#dd4227] hover:bg-[#c73a22] text-white px-8"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1022-                  disabled={isSaving}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1023-                >
+--
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1036-                <Button
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1037-                  onClick={handleSave}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:1038:                  className="bg-[#dd4227] hover:bg-[#c73a22] text-white px-8"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1039-                  disabled={isSaving || !selectedSalon?.active}
+C:\Users\charl\OneDrive\Área de Trabalho\WA\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx-1040-                >

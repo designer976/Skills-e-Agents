@@ -1,0 +1,167 @@
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\hooks\useWowMoment.ts:142:                        { className: `font-bold flex items-center gap-2 text-base ${showSparkles ? '' : 'text-gray-800'}` },
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\hooks\useWowMoment.ts:148:                        { className: "text-sm text-gray-700" },
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:617:                    <div className="flex items-center gap-2 text-xs text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:705:                            <Info className="h-4 w-4 text-gray-400 cursor-help" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:874:                    <p className="text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:882:                      className="w-40 h-16 rounded-lg border-2 border-gray-300 cursor-pointer flex items-center justify-center"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:913:                    <div className="space-y-1 text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:927:                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:965:                        <Upload className="w-6 h-6 mx-auto text-gray-400" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:967:                          <p className="text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\SalonDataPage.tsx:970:                          <p className="text-xs text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:378:                    className="rounded-full border-gray-300"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\salon\settings\OnlineBookingSettingsPage.tsx:404:                    className="rounded-full border-gray-300"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:112:          bgColor: "bg-gray-50",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:113:          textColor: "text-gray-700",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\ModalComanda.tsx:114:          iconColor: "text-gray-500"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:534:                                            : 'border-gray-200 hover:border-gray-300'
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:540:                                            <p className="font-semibold text-gray-900">{client.nome}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:666:                                : 'border-gray-200 hover:border-gray-300'
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:672:                                <p className="font-semibold text-gray-900">{service.nome}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:703:                                : 'border-gray-200 hover:border-gray-300'
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:714:                                <p className="font-semibold text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:778:                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:798:                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\agenda\mobile\NewAppointmentBottomSheet.tsx:864:                <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-2" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\forms\UserScheduleForm.tsx:401:                !isSalonOpen && "opacity-40 bg-gray-100 text-gray-400"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NotFound.tsx:17:    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NotFound.tsx:20:        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\types\absence.ts:59:  [AbsenceType.OTHER]: 'bg-gray-500',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:390:      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:393:          <p className="mt-4 text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:403:      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:405:          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:408:          <p className="text-gray-600">Verifique o link e tente novamente.</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\NewBookingPage.tsx:417:      <div className="min-h-screen bg-gray-50">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingProgressIndicator.tsx:22:    <div className="w-full bg-white border-b border-gray-200 py-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingProgressIndicator.tsx:25:          <span className="text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingProgressIndicator.tsx:43:                    !isActive && !isCompleted && "bg-gray-200 text-gray-600"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingProgressIndicator.tsx:51:                <span className="text-xs mt-1 text-gray-600 hidden sm:block">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingProgressIndicator.tsx:59:                      stepNumber < currentStep ? "opacity-100" : "bg-gray-300"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\Index.tsx:10:        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\OpeningHoursDisplay.tsx:19:      <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\OpeningHoursDisplay.tsx:21:        <h3 className="font-medium text-gray-900 mb-2">Horário de Funcionamento</h3>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\OpeningHoursDisplay.tsx:24:            <p key={index} className="text-gray-600 text-sm">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\NewBookingProgressIndicator.tsx:22:      className="w-full border-b border-gray-200 py-4"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\NewBookingProgressIndicator.tsx:43:                    isActive && "bg-white border-white text-gray-900",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\NewBookingProgressIndicator.tsx:44:                    isCompleted && "bg-white border-white text-gray-900",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingErrorBoundary.tsx:45:        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingErrorBoundary.tsx:54:              <p className="text-gray-600 mb-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\BookingErrorBoundary.tsx:59:                <details className="mb-4 p-3 bg-gray-100 rounded-md">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:56:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:59:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:72:            <Calendar className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:81:            <Clock className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:84:              <span className="text-gray-600 ml-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:92:            <User className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:105:                <div key={service.id} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:126:            <User className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:131:            <Mail className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:136:            <Phone className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:149:            <MapPin className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:152:              <div className="text-gray-600">{salon.address}</div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingConfirmation.tsx:153:              <div className="text-gray-600">{salon.phone}</div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:174:        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:177:        <p className="text-gray-600 mb-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:189:          <p className="text-sm text-gray-600">{salon.name}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:194:            <p className="text-xs text-gray-500 mb-1">Código de Confirmação</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:204:            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:213:                  className="bg-gray-50 rounded-lg p-4"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:217:                      <h4 className="font-medium text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:234:                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:277:                  <div className="text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:287:            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:313:            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:320:              <div className="text-gray-600">{salon.address}</div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingReceipt.tsx:321:              <div className="text-gray-600">{salon.phone}</div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:21:    <div className="min-h-screen bg-gray-50">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:39:          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:42:          <p className="text-lg text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:52:                <MapPin className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:54:                  <h3 className="font-medium text-gray-900">Endereço</h3>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:55:                  <p className="text-gray-600">{salon.address || "Sem endereço cadastrado"}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:64:                <Phone className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:66:                  <h3 className="font-medium text-gray-900">Telefone</h3>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\BookingWelcome.tsx:67:                  <p className="text-gray-600">{salon.phone}</p>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:278:        <h2 className="text-2xl font-bold text-gray-900 mb-2">Seus dados</h2>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:279:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:352:            className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:364:            <div className="space-y-4 pt-4 border-t border-gray-200">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:440:          <div className="pt-4 border-t border-gray-200">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\CustomerForm.tsx:452:                className="text-sm text-gray-700 leading-relaxed cursor-pointer"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:99:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:102:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:113:                <p className="text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:116:                <p className="text-sm text-gray-400 mt-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:123:                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:174:                                  <h4 className="font-medium text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:184:                                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:232:          <h3 className="text-lg font-semibold text-gray-900 mb-3 pt-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:238:                <p className="text-gray-500 text-center py-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:246:                      className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewServiceSelection.tsx:258:                        <div className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:201:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:204:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:218:              className="border rounded-lg p-4 bg-gray-50"
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:221:                <h4 className="font-semibold text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:234:                  <Calendar className="h-4 w-4 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:243:                  <Clock className="h-4 w-4 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:251:                  <User className="h-4 w-4 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:259:                  <span className="text-gray-600">Preço:</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:260:                  <span className="font-semibold text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:289:                <div className="text-sm text-gray-600 font-normal">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:305:            <User className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:310:            <Mail className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:315:            <Phone className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:320:            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:321:              <h5 className="font-medium text-gray-900 mb-1">Observações:</h5>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:322:              <p className="text-gray-600 text-sm">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:337:            <MapPin className="h-5 w-5 text-gray-600" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:340:              <div className="text-gray-600">{salon.address}</div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\NewBookingConfirmation.tsx:341:              <div className="text-gray-600">{salon.phone}</div>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\DateTimeSelection.tsx:34:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\DateTimeSelection.tsx:37:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\DateTimeSelection.tsx:81:              <p className="text-gray-500 text-center py-8">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:428:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:431:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:472:                <span className="text-sm font-normal text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:483:                    <div className="flex items-center justify-center h-10 px-3 py-2 border border-gray-200 rounded-md">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:665:                        <div className="flex items-center justify-center h-10 px-3 py-2 border border-gray-200 rounded-md">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:693:                            <div className="px-2 py-4 text-center text-sm text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:749:                                        isPastTime ? "text-gray-400" : ""
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:756:                                      <span className="text-gray-400 text-xs">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:793:                    <span className="text-gray-700 font-medium">Preço:</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:794:                    <span className="font-bold text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:802:                    <p className="text-xs text-gray-600 mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:810:              <div className="mt-4 p-3 rounded-md bg-gray-50">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:812:                  <span className="text-gray-600">Status:</span>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceConfiguration.tsx:843:                  <div className="mt-2 text-xs text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\sonner.tsx:17:            "group toast group-[.toaster]:bg-white group-[.toaster]:text-gray-900 group-[.toaster]:border group-[.toaster]:border-gray-200 group-[.toaster]:shadow-lg",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\sonner.tsx:18:          description: "group-[.toast]:text-gray-600",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\sonner.tsx:22:            "group-[.toast]:bg-gray-100 group-[.toast]:text-gray-700",
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceSelection.tsx:55:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceSelection.tsx:58:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceSelection.tsx:69:                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceSelection.tsx:100:                              <h4 className="font-medium text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceSelection.tsx:103:                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ServiceSelection.tsx:127:                <p className="text-gray-500 text-center py-4">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\drawer.tsx:48:        <div className="bg-gray-400/20 mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ProfessionalSelection.tsx:32:        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ProfessionalSelection.tsx:35:        <p className="text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ProfessionalSelection.tsx:60:                  <h3 className="font-semibold text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ProfessionalSelection.tsx:63:                  <p className="text-sm text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\booking\steps\ProfessionalSelection.tsx:116:                  <h3 className="font-semibold text-gray-900">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\EditUserPage.tsx:173:          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateSalonPage.tsx:177:                <div className="flex items-center gap-2 text-xs text-gray-600">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateSalonPage.tsx:211:                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateSalonPage.tsx:269:                      <Info className="h-4 w-4 text-gray-400 cursor-help" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:344:              <p className="text-xs text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:465:                        <span className="ml-2 text-sm text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:501:                      <p className="text-xs text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\pages\admin\CreateUserPage.tsx:531:                      <p className="text-xs text-gray-500">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:100:        canceled: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SubscriptionStatusCard.tsx:119:        <Badge className={`${styles[status] || 'bg-gray-100'} font-medium text-xs px-2 py-0.5 rounded-full border-none shadow-none`}>
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\salon\subscription\SecureCardInput.tsx:93:        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\ui\EasyCalendar\EasyCalendar.tsx:232:          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:72:            <div className="border rounded-lg p-4 bg-gray-50">
+C:\Users\charl\OneDrive\Área de Trabalho\WA\Easy\easy-salon-monorepo\frontend\src\components\modals\SolicitacaoModal.tsx:99:            <div className="border rounded-lg p-4 bg-gray-50">

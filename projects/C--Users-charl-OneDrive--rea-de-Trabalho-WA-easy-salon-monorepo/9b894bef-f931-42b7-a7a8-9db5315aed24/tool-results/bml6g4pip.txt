@@ -1,0 +1,888 @@
+=== FILE: v0-EasySalon-main/components/agenda/agenda-page.tsx ===
+"use client"
+
+import { useState, useCallback, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { AgendaHeader } from "./agenda-header"
+import { AgendaGrid, type Appointment } from "./agenda-grid"
+import { NovoAgendamentoModal, type NovoAgendamento } from "./novo-agendamento-modal"
+import { CheckCircle, X } from "lucide-react"
+import { useSubscription } from "@/contexts/subscription-context"
+import { useSalonData } from "@/contexts/salon-data-context"
+import { useAuth } from "@/contexts/auth-context"
+
+const mockProfessionals = [
+  {
+    id: "1",
+    initials: "AS",
+    name: "Aline de Abreu Souza",
+    especialidades: ["Alongamento de C¡lios", "Design de Sobrancelhas"],
+    isAuxiliar: false,
+    vinculoProfissionalId: undefined as string | undefined,
+  },
+  {
+    id: "2",
+    initials: "AJ",
+    name: "Ana Carolina dos Santos Jarek",
+    especialidades: ["Manicure Cl ssica", "Manicure Avan‡ada"],
+    isAuxiliar: false,
+    vinculoProfissionalId: undefined as string | undefined,
+  },
+  {
+    id: "3",
+    initials: "CM",
+    name: "Concei‡Æo Aparecida de Morais",
+    especialidades: ["Cabelo", "Maquiagem"],
+    isAuxiliar: false,
+    vinculoProfissionalId: undefined as string | undefined,
+  },
+  {
+    id: "4",
+    initials: "CS",
+    name: "Cleiry Aparecida da Silva",
+    especialidades: ["Barbearia", "Cabelo"],
+    isAuxiliar: true,
+    vinculoProfissionalId: "1",
+  },
+  {
+    id: "5",
+    initials: "CF",
+    name: "Cleuza Ferreira",
+    especialidades: ["Depila‡Æo … Cera", "Podologia"],
+    isAuxiliar: true,
+    vinculoProfissionalId: undefined as string | undefined,
+  },
+]
+
+const initialAppointments: Appointment[] = [
+  {
+    id: "1",
+    professionalId: "1",
+    clientName: "Raissa Antunes",
+    startTime: "19:30",
+    endTime: "20:00",
+    serviceType: "Alongamento Tipo 1",
+    auxiliarId: "4",
+    auxiliarName: "Cleiry Aparecida da Silva",
+  },
+  {
+    id: "2",
+    professionalId: "3",
+    clientName: "Maria Silva",
+    startTime: "10:00",
+    endTime: "11:00",
+    serviceType: "Escova + Hidratacao",
+  },
+  {
+    id: "3",
+    professionalId: "2",
+    clientName: "Julia Santos",
+    startTime: "14:00",
+    endTime: "15:30",
+    serviceType: "Manicure e Pedicure",
+    auxiliarId: "5",
+    auxiliarName: "Cleuza Ferreira",
+  },
+]
+
+export function AgendaPage() {
+  const { isBlocked } = useSubscription()
+  const { salonData, isNewSalon } = useSalonData()
+  const { selectedSalon, user } = useAuth()
+
+  // Check if this is a mock salon or new salon
+  const isMockSalon = selectedSalon && ["1", "2", "3", "4", "5"].includes(selectedSalon.id)
+  
+  // Get professionals based on salon type
+  const getInitials = (name: string | undefined | null) => {
+    if (!name) return "??"
+    const parts = name.trim().split(" ")
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name.substring(0, 2).toUpperCase()
+  }
+
+  // For real salons, use salon owner as the professional with their especialidades
+  const professionalName = user?.nome || selectedSalon?.nome || "Profissional"
+  
+  // Get especialidades from salonData.usuarios[0] or salonData.especialidades
+  const professionalEspecialidades = (() => {
+    const userEsp = salonData?.usuarios?.[0]?.especialidade
+    if (Array.isArray(userEsp) && userEsp.length > 0) return userEsp
+    // Fallback: use all especialidades from salon
+    return salonData?.especialidades?.map(e => e.nome) ?? []
+  })()
+
+  const realSalonProfessionals = selectedSalon && !isMockSalon ? [
+    {
+      id: selectedSalon.id,
+      initials: getInitials(professionalName),
+      name: professionalName,
+      especialidades: professionalEspecialidades,
+    }
+  ] : []
+
+  const professionals = isMockSalon ? mockProfessionals : realSalonProfessionals
+  
+  // Get initial appointments based on salon type
+  const getInitialAppointments = (): Appointment[] => {
+    if (isBlocked) return []
+    if (isMockSalon) return initialAppointments
+    // For new salons, start with empty appointments
+    return []
+  }
+
+  // Get initial date based on next appointment or today
+  const getInitialDate = (): Date => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Check salonData agendamentos for future appointments
+    const agendamentos = salonData?.agendamentos ?? []
+    const futureAgendamentos = agendamentos
+      .filter(a => {
+        const agendamentoDate = new Date(a.data)
+        agendamentoDate.setHours(0, 0, 0, 0)
+        return agendamentoDate >= today && a.status !== "cancelado"
+      })
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+    
+    if (futureAgendamentos.length > 0) {
+      return new Date(futureAgendamentos[0].data)
+    }
+    
+    return today
+  }
+
+  const [currentDate, setCurrentDate] = useState(() => getInitialDate())
+  const [filteredEspecialidades, setFilteredEspecialidades] = useState<string[]>([])
+  const [filteredProfissionais, setFilteredProfissionais] = useState<string[]>([])
+  const [filteredStatus, setFilteredStatus] = useState<string[]>([])
+  const [showOnlyMyTeam, setShowOnlyMyTeam] = useState(false)
+  const [showOnlyAuxiliares, setShowOnlyAuxiliares] = useState(false)
+  const [isNovoAgendamentoModalOpen, setIsNovoAgendamentoModalOpen] = useState(false)
+  const [appointments, setAppointments] = useState<Appointment[]>(getInitialAppointments())
+  const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: "" })
+
+  // Check if any professionals are auxiliares
+  const hasAuxiliares = professionals.some((p) => p.isAuxiliar)
+  
+  // Update appointments when salon changes
+  useEffect(() => {
+    setAppointments(getInitialAppointments())
+  }, [selectedSalon, isMockSalon, isBlocked])
+
+  // Listen for event to open novo agendamento modal (from first agendamento flow)
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setIsNovoAgendamentoModalOpen(true)
+    }
+    window.addEventListener("openNovoAgendamentoModal", handleOpenModal)
+    return () => window.removeEventListener("openNovoAgendamentoModal", handleOpenModal)
+  }, [])
+
+  const handlePrevDay = () => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev)
+      newDate.setDate(newDate.getDate() - 1)
+      return newDate
+    })
+  }
+
+  const handleNextDay = () => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev)
+      newDate.setDate(newDate.getDate() + 1)
+      return newDate
+    })
+  }
+
+  const handleToday = () => {
+    setCurrentDate(new Date())
+  }
+
+  const handleDateChange = useCallback((date: Date) => {
+    setCurrentDate(date)
+  }, [])
+
+  const handleEspecialidadesChange = useCallback((especialidades: string[]) => {
+    setFilteredEspecialidades(especialidades)
+  }, [])
+
+  const handleProfissionaisChange = useCallback((profissionais: string[]) => {
+    setFilteredProfissionais(profissionais)
+  }, [])
+
+  const handleStatusChange = useCallback((status: string[]) => {
+    setFilteredStatus(status)
+  }, [])
+
+  const handleCreateAppointment = useCallback(
+    (novoAgendamento: NovoAgendamento) => {
+      if (isBlocked) return
+
+      const profissional = professionals.find((p) => p.name === novoAgendamento.professionalName)
+
+      const newAppointment: Appointment = {
+        id: novoAgendamento.id,
+        professionalId: profissional?.id || novoAgendamento.professionalId,
+        clientName: novoAgendamento.clientName,
+        startTime: novoAgendamento.startTime,
+        endTime: novoAgendamento.endTime,
+        serviceType: novoAgendamento.serviceName,
+      }
+
+      setAppointments((prev) => [...prev, newAppointment])
+
+      setToast({
+        show: true,
+        message: `Agendamento criado com sucesso para ${novoAgendamento.clientName}!`,
+      })
+
+      setTimeout(() => {
+        setToast({ show: false, message: "" })
+      }, 4000)
+    },
+    [isBlocked],
+  )
+
+  const handleUpdateAppointment = useCallback((updatedAppointment: Appointment) => {
+    setAppointments((prev) =>
+      prev.map((appointment) => (appointment.id === updatedAppointment.id ? updatedAppointment : appointment)),
+    )
+  }, [])
+
+  const handleDeleteAppointment = useCallback((appointmentId: string) => {
+    setAppointments((prev) => prev.filter((appointment) => appointment.id !== appointmentId))
+  }, [])
+
+  const filteredProfessionals = professionals.filter((prof) => {
+    const passEspecialidades =
+      filteredEspecialidades.length === 0 || prof.especialidades.some((esp) => filteredEspecialidades.includes(esp))
+
+    const passProfissionais = filteredProfissionais.length === 0 || filteredProfissionais.includes(prof.id)
+
+    // Auxiliar filter: show only auxiliares
+    const passAuxiliar = !showOnlyAuxiliares || prof.isAuxiliar
+
+    // Team filter: for a linked auxiliar, show only themselves + their linked professional
+    // For a professional, show only themselves + their linked auxiliares
+    let passTeam = true
+    if (showOnlyMyTeam) {
+      // Find auxiliares linked to specific professionals
+      const linkedAuxiliares = professionals.filter(
+        (p) => p.isAuxiliar && p.vinculoProfissionalId
+      )
+      // Find all team connections
+      const isInTeam = linkedAuxiliares.some(
+        (aux) =>
+          (aux.id === prof.id) ||
+          (aux.vinculoProfissionalId === prof.id)
+      )
+      passTeam = isInTeam
+    }
+
+    return passEspecialidades && passProfissionais && passAuxiliar && passTeam
+  })
+
+  return (
+    <div className="flex-1 w-full p-4 md:p-6 pb-5">
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="bg-green-50 border border-green-200 rounded-lg shadow-lg p-4 flex items-center gap-3 min-w-[300px]">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <span className="text-sm text-green-800 flex-1">{toast.message}</span>
+            <button
+              onClick={() => setToast({ show: false, message: "" })}
+              className="text-green-600 hover:text-green-800 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header - padrÆo igual /admin/salons */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">Agenda</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie os agendamentos do salÆo</p>
+        </div>
+        <Button
+          className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer w-full md:w-auto"
+          onClick={() => setIsNovoAgendamentoModalOpen(true)}
+        >
+          Novo Agendamento
+        </Button>
+      </div>
+
+      <AgendaHeader
+        date={currentDate}
+        onPrevDay={handlePrevDay}
+        onNextDay={handleNextDay}
+        onToday={handleToday}
+        onDateChange={handleDateChange}
+        onEspecialidadesChange={handleEspecialidadesChange}
+        onProfissionaisChange={handleProfissionaisChange}
+        onStatusChange={handleStatusChange}
+        showQuickFilters={isMockSalon && hasAuxiliares}
+        showOnlyMyTeam={showOnlyMyTeam}
+        showOnlyAuxiliares={showOnlyAuxiliares}
+        onToggleMyTeam={() => {
+          setShowOnlyMyTeam(!showOnlyMyTeam)
+          if (!showOnlyMyTeam) setShowOnlyAuxiliares(false)
+        }}
+        onToggleAuxiliares={() => {
+          setShowOnlyAuxiliares(!showOnlyAuxiliares)
+          if (!showOnlyAuxiliares) setShowOnlyMyTeam(false)
+        }}
+        onClearQuickFilters={() => {
+          setShowOnlyMyTeam(false)
+          setShowOnlyAuxiliares(false)
+        }}
+      />
+
+      <AgendaGrid
+        currentDate={currentDate}
+        professionals={filteredProfessionals}
+        appointments={appointments}
+        onUpdateAppointment={handleUpdateAppointment}
+        onDeleteAppointment={handleDeleteAppointment}
+      />
+
+      <NovoAgendamentoModal
+        isOpen={isNovoAgendamentoModalOpen}
+        onClose={() => setIsNovoAgendamentoModalOpen(false)}
+        onSubmit={handleCreateAppointment}
+        professionals={professionals}
+        currentDate={currentDate}
+      />
+    </div>
+  )
+}
+
+=== FILE: v0-EasySalon-main/components/agenda/agenda-header.tsx ===
+"use client"
+
+import { useState, useRef, useEffect } from "react"
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconCalendar,
+  IconFilter,
+  IconChevronDown,
+  IconSearch,
+  IconCheck,
+  IconX,
+} from "@tabler/icons-react"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer"
+
+interface AgendaHeaderProps {
+  date: Date
+  onPrevDay: () => void
+  onNextDay: () => void
+  onToday: () => void
+  onDateChange?: (date: Date) => void
+  onEspecialidadesChange?: (especialidades: string[]) => void
+  onProfissionaisChange?: (profissionais: string[]) => void
+  onStatusChange?: (status: string[]) => void
+  // Quick filters (auxiliares)
+  showQuickFilters?: boolean
+  showOnlyMyTeam?: boolean
+  showOnlyAuxiliares?: boolean
+  onToggleMyTeam?: () => void
+  onToggleAuxiliares?: () => void
+  onClearQuickFilters?: () => void
+}
+
+const especialidades = [
+  "Alongamento de C¡lios",
+  "Barbearia",
+  "Cabelo",
+  "Depila‡Æo … Cera",
+  "Design de Sobrancelhas",
+  "Extensionista",
+  "Manicure Avan‡ada",
+  "Manicure Cl ssica",
+  "Maquiagem",
+  "Micropigmenta‡Æo",
+  "Podologia",
+  "Teste",
+  "Outros Servi‡os",
+]
+
+const profissionais = [
+  "Aline de Abreu Souza",
+  "Ana Carolina dos Santos Jarek",
+  "Concei‡Æo Aparecida de Morais",
+  "Cleiry Aparecida da Silva",
+  "Cleuza Ferreira",
+]
+
+const statusOptions = ["Agendado", "Atendendo", "Pgto pendente", "Pago", "Cancelado"]
+
+export function AgendaHeader({
+  date,
+  onPrevDay,
+  onNextDay,
+  onToday,
+  onDateChange,
+  onEspecialidadesChange,
+  onProfissionaisChange,
+  onStatusChange,
+  showQuickFilters = false,
+  showOnlyMyTeam = false,
+  showOnlyAuxiliares = false,
+  onToggleMyTeam,
+  onToggleAuxiliares,
+  onClearQuickFilters,
+}: AgendaHeaderProps) {
+  const [especialidadesOpen, setEspecialidadesOpen] = useState(false)
+  const [selectedEspecialidades, setSelectedEspecialidades] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [calendarDrawerOpen, setCalendarDrawerOpen] = useState(false)
+  const calendarRef = useRef<HTMLDivElement>(null)
+
+  const [profissionaisOpen, setProfissionaisOpen] = useState(false)
+  const [selectedProfissionais, setSelectedProfissionais] = useState<string[]>([])
+  const [profissionaisSearchTerm, setProfissionaisSearchTerm] = useState("")
+  const profissionaisRef = useRef<HTMLDivElement>(null)
+
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([])
+  const statusRef = useRef<HTMLDivElement>(null)
+
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Mobile filter drawer
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
+
+  const totalFilters =
+    selectedEspecialidades.length + selectedProfissionais.length + selectedStatus.length +
+    (showOnlyMyTeam ? 1 : 0) + (showOnlyAuxiliares ? 1 : 0)
+
+  const formatDate = (date: Date) => {
+    if (!date) return ""
+    const options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "long",
+    }
+    const formatted = date.toLocaleDateString("pt-BR", options)
+    const parts = formatted.split(", ")
+    return `${parts[0]} (${parts[1]})`
+  }
+
+  const formatDateShort = (date: Date) => {
+    if (!date) return ""
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+  }
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setEspecialidadesOpen(false)
+      }
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setCalendarOpen(false)
+      }
+      if (profissionaisRef.current && !profissionaisRef.current.contains(event.target as Node)) {
+        setProfissionaisOpen(false)
+      }
+      if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
+        setStatusOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  useEffect(() => { onEspecialidadesChange?.(selectedEspecialidades) }, [selectedEspecialidades, onEspecialidadesChange])
+  useEffect(() => { onProfissionaisChange?.(selectedProfissionais) }, [selectedProfissionais, onProfissionaisChange])
+  useEffect(() => { onStatusChange?.(selectedStatus) }, [selectedStatus, onStatusChange])
+
+  const filteredEspecialidades = especialidades.filter((esp) =>
+    esp.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  const filteredProfissionaisList = profissionais.filter((prof) =>
+    prof.toLowerCase().includes(profissionaisSearchTerm.toLowerCase())
+  )
+
+  const toggleEspecialidade = (e: string) =>
+    setSelectedEspecialidades((prev) => prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e])
+  const toggleAll = () =>
+    setSelectedEspecialidades(selectedEspecialidades.length === especialidades.length ? [] : [...especialidades])
+  const toggleProfissional = (p: string) =>
+    setSelectedProfissionais((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p])
+  const toggleAllProfissionais = () =>
+    setSelectedProfissionais(selectedProfissionais.length === profissionais.length ? [] : [...profissionais])
+  const toggleStatus = (s: string) =>
+    setSelectedStatus((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s])
+  const toggleAllStatus = () =>
+    setSelectedStatus(selectedStatus.length === statusOptions.length ? [] : [...statusOptions])
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) { onDateChange?.(selectedDate); setCalendarOpen(false); setCalendarDrawerOpen(false) }
+  }
+
+  const clearAllFilters = () => {
+    setSelectedEspecialidades([])
+    setSelectedProfissionais([])
+    setSelectedStatus([])
+    onClearQuickFilters?.()
+  }
+
+  return (
+    <>
+      {/* ÄÄ MOBILE LAYOUT ÄÄ */}
+      <div className="md:hidden mb-4 space-y-3">
+        {/* Row 1: nav + data compacta + hoje + filtro */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onPrevDay}
+            className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+          >
+            <IconChevronLeft className="w-4 h-4 text-foreground" />
+          </button>
+
+          {/* Data clic vel  abre drawer no mobile */}
+          <button
+            onClick={() => setCalendarDrawerOpen(true)}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+          >
+            <IconCalendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm font-medium text-foreground truncate">{formatDateShort(date)}</span>
+          </button>
+
+          <button
+            onClick={onNextDay}
+            className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+          >
+            <IconChevronRight className="w-4 h-4 text-foreground" />
+          </button>
+
+          {/* Hoje */}
+          <button
+            onClick={onToday}
+            className="px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm text-foreground flex-shrink-0"
+          >
+            Hoje
+          </button>
+
+          {/* Filtros drawer trigger */}
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg transition-colors text-sm flex-shrink-0 ${
+              totalFilters > 0
+                ? "bg-[#dd4227]/10 border-[#dd4227]/40 text-[#dd4227]"
+                : "border-border hover:bg-muted text-foreground"
+            }`}
+          >
+            <IconFilter className="w-4 h-4" />
+            {totalFilters > 0 && <span className="font-medium">{totalFilters}</span>}
+          </button>
+        </div>
+
+        {/* Active filter chips */}
+        {totalFilters > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {showOnlyMyTeam && (
+              <span className="flex items-center gap-1 px-2 py-1 bg-[#dd4227]/10 border border-[#dd4227]/30 rounded-full text-xs text-[#dd4227]">
+                Minha Equipe
+                <button onClick={onToggleMyTeam} className="hover:opacity-70">
+                  <IconX className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {showOnlyAuxiliares && (
+              <span className="flex items-center gap-1 px-2 py-1 bg-[#dd4227]/10 border border-[#dd4227]/30 rounded-full text-xs text-[#dd4227]">
+                Apenas Auxiliares
+                <button onClick={onToggleAuxiliares} className="hover:opacity-70">
+                  <IconX className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {selectedEspecialidades.map((e) => (
+              <span key={e} className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-foreground">
+                {e}
+                <button onClick={() => toggleEspecialidade(e)} className="hover:text-destructive">
+                  <IconX className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            {selectedProfissionais.map((p) => (
+              <span key={p} className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-foreground">
+                {p.split(" ")[0]}
+                <button onClick={() => toggleProfissional(p)} className="hover:text-destructive">
+                  <IconX className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            {selectedStatus.map((s) => (
+              <span key={s} className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs text-foreground">
+                {s}
+                <button onClick={() => toggleStatus(s)} className="hover:text-destructive">
+                  <IconX className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            <button onClick={clearAllFilters} className="text-xs text-muted-foreground hover:text-destructive underline">
+              Limpar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ÄÄ DESKTOP LAYOUT ÄÄ */}
+      <div className="hidden md:flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <button onClick={onPrevDay} className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors">
+            <IconChevronLeft className="w-4 h-4 text-foreground" />
+          </button>
+          <button onClick={onNextDay} className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors">
+            <IconChevronRight className="w-4 h-4 text-foreground" />
+          </button>
+          <div className="relative" ref={calendarRef}>
+            <button
+              onClick={() => setCalendarOpen(!calendarOpen)}
+              className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              <IconCalendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">{formatDate(date)}</span>
+            </button>
+            {calendarOpen && (
+              <div className="absolute top-full left-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-50">
+                <Calendar mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
+              </div>
+            )}
+          </div>
+          <button onClick={onToday} className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm text-foreground">
+            Hoje
+          </button>
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="flex items-center gap-3">
+          {/* Especialidades */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setEspecialidadesOpen(!especialidadesOpen)}
+              className={`flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors ${selectedEspecialidades.length > 0 ? "bg-muted" : ""}`}
+            >
+              <IconFilter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">
+                {selectedEspecialidades.length === 0 ? "Especialidades" : `Especialidades (${selectedEspecialidades.length})`}
+              </span>
+              <IconChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${especialidadesOpen ? "rotate-180" : ""}`} />
+            </button>
+            {especialidadesOpen && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+                <div className="p-2 border-b border-border">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+                    <IconSearch className="w-4 h-4 text-muted-foreground" />
+                    <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+                  </div>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <button onClick={toggleAll} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted transition-colors text-left">
+                    <span className="text-sm text-foreground">Todos</span>
+                    {selectedEspecialidades.length === especialidades.length && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                  {filteredEspecialidades.map((e) => (
+                    <button key={e} onClick={() => toggleEspecialidade(e)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted transition-colors text-left">
+                      <span className="text-sm text-foreground">{e}</span>
+                      {selectedEspecialidades.includes(e) && <IconCheck className="w-4 h-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Profissionais */}
+          <div className="relative" ref={profissionaisRef}>
+            <button
+              onClick={() => setProfissionaisOpen(!profissionaisOpen)}
+              className={`flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors ${selectedProfissionais.length > 0 ? "bg-muted" : ""}`}
+            >
+              <span className="text-sm text-foreground">
+                {selectedProfissionais.length === 0 ? "Profissionais" : `Profissionais (${selectedProfissionais.length})`}
+              </span>
+              <IconChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${profissionaisOpen ? "rotate-180" : ""}`} />
+            </button>
+            {profissionaisOpen && (
+              <div className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50">
+                <div className="p-2 border-b border-border">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+                    <IconSearch className="w-4 h-4 text-muted-foreground" />
+                    <input type="text" placeholder="Buscar profissional..." value={profissionaisSearchTerm} onChange={(e) => setProfissionaisSearchTerm(e.target.value)} className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+                  </div>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <button onClick={toggleAllProfissionais} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted transition-colors text-left">
+                    <span className="text-sm text-foreground">Todos</span>
+                    {selectedProfissionais.length === profissionais.length && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                  {filteredProfissionaisList.map((p) => (
+                    <button key={p} onClick={() => toggleProfissional(p)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted transition-colors text-left">
+                      <span className="text-sm text-foreground">{p}</span>
+                      {selectedProfissionais.includes(p) && <IconCheck className="w-4 h-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="relative" ref={statusRef}>
+            <button
+              onClick={() => setStatusOpen(!statusOpen)}
+              className={`flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors ${selectedStatus.length > 0 ? "bg-muted" : ""}`}
+            >
+              <span className="text-sm text-foreground">
+                {selectedStatus.length === 0 ? "Status" : `Status (${selectedStatus.length})`}
+              </span>
+              <IconChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${statusOpen ? "rotate-180" : ""}`} />
+            </button>
+            {statusOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-50">
+                <div className="max-h-64 overflow-y-auto">
+                  <button onClick={toggleAllStatus} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted transition-colors text-left">
+                    <span className="text-sm text-foreground">Todos</span>
+                    {selectedStatus.length === statusOptions.length && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                  {statusOptions.map((s) => (
+                    <button key={s} onClick={() => toggleStatus(s)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted transition-colors text-left">
+                      <span className="text-sm text-foreground">{s}</span>
+                      {selectedStatus.includes(s) && <IconCheck className="w-4 h-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Drawer (mobile) */}
+      <Drawer open={calendarDrawerOpen} onOpenChange={setCalendarDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader className="text-left pb-5 border-b border-border">
+            <DrawerTitle className="text-left">Selecionar data</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex justify-center px-4 pt-5 pb-8">
+            <Calendar mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ÄÄ MOBILE FILTER DRAWER ÄÄ */}
+      <Drawer open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader className="text-left pb-5 border-b border-border">
+            <div className="flex items-center justify-between w-full">
+              <DrawerTitle className="text-left">Filtros</DrawerTitle>
+              {totalFilters > 0 && (
+                <button onClick={clearAllFilters} className="text-xs text-[#dd4227] underline">
+                  Limpar tudo
+                </button>
+              )}
+            </div>
+          </DrawerHeader>
+          <div className="px-4 pb-8 pt-5 space-y-6 max-h-[calc(100vh-150px)] overflow-y-auto">
+
+            {/* Filtros R pidos - s¢ aparece quando showQuickFilters=true */}
+            {showQuickFilters && (
+              <div>
+                <p className="text-xs font-semibold text-[#dd4227] uppercase tracking-wider mb-2">Filtros R pidos</p>
+                <div className="space-y-1">
+                  <button
+                    onClick={onToggleMyTeam}
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+                  >
+                    <span className="text-sm text-foreground">Minha Equipe</span>
+                    {showOnlyMyTeam && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                  <button
+                    onClick={onToggleAuxiliares}
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left"
+                  >
+                    <span className="text-sm text-foreground">Apenas Auxiliares</span>
+                    {showOnlyAuxiliares && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Especialidades */}
+            <div>
+              <p className="text-xs font-semibold text-[#dd4227] uppercase tracking-wider mb-2">Especialidades</p>
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md mb-2">
+                <IconSearch className="w-4 h-4 text-muted-foreground" />
+                <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              </div>
+              <div className="space-y-1">
+                <button onClick={toggleAll} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left">
+                  <span className="text-sm text-foreground font-medium">Todos</span>
+                  {selectedEspecialidades.length === especialidades.length && <IconCheck className="w-4 h-4 text-primary" />}
+                </button>
+                {filteredEspecialidades.map((e) => (
+                  <button key={e} onClick={() => toggleEspecialidade(e)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left">
+                    <span className="text-sm text-foreground">{e}</span>
+                    {selectedEspecialidades.includes(e) && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Profissionais */}
+            <div>
+              <p className="text-xs font-semibold text-[#dd4227] uppercase tracking-wider mb-2">Profissionais</p>
+              <div className="space-y-1">
+                <button onClick={toggleAllProfissionais} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left">
+                  <span className="text-sm text-foreground font-medium">Todos</span>
+                  {selectedProfissionais.length === profissionais.length && <IconCheck className="w-4 h-4 text-primary" />}
+                </button>
+                {profissionais.map((p) => (
+                  <button key={p} onClick={() => toggleProfissional(p)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left">
+                    <span className="text-sm text-foreground">{p}</span>
+                    {selectedProfissionais.includes(p) && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status */}
+            <div>
+              <p className="text-xs font-semibold text-[#dd4227] uppercase tracking-wider mb-2">Status</p>
+              <div className="space-y-1">
+                <button onClick={toggleAllStatus} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left">
+                  <span className="text-sm text-foreground font-medium">Todos</span>
+                  {selectedStatus.length === statusOptions.length && <IconCheck className="w-4 h-4 text-primary" />}
+                </button>
+                {statusOptions.map((s) => (
+                  <button key={s} onClick={() => toggleStatus(s)} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted rounded-lg transition-colors text-left">
+                    <span className="text-sm text-foreground">{s}</span>
+                    {selectedStatus.includes(s) && <IconCheck className="w-4 h-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
+  )
+}
+

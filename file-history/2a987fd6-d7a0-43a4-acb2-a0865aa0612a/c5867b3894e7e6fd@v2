@@ -1,0 +1,304 @@
+import { NextResponse, type NextRequest } from "next/server"
+
+/* Session cookie name used for auth */
+const SESSION_COOKIE = "severino_session"
+
+/**
+ * Rotas abertas a todos os usuarios autenticados (sem verificacao de funcionalidades)
+ */
+const OPEN_ROUTES = [
+  "/dashboard/time-sheet",
+  "/dashboard/relatorio-de-horas",
+  "/dashboard/gestao-de-pessoas",
+  "/dashboard/acesso-negado",
+  "/dashboard/empresa",
+  "/dashboard/meu-perfil",
+  "/dashboard/template-proposta",
+]
+
+function isOpenRoute(pathname: string): boolean {
+  return OPEN_ROUTES.some(route => pathname === route || pathname.startsWith(route + "/"))
+}
+
+/**
+ * Route-to-feature mapping for access control.
+ * Must stay in sync with lib/permissions.ts getFeatureKeyForPath().
+ */
+const ROUTE_FEATURE_MAP: [string, string][] = [
+  ["/dashboard/leads", "leads"],
+  ["/dashboard/google-ads", "google-ads"],
+  ["/dashboard/projetos", "gestao"],
+  ["/dashboard/produto", "gestao"],
+  ["/dashboard/requisitos", "requisitos"],
+  ["/dashboard/prototipo", "prototipo"],
+  ["/dashboard/desenvolvimento", "desenvolvimento"],
+  ["/dashboard/metas", "metas"],
+  ["/dashboard/relatorio-google-ads", "performance"],
+  ["/dashboard/gerador", "gerador"],
+  ["/dashboard/gerador-de-tarefas", "gestao"],
+  ["/dashboard/cases", "cases"],
+  ["/dashboard/blog", "blog"],
+  ["/dashboard/candidatos", "candidatos"],
+  ["/dashboard/vagas", "vagas"],
+  ["/dashboard/empresas", "empresas"],
+  ["/dashboard/gestao-de-acesso", "gestao-de-acesso"],
+  ["/dashboard/api-docs", "api-docs"],
+  ["/dashboard/palavras-chave", "palavras-chave"],
+  ["/dashboard/tags", "tags"],
+]
+
+function getFeatureForPath(pathname: string): string | null {
+  for (const [prefix, key] of ROUTE_FEATURE_MAP) {
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) return key
+  }
+  return null
+}
+
+// --- Web Crypto JWT verification for Edge Runtime ---
+
+function base64UrlDecode(str: string): Uint8Array {
+  const padded = str.replace(/-/g, "+").replace(/_/g, "/")
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function getSecret(): string {
+  const secret = process.env.SESSION_SECRET
+  if (!secret) {
+    throw new Error("SESSION_SECRET environment variable is required but not set")
+  }
+  return secret
+}
+
+async function getSigningKey(): Promise<CryptoKey> {
+  const keyData = new TextEncoder().encode(getSecret())
+  return crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["verify"])
+}
+
+/**
+ * Verify JWT signature + expiration using Web Crypto (Edge-compatible).
+ * Returns payload if valid, null otherwise.
+ */
+async function verifyJwt(token: string): Promise<Record<string, unknown> | null> {
+  const parts = token.split(".")
+  if (parts.length !== 3) return null
+
+  const [headerB64, payloadB64, signatureB64] = parts
+  const message = `${headerB64}.${payloadB64}`
+
+  try {
+    const key = await getSigningKey()
+    const signature = base64UrlDecode(signatureB64)
+    const valid = await crypto.subtle.verify("HMAC", key, signature, new TextEncoder().encode(message))
+    if (!valid) return null
+
+    const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(payloadB64)))
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null
+
+    return payload
+  } catch {
+    return null
+  }
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Rotas de API: verificar Bearer token e retornar 401 JSON em vez de redirect
+  if (pathname.startsWith("/api/")) {
+    // APIs públicas e webhooks externos — sem autenticação
+    const PUBLIC_API_PREFIXES = [
+      "/api/auth/",
+      "/api/public/",
+      "/api/leads/inbound",
+      "/api/events/inbound",
+      "/api/twilio/voice",
+      "/api/twilio/incoming",
+      "/api/twilio/status",
+      "/api/twilio/recording",
+      "/api/twilio-suporte/voice",
+      "/api/twilio-suporte/incoming",
+      "/api/twilio-suporte/status",
+      "/api/twilio-suporte/recording",
+      "/api/whatsapp/webhook",
+      "/api/twilio-easy/voice",
+      "/api/twilio-easy/transfer",
+      "/api/elevenlabs/webhook",
+      "/api/elevenlabs/context",
+      "/api/errors/inbound",
+    ]
+    if (PUBLIC_API_PREFIXES.some(p => pathname === p || pathname.startsWith(p))) {
+      return NextResponse.next()
+    }
+
+    // Rotas com x-api-key são autenticadas pela própria rota — deixa passar
+    if (request.headers.get("x-api-key")) {
+      return NextResponse.next()
+    }
+
+    // Lê o token do header Authorization ou do cookie
+    const authHeader = request.headers.get("authorization") || ""
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null
+    const cookieToken = request.cookies.get(SESSION_COOKIE)?.value
+    const apiToken = bearerToken || cookieToken
+
+    const apiPayload = apiToken ? await verifyJwt(apiToken) : null
+    if (!apiPayload) {
+      return NextResponse.json(
+        { error: "Não autenticado." },
+        {
+          status: 401,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          },
+        }
+      )
+    }
+
+    // Bloqueio de perfil "Cliente" — só pode acessar rotas permitidas
+    const apiPerfil = apiPayload.perfil as string | undefined
+    if (apiPerfil === "Cliente") {
+      const CLIENTE_ALLOWED_API_PREFIXES = [
+        "/api/auth/",
+        "/api/garantia/",
+        "/api/projetos",
+        "/api/upload",
+        "/api/file",
+        "/api/version",
+      ]
+      const isAllowed = CLIENTE_ALLOWED_API_PREFIXES.some(p => pathname === p || pathname.startsWith(p))
+      if (!isAllowed) {
+        return NextResponse.json(
+          { error: "Acesso negado." },
+          { status: 403 }
+        )
+      }
+    }
+
+    return NextResponse.next()
+  }
+
+  const token = request.cookies.get(SESSION_COOKIE)?.value
+
+  // RSC prefetch requests em cross-origin não enviam cookie
+  // Deixa o Next.js lidar; a página em si vai redirecionar se necessário
+  const isRSCRequest = request.headers.get("RSC") === "1" || request.headers.has("Next-Router-State-Tree")
+  if (isRSCRequest && !token) {
+    return NextResponse.next()
+  }
+
+  // Verify JWT with full signature check
+  const payload = token ? await verifyJwt(token) : null
+  const isTokenValid = !!payload
+  const isPendingSelection = !!(payload?.pendingEmpresaSelection)
+
+  // Sessão pendente: só pode acessar /login/selecionar-empresa e /api/auth/*
+  if (isPendingSelection) {
+    if (pathname === "/login/selecionar-empresa" || pathname.startsWith("/api/auth/")) {
+      return NextResponse.next()
+    }
+    const url = request.nextUrl.clone()
+    url.pathname = "/login/selecionar-empresa"
+    return NextResponse.redirect(url)
+  }
+
+  // Protect /dashboard routes - redirect to login if no valid token
+  if (pathname.startsWith("/dashboard") && !isTokenValid) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = "/login"
+    const response = NextResponse.redirect(loginUrl)
+    if (token && !isTokenValid) {
+      const isHttps = process.env.NODE_ENV === "production" || !!process.env.VERCEL_URL
+      response.cookies.set(SESSION_COOKIE, "", {
+        maxAge: 0,
+        path: "/",
+        httpOnly: true,
+        secure: isHttps,
+        sameSite: isHttps ? "none" : "lax",
+      })
+    }
+    return response
+  }
+
+  // Rota inicial por perfil
+  const isCliente = (payload?.perfil as string | undefined) === "Cliente"
+  const initialRoute = isCliente ? "/dashboard/garantia" : "/dashboard/time-sheet"
+
+  // Redirect authenticated users away from /login
+  if (pathname === "/login" && isTokenValid) {
+    const dashUrl = request.nextUrl.clone()
+    dashUrl.pathname = initialRoute
+    return NextResponse.redirect(dashUrl)
+  }
+
+  // Redirect / root to appropriate page
+  if (pathname === "/" && isTokenValid) {
+    const dashUrl = request.nextUrl.clone()
+    dashUrl.pathname = initialRoute
+    return NextResponse.redirect(dashUrl)
+  }
+  if (pathname === "/" && !isTokenValid) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = "/login"
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // Redirect /dashboard root to timesheet
+  if (pathname === "/dashboard" && isTokenValid) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = initialRoute
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // Feature-based route protection for authenticated users
+  if (pathname.startsWith("/dashboard") && isTokenValid && payload) {
+    const perfil = payload.perfil as string | undefined
+    const isSuperAdmin = payload.isSuperAdmin as boolean | undefined
+    const funcionalidades = (payload.funcionalidades as string[]) || []
+
+    // Clientes (portal Garantia) só acessam /garantia/* e /dashboard/meu-perfil
+    if (perfil === "Cliente") {
+      if (
+        pathname.startsWith("/dashboard/garantia") ||
+        pathname === "/dashboard/meu-perfil" ||
+        pathname === "/dashboard/acesso-negado"
+      ) {
+        return NextResponse.next()
+      }
+      // Redirect to garantia instead of acesso-negado to avoid redirect loops
+      const garantiaUrl = request.nextUrl.clone()
+      garantiaUrl.pathname = "/dashboard/garantia"
+      return NextResponse.redirect(garantiaUrl)
+    }
+
+    // Rotas abertas a todos os usuarios autenticados - sem verificacao de funcionalidades
+    if (isOpenRoute(pathname)) {
+      return NextResponse.next()
+    }
+
+    // Admins and super admins have full access
+    if (perfil === "Administrador" || isSuperAdmin) {
+      return NextResponse.next()
+    }
+
+    // Check feature access for the current route
+    const requiredFeature = getFeatureForPath(pathname)
+    if (requiredFeature && !funcionalidades.includes(requiredFeature)) {
+      const accessDeniedUrl = request.nextUrl.clone()
+      accessDeniedUrl.pathname = "/dashboard/acesso-negado"
+      return NextResponse.redirect(accessDeniedUrl)
+    }
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+}

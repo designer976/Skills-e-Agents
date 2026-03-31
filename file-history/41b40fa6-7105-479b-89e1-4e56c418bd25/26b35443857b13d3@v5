@@ -1,0 +1,177 @@
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { CalendarCheck, BotMessageSquare, TrendingUp, Zap } from 'lucide-react'
+
+interface Step {
+  number: string
+  icon: React.ElementType
+  title: string
+  description: string
+  tag: string
+}
+
+const steps: Step[] = [
+  {
+    number: '01',
+    icon: CalendarCheck,
+    title: 'Comece pela agenda',
+    tag: 'Organização',
+    description:
+      'A partir da agenda, tudo mais começa. A Easy resolve o maior gargalo da gestão: clientes que não aparecem, horários sobrepostos e remarcações de última hora.',
+  },
+  {
+    number: '02',
+    icon: BotMessageSquare,
+    title: 'IA que sempre responde',
+    tag: 'Inteligência',
+    description:
+      'Uma experiência rápida e moderna: a agenda com IA da Easy transforma a rotina em vitrine do negócio. Tudo sem limites de mensagens — uma IA que agenda para você.',
+  },
+  {
+    number: '03',
+    icon: Zap,
+    title: 'Sem grandes mudanças',
+    tag: 'Simplicidade',
+    description:
+      'Sem exigir treinamentos complexos, a Easy evolui junto com o profissional: primeiro a agenda, depois os percentuais, o financeiro, a equipe e, por fim, a expansão.',
+  },
+  {
+    number: '04',
+    icon: TrendingUp,
+    title: 'Operação mais inteligente',
+    tag: 'Crescimento',
+    description:
+      'O resultado é uma operação mais simples e inteligente, na qual o dono ou gestor volta a ter tempo e clareza para a gestão com tranquilidade total.',
+  },
+]
+
+interface StepItemProps {
+  step: Step
+  index: number
+  inView: boolean
+}
+
+function StepItem({ step, index, inView }: StepItemProps) {
+  const Icon = step.icon
+  const isReversed = index % 2 === 1
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay: index * 0.12, ease: 'easeOut' }}
+      className={`relative flex flex-col lg:flex-row items-center gap-8 lg:gap-16 ${
+        isReversed ? 'lg:flex-row-reverse' : ''
+      }`}
+    >
+      {/* Decorative step number */}
+      <span
+        className={`absolute top-1/2 -translate-y-1/2 font-display font-black leading-none select-none pointer-events-none text-[100px] lg:text-[160px] z-0 ${
+          isReversed
+            ? '-right-4 lg:-right-12 text-right'
+            : '-left-4 lg:-left-12 text-left'
+        }`}
+        style={{ color: 'rgba(26,18,9,0.04)' }}
+        aria-hidden="true"
+      >
+        {step.number}
+      </span>
+
+      {/* Card */}
+      <div
+        className="relative z-10 flex-1 w-full glass-card p-8 lg:p-10 group"
+        style={{ borderLeft: '3px solid #C44B3A' }}
+      >
+        {/* Hover accent */}
+        <div
+          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          style={{ background: 'linear-gradient(135deg, rgba(196,75,58,0.03) 0%, transparent 60%)' }}
+        />
+
+        <div className="relative z-10">
+          {/* Top row */}
+          <div className="flex items-start justify-between mb-6">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center transition-[background-color,border-color] duration-300 group-hover:border-primary/25"
+              style={{ background: 'rgba(196,75,58,0.08)', border: '1px solid rgba(196,75,58,0.15)' }}
+            >
+              <Icon size={20} className="text-primary" />
+            </div>
+            <span
+              className="text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
+              style={{
+                color: '#A67C52',
+                background: '#F0EAE0',
+                border: '1px solid rgba(26,18,9,0.08)',
+              }}
+            >
+              {step.tag}
+            </span>
+          </div>
+
+          <h3 className="font-semibold text-xl text-fg mb-3 leading-snug">
+            {step.title}
+          </h3>
+          <p className="text-sm text-fg-muted leading-relaxed">{step.description}</p>
+        </div>
+      </div>
+
+      {/* Decorative side — icon showcase */}
+      <div className="flex-1 hidden lg:flex items-center justify-center">
+        <div
+          className="w-20 h-20 rounded-3xl flex items-center justify-center transition-[box-shadow] duration-300 hover:shadow-lg"
+          style={{
+            background: 'rgba(196,75,58,0.06)',
+            border: '1px solid rgba(196,75,58,0.12)',
+          }}
+        >
+          <Icon size={36} className="text-primary opacity-60" />
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+export default function HowItWorks() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  return (
+    <section className="relative py-24 lg:py-36 bg-page overflow-hidden">
+      {/* Connecting line */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 hidden lg:block w-px"
+        style={{
+          top: '260px',
+          bottom: '100px',
+          background: 'linear-gradient(to bottom, transparent, rgba(26,18,9,0.08) 10%, rgba(26,18,9,0.08) 90%, transparent)',
+        }}
+      />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+
+        {/* Header — alinhado esquerda, não centrado */}
+        <motion.div
+          ref={ref}
+          className="mb-20 max-w-xl"
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="section-label mb-4 block">Como funciona</span>
+          <h2 className="display-title text-3xl lg:text-5xl text-fg">
+            Como organizamos negócios{' '}
+            <span className="gradient-text">da beleza</span>
+          </h2>
+        </motion.div>
+
+        {/* Steps — alternating layout */}
+        <div className="space-y-16 lg:space-y-20">
+          {steps.map((step, index) => (
+            <StepItem key={step.number} step={step} index={index} inView={inView} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

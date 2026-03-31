@@ -1,0 +1,38 @@
+# Regras Globais — Claude Code
+
+## Analista — Ponto de Entrada Obrigatório
+
+OBRIGATÓRIO: use a ferramenta **Skill** para invocar `analista` em **CADA prompt** que contenha
+uma solicitação de ajuste, criação ou implementação. O Analista classifica a tarefa e delega
+ao skill correto automaticamente.
+
+> **Exceção:** perguntas conceituais puras, explicações de código e dúvidas arquiteturais
+> podem ser respondidas diretamente, sem passar pelo Analista.
+
+---
+
+## Skills Front-end (Delegados pelo Analista)
+
+O Analista invoca automaticamente os skills abaixo conforme a classificação da tarefa.
+Estes skills **não devem ser invocados diretamente** — sempre passe pelo Analista primeiro.
+
+| Situação detectada | Skill a invocar |
+|--------------------|----------------|
+| Nova tela do zero sem nenhuma spec | `all-agents` |
+| Implementar + revisar com spec já validada | `all-front-end` |
+| Novo componente, tela ou ajuste visual sem spec clara | `designer` |
+| Implementação de UI com spec já definida | `front-end-ui` |
+
+> Nota: NÃO invocar `/front-end-code` diretamente — o skill `front-end-ui`
+> já encadeia para ele automaticamente ao finalizar qualquer implementação.
+
+## Skills Backend/Infra (Delegados pelo Analista)
+
+Esses agentes **pedem confirmação ao usuário antes de executar** — não alteram nada sem aprovação.
+
+| Situação detectada | Skill a invocar |
+|--------------------|----------------|
+| Endpoint, API, controller, service, DTO ou autenticação | `backend` |
+| Schema, migração, model, query ou índice de banco | `database` |
+| Testes unitários, integração ou E2E | `tester` |
+| Revisão geral de código ou auditoria de qualidade | `reviewer` |

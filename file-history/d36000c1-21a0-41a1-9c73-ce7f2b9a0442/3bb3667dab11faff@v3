@@ -1,0 +1,183 @@
+import { IconSparkles as Sparkles } from "@tabler/icons-react";
+import React, { useEffect, useRef, useState } from "react";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useWebSocket } from "./useWebSocket";
+import { websocketService } from "@/services/websocketService";
+
+export interface UseWowMomentProps {
+    setSelectedDate: (date: Date) => void;
+    refreshAppointments: () => void;
+}
+
+export interface UseWowMomentReturn {
+    isAwaitingAi: boolean;
+}
+
+export const WOW_MOMENT_STORAGE_KEY = 'easysalon:wow_moment_pending';
+export const WOW_MOMENT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const WOW_MOMENT_EVENTS = ['appointment:created', 'request:created'] as const;
+
+// MUTEX — fora do hook, nível de módulo
+// Sobrevive a re-montagens. Zerado apenas quando o módulo é recarregado (F5).
+let wowMomentConsumed = false;
+
+// Exportar APENAS para uso em testes (reset entre casos)
+export function _resetWowMomentConsumedForTests() {
+    wowMomentConsumed = false;
+}
+
+export function useWowMoment({
+    setSelectedDate,
+    refreshAppointments,
+}: UseWowMomentProps): UseWowMomentReturn {
+    const { isConnected } = useWebSocket();
+
+    // Lazy initialize isAwaitingAi reading from sessionStorage
+    const [isAwaitingAi, setIsAwaitingAi] = useState(
+        () => sessionStorage.getItem(WOW_MOMENT_STORAGE_KEY) === 'true'
+    );
+    const navigate = useNavigate();
+
+    // Keep stable references for state updaters to use in the event callback safely
+    const refreshRef = useRef(refreshAppointments);
+    const setDateRef = useRef(setSelectedDate);
+
+    useEffect(() => {
+        // Inicialização
+    }, [isAwaitingAi, isConnected]);
+
+    // Update refs when props change
+    useEffect(() => {
+        refreshRef.current = refreshAppointments;
+        setDateRef.current = setSelectedDate;
+    }, [refreshAppointments, setSelectedDate]);
+
+    // Main listener logic
+    useEffect(() => {
+        if (!isAwaitingAi || !isConnected) {
+            return;
+        }
+
+
+
+        const handleWowEvent = (eventData: any, eventType: string) => {
+            // Check module-level mutex
+            if (wowMomentConsumed) {
+                return;
+            }
+
+            // Mark as consumed immediately in the same tick
+            wowMomentConsumed = true;
+            sessionStorage.removeItem(WOW_MOMENT_STORAGE_KEY);
+            setIsAwaitingAi(false);
+
+            if (ttlTimerRef.current) {
+                clearTimeout(ttlTimerRef.current);
+            }
+
+            const dateString = eventData.startTime || eventData.finalDate || eventData.preferredDate;
+            let parsedDate: Date;
+
+            if (!dateString) {
+                parsedDate = new Date();
+            } else {
+                parsedDate = new Date(dateString);
+            }
+
+            const clientName = eventData.client?.name || eventData.customerName || "Novo cliente";
+            const source = (eventData.source || '').toLowerCase();
+            const isRequest = eventType === 'request:created';
+
+            let toastTitle = '';
+            let toastMessage = '';
+            let showSparkles = false;
+
+            if (isRequest) {
+                if (source === 'whatsapp' || source === 'ia') {
+                    toastTitle = 'Solicitação recebida pela IA!';
+                    toastMessage = `${clientName} solicitou um horário com o robô para ${format(parsedDate, "HH:mm")}.`;
+                    showSparkles = true;
+                } else if (source === 'online') {
+                    toastTitle = 'Nova Solicitação Online!';
+                    toastMessage = `${clientName} enviou uma solicitação pelo link para ${format(parsedDate, "HH:mm")}.`;
+                } else if (source === 'app') {
+                    toastTitle = 'Nova Solicitação via App!';
+                    toastMessage = `${clientName} enviou uma solicitação pelo aplicativo para ${format(parsedDate, "HH:mm")}.`;
+                } else {
+                    toastTitle = 'Nova Solicitação Criada!';
+                    toastMessage = `Solicitação de ${clientName} registrada para ${format(parsedDate, "HH:mm")}.`;
+                }
+            } else {
+                if (source === 'whatsapp' || source === 'ia') {
+                    toastTitle = 'Agendamento realizado pela IA!';
+                    toastMessage = `${clientName} interagiu com o robô para ${format(parsedDate, "HH:mm")}.`;
+                    showSparkles = true;
+                } else if (source === 'online') {
+                    toastTitle = 'Novo Agendamento Online!';
+                    toastMessage = `${clientName} agendou pelo seu link para ${format(parsedDate, "HH:mm")}.`;
+                } else if (source === 'app') {
+                    toastTitle = 'Novo Agendamento via App!';
+                    toastMessage = `${clientName} agendou pelo aplicativo para ${format(parsedDate, "HH:mm")}.`;
+                } else {
+                    toastTitle = 'Novo Agendamento Criado!';
+                    toastMessage = `Agendamento de ${clientName} registrado para ${format(parsedDate, "HH:mm")}.`;
+                }
+            }
+
+            if (isRequest) {
+                navigate('/salon/solicitacoes');
+            } else {
+                setDateRef.current(parsedDate);
+                refreshRef.current();
+            }
+
+            toast.success(
+                React.createElement(
+                    "div",
+                    { className: "flex flex-col gap-1" },
+                    React.createElement(
+                        "span",
+                        { className: `font-bold flex items-center gap-2 text-base ${showSparkles ? '' : 'text-foreground'}` },
+                        showSparkles && React.createElement(Sparkles, { className: "w-5 h-5 text-yellow-500 fill-yellow-500 animate-pulse" }),
+                        toastTitle
+                    ),
+                    React.createElement(
+                        "span",
+                        { className: "text-sm text-muted-foreground" },
+                        toastMessage
+                    )
+                ),
+                {
+                    duration: 8000,
+                    className: "bg-card border-2 border-primary/20 shadow-xl",
+                }
+            );
+        };
+
+        const unsubscribeAppointment = websocketService.on("appointment:created", (data) => handleWowEvent(data, 'appointment:created'));
+        const unsubscribeRequest = websocketService.on("request:created", (data) => handleWowEvent(data, 'request:created'));
+
+        // Setup TTL timer
+        const ttlTimerRef = {
+            current: setTimeout(() => {
+                wowMomentConsumed = true;
+                sessionStorage.removeItem(WOW_MOMENT_STORAGE_KEY);
+                setIsAwaitingAi(false);
+            }, WOW_MOMENT_TTL_MS)
+        };
+
+
+        return () => {
+            unsubscribeAppointment();
+            unsubscribeRequest();
+            clearTimeout(ttlTimerRef.current);
+        };
+
+    }, [isConnected, isAwaitingAi]);
+
+    return {
+        isAwaitingAi,
+    };
+}

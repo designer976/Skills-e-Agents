@@ -1,0 +1,111 @@
+/**
+ * DashboardFilters — Filtros globais de Estado e Período para os dashboards
+ *
+ * REUSO OBRIGATÓRIO: Use em todas as telas de Dashboard do painel admin.
+ *
+ * Props:
+ *   estado: string               — estado selecionado ("todos" por padrão)
+ *   onEstadoChange: fn           — callback ao mudar estado
+ *   periodo: PeriodoDashboard    — período selecionado
+ *   onPeriodoChange: fn          — callback ao mudar período
+ *   className?: string           — classes adicionais no wrapper
+ *
+ * Layout: estado alinhado à esquerda, período alinhado à direita.
+ *
+ * Uso:
+ *   import { DashboardFilters, type PeriodoDashboard } from "@/components/admin/dashboard-filters"
+ *
+ *   const [estado, setEstado] = useState("todos")
+ *   const [periodo, setPeriodo] = useState<PeriodoDashboard>("mes")
+ *
+ *   <DashboardFilters
+ *     estado={estado} onEstadoChange={setEstado}
+ *     periodo={periodo} onPeriodoChange={setPeriodo}
+ *   />
+ */
+
+"use client"
+
+import { MapPin } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+export type PeriodoDashboard = "hoje" | "semana" | "mes" | "trimestre" | "ano"
+
+const ESTADOS = [
+  { value: "todos", label: "Todos os estados" },
+  { value: "SP",    label: "SP — São Paulo" },
+  { value: "RJ",    label: "RJ — Rio de Janeiro" },
+  { value: "MG",    label: "MG — Minas Gerais" },
+  { value: "RS",    label: "RS — Rio Grande do Sul" },
+  { value: "PR",    label: "PR — Paraná" },
+  { value: "SC",    label: "SC — Santa Catarina" },
+  { value: "BA",    label: "BA — Bahia" },
+  { value: "GO",    label: "GO — Goiás" },
+  { value: "DF",    label: "DF — Distrito Federal" },
+]
+
+const PERIODOS: { value: PeriodoDashboard; label: string }[] = [
+  { value: "hoje",      label: "Hoje" },
+  { value: "semana",    label: "Esta semana" },
+  { value: "mes",       label: "Este mês" },
+  { value: "trimestre", label: "Trimestre" },
+  { value: "ano",       label: "Este ano" },
+]
+
+interface DashboardFiltersProps {
+  estado: string
+  onEstadoChange: (v: string) => void
+  periodo: PeriodoDashboard
+  onPeriodoChange: (v: PeriodoDashboard) => void
+  className?: string
+}
+
+export function DashboardFilters({
+  estado,
+  onEstadoChange,
+  periodo,
+  onPeriodoChange,
+  className,
+}: DashboardFiltersProps) {
+  return (
+    <div className={cn("flex flex-wrap items-center justify-between gap-3", className)}>
+
+      {/* Estado — esquerda, usando shadcn Select */}
+      <div className="relative flex items-center">
+        <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+        <Select value={estado} onValueChange={onEstadoChange}>
+          <SelectTrigger className="h-9 pl-8 w-[190px] text-sm border-gray-200 bg-[#F4F7F9] focus:ring-[#0B7A8F]/30 focus:border-[#0B7A8F]">
+            <SelectValue placeholder="Todos os estados" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4} side="bottom">
+            {ESTADOS.map((e) => (
+              <SelectItem key={e.value} value={e.value}>
+                {e.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Período — direita, usando Tabs do Design System */}
+      <Tabs value={periodo} onValueChange={(v) => onPeriodoChange(v as PeriodoDashboard)}>
+        <TabsList>
+          {PERIODOS.map((p) => (
+            <TabsTrigger key={p.value} value={p.value}>
+              {p.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+    </div>
+  )
+}

@@ -1,0 +1,40 @@
+import { motion } from 'framer-motion';
+import { Plus as Plus } from "lucide-react";
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+
+interface SmartFABProps {
+    onClick: () => void;
+    label?: string;
+}
+
+/**
+ * Floating Action Button inteligente
+ * - Esconde ao fazer scroll para baixo
+ * - Reaparece ao fazer scroll para cima
+ * - Animação suave com framer-motion
+ */
+export function SmartFAB({ onClick, label = 'Novo Agendamento' }: SmartFABProps) {
+    const scrollDirection = useScrollDirection();
+    const isVisible = scrollDirection !== 'down';
+
+    return (
+        <motion.button
+            initial={{ scale: 0 }}
+            animate={{
+                scale: isVisible ? 1 : 0,
+                rotate: isVisible ? 0 : 180,
+            }}
+            whileTap={{ scale: 0.9 }}
+            transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 17
+            }}
+            onClick={onClick}
+            className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl z-50 flex items-center justify-center"
+            aria-label={label}
+        >
+            <Plus className="h-6 w-6" strokeWidth={2.5} />
+        </motion.button>
+    );
+}

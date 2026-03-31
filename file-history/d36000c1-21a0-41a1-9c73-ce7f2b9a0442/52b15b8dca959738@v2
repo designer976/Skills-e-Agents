@@ -1,0 +1,182 @@
+import React, { useState, useEffect, useRef, useId } from 'react';
+import { Input } from './input';
+import { Label } from './label';
+import { cn } from '@/lib/utils';
+
+interface PercentageInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+  value: string;
+  onChange: (value: string) => void;
+  max?: number;
+  min?: number;
+  decimalPlaces?: number;
+  label?: string;
+}
+
+export function PercentageInput({
+  value,
+  onChange,
+  max = 100,
+  min = 0,
+  decimalPlaces = 2,
+  className,
+  disabled,
+  label,
+  id,
+  ...props
+}: PercentageInputProps) {
+  const [displayValue, setDisplayValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+
+  useEffect(() => {
+    if (!isFocused && value) {
+      const numValue = parseFloat(value.replace(',', '.'));
+      if (!isNaN(numValue)) {
+        setDisplayValue(formatToDisplay(numValue, decimalPlaces));
+      } else {
+        setDisplayValue('0,00');
+      }
+    } else if (!isFocused && !value) {
+      setDisplayValue('0,00');
+    }
+  }, [value, isFocused, decimalPlaces]);
+
+  const formatToDisplay = (num: number, decimals: number): string => {
+    return num.toFixed(decimals).replace('.', ',');
+  };
+
+  const applyMask = (rawValue: string): string => {
+    // Remove tudo que não é dígito
+    const onlyDigits = rawValue.replace(/\D/g, '');
+
+    // Se vazio, retorna 0
+    if (!onlyDigits) {
+      return '0,00';
+    }
+
+    // Converte para número considerando as casas decimais
+    let numValue = parseInt(onlyDigits, 10) / Math.pow(10, decimalPlaces);
+
+    // Aplica limites
+    if (numValue > max) {
+      numValue = max;
+    } else if (numValue < min) {
+      numValue = min;
+    }
+
+    // Formata com as casas decimais
+    return formatToDisplay(numValue, decimalPlaces);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+
+    // Se o usuário está apagando tudo
+    if (inputValue === '') {
+      setDisplayValue('');
+      return;
+    }
+
+    // Aplica a máscara
+    const formatted = applyMask(inputValue);
+    setDisplayValue(formatted);
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+
+    // Se o valor é 0,00, limpa o campo para facilitar digitação
+    if (displayValue === '0,00' || displayValue === '0,0' || displayValue === '0,000') {
+      setDisplayValue('');
+    } else {
+      // Seleciona todo o conteúdo
+      setTimeout(() => {
+        inputRef.current?.select();
+      }, 0);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+
+    let finalValue: string;
+
+    if (!displayValue || displayValue === '') {
+      finalValue = formatToDisplay(0, decimalPlaces);
+    } else {
+      // Converte o valor display para número
+      const numValue = parseFloat(displayValue.replace(',', '.'));
+
+      if (isNaN(numValue)) {
+        finalValue = formatToDisplay(0, decimalPlaces);
+      } else {
+        // Aplica limites
+        let clampedValue = numValue;
+        if (clampedValue > max) clampedValue = max;
+        if (clampedValue < min) clampedValue = min;
+
+        finalValue = formatToDisplay(clampedValue, decimalPlaces);
+      }
+    }
+
+    setDisplayValue(finalValue);
+    onChange(finalValue);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Permite apenas números e teclas de controle
+    const allowedKeys = [
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'Home', 'End'
+    ];
+
+    const isNumber = /^\d$/.test(e.key);
+    const isCtrlKey = e.ctrlKey || e.metaKey;
+
+    // Permite Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if (isCtrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+      return;
+    }
+
+    if (!isNumber && !allowedKeys.includes(e.key) && !isCtrlKey) {
+      e.preventDefault();
+    }
+  };
+
+  const inner = (
+    <div className="relative">
+      <Input
+        {...props}
+        id={inputId}
+        ref={inputRef}
+        type="text"
+        value={displayValue}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className={cn('pr-8', className)}
+        placeholder="0,00"
+        inputMode="numeric"
+      />
+      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
+        %
+      </span>
+    </div>
+  );
+
+  if (label) {
+    return (
+      <div className="flex flex-col gap-[4px]">
+        <Label htmlFor={inputId}>{label}</Label>
+        {inner}
+      </div>
+    );
+  }
+
+  return inner;
+}

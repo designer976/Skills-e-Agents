@@ -1,0 +1,159 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Clock as Clock, Calendar as Calendar } from "lucide-react";
+import { agendaService, OperatingHours } from '@/services/agendaService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface SalonOperatingHoursProps {
+  salonId: string;
+  date?: Date;
+  className?: string;
+}
+
+const dayNames = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado'
+];
+
+export function SalonOperatingHours({ salonId, date = new Date(), className }: SalonOperatingHoursProps) {
+  const [operatingHours, setOperatingHours] = useState<OperatingHours | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOperatingHours = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await agendaService.getSalonOperatingHours(salonId);
+        setOperatingHours(data);
+      } catch (err) {
+        console.error('Error fetching operating hours:', err);
+        setError('Erro ao carregar horário de funcionamento');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (salonId) {
+      fetchOperatingHours();
+    }
+  }, [salonId]);
+
+  const currentDayOfWeek = date.getDay();
+  const currentDayHours = operatingHours?.openingHours.find(
+    (hours) => hours.dayOfWeek === currentDayOfWeek
+  );
+
+  if (isLoading) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-4 w-32 mb-2" />
+          <Skeleton className="h-4 w-40" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !operatingHours) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-red-600">
+            {error || 'Horário não disponível'}
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={className}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          Horário de Funcionamento
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Current day hours */}
+        <div className="p-3 bg-primary/5 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-3 w-3" />
+              Hoje - {format(date, 'EEEE', { locale: ptBR })}
+            </span>
+            {currentDayHours?.isOpen ? (
+              <Badge variant="default" className="text-xs">
+                Aberto
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-xs">
+                Fechado
+              </Badge>
+            )}
+          </div>
+          {currentDayHours?.isOpen ? (
+            <p className="text-sm text-muted-foreground">
+              {currentDayHours.open} - {currentDayHours.close}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Não abre hoje</p>
+          )}
+        </div>
+
+        {/* Week schedule */}
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Semana completa</p>
+          {operatingHours.openingHours.map((hours) => {
+            const isToday = hours.dayOfWeek === currentDayOfWeek;
+            return (
+              <div
+                key={hours.dayOfWeek}
+                className={`flex items-center justify-between py-1 px-2 rounded text-xs ${
+                  isToday ? 'bg-primary/10 font-medium' : ''
+                }`}
+              >
+                <span className="flex-1">{dayNames[hours.dayOfWeek]}</span>
+                {hours.isOpen ? (
+                  <span className="text-muted-foreground">
+                    {hours.open} - {hours.close}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Fechado</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Settings info */}
+        {operatingHours.settings.allowOnlineBooking && (
+          <div className="pt-2 border-t">
+            <p className="text-xs text-muted-foreground">
+              Agendamento online: <span className="font-medium">Habilitado</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Antecedência máxima: <span className="font-medium">{operatingHours.settings.maxAdvanceBookingDays} dias</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Cancelamento: <span className="font-medium">{operatingHours.settings.cancellationMinHours}h antes</span>
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Proposta Comercial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0047ba;
+            --text: #2e2e2e;
+            --text-muted: #374151;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #D1D5DB;
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .document {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 24px 0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fcfcfc;
+            margin: 0 auto 24px;
+            padding: 46px 56px 120px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('fundo-center.png') center center no-repeat;
+            background-size: 602px auto;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+        }
+
+        .logo {
+            display: inline-block;
+            margin-bottom: 32px;
+        }
+        .logo img {
+            width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px 56px 32px;
+            z-index: 10;
+            background: rgba(252, 252, 252, 0.95);
+            backdrop-filter: blur(2px);
+        }
+        .footer-line {
+            height: 2px;
+            background: #e5e7eb80;
+            margin-bottom: 24px;
+        }
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-logo {
+            display: inline-block;
+        }
+        .footer-logo img {
+            width: 74px;
+            height: auto;
+            display: block;
+        }
+        .pg-num {
+            font-size: 12.5px;
+            color: var(--blue);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<div class="document">
+    <div class="page">
+        <div class="content">
+            <div class="logo">
+                <img src="logo-wa-project.png" alt="Wa Project">
+            </div>
+
+            <h1>Teste do Template</h1>
+            <p>Este é um teste para verificar se as imagens e footer estão funcionando.</p>
+            <p>Logo deve aparecer acima e footer deve aparecer embaixo com logo menor.</p>
+        </div>
+
+        <div class="footer">
+            <div class="footer-line"></div>
+            <div class="footer-row">
+                <div class="footer-logo">
+                    <img src="logo-wa-project.png" alt="Wa Project">
+                </div>
+                <span class="pg-num">Teste</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

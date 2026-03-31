@@ -1,0 +1,117 @@
+import { FinancialInvoicesTable } from "@/components/admin/financial/FinancialInvoicesTable";
+import { FinancialOverviewCards } from "@/components/admin/financial/FinancialOverviewCards";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { networkFinancialService } from "@/services/networkFinancialService";
+import { NetworkFinancialOverview, NetworkInvoiceGroup } from "@/types/financial";
+import { isAfter, subDays } from "date-fns";
+import { IconLoader2 as Loader2 } from "@tabler/icons-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+export default function FinancialPage() {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [overview, setOverview] = useState<NetworkFinancialOverview | null>(null);
+    const [invoices, setInvoices] = useState<NetworkInvoiceGroup[]>([]);
+    const [period, setPeriod] = useState("all");
+
+    const fetchData = async (isRefresh = false) => {
+        try {
+            if (isRefresh) setRefreshing(true);
+            else setLoading(true);
+
+            const [overviewData, invoicesData] = await Promise.all([
+                networkFinancialService.getOverview(),
+                networkFinancialService.getInvoices()
+            ]);
+            setOverview(overviewData);
+            setInvoices(invoicesData);
+
+            if (isRefresh) toast.success("Dados atualizados com sucesso.");
+        } catch (error) {
+            toast.error("Erro ao carregar dados financeiros da rede.");
+            console.error(error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const filteredInvoices = useMemo(() => {
+        if (period === "all") return invoices;
+
+        const days = parseInt(period);
+        const cutoffDate = subDays(new Date(), days);
+
+        return invoices.map(group => {
+            // Check if any item in the group is within the period
+            // Invoices are grouped by month, so we might need to filter items within groups
+            const filteredItems = group.items.filter(item =>
+                isAfter(new Date(item.createdAt), cutoffDate)
+            );
+
+            if (filteredItems.length === 0) return null;
+
+            // Recalculate group totals for the filtered view
+            return {
+                ...group,
+                items: filteredItems,
+                totalAmount: filteredItems.reduce((sum, item) =>
+                    item.status === 'paid' || item.status === 'PAID' ? sum + item.amount : sum, 0
+                ),
+                paidCount: filteredItems.filter(i => i.status === 'paid' || i.status === 'PAID').length,
+                failedCount: filteredItems.filter(i => i.status === 'failed' || i.status === 'unpaid' || i.status === 'past_due').length,
+            };
+        }).filter((group): group is NetworkInvoiceGroup => group !== null);
+    }, [invoices, period]);
+
+    const handleRefresh = () => {
+        fetchData(true);
+    };
+
+    if (loading) {
+        return (
+            <EasySalonLayout
+                sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+                sideNavTitle="Easy Salon"
+                sideNavSubtitle="Área Easy Salon"
+            >
+                <div className="flex justify-center items-center h-full min-h-[50vh]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </EasySalonLayout>
+        );
+    }
+
+    return (
+        <EasySalonLayout
+            sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+            sideNavTitle="Easy Salon"
+            sideNavSubtitle="Área Easy Salon"
+        >
+            <PageHeader
+                title="Histórico de Cobranças"
+                subtitle="Acompanhe as cobranças realizadas nos salões da sua rede"
+            />
+
+            {overview && <FinancialOverviewCards data={overview} />}
+
+            <FinancialInvoicesTable
+                groups={filteredInvoices}
+                isLoading={refreshing}
+                period={period}
+                onPeriodChange={setPeriod}
+                onRefresh={handleRefresh}
+            />
+
+        </EasySalonLayout>
+    );
+}

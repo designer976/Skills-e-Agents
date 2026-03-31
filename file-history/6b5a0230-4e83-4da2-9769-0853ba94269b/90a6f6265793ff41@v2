@@ -1,0 +1,432 @@
+import { describe, it, expect } from "vitest"
+import {
+  clean,
+  findSection,
+  gerarFuncionalidadesHTML,
+  gerarFasesHTML,
+  gerarEntregaveisHTML,
+  gerarServicosHTML,
+  gerarListaClientesHTML,
+  gerarCondicoesPagamentoHTML,
+  extractValorTotal,
+  extractSubtitulo,
+  extractDescricao,
+  extractPrazoTotal,
+  buildProposalTokens,
+} from "./proposal-pdf-utils"
+import type { ProposalSection, ProposalModelo } from "./proposal-types"
+
+// ── clean ──────────────────────────────────────────────────────────────────
+
+describe("clean", () => {
+  it("deve remover marcadores **bold**", () => {
+    expect(clean("**Texto em negrito**")).toBe("Texto em negrito")
+  })
+  it("deve remover marcadores *italic*", () => {
+    expect(clean("*Texto itálico*")).toBe("Texto itálico")
+  })
+  it("deve fazer trim de espaços", () => {
+    expect(clean("  texto  ")).toBe("texto")
+  })
+  it("deve retornar string vazia quando vazio", () => {
+    expect(clean("")).toBe("")
+  })
+})
+
+// ── findSection ────────────────────────────────────────────────────────────
+
+describe("findSection", () => {
+  const sections: ProposalSection[] = [
+    { key: "sobre-o-projeto", title: "Sobre o Projeto", content: "conteudo A" },
+    { key: "escopo",          title: "Escopo dos Serviços", content: "conteudo B" },
+    { key: "cronograma",      title: "Cronograma", content: "conteudo C" },
+    { key: "investimento",    title: "Investimento", content: "conteudo D" },
+  ]
+
+  it("deve encontrar seção por keyword no key", () => {
+    expect(findSection(sections, "escopo")?.content).toBe("conteudo B")
+  })
+  it("deve encontrar seção por keyword no title", () => {
+    expect(findSection(sections, "cronograma")?.content).toBe("conteudo C")
+  })
+  it("deve retornar undefined quando não encontra", () => {
+    expect(findSection(sections, "inexistente")).toBeUndefined()
+  })
+  it("deve usar o primeiro match quando múltiplas keywords batem", () => {
+    expect(findSection(sections, "investimento", "escopo")?.key).toBe("escopo")
+  })
+})
+
+// ── gerarFuncionalidadesHTML ───────────────────────────────────────────────
+
+describe("gerarFuncionalidadesHTML", () => {
+  it("deve converter padrão '1. **Nome** — Desc' para HTML com func-item", () => {
+    const content = "1. **Formulário de Captura** — Tela inicial com campos de Nome e Email."
+    const result = gerarFuncionalidadesHTML(content)
+    expect(result).toContain('<div class="func-item">')
+    expect(result).toContain("<strong>1. Formulário de Captura</strong>")
+    expect(result).toContain("Tela inicial com campos de Nome e Email.")
+  })
+
+  it("deve converter padrão '1. Nome — Desc' para HTML", () => {
+    const content = "1. Quiz Interativo — Interface para TV touch."
+    const result = gerarFuncionalidadesHTML(content)
+    expect(result).toContain('<div class="func-item">')
+    expect(result).toContain("<strong>1. Quiz Interativo</strong>")
+    expect(result).toContain("Interface para TV touch.")
+  })
+
+  it("deve converter padrão '- **Nome**: Desc' para HTML numerado", () => {
+    const content = "- **Exportação de Dados**: Gera arquivo Excel ao final."
+    const result = gerarFuncionalidadesHTML(content)
+    expect(result).toContain('<div class="func-item">')
+    expect(result).toContain("<strong>1. Exportação de Dados</strong>")
+    expect(result).toContain("Gera arquivo Excel ao final.")
+  })
+
+  it("deve usar fallback de bullets simples quando nenhum padrão bate", () => {
+    const content = "- Feature A\n- Feature B\n- Feature C"
+    const result = gerarFuncionalidadesHTML(content)
+    expect(result).toContain("Feature A")
+    expect(result).toContain('<div class="func-item">')
+    expect(result).toContain("<strong>1. Feature A</strong>")
+  })
+
+  it("deve gerar HTML vazio quando não há funcionalidades", () => {
+    const result = gerarFuncionalidadesHTML("")
+    expect(result).toBe("")
+  })
+})
+
+// ── gerarFasesHTML ─────────────────────────────────────────────────────────
+
+describe("gerarFasesHTML", () => {
+  it("deve converter padrão 'Fase N - Desc | Período' para HTML com phase class", () => {
+    const content = "Fase 1 - Planejamento | Semanas 1-2\nFase 2 - Desenvolvimento | Semanas 3-8"
+    const result = gerarFasesHTML(content)
+    expect(result).toContain('<div class="phase">')
+    expect(result).toContain("<strong>Fase 1:</strong>")
+    expect(result).toContain("Planejamento – Semanas 1-2")
+    expect(result).toContain("<strong>Fase 2:</strong>")
+    expect(result).toContain("Desenvolvimento – Semanas 3-8")
+  })
+
+  it("deve converter padrão 'Fase N - Desc' sem período para HTML", () => {
+    const content = "Fase 3 - Homologação e Go-Live"
+    const result = gerarFasesHTML(content)
+    expect(result).toContain('<div class="phase">')
+    expect(result).toContain("<strong>Fase 3:</strong>")
+    expect(result).toContain("Homologação e Go-Live")
+  })
+
+  it("deve numerar bullets com prazo automaticamente", () => {
+    const content = "- Planejamento e arquitetura: 2 semanas\n- Backend e APIs: 5 semanas"
+    const result = gerarFasesHTML(content)
+    expect(result).toContain("<strong>Fase 1:</strong>")
+    expect(result).toContain("<strong>Fase 2:</strong>")
+  })
+
+  it("deve retornar fallback quando conteúdo está vazio", () => {
+    const result = gerarFasesHTML("")
+    expect(result).toContain('<div class="phase">')
+    expect(result).toContain("A definir")
+  })
+})
+
+// ── gerarEntregaveisHTML ───────────────────────────────────────────────────
+
+describe("gerarEntregaveisHTML", () => {
+  it("deve extrair bullets com keywords de entregável para <ul><li>", () => {
+    const content = "- Protótipos no Figma\n- Código fonte no repositório Git\n- Sistema em produção"
+    const result = gerarEntregaveisHTML(content)
+    expect(result).toContain("<ul>")
+    expect(result).toContain("<li>Protótipos no Figma</li>")
+    expect(result).toContain("<li>Código fonte no repositório Git</li>")
+    expect(result).toContain("<li>Sistema em produção</li>")
+    expect(result).toContain("</ul>")
+  })
+
+  it("deve retornar lista padrão quando nenhum bullet tem keyword de entregável", () => {
+    const result = gerarEntregaveisHTML("Texto sem keywords de entregável.")
+    expect(result).toContain("Protótipos de Alta Fidelidade (Figma)")
+    expect(result).toContain("Sistema em Produção")
+    expect(result).toContain("<ul>")
+    expect(result).toContain("</ul>")
+  })
+
+  it("deve filtrar apenas bullets com keywords relevantes", () => {
+    const content = "- Item irrelevante\n- Protótipos finais\n- Outro item\n- Documentação completa"
+    const result = gerarEntregaveisHTML(content)
+    expect(result).toContain("Protótipos finais")
+    expect(result).toContain("Documentação completa")
+    expect(result).not.toContain("Item irrelevante")
+  })
+})
+
+// ── gerarServicosHTML & gerarListaClientesHTML ────────────────────────────
+
+describe("gerarServicosHTML", () => {
+  it("deve retornar HTML estruturado com lista de serviços", () => {
+    const result = gerarServicosHTML()
+    expect(result).toContain("<h3>Nossos serviços:</h3>")
+    expect(result).toContain("Desenvolvimento de Software")
+    expect(result).toContain("Soluções de Inteligência Artificial")
+    expect(result).toContain("<ul>")
+    expect(result).toContain("</ul>")
+  })
+})
+
+describe("gerarListaClientesHTML", () => {
+  it("deve retornar HTML estruturado com lista de clientes", () => {
+    const result = gerarListaClientesHTML()
+    expect(result).toContain("Easy Salon")
+    expect(result).toContain("Sistema de gestão para salões de beleza")
+    expect(result).toContain("<ul>")
+    expect(result).toContain("</ul>")
+  })
+})
+
+// ── gerarCondicoesPagamentoHTML ────────────────────────────────────────────
+
+describe("gerarCondicoesPagamentoHTML", () => {
+  it("deve extrair 3 parcelas nomeadas com R$ para HTML estruturado", () => {
+    const content = [
+      "1ª parcela: R$ 6.667 na assinatura",
+      "2ª parcela: R$ 6.667 após 30 dias",
+      "3ª parcela: R$ 6.666 pós-homologação",
+    ].join("\n")
+    const result = gerarCondicoesPagamentoHTML(content)
+    expect(result).toContain('<div class="payment-condition">')
+    expect(result).toContain("<strong>1ª parcela:</strong> R$ 6.667")
+    expect(result).toContain("<strong>2ª parcela:</strong> R$ 6.667")
+    expect(result).toContain("<strong>3ª parcela:</strong> R$ 6.666")
+    expect(result).toContain("pós-homolog")
+  })
+
+  it("deve usar fallback de valores em ordem quando não há labels de parcela", () => {
+    const content = "Pagamento: R$ 10.000 na entrada e R$ 15.000 no final"
+    const result = gerarCondicoesPagamentoHTML(content)
+    expect(result).toContain("R$ 10.000")
+    expect(result).toContain("R$ 15.000")
+    expect(result).toContain("30 dias após a assinatura") // fallback
+  })
+
+  it("deve retornar 'A definir' para parcelas ausentes", () => {
+    const result = gerarCondicoesPagamentoHTML("")
+    expect(result).toContain("A definir")
+    expect(result).toContain('<div class="payment-condition">')
+  })
+})
+
+// ── extractValorTotal ──────────────────────────────────────────────────────
+
+describe("extractValorTotal", () => {
+  it("deve extrair valor da linha que contém 'Total' e 'R$' e envolver em HTML", () => {
+    const content = "Frontend | 1 | R$ 15.000\nBackend | 1 | R$ 20.000\nTotal | | R$ 35.000"
+    const result = extractValorTotal(content)
+    expect(result).toContain('<p class="investment-total">')
+    expect(result).toContain("Investimento total: R$ 35.000")
+    expect(result).toContain("</p>")
+  })
+
+  it("deve extrair primeiro R$ quando não há linha de total", () => {
+    const result = extractValorTotal("Investimento de R$ 50.000")
+    expect(result).toContain("R$ 50.000")
+    expect(result).toContain('<p class="investment-total">')
+  })
+
+  it("deve retornar HTML com 'A definir' quando não há valor", () => {
+    const result = extractValorTotal("Sem valor definido")
+    expect(result).toContain("A definir")
+    expect(result).toContain('<p class="investment-total">')
+  })
+})
+
+// ── extractSubtitulo ───────────────────────────────────────────────────────
+
+describe("extractSubtitulo", () => {
+  it("deve priorizar o campo projeto quando preenchido", () => {
+    expect(extractSubtitulo("### Outro título\nconteudo", "Meu Projeto")).toBe("Meu Projeto")
+  })
+  it("deve usar heading ### quando projeto está vazio", () => {
+    expect(extractSubtitulo("### Quiz Interativo — Easy Salon\nconteudo", "")).toBe("Quiz Interativo — Easy Salon")
+  })
+  it("deve usar primeiro bold quando não há h3", () => {
+    expect(extractSubtitulo("**Título do Projeto**\nalgo", "")).toBe("Título do Projeto")
+  })
+  it("deve retornar primeira linha quando não há h3 nem bold", () => {
+    expect(extractSubtitulo("Linha simples\n- bullet", "")).toBe("Linha simples")
+  })
+})
+
+// ── extractDescricao ───────────────────────────────────────────────────────
+
+describe("extractDescricao", () => {
+  it("deve retornar parágrafos HTML ignorando headings e bullets", () => {
+    const content = "## Heading\n- bullet\nEste é o parágrafo real.\nOutro parágrafo aqui.\n- outro bullet"
+    const result = extractDescricao(content)
+    expect(result).toContain("<p>Este é o parágrafo real.</p>")
+    expect(result).toContain("<p>Outro parágrafo aqui.</p>")
+  })
+
+  it("deve ignorar linhas que começam com *", () => {
+    const content = "**bold line**\nParágrafo limpo."
+    const result = extractDescricao(content)
+    expect(result).toContain("<p>Parágrafo limpo.</p>")
+    expect(result).not.toContain("bold line")
+  })
+
+  it("deve ignorar listas numeradas", () => {
+    const content = "1. item da lista\nTexto descritivo aqui."
+    const result = extractDescricao(content)
+    expect(result).toContain("<p>Texto descritivo aqui.</p>")
+  })
+
+  it("deve retornar string vazia quando só há bullets e headings", () => {
+    const content = "## Título\n- item1\n- item2"
+    const result = extractDescricao(content)
+    expect(result).toBe("")
+  })
+})
+
+// ── extractPrazoTotal ──────────────────────────────────────────────────────
+
+describe("extractPrazoTotal", () => {
+  it("deve extrair prazo após palavra-chave 'Prazo total' e envolver em HTML", () => {
+    const result = extractPrazoTotal("Prazo total estimado: 4,5 semanas")
+    expect(result).toContain("<p><strong>Prazo total:</strong> 4,5 semanas</p>")
+  })
+
+  it("deve extrair duração simples no texto", () => {
+    const result = extractPrazoTotal("O projeto dura 3 meses no total.")
+    expect(result).toContain("3 meses")
+    expect(result).toContain("<strong>Prazo total:</strong>")
+  })
+
+  it("deve retornar HTML com 'A definir' quando não encontra duração", () => {
+    const result = extractPrazoTotal("Sem informação de prazo aqui.")
+    expect(result).toContain("A definir")
+    expect(result).toContain("<p><strong>Prazo total:</strong>")
+  })
+})
+
+// ── buildProposalTokens ────────────────────────────────────────────────────
+
+describe("buildProposalTokens", () => {
+  const mockSections: ProposalSection[] = [
+    {
+      key: "sobre-projeto",
+      title: "Sobre o Projeto",
+      content: "### Sistema de Gestão\nUm sistema completo para salões de beleza.\n\n**Principal benefício** da solução.\n**Entrega garantida** ao cliente."
+    },
+    {
+      key: "escopo-funcionalidades",
+      title: "Funcionalidades",
+      content: "1. **Agendamento Online** — Interface para clientes marcarem horários.\n2. **Dashboard Administrativo** — Painel para gestão do salão."
+    },
+    {
+      key: "cronograma",
+      title: "Cronograma",
+      content: "Fase 1 - Planejamento | 2 semanas\nFase 2 - Desenvolvimento | 6 semanas\nPrazo total: 8 semanas"
+    },
+    {
+      key: "investimento",
+      title: "Investimento",
+      content: "Frontend: R$ 15.000\nBackend: R$ 20.000\nTotal: R$ 35.000"
+    },
+    {
+      key: "pagamento",
+      title: "Condições de Pagamento",
+      content: "1ª parcela: R$ 11.667 na assinatura\n2ª parcela: R$ 11.667 após 30 dias\n3ª parcela: R$ 11.666 pós-homologação"
+    },
+    {
+      key: "entregaveis",
+      title: "Entregáveis",
+      content: "- Protótipos no Figma\n- Código fonte no repositório\n- Sistema em produção"
+    }
+  ]
+
+  const params = {
+    empresa: "Easy Salon",
+    para: "João Silva",
+    projeto: "Sistema de Gestão para Salão",
+    modeloTrabalho: "Escopo Fechado" as ProposalModelo,
+    dataCriacao: new Date(2026, 2, 30).getTime(),
+    sections: mockSections
+  }
+
+  it("deve mapear informações da capa corretamente", () => {
+    const tokens = buildProposalTokens(params)
+
+    expect(tokens.NOME_CLIENTE).toBe("Easy Salon")
+    expect(tokens.CLIENTE_EMPRESA).toBe("João Silva")
+    expect(tokens.TIPO_ESCOPO).toBe("Escopo Fechado")
+    expect(tokens.NOME_EMPRESA).toBe("Wa Project")
+    expect(tokens.TITULO_PROPOSTA).toBe("Proposta Comercial")
+    expect(tokens.DIAS_VALIDADE).toBe("30")
+  })
+
+  it("deve mapear projeto e funcionalidades com HTML estruturado", () => {
+    const tokens = buildProposalTokens(params)
+
+    expect(tokens.SUBTITULO_PROJETO).toBe("Sistema de Gestão para Salão")
+    expect(tokens.DESCRICAO_PROJETO).toContain("<p>Um sistema completo para salões de beleza.</p>")
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain('<div class="func-item">')
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain("Agendamento Online")
+    expect(tokens.LISTA_FUNCIONALIDADES).toContain("Dashboard Administrativo")
+  })
+
+  it("deve mapear cronograma e investimento", () => {
+    const tokens = buildProposalTokens(params)
+
+    expect(tokens.LISTA_FASES).toContain('<div class="phase">')
+    expect(tokens.LISTA_FASES).toContain("Planejamento – 2 semanas")
+    expect(tokens.PRAZO_TOTAL).toContain("8 semanas")
+    expect(tokens.VALOR_TOTAL).toContain("R$ 35.000")
+    expect(tokens.VALOR_TOTAL).toContain('<p class="investment-total">')
+  })
+
+  it("deve mapear condições de pagamento estruturadas", () => {
+    const tokens = buildProposalTokens(params)
+
+    expect(tokens.CONDICOES_PAGAMENTO).toContain('<div class="payment-condition">')
+    expect(tokens.CONDICOES_PAGAMENTO).toContain("R$ 11.667")
+    expect(tokens.CONDICOES_PAGAMENTO).toContain("pós-homolog")
+  })
+
+  it("deve mapear entregáveis como lista HTML", () => {
+    const tokens = buildProposalTokens(params)
+
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("<ul>")
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("Protótipos no Figma")
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("Sistema em produção")
+  })
+
+  it("deve usar fallbacks quando dados estão ausentes", () => {
+    const emptyParams = {
+      empresa: "Empresa Teste",
+      para: undefined,
+      projeto: undefined,
+      modeloTrabalho: undefined,
+      dataCriacao: Date.now(),
+      sections: []
+    }
+
+    const tokens = buildProposalTokens(emptyParams)
+
+    expect(tokens.CLIENTE_EMPRESA).toBe("Empresa Teste") // fallback para empresa
+    expect(tokens.TIPO_ESCOPO).toBe("Escopo Fechado") // fallback default
+    expect(tokens.VALOR_TOTAL).toContain("A definir")
+    expect(tokens.LISTA_ENTREGAVEIS).toContain("Protótipos de Alta Fidelidade") // lista padrão
+  })
+
+  it("deve usar conteúdo dinâmico quando disponível", () => {
+    const tokens = buildProposalTokens(params)
+
+    expect(tokens.TITULO_SOBRE_EMPRESA).toBe("Sobre a Wa Project")
+    expect(tokens.DESCRICAO_EMPRESA).toContain("Um sistema completo para salões de beleza") // conteúdo dinâmico
+    expect(tokens.SECAO_SERVICOS).toContain("Desenvolvimento de Software")
+    expect(tokens.LISTA_CLIENTES).toContain("Easy Salon")
+    expect(tokens.CITACAO_ENCERRAMENTO).toContain("transformar sua visão em realidade digital")
+  })
+})

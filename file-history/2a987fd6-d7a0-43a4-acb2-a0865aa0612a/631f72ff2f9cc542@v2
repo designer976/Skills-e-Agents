@@ -1,0 +1,1177 @@
+import jsPDF from 'jspdf'
+import type { ProposalSection } from './proposal-types'
+
+// Função de validação abrangente para dados da proposta
+export function validateProposalData(data: any): ValidationResult {
+  const errors: ValidationError[] = []
+  const warnings: string[] = []
+
+  // Verificar se data existe
+  if (!data) {
+    return {
+      valid: false,
+      errors: [{ field: 'data', message: 'Dados da proposta não fornecidos' }],
+      warnings: []
+    }
+  }
+
+  // Validar projeto
+  if (!data.projeto) {
+    errors.push({ field: 'projeto', message: 'Informações do projeto são obrigatórias' })
+  } else {
+    if (!data.projeto.nome || typeof data.projeto.nome !== 'string' || data.projeto.nome.trim().length === 0) {
+      errors.push({ field: 'projeto.nome', message: 'Nome do projeto é obrigatório' })
+    } else if (data.projeto.nome.length > 200) {
+      warnings.push('Nome do projeto muito longo (>200 caracteres), pode ser truncado no PDF')
+    }
+  }
+
+  // Validar data de emissão
+  if (!data.data_emissao || typeof data.data_emissao !== 'string' || data.data_emissao.trim().length === 0) {
+    errors.push({ field: 'data_emissao', message: 'Data de emissão é obrigatória' })
+  } else {
+    // Validar formato de data (DD/MM/YYYY)
+    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/
+    if (!dateRegex.test(data.data_emissao)) {
+      errors.push({ field: 'data_emissao', message: 'Data de emissão deve estar no formato DD/MM/YYYY' })
+    } else {
+      // Validar se é uma data válida
+      const [day, month, year] = data.data_emissao.split('/').map(Number)
+      const date = new Date(year, month - 1, day)
+      if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+        errors.push({ field: 'data_emissao', message: 'Data de emissão inválida' })
+      }
+    }
+  }
+
+  // Validar validade em dias
+  if (!data.validade_dias || typeof data.validade_dias !== 'string' || data.validade_dias.trim().length === 0) {
+    errors.push({ field: 'validade_dias', message: 'Validade em dias é obrigatória' })
+  } else {
+    const days = parseInt(data.validade_dias, 10)
+    if (isNaN(days) || days <= 0) {
+      errors.push({ field: 'validade_dias', message: 'Validade deve ser um número positivo' })
+    } else if (days > 365) {
+      warnings.push('Validade muito alta (>365 dias), verifique se está correto')
+    }
+  }
+
+  // Validar cliente
+  if (!data.cliente) {
+    errors.push({ field: 'cliente', message: 'Informações do cliente são obrigatórias' })
+  } else {
+    if (!data.cliente.nome || typeof data.cliente.nome !== 'string' || data.cliente.nome.trim().length === 0) {
+      errors.push({ field: 'cliente.nome', message: 'Nome do cliente é obrigatório' })
+    } else if (data.cliente.nome.length > 200) {
+      warnings.push('Nome do cliente muito longo (>200 caracteres), pode ser truncado no PDF')
+    }
+  }
+
+  // Validar tipo de escopo
+  if (!data.tipo_escopo || typeof data.tipo_escopo !== 'string' || data.tipo_escopo.trim().length === 0) {
+    errors.push({ field: 'tipo_escopo', message: 'Tipo de escopo é obrigatório' })
+  }
+
+  // Validar seções
+  if (!data.sections || !Array.isArray(data.sections)) {
+    warnings.push('Nenhuma seção fornecida, PDF conterá apenas informações básicas')
+  } else {
+    data.sections.forEach((section: any, index: number) => {
+      if (!section.title || typeof section.title !== 'string' || section.title.trim().length === 0) {
+        errors.push({ field: `sections[${index}].title`, message: `Título da seção ${index + 1} é obrigatório` })
+      }
+      if (!section.content || typeof section.content !== 'string') {
+        warnings.push(`Seção "${section.title || index + 1}" sem conteúdo`)
+      } else if (section.content.length > 10000) {
+        warnings.push(`Seção "${section.title}" muito longa (>10k caracteres), pode afetar performance`)
+      }
+    })
+
+    if (data.sections.length > 50) {
+      warnings.push('Muitas seções (>50), PDF pode ficar muito extenso')
+    }
+  }
+
+  // Validar customização (se fornecida)
+  if (data.customization) {
+    if (data.customization.header?.logoSize) {
+      const { width, height } = data.customization.header.logoSize
+      if (width <= 0 || height <= 0 || width > 100 || height > 100) {
+        warnings.push('Tamanho do logo do header fora do recomendado (0-100mm)')
+      }
+    }
+
+    if (data.customization.header?.customText && data.customization.header.customText.length > 100) {
+      warnings.push('Texto customizado do header muito longo (>100 caracteres)')
+    }
+
+    if (data.customization.footer?.customText && data.customization.footer.customText.length > 150) {
+      warnings.push('Texto customizado do footer muito longo (>150 caracteres)')
+    }
+  }
+
+  // Validação de integridade geral
+  const totalContentLength = (data.sections || []).reduce((total: number, section: any) => {
+    return total + (section.content?.length || 0)
+  }, 0)
+
+  if (totalContentLength > 100000) {
+    warnings.push('Conteúdo total muito extenso (>100k caracteres), geração pode ser lenta')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings
+  }
+}
+
+// Função para sanitizar dados da proposta antes da geração
+export function sanitizeProposalData(data: WaProjectProposalData): WaProjectProposalData {
+  const sanitized = JSON.parse(JSON.stringify(data)) // Deep clone
+
+  // Sanitizar strings removendo caracteres problemáticos
+  const sanitizeString = (str: string): string => {
+    if (!str || typeof str !== 'string') return ''
+
+    return str
+      // Normalizar espaços
+      .replace(/\s+/g, ' ')
+      .trim()
+      // Remover caracteres de controle
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      // Limitar tamanho para evitar problemas
+      .substring(0, 5000)
+  }
+
+  // Sanitizar campos principais
+  if (sanitized.projeto?.nome) {
+    sanitized.projeto.nome = sanitizeString(sanitized.projeto.nome)
+  }
+
+  if (sanitized.cliente?.nome) {
+    sanitized.cliente.nome = sanitizeString(sanitized.cliente.nome)
+  }
+
+  if (sanitized.tipo_escopo) {
+    sanitized.tipo_escopo = sanitizeString(sanitized.tipo_escopo)
+  }
+
+  // Sanitizar seções
+  if (sanitized.sections && Array.isArray(sanitized.sections)) {
+    sanitized.sections = sanitized.sections.map(section => ({
+      ...section,
+      title: sanitizeString(section.title || ''),
+      content: sanitizeString(section.content || '')
+    })).filter(section => section.title || section.content) // Remove seções vazias
+  }
+
+  // Validar e corrigir data
+  if (sanitized.data_emissao) {
+    const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/
+    if (!dateRegex.test(sanitized.data_emissao)) {
+      // Tentar corrigir formato de data comum
+      const dateStr = sanitized.data_emissao.replace(/[-\.]/g, '/')
+      if (dateRegex.test(dateStr)) {
+        sanitized.data_emissao = dateStr
+      } else {
+        // Usar data atual como fallback
+        const today = new Date()
+        sanitized.data_emissao = today.toLocaleDateString('pt-BR')
+      }
+    }
+  }
+
+  // Validar e corrigir validade
+  if (sanitized.validade_dias) {
+    const days = parseInt(sanitized.validade_dias.toString(), 10)
+    if (isNaN(days) || days <= 0) {
+      sanitized.validade_dias = '30' // Padrão de 30 dias
+    } else if (days > 365) {
+      sanitized.validade_dias = '365' // Máximo de 1 ano
+    }
+  }
+
+  return sanitized
+}
+
+// Função de validação de dados em tempo real (para formulários)
+export function validateField(fieldName: string, value: any): ValidationError | null {
+  switch (fieldName) {
+    case 'projeto.nome':
+      if (!value || typeof value !== 'string' || value.trim().length === 0) {
+        return { field: fieldName, message: 'Nome do projeto é obrigatório' }
+      }
+      if (value.length > 200) {
+        return { field: fieldName, message: 'Nome do projeto muito longo (máximo 200 caracteres)' }
+      }
+      break
+
+    case 'cliente.nome':
+      if (!value || typeof value !== 'string' || value.trim().length === 0) {
+        return { field: fieldName, message: 'Nome do cliente é obrigatório' }
+      }
+      if (value.length > 200) {
+        return { field: fieldName, message: 'Nome do cliente muito longo (máximo 200 caracteres)' }
+      }
+      break
+
+    case 'data_emissao':
+      if (!value || typeof value !== 'string' || value.trim().length === 0) {
+        return { field: fieldName, message: 'Data de emissão é obrigatória' }
+      }
+      const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/
+      if (!dateRegex.test(value)) {
+        return { field: fieldName, message: 'Data deve estar no formato DD/MM/YYYY' }
+      }
+      break
+
+    case 'validade_dias':
+      const days = parseInt(value?.toString() || '', 10)
+      if (isNaN(days) || days <= 0) {
+        return { field: fieldName, message: 'Validade deve ser um número positivo' }
+      }
+      if (days > 365) {
+        return { field: fieldName, message: 'Validade máxima é de 365 dias' }
+      }
+      break
+
+    case 'tipo_escopo':
+      if (!value || typeof value !== 'string' || value.trim().length === 0) {
+        return { field: fieldName, message: 'Tipo de escopo é obrigatório' }
+      }
+      break
+
+    default:
+      break
+  }
+
+  return null
+}
+
+// Logo da Wa Project - versão hexagonal conforme HTML template
+const WA_PROJECT_LOGO_BASE64 = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9Ijg3IiB2aWV3Qm94PSIwIDAgMTAwIDg3IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogICAgPHBvbHlnb24gcG9pbnRzPSIyNSwwIDc1LDAgMTAwLDQzLjMgNzUsODYuNiAyNSw4Ni42IDAsMzMuMyIgZmlsbD0iIzAwNDdiYSIvPgogICAgPHRleHQgeD0iNTAiIHk9IjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkludGVyLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iYm9sZCI+V2E8L3RleHQ+Cjwvc3ZnPg==`
+
+// Cores extraídas do template HTML para máxima fidelidade
+const WA_COLORS = {
+  primary: '#003B71', // --wa-brand-primary do CSS
+  secondary: '#0056A3', // --wa-brand-secondary do CSS
+  accent: '#E8F0FE', // --wa-brand-accent do CSS
+  text: '#1f2937', // text-foreground do template
+  textMuted: '#6b7280', // text-muted-foreground do template
+  border: '#e5e7eb', // border do template
+  background: '#f8f9fa', // bg-card do template
+}
+
+// Interface para configuração de header/footer customizáveis
+interface PDFCustomization {
+  header?: {
+    showLogo?: boolean
+    showDate?: boolean
+    customText?: string
+    logoSize?: { width: number; height: number }
+  }
+  footer?: {
+    showLogo?: boolean
+    showPageNumber?: boolean
+    customText?: string
+    companyInfo?: {
+      name?: string
+      cnpj?: string
+      website?: string
+      email?: string
+      phone?: string
+    }
+  }
+}
+
+// Interface para validação de dados
+interface ValidationError {
+  field: string
+  message: string
+}
+
+interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+  warnings: string[]
+}
+
+// Interface para os dados da proposta
+interface WaProjectProposalData {
+  projeto: {
+    nome: string
+  }
+  data_emissao: string
+  validade_dias: string
+  cliente: {
+    nome: string
+  }
+  tipo_escopo: string
+  sections: ProposalSection[]
+  numeracao_pagina: string
+  customization?: PDFCustomization
+}
+
+// Classe principal para geração de PDF
+export class WaProjectPDFGenerator {
+  private doc: jsPDF
+  private currentY: number
+  private pageNumber: number
+  private sectionCount: number = 0
+  private estimatedHeight: number = 0
+  private customization: PDFCustomization
+
+  // Configurações de página (A4) seguindo o PDF oficial
+  private readonly pageWidth = 210
+  private readonly pageHeight = 297
+  private readonly margin = {
+    top: 25, // Margem superior conforme PDF
+    right: 25, // Margem direita conforme PDF
+    bottom: 25, // Margem inferior conforme PDF
+    left: 25, // Margem esquerda conforme PDF
+  }
+
+  // Cache para otimização de medidas de texto
+  private textWidthCache: Map<string, number> = new Map()
+
+  constructor(customization: PDFCustomization = {}) {
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true, // Ativar compressão para PDFs grandes
+      putOnlyUsedFonts: true, // Incluir apenas fontes utilizadas
+      precision: 2 // Precisão de coordenadas para otimização
+    })
+    this.currentY = this.margin.top
+    this.pageNumber = 1
+    this.customization = {
+      header: {
+        showLogo: true,
+        showDate: true,
+        logoSize: { width: 25, height: 22 },
+        ...customization.header
+      },
+      footer: {
+        showLogo: true,
+        showPageNumber: true,
+        companyInfo: {
+          name: 'Wa Project Soluções Tecnológicas LTDA.',
+          cnpj: '19.317.018/0001-40',
+          website: 'waproject.com.br',
+          email: 'comercial@waproject.com.br',
+          phone: '(11) 5028-2010'
+        },
+        ...customization.footer
+      }
+    }
+
+    // Configurar fonte e codificação
+    this.setupFonts()
+  }
+
+  private setupFonts() {
+    // Configurar fonte padrão com suporte a UTF-8
+    this.doc.setFont('helvetica')
+
+    // Definir propriedades de documento para UTF-8
+    this.doc.setProperties({
+      title: 'Proposta Comercial Wa Project',
+      creator: 'Wa Project PDF Generator',
+      author: 'Wa Project',
+      keywords: 'proposta, comercial, wa project',
+      subject: 'Proposta Comercial'
+    })
+
+    // Configurar codificação de texto para caracteres especiais
+    this.doc.setCharSpace(0)
+    this.doc.setWordSpace(0)
+  }
+
+  // Função para limpar e normalizar texto para o PDF
+  private sanitizeText(text: string): string {
+    if (!text || typeof text !== 'string') {
+      return ''
+    }
+
+    // Primeiro tentar corrigir problemas de codificação
+    const fixedText = this.fixEncoding(text)
+
+    return fixedText
+      // Normalizar quebras de linha
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      // Substituir caracteres especiais problemáticos
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      .replace(/[–—]/g, '-')
+      .replace(/…/g, '...')
+      // Como fallback, remover acentos se ainda houver problemas
+      .replace(/[àáâãä]/g, 'a')
+      .replace(/[èéêë]/g, 'e')
+      .replace(/[ìíîï]/g, 'i')
+      .replace(/[òóôõö]/g, 'o')
+      .replace(/[ùúûü]/g, 'u')
+      .replace(/[ç]/g, 'c')
+      .replace(/[ñ]/g, 'n')
+      // Versões maiúsculas
+      .replace(/[ÀÁÂÃÄ]/g, 'A')
+      .replace(/[ÈÉÊË]/g, 'E')
+      .replace(/[ÌÍÎÏ]/g, 'I')
+      .replace(/[ÒÓÔÕÖ]/g, 'O')
+      .replace(/[ÙÚÛÜ]/g, 'U')
+      .replace(/[Ç]/g, 'C')
+      .replace(/[Ñ]/g, 'N')
+      // Remover caracteres de controle, mas manter quebras de linha
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      // Normalizar espaços múltiplos
+      .replace(/ +/g, ' ')
+      .trim()
+  }
+
+  // Função para detectar problemas de codificação e tentar corrigi-los
+  private fixEncoding(text: string): string {
+    if (!text) return text
+
+    // Detectar e corrigir alguns problemas comuns de codificação UTF-8
+    return text
+      // Corrigir sequências mal codificadas comuns
+      .replace(/Ã¡/g, 'á')
+      .replace(/Ã /g, 'à')
+      .replace(/Ã¢/g, 'â')
+      .replace(/Ã£/g, 'ã')
+      .replace(/Ã©/g, 'é')
+      .replace(/Ãª/g, 'ê')
+      .replace(/Ã­/g, 'í')
+      .replace(/Ã³/g, 'ó')
+      .replace(/Ã´/g, 'ô')
+      .replace(/Ãµ/g, 'õ')
+      .replace(/Ãº/g, 'ú')
+      .replace(/Ã§/g, 'ç')
+      // Versões maiúsculas
+      .replace(/Ã\x81/g, 'Á')
+      .replace(/Ã\x80/g, 'À')
+      .replace(/Ã\x82/g, 'Â')
+      .replace(/Ã\x83/g, 'Ã')
+      .replace(/Ã\x89/g, 'É')
+      .replace(/Ã\x8A/g, 'Ê')
+      .replace(/Ã\x8D/g, 'Í')
+      .replace(/Ã\x93/g, 'Ó')
+      .replace(/Ã\x94/g, 'Ô')
+      .replace(/Ã\x95/g, 'Õ')
+      .replace(/Ã\x9A/g, 'Ú')
+      .replace(/Ã\x87/g, 'Ç')
+  }
+
+  // Versão melhorada de splitTextToSize com tratamento de caracteres especiais
+  private splitTextSafe(text: string, maxWidth: number): string[] {
+    const sanitized = this.sanitizeText(text)
+    return this.doc.splitTextToSize(sanitized, maxWidth)
+  }
+
+  // Versão melhorada de text() com sanitização automática
+  private addTextSafe(
+    text: string,
+    x: number,
+    y: number,
+    options?: {
+      align?: 'left' | 'center' | 'right'
+      angle?: number
+      maxWidth?: number
+    }
+  ): void {
+    const sanitized = this.sanitizeText(text)
+
+    if (options?.maxWidth) {
+      const lines = this.splitTextSafe(sanitized, options.maxWidth)
+      lines.forEach((line, index) => {
+        const lineY = y + (index * 6)
+        this.doc.text(line, x, lineY, {
+          align: options.align,
+          angle: options.angle
+        })
+      })
+    } else {
+      this.doc.text(sanitized, x, y, {
+        align: options?.align,
+        angle: options?.angle
+      })
+    }
+  }
+
+  private get contentWidth() {
+    return this.pageWidth - this.margin.left - this.margin.right
+  }
+
+  private get contentStartX() {
+    return this.margin.left
+  }
+
+  // Método otimizado para obter largura de texto com cache
+  private getTextWidthCached(text: string): number {
+    const key = `${text}_${this.doc.getFontSize()}_${this.doc.getFont().fontName}_${this.doc.getFont().fontStyle}`
+
+    if (this.textWidthCache.has(key)) {
+      return this.textWidthCache.get(key)!
+    }
+
+    const width = this.doc.getTextWidth(text)
+    this.textWidthCache.set(key, width)
+    return width
+  }
+
+  // Estimar altura total da proposta (para otimizar alocação de páginas)
+  private estimateTotalHeight(data: WaProjectProposalData): number {
+    let estimated = 100 // Capa base
+
+    // Estimativa baseada no número de seções e conteúdo
+    if (data.sections && data.sections.length > 0) {
+      data.sections.forEach(section => {
+        estimated += 15 // Título da seção
+        estimated += section.content.split('\n').length * 6 // Aproximação do conteúdo
+        estimated += 10 // Espaçamento entre seções
+      })
+    }
+
+    estimated += 60 // Páginas finais fixas (próximos passos, encerramento)
+
+    return estimated
+  }
+
+  // Otimização para renderização em lote
+  private batchRenderItems<T>(
+    items: T[],
+    renderFn: (item: T, index: number) => void,
+    batchSize: number = 10
+  ): void {
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize)
+      batch.forEach((item, index) => renderFn(item, i + index))
+
+      // Yield para não bloquear a UI em listas muito grandes
+      if (i + batchSize < items.length && items.length > 50) {
+        setTimeout(() => {}, 0)
+      }
+    }
+  }
+
+  private addWatermark() {
+    // Marca d'água do logo Wa Project no centro da página
+    const watermarkX = this.pageWidth / 2 - 30
+    const watermarkY = this.pageHeight / 2 - 30
+
+    try {
+      this.doc.addImage(
+        WA_PROJECT_LOGO_BASE64,
+        'SVG',
+        watermarkX,
+        watermarkY,
+        60, // largura da marca d'água
+        52, // altura da marca d'água
+        undefined,
+        'FAST'
+      )
+
+      // Definir opacidade baixa para marca d'água
+      this.doc.setGState(this.doc.GState({opacity: 0.05}))
+
+      // Voltar opacidade normal
+      this.doc.setGState(this.doc.GState({opacity: 1.0}))
+    } catch (error) {
+      // Fallback: marca d'água textual
+      this.doc.setTextColor('#E8E8E8')
+      this.doc.setFontSize(48)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.text('Wa Project', watermarkX, watermarkY, {
+        angle: 45,
+        align: 'center'
+      })
+    }
+  }
+
+  private addHeader(data?: WaProjectProposalData) {
+    if (!this.customization.header?.showLogo && !this.customization.header?.customText) {
+      return
+    }
+
+    const headerStartY = this.currentY
+
+    // Logo customizável
+    if (this.customization.header?.showLogo) {
+      try {
+        const logoSize = this.customization.header.logoSize || { width: 25, height: 22 }
+        this.doc.addImage(
+          WA_PROJECT_LOGO_BASE64,
+          'SVG',
+          this.contentStartX,
+          headerStartY,
+          logoSize.width,
+          logoSize.height,
+          undefined,
+          'FAST'
+        )
+      } catch (error) {
+        // Fallback: logo textual
+        this.doc.setFillColor(WA_COLORS.primary)
+        this.doc.roundedRect(this.contentStartX, headerStartY, 25, 10, 2, 2, 'F')
+
+        this.doc.setTextColor('#ffffff')
+        this.doc.setFontSize(10)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text('Wa Project', this.contentStartX + 3, headerStartY + 7)
+      }
+    }
+
+    // Texto customizado no header
+    if (this.customization.header?.customText) {
+      this.doc.setTextColor(WA_COLORS.primary)
+      this.doc.setFontSize(10)
+      this.doc.setFont('helvetica', 'normal')
+      const textWidth = this.getTextWidthCached(this.customization.header.customText)
+      const textX = this.pageWidth - this.margin.right - textWidth
+      this.doc.text(this.customization.header.customText, textX, headerStartY + 15)
+    }
+
+    // Data no header (se configurado)
+    if (this.customization.header?.showDate && data) {
+      this.doc.setTextColor(WA_COLORS.textMuted)
+      this.doc.setFontSize(9)
+      this.doc.setFont('helvetica', 'normal')
+      const dateText = `Data: ${data.data_emissao}`
+      const textWidth = this.getTextWidthCached(dateText)
+      const textX = this.pageWidth - this.margin.right - textWidth
+      this.doc.text(dateText, textX, headerStartY + 6)
+    }
+
+    this.currentY = headerStartY + 30
+  }
+
+  // Manter compatibilidade com método original
+  private addLogo() {
+    this.addHeader()
+  }
+
+  private addTitle(title: string, subtitle?: string) {
+    // Título principal conforme PDF
+    this.doc.setTextColor(WA_COLORS.primary)
+    this.doc.setFontSize(28)
+    this.doc.setFont('helvetica', 'bold')
+
+    this.addTextSafe(title, this.contentStartX, this.currentY)
+    this.currentY += 15
+
+    // Subtítulo do projeto conforme PDF
+    if (subtitle) {
+      this.doc.setFontSize(22)
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.setTextColor(WA_COLORS.primary)
+      this.addTextSafe(subtitle, this.contentStartX, this.currentY)
+      this.currentY += 12
+    }
+
+    this.currentY += 8
+  }
+
+  private addCoverInfo(data: WaProjectProposalData) {
+    // Centralizar informações
+    this.doc.setTextColor(WA_COLORS.text)
+    this.doc.setFontSize(11)
+    this.doc.setFont('helvetica', 'normal')
+
+    const infoLines = [
+      `${data.data_emissao} | Válido por ${data.validade_dias} dias`,
+      `Para: ${data.cliente.nome}`,
+      `Tipo: ${data.tipo_escopo}`
+    ]
+
+    infoLines.forEach(line => {
+      const lineWidth = this.getTextWidthCached(line)
+      const centerX = (this.pageWidth - lineWidth) / 2
+      this.doc.text(line, centerX, this.currentY)
+      this.currentY += 6
+    })
+
+    this.currentY += 15
+  }
+
+  private checkPageBreak(neededHeight: number, context: 'title' | 'paragraph' | 'list' | 'section' = 'paragraph'): boolean {
+    const availableSpace = this.pageHeight - this.margin.bottom - 15 - this.currentY
+
+    // Se não cabe de forma alguma, quebra a página
+    if (neededHeight > availableSpace) {
+      this.addPageNumber()
+      this.newPage()
+      return true
+    }
+
+    // Lógica inteligente baseada no contexto
+    switch (context) {
+      case 'title':
+        // Títulos precisam de pelo menos 20mm de espaço após eles para evitar órfãos
+        if (availableSpace < neededHeight + 20) {
+          this.addPageNumber()
+          this.newPage()
+          return true
+        }
+        break
+
+      case 'section':
+        // Seções precisam de pelo menos 30mm de espaço para não quebrar no início
+        if (availableSpace < neededHeight + 30) {
+          this.addPageNumber()
+          this.newPage()
+          return true
+        }
+        break
+
+      case 'list':
+        // Listas pequenas (até 3 itens) não devem quebrar
+        if (neededHeight <= 25 && availableSpace < neededHeight) {
+          this.addPageNumber()
+          this.newPage()
+          return true
+        }
+        break
+
+      case 'paragraph':
+      default:
+        // Parágrafos pequenos (até 15mm) não devem quebrar
+        if (neededHeight <= 15 && availableSpace < neededHeight) {
+          this.addPageNumber()
+          this.newPage()
+          return true
+        }
+        break
+    }
+
+    return false
+  }
+
+  private newPage() {
+    this.doc.addPage()
+    this.pageNumber++
+    this.currentY = this.margin.top + 5
+    this.addWatermark()
+    this.addFooterLogo()
+  }
+
+  private addCustomFooter() {
+    const footerY = this.pageHeight - 15
+
+    // Logo customizável no rodapé
+    if (this.customization.footer?.showLogo) {
+      try {
+        this.doc.addImage(
+          WA_PROJECT_LOGO_BASE64,
+          'SVG',
+          this.contentStartX,
+          footerY - 10,
+          20,
+          8,
+          undefined,
+          'FAST'
+        )
+      } catch (error) {
+        // Fallback textual
+        this.doc.setTextColor(WA_COLORS.primary)
+        this.doc.setFontSize(8)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text('Wa Project', this.contentStartX, footerY)
+      }
+    }
+
+    // Texto customizado no rodapé (centro)
+    if (this.customization.footer?.customText) {
+      this.doc.setTextColor(WA_COLORS.textMuted)
+      this.doc.setFontSize(8)
+      this.doc.setFont('helvetica', 'normal')
+      const textWidth = this.getTextWidthCached(this.customization.footer.customText)
+      const centerX = (this.pageWidth - textWidth) / 2
+      this.doc.text(this.customization.footer.customText, centerX, footerY)
+    }
+
+    // Número da página customizável (direita)
+    if (this.customization.footer?.showPageNumber) {
+      this.doc.setTextColor(WA_COLORS.primary)
+      this.doc.setFontSize(10)
+      this.doc.setFont('helvetica', 'normal')
+      this.doc.text(
+        this.pageNumber.toString(),
+        this.pageWidth - this.margin.right,
+        footerY,
+        { align: 'right' }
+      )
+    }
+  }
+
+  // Manter compatibilidade com método original
+  private addFooterLogo() {
+    this.addCustomFooter()
+  }
+
+  private addPageNumber() {
+    this.doc.setFontSize(9)
+    this.doc.setTextColor(WA_COLORS.textMuted)
+    this.doc.text(
+      this.pageNumber.toString(),
+      this.pageWidth / 2,
+      this.pageHeight - 10,
+      { align: 'center' }
+    )
+  }
+
+  private addSectionTitle(title: string) {
+    this.checkPageBreak(15, 'title')
+
+    this.doc.setTextColor(WA_COLORS.primary)
+    this.doc.setFontSize(16)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(title, this.contentStartX, this.currentY)
+    this.currentY += 12
+  }
+
+  private addParagraph(text: string) {
+    this.doc.setTextColor(WA_COLORS.text)
+    this.doc.setFontSize(11)
+    this.doc.setFont('helvetica', 'normal')
+
+    const lines = this.splitTextSafe(text, this.contentWidth)
+
+    // Calcular altura total do parágrafo
+    const totalParagraphHeight = lines.length * 6 + 4
+
+    // Verificar se o parágrafo inteiro cabe na página
+    this.checkPageBreak(totalParagraphHeight, 'paragraph')
+
+    lines.forEach((line: string) => {
+      this.addTextSafe(line, this.contentStartX, this.currentY)
+      this.currentY += 6
+    })
+
+    this.currentY += 4
+  }
+
+  private addBulletList(items: string[]) {
+    // Calcular altura estimada da lista completa
+    const estimatedListHeight = items.length * 8
+    this.checkPageBreak(estimatedListHeight, 'list')
+
+    // Para listas grandes, usar renderização em lote
+    if (items.length > 20) {
+      this.batchRenderItems(items, (item, index) => {
+        this.renderBulletItem(item)
+      })
+    } else {
+      // Para listas pequenas, renderização direta
+      items.forEach(item => {
+        this.renderBulletItem(item)
+      })
+    }
+  }
+
+  private renderBulletItem(item: string) {
+    // Para itens individuais, usar contexto de parágrafo
+    this.checkPageBreak(8, 'paragraph')
+
+    // Bullet point
+    this.doc.setTextColor(WA_COLORS.primary)
+    this.addTextSafe('•', this.contentStartX, this.currentY)
+
+    // Texto do item
+    this.doc.setTextColor(WA_COLORS.textMuted)
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'normal')
+
+    const lines = this.splitTextSafe(item, this.contentWidth - 8)
+    lines.forEach((line: string, lineIndex: number) => {
+      if (lineIndex > 0) this.checkPageBreak(5, 'paragraph')
+      this.addTextSafe(line, this.contentStartX + 6, this.currentY)
+      if (lineIndex < lines.length - 1) this.currentY += 5
+    })
+
+    this.currentY += 6
+  }
+
+  private parseMarkdownContent(content: string): void {
+    const lines = content.split('\n')
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+
+      if (!trimmed) {
+        this.currentY += 3
+        continue
+      }
+
+      // Títulos
+      if (trimmed.startsWith('### ') || trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+        const titleText = trimmed.replace(/^#+\s+/, '')
+
+        // Verificar quebra de página para títulos
+        this.checkPageBreak(8, 'title')
+
+        this.doc.setTextColor(WA_COLORS.primary)
+        this.doc.setFontSize(12)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(titleText, this.contentStartX, this.currentY)
+        this.currentY += 8
+        continue
+      }
+
+      // Listas com bullets
+      if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const itemText = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
+        this.addBulletList([itemText])
+        continue
+      }
+
+      // Listas numeradas
+      const numberedMatch = trimmed.match(/^(\d+)\.\s+(.+)$/)
+      if (numberedMatch) {
+        const itemText = numberedMatch[2].replace(/\*\*(.*?)\*\*/g, '$1')
+
+        this.checkPageBreak(8, 'paragraph')
+        this.doc.setTextColor(WA_COLORS.primary)
+        this.doc.setFont('helvetica', 'bold')
+        this.doc.text(`${numberedMatch[1]}.`, this.contentStartX, this.currentY)
+
+        this.doc.setTextColor(WA_COLORS.textMuted)
+        this.doc.setFont('helvetica', 'normal')
+        this.doc.text(itemText, this.contentStartX + 8, this.currentY)
+        this.currentY += 6
+        continue
+      }
+
+      // Parágrafos regulares
+      if (trimmed && !trimmed.startsWith('-') && !trimmed.startsWith('|')) {
+        const plainText = trimmed.replace(/\*\*(.*?)\*\*/g, '$1')
+        this.addParagraph(plainText)
+      }
+    }
+  }
+
+  public generate(data: WaProjectProposalData, progressCallback?: (progress: number) => void): void {
+    // Estimar altura total para otimização
+    this.estimatedHeight = this.estimateTotalHeight(data)
+
+    // Adicionar marca d'água na primeira página
+    this.addWatermark()
+    progressCallback?.(5)
+
+    // PÁGINA 1: CAPA
+    this.addHeader(data)
+    this.addTitle('Proposta Comercial', data.projeto.nome)
+    this.addCoverInfo(data)
+    progressCallback?.(15)
+
+    // Seções de conteúdo
+    if (data.sections && data.sections.length > 0) {
+      // Sobre a Wa Project (primeira seção ou seção padrão)
+      this.addSectionTitle('Sobre a Wa Project')
+      this.addParagraph('A Wa Project é uma software house com mais de 13 anos de experiência no desenvolvimento de soluções tecnológicas customizadas.')
+
+      // Nossos serviços
+      this.addParagraph('Nossos serviços:')
+      this.addBulletList([
+        'Desenvolvimento de Software.',
+        'Desenvolvimento de Aplicativos.',
+        'Soluções de Inteligência Artificial.',
+        'Alocação de Profissionais.'
+      ])
+
+      // Nossos Clientes
+      this.addSectionTitle('Nossos Clientes')
+      this.addBulletList([
+        'PepsiCo',
+        'Vtex',
+        'Santillana',
+        'Dasa',
+        'WideLabs',
+        'Confederação Brasileira de Hipismo',
+        'Forbes',
+        'Easy Salon',
+        'InstaCarro',
+        'Antilhas',
+        'Fundação Carlos Chagas',
+        'Funarbe'
+      ])
+      this.addParagraph('Cases completos: waproject.com.br/cases')
+
+      // Nova página para conteúdo específico do projeto
+      this.newPage()
+      progressCallback?.(40)
+
+      // Processar seções da proposta com progresso
+      const totalSections = data.sections.length
+      data.sections.forEach((section, index) => {
+        // Verificar se há espaço suficiente para iniciar uma seção
+        this.checkPageBreak(25, 'section')
+
+        this.addSectionTitle(section.title)
+        this.parseMarkdownContent(section.content)
+        this.currentY += 5
+        this.sectionCount++
+
+        // Atualizar progresso (40% a 80% para seções)
+        const sectionProgress = 40 + (index / totalSections) * 40
+        progressCallback?.(Math.round(sectionProgress))
+      })
+    }
+
+    // PÁGINA FINAL: Fechamento
+    this.newPage()
+    progressCallback?.(80)
+
+    // Próximos Passos
+    this.addSectionTitle('Próximos Passos')
+    this.addBulletList([
+      'Aprovação desta proposta comercial',
+      'Assinatura do contrato de prestação de serviços',
+      'Kick-off do projeto',
+      'Início do desenvolvimento'
+    ])
+
+    this.addParagraph('Estamos à disposição para esclarecer dúvidas e ansiosos para iniciar esta parceria!')
+    progressCallback?.(90)
+
+    // Encerramento
+    this.currentY += 15
+
+    // Citação
+    this.doc.setTextColor(WA_COLORS.primary)
+    this.doc.setFontSize(14)
+    this.doc.setFont('helvetica', 'bold')
+    const quote = 'Não é sobre desenvolvimento, é sobre envolvimento.'
+    const quoteWidth = this.getTextWidthCached(quote)
+    const quoteCenterX = (this.pageWidth - quoteWidth) / 2
+    this.doc.text(quote, quoteCenterX, this.currentY)
+    this.currentY += 10
+
+    this.doc.setFontSize(12)
+    const thanks = 'Obrigado por confiar na Wa Project!'
+    const thanksWidth = this.getTextWidthCached(thanks)
+    const thanksCenterX = (this.pageWidth - thanksWidth) / 2
+    this.doc.text(thanks, thanksCenterX, this.currentY)
+    this.currentY += 15
+
+    // Informações da empresa customizáveis
+    this.addCompanyInfo()
+
+    this.currentY += 10
+
+    // Validade
+    this.doc.setTextColor(WA_COLORS.textMuted)
+    this.doc.setFontSize(9)
+    const validity = `Proposta válida por ${data.validade_dias} dias a partir da data de emissão`
+    const validityWidth = this.doc.getTextWidth(validity)
+    const validityCenterX = (this.pageWidth - validityWidth) / 2
+    this.doc.text(validity, validityCenterX, this.currentY)
+
+    // Adicionar rodapé na página final
+    this.addFooterLogo()
+  }
+
+  private addCompanyInfo() {
+    const companyInfo = this.customization.footer?.companyInfo
+
+    if (!companyInfo) return
+
+    // Nome da empresa
+    if (companyInfo.name) {
+      this.doc.setTextColor(WA_COLORS.text)
+      this.doc.setFontSize(10)
+      this.doc.setFont('helvetica', 'bold')
+      const companyWidth = this.getTextWidthCached(companyInfo.name)
+      const companyCenterX = (this.pageWidth - companyWidth) / 2
+      this.doc.text(companyInfo.name, companyCenterX, this.currentY)
+      this.currentY += 6
+    }
+
+    // Informações de contato
+    this.doc.setFont('helvetica', 'normal')
+    const infoLines = []
+
+    if (companyInfo.cnpj) infoLines.push(`CNPJ: ${companyInfo.cnpj}`)
+    if (companyInfo.website) infoLines.push(`Website: ${companyInfo.website}`)
+    if (companyInfo.email) infoLines.push(`Email: ${companyInfo.email}`)
+    if (companyInfo.phone) infoLines.push(`Telefone/WhatsApp: ${companyInfo.phone}`)
+
+    infoLines.forEach(line => {
+      const lineWidth = this.getTextWidthCached(line)
+      const lineCenterX = (this.pageWidth - lineWidth) / 2
+      this.doc.text(line, lineCenterX, this.currentY)
+      this.currentY += 5
+    })
+  }
+
+  public save(filename: string): void {
+    this.doc.save(filename)
+  }
+}
+
+// Função principal para gerar o PDF da proposta Wa Project
+export function generateWaProjectProposalPDF(
+  data: WaProjectProposalData,
+  options?: {
+    progressCallback?: (progress: number) => void
+    filename?: string
+    customization?: PDFCustomization
+    skipValidation?: boolean
+    onValidationWarnings?: (warnings: string[]) => void
+  }
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      // Validar dados antes de gerar (opcional)
+      if (!options?.skipValidation) {
+        const validation = validateProposalData(data)
+
+        if (!validation.valid) {
+          const errorMessage = `Validação falhou: ${validation.errors.map(e => `${e.field}: ${e.message}`).join(', ')}`
+          reject(new Error(errorMessage))
+          return
+        }
+
+        // Reportar warnings se callback fornecido
+        if (validation.warnings.length > 0 && options?.onValidationWarnings) {
+          options.onValidationWarnings(validation.warnings)
+        }
+      }
+
+      // Usar customização da opções ou dos dados da proposta
+      const customization = options?.customization || data.customization || {}
+      const generator = new WaProjectPDFGenerator(customization)
+
+      // Usar setTimeout para tornar a geração assíncrona e não bloquear a UI
+      setTimeout(() => {
+        try {
+          generator.generate(data, options?.progressCallback)
+          options?.progressCallback?.(95)
+
+          // Sanitizar nome do arquivo
+          const sanitizedProjectName = data.projeto.nome
+            .replace(/[^a-zA-Z0-9\-_\s]/g, '') // Remove caracteres especiais
+            .replace(/\s+/g, '_') // Substitui espaços por underscore
+            .substring(0, 50) // Limita tamanho
+
+          const sanitizedDate = data.data_emissao.replace(/\//g, '-')
+
+          const filename = options?.filename ||
+            `Proposta_${sanitizedProjectName}_${sanitizedDate}.pdf`
+
+          generator.save(filename)
+          options?.progressCallback?.(100)
+
+          resolve()
+        } catch (error) {
+          console.error('Erro ao gerar PDF da Wa Project:', error)
+          reject(error)
+        }
+      }, 10) // Pequeno delay para permitir que a UI atualize
+    } catch (error) {
+      console.error('Erro ao inicializar geração de PDF da Wa Project:', error)
+      reject(error)
+    }
+  })
+}

@@ -1,0 +1,121 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { EasySalonLayout } from "@/components/layout/EasySalonLayout";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { getAdminNavItems } from "@/config/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+import { salonService } from "@/services/salonService";
+import { CreateSalonDto } from "@/types/salon";
+import { SalonForm, SalonFormData, SalonFormErrors, SALON_FORM_INITIAL_DATA } from "@/components/forms/SalonForm";
+import { validateSalonForm } from "@/components/forms/SalonForm.types";
+import { trackSeverinoEvent } from "@/services/severinoService";
+
+export default function CreateSalonPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<SalonFormData>(SALON_FORM_INITIAL_DATA);
+  const [formErrors, setFormErrors] = useState<SalonFormErrors>({});
+
+  const handleErrorChange = (field: keyof SalonFormData): void => {
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleCreateSalon = async (): Promise<void> => {
+    const errors = validateSalonForm(formData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const userStr = localStorage.getItem("currentUser");
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+
+      const createData: CreateSalonDto = {
+        name: formData.nomeFantasia,
+        slug: salonService.generateSlug(formData.nomeFantasia),
+        phone: salonService.formatPhone(formData.telefoneComercial),
+        email: formData.emailContato || undefined,
+        responsible: formData.razaoSocial || undefined,
+        cnpj: formData.cnpj ? salonService.formatCNPJ(formData.cnpj) : undefined,
+        timezone: formData.timezone,
+        tenantId: currentUser?.tenantId,
+      };
+
+      const result = await salonService.createWithNetwork(createData);
+
+      trackSeverinoEvent("cadastro_do_salao", {
+        descricao: `Salão cadastrado: ${formData.nomeFantasia} (ID: ${result.salon.id})`,
+        nomeSalao: formData.nomeFantasia,
+        salonId: result.salon.id,
+      });
+
+      toast.success("Salão cadastrado com sucesso e adicionado à sua rede!");
+      navigate("/admin/salons");
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Erro ao criar salão";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <EasySalonLayout
+      sideNavItems={getAdminNavItems(user?.role || "Easy Salon")}
+      sideNavTitle="Easy Salon"
+      sideNavSubtitle="Área Administrativa"
+    >
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="secondary" size="icon" onClick={() => navigate("/admin/salons")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="page-title">Cadastrar Novo Salão</h1>
+          <p className="text-[13px] text-muted-foreground">Crie um novo salão na plataforma</p>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg">
+        <div className="p-6">
+          <SalonForm
+            data={formData}
+            onChange={setFormData}
+            errors={formErrors}
+            onErrorChange={handleErrorChange}
+            disabled={isLoading}
+          />
+
+          <div className="flex justify-end mt-8 pt-6 border-t">
+            <Button
+              onClick={() => { void handleCreateSalon(); }}
+              disabled={isLoading}
+              className="px-8"
+            >
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" inline className="mr-2" />
+                  Criando...
+                </>
+              ) : (
+                "Criar Salão"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </EasySalonLayout>
+  );
+}

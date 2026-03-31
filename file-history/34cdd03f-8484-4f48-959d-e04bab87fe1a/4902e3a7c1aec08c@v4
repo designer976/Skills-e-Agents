@@ -1,0 +1,328 @@
+import { useState, useEffect, useMemo } from "react";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { PercentageInput } from "@/components/ui/percentage-input";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface ServiceConfigModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  service: {
+    id: string;
+    name: string;
+    configured_price?: number;
+    configured_duration?: number;
+    configured_commission?: number;
+    is_enabled?: boolean;
+    configured_accepts_online?: boolean;
+    duration?: number; // Default duration from service
+  };
+  onSave: (data: {
+    price: string;
+    duration: number;
+    commission: number;
+    isEnabled: boolean;
+    acceptsOnlineBooking: boolean;
+  }) => void;
+  isSaving?: boolean;
+}
+
+const formatInitialPrice = (price?: number | string): string => {
+  if (!price) return "0,00";
+  const numValue =
+    typeof price === "string" ? parseFloat(price.replace(",", ".")) : price;
+  return numValue.toFixed(2).replace(".", ",");
+};
+
+export function ServiceConfigModal({
+  isOpen,
+  onClose,
+  service,
+  onSave,
+  isSaving = false,
+}: ServiceConfigModalProps) {
+  const [formData, setFormData] = useState({
+    price: "",
+    duration: 30,
+    commission: 0,
+    isEnabled: false,
+    acceptsOnlineBooking: true,
+  });
+
+  const [commissionString, setCommissionString] = useState("0,00");
+
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof typeof formData, string>>
+  >({});
+
+  useEffect(() => {
+    if (service && isOpen) {
+      const commissionValue = service.configured_commission || 0;
+      setFormData({
+        price: formatInitialPrice(service.configured_price || ""),
+        duration: service.configured_duration || service.duration || 30,
+        commission: commissionValue,
+        isEnabled: service.is_enabled || false,
+        acceptsOnlineBooking:
+          service.configured_accepts_online !== undefined
+            ? service.configured_accepts_online
+            : true,
+      });
+      setCommissionString(commissionValue.toFixed(2).replace(".", ","));
+      setErrors({});
+    }
+  }, [service, isOpen]);
+
+  const handleInputChange = (field: keyof typeof formData, value: string | number | boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const price = useMemo(() => {
+    return typeof formData.price === "string"
+      ? parseFloat(formData.price.replace(".", "").replace(",", "."))
+      : formData.price;
+  }, [formData.price]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof typeof formData, string>> = {};
+
+    // Validate price
+    if (price <= 0) {
+      newErrors.price = "Preço deve ser maior que zero";
+    }
+
+    // Validate duration
+    if (formData.duration < 15) {
+      newErrors.duration = "Duração deve ser pelo menos 15 minutos";
+    } else if (formData.duration > 480) {
+      newErrors.duration = "Duração não pode exceder 8 horas";
+    } else if (formData.duration % 15 !== 0) {
+      newErrors.duration = "Duração deve ser em intervalos de 15 minutos";
+    }
+
+    // Validate commission
+    if (formData.commission < 0) {
+      newErrors.commission = "Comissão não pode ser negativa";
+    } else if (formData.commission > 100) {
+      newErrors.commission = "Comissão não pode ser maior que 100%";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      price: "",
+      duration: 30,
+      commission: 0,
+      isEnabled: false,
+      acceptsOnlineBooking: true,
+    });
+    setErrors({});
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] md:max-w-lg flex flex-col gap-0">
+        <DialogHeader className="border-b pb-3 shrink-0">
+          <DialogTitle>Configurar Serviço Padrão</DialogTitle>
+          <DialogDescription>
+            Configure preço, duração e comissão para este serviço no seu salão.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form id="service-config-form" onSubmit={handleSubmit}>
+          <DialogBody>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[13px] text-muted-foreground">Serviço</p>
+                <p className="text-[13px] font-medium">{service?.name}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="price" className="text-[13px] font-medium">Preço (R$)</Label>
+                  <p className="text-[13px] text-muted-foreground">
+                    Valor deve ser maior que zero
+                  </p>
+                  <CurrencyInput
+                    id="price"
+                    value={String(formData.price)}
+                    onChange={(value) => handleInputChange("price", value || 0)}
+                    placeholder="0,00"
+                    disabled={isSaving}
+                    className={cn(errors.price ? "border-destructive" : "")}
+                  />
+                  {errors.price && (
+                    <p className="text-[13px] text-destructive">{errors.price}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="duration" className="text-[13px] font-medium">Duração (min)</Label>
+                  <p className="text-[13px] text-muted-foreground">
+                    Intervalos de 15 minutos
+                  </p>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min="15"
+                    max="480"
+                    step="15"
+                    value={formData.duration}
+                    onChange={(e) =>
+                      handleInputChange("duration", parseInt(e.target.value) || 30)
+                    }
+                    placeholder="30"
+                    required
+                    disabled={isSaving}
+                    className={cn("salon-input", errors.duration ? "border-destructive" : "")}
+                    maxLength={3}
+                  />
+                  {errors.duration && (
+                    <p className="text-[13px] text-destructive">{errors.duration}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="commission" className="text-[13px] font-medium">Comissão (%)</Label>
+                <PercentageInput
+                  id="commission"
+                  value={commissionString}
+                  onChange={(value) => {
+                    setCommissionString(value);
+                    const numValue = parseFloat(value.replace(",", ".")) || 0;
+                    handleInputChange("commission", numValue);
+                  }}
+                  min={0}
+                  max={100}
+                  disabled={isSaving}
+                  className={cn(errors.commission ? "border-destructive" : "")}
+                />
+                {errors.commission && (
+                  <p className="text-[13px] text-destructive">{errors.commission}</p>
+                )}
+                <p className="text-[13px] text-muted-foreground">
+                  Porcentagem de comissão para o profissional
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="isEnabled" className="text-[13px] font-semibold">
+                      Serviço Ativo
+                    </Label>
+                    <p className="text-[13px] text-muted-foreground">
+                      Ativar este serviço para o salão
+                    </p>
+                  </div>
+                  <Switch
+                    id="isEnabled"
+                    checked={formData.isEnabled}
+                    onCheckedChange={(checked) =>
+                      handleInputChange("isEnabled", checked)
+                    }
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="acceptsOnlineBooking" className="text-[13px] font-semibold">
+                      Aceita Agendamento Online
+                    </Label>
+                    <p className="text-[13px] text-muted-foreground">
+                      Permitir que clientes agendem este serviço online
+                    </p>
+                  </div>
+                  <Switch
+                    id="acceptsOnlineBooking"
+                    checked={formData.acceptsOnlineBooking}
+                    onCheckedChange={(checked) =>
+                      handleInputChange("acceptsOnlineBooking", checked)
+                    }
+                    disabled={isSaving}
+                  />
+                </div>
+              </div>
+
+              {price <= 0 && formData.isEnabled && (
+                <Alert variant="warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    O serviço está ativo mas não tem um preço válido. Ele não estará
+                    disponível para agendamento até que um preço maior que zero seja definido.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </DialogBody>
+        </form>
+
+        <DialogFooter className="border-t pt-6 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSaving}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="service-config-form"
+            disabled={isSaving}
+          >
+            {isSaving && <LoadingSpinner size="sm" inline className="mr-2" />}
+            Salvar Configuração
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

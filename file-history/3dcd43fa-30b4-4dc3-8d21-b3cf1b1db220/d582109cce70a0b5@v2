@@ -1,0 +1,47 @@
+import * as React from "react";
+import { Badge } from "@/components/ui/badge";
+import { DsAccordion } from "@/components/ui/ds-accordion";
+
+interface ServicesAccordionProps {
+  items: Array<{
+    id: string;
+    title: string;
+    content: React.ReactNode;
+    serviceCount?: number;
+  }>;
+  defaultOpenIndex?: number;
+  defaultOpenIds?: string[];
+  type?: "single" | "multiple";
+  className?: string;
+}
+
+export function ServicesAccordion({
+  items,
+  defaultOpenIndex = 0,
+  defaultOpenIds,
+  type,
+  className,
+}: ServicesAccordionProps) {
+  const defaultValue = defaultOpenIds ? defaultOpenIds[0] : items[defaultOpenIndex]?.id;
+
+  return (
+    <DsAccordion
+      type={type}
+      defaultValue={defaultValue}
+      defaultOpenIds={defaultOpenIds}
+      className={className}
+      items={items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        badge:
+          item.serviceCount !== undefined && item.serviceCount > 0 ? (
+            <Badge variant="secondary" className="text-xs">
+              {item.serviceCount}{" "}
+              {item.serviceCount === 1 ? "serviço" : "serviços"}
+            </Badge>
+          ) : undefined,
+      }))}
+    />
+  );
+}
