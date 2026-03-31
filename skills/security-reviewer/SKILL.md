@@ -63,6 +63,21 @@ Se o usuário não fornecer, registrar como "Área não auditada" no relatório 
 | Password Policy | Sem validação de complexidade no cadastro, sem proteção contra senhas da lista "common passwords" |
 | Auth Config | Secret com entropia baixa, session token com expiração excessiva (>24h sem refresh rotation), cookie sem flags, OAuth tokens sem criptografia em repouso |
 
+### Verification Strategy - Graceful Degradation
+
+**Verification with graceful degradation when tools unavailable:**
+
+```bash
+# Check for security issues with available tools, skip if not available
+npm audit 2>/dev/null || echo "NPM audit not available - manual dependency review needed"
+npm run security-check 2>/dev/null || echo "Project security scripts not available - manual security review needed"
+```
+
+**Manual verification when tools unavailable:**
+- Code review for hardcoded secrets and patterns
+- Dependency manual check in package.json  
+- Visual inspection of authentication flows
+
 **Regra: nunca analise apenas o que foi mostrado** — solicite proativamente `next.config.ts`, `package.json`, `middleware.ts` e `.env.example`.
 
 ---

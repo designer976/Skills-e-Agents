@@ -36,7 +36,21 @@ Independente do escopo declarado, sempre pedir:
 - Dados do Google Search Console (performance report, coverage report)
 - `app/[página]/page.tsx` das páginas principais → metadata por página
 
-Se não fornecidos, registrar como "Área não auditada" no relatório.
+### File Validation Strategy
+
+**Check file availability first:**
+```bash
+# Check if files exist before requesting content
+ls app/layout.tsx 2>/dev/null || ls pages/_app.tsx 2>/dev/null || echo "Layout file not found"
+ls next.config.* 2>/dev/null || echo "Next config not found"
+ls public/robots.txt 2>/dev/null || echo "Robots.txt not found"
+ls public/sitemap.xml 2>/dev/null || echo "Sitemap.xml not found"
+```
+
+**Graceful handling when files unavailable:**
+- Se não fornecidos, registrar como "Área não auditada" no relatório
+- Provide recommendations for missing files
+- Focus audit on available files and provide guidance for missing ones
 
 ---
 

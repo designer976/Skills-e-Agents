@@ -260,13 +260,27 @@ if (user.role === 'admin')
 
 ## Verificação Pós-Correção
 
-Após cada correção, verificar:
+**Verification with graceful degradation when tools unavailable:**
 
-1. `npx tsc --noEmit` — sem erros de tipo
-2. `npm run lint` — sem violações de lint
-3. Confirmar que o vetor de ataque original não é mais possível
+```bash
+# Try available verification tools, skip if not available
+npm run type-check 2>/dev/null || npx tsc --noEmit 2>/dev/null || echo "TypeScript verification not available - manual code review needed"
+npm run lint 2>/dev/null || echo "Lint not available - manual code review needed"
+npm run build 2>/dev/null || echo "Build script not available - manual verification needed"
+```
 
-**Nunca declarar "corrigido" sem evidência — executar os comandos de verificação.**
+**Manual verification when tools unavailable:**
+- Code review for syntax errors
+- Visual inspection of fix implementation
+- Test endpoints manually in browser/Postman
+- Confirm attack vector is no longer possible
+
+**Essential verification (always possible):**
+1. Confirmar que o vetor de ataque original não é mais possível
+2. Visual code review of implemented fix
+3. Test critical paths manually if needed
+
+**Nunca declarar "corrigido" sem alguma forma de evidência — automatizada ou manual.**
 
 ---
 

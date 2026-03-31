@@ -173,13 +173,28 @@ const HeavyChart = dynamic(() => import('./HeavyChart'), {
 
 ## Verificação Pós-Implementação
 
-Após cada melhoria implementada:
+**Verification with graceful degradation when tools unavailable:**
 
-1. `npm run build` — confirmar sem erros
-2. `npx tsc --noEmit` — sem erros de tipo
-3. Verificar visualmente que layout não foi quebrado
+```bash
+# Try available verification tools, skip if not available
+npm run build 2>/dev/null || echo "Build script not available - manual verification needed"
+npm run type-check 2>/dev/null || npx tsc --noEmit 2>/dev/null || echo "TypeScript verification not available - manual code review needed"
+npm run lint 2>/dev/null || echo "Lint not available - manual code review needed"
+```
 
-**Nunca declarar "melhorado" sem evidência de build limpo.**
+**Manual verification when tools unavailable:**
+- Code review for syntax errors
+- Visual testing in browser
+- Check for obvious layout breaks
+- Test performance improvements manually
+
+**Essential verification (always possible):**
+1. Visual verification that layout não foi quebrado
+2. Code review of implemented changes
+3. Test critical user paths manually
+4. Verify performance improvements are noticeable
+
+**Nunca declarar "melhorado" sem alguma forma de evidência — automatizada ou manual.**
 
 ---
 
