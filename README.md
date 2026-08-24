@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.4.1 |
+| **Versão** | 1.5.0 |
 | **Skills** | 26 |
 | **Última atualização** | 24/08/2026 |
 | **Última verificação** | 24/08/2026 |
@@ -40,97 +40,19 @@ claude plugin marketplace add designer976/wa-skills && claude plugin install wa@
 
 ## Atualizar
 
-Sob demanda, a qualquer momento:
+**Toda segunda, às 09:00, uma tarefa agendada verifica se há versão nova e atualiza sozinha.**
+Ela é criada pelo `setup/instalar.ps1` — se você instalou por ele, não precisa fazer nada.
+
+Para atualizar na hora, sem esperar a segunda:
 
 ```bash
 claude plugin update wa@wa-skills
 ```
 
-Ou pela skill: `/wa:atualizar-skill-agent`, que compara as versões e mostra o que mudou antes
-de aplicar.
+Ou pela skill: `/wa:atualizar-skill-agent`.
 
-### Atualização automática (Windows)
-
-São dois processos com públicos diferentes. **Quem só usa as skills precisa apenas do primeiro.**
-
-#### Segunda, 09:00 — para quem usa
-
-`setup/atualizar-plugin-wa.ps1` puxa a versão publicada e deixa a máquina em dia. É tudo que
-alguém que clonou este repositório precisa: o trabalho de decidir o que muda já foi feito na
-sexta pelo mantenedor, e aqui só se herda o resultado.
-
-```powershell
-$dir = "$env:USERPROFILE\.claude\scripts"
-$acao = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dir\atualizar-plugin-wa.ps1`""
-$gatilho = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 09:00
-$config = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
-Register-ScheduledTask -TaskName "Claude - Atualizar plugin wa" -Action $acao -Trigger $gatilho -Settings $config
-```
-
-O script termina depois do update em qualquer máquina que não seja a do mantenedor — a parte
-que carimba a descrição do repositório é pulada, porque escreve no GitHub.
-
-Ele também atualiza os **plugins externos** que as skills usam — `superpowers`, `frontend-design`
-e `ralph-loop`, do marketplace oficial. São arquivos de terceiros, que não editamos: atualizar é
-sempre seguro e acontece sem aprovação.
-
-O que **não** é atualizado automaticamente é o nosso material derivado deles. `wa/references/debugging.md`
-e `verification.md` são síntese adaptada ao contexto da WA, não cópia — reescrevê-los sozinho
-apagaria essa adaptação sem ninguém ver. Eles só mudam pelo fluxo de `/wa:manter-skills`, com
-aprovação.
-
-> **Ressalva:** `claude plugin update` compara o campo `version`, não o commit. Um upstream que
-> publique mudança sem subir a versão passa despercebido aqui — foi o caso do `superpowers`, que
-> tem 244 commits de diferença entre o instalado e o publicado, ambos declarando 6.3.0. Quem pega
-> isso é a verificação de sexta, que rastreia o sha.
-
-#### Sexta, 09:00 — só para o mantenedor
-
-`setup/verificar-skills-wa.ps1` faz a análise externa: verifica se as skills continuam válidas
-e se os plugins dos quais elas dependem mudaram. **Não altera nenhuma skill** — quando encontra
-divergência, abre uma issue neste repositório. É a partir dela que o mantenedor decide o que
-ajustar e publica, para que a distribuição de segunda entregue o resultado.
-
-| Check | O que detecta |
-|---|---|
-| Manifestos e frontmatter | YAML quebrado que faria a skill carregar com metadata vazia e sumir da lista |
-| Versão de `superpowers` | `references/debugging.md` e `verification.md` são destilados dele — se subir de versão, o material derivado pode estar defasado |
-| Flags do `/ralph-loop` | `front-end-code` e `reviewer` mandam rodar com `--max-iterations` e `--completion-promise`; se a interface mudar, apontam para algo que não existe |
-| Skills-fonte do `superpowers` | `systematic-debugging` e `verification-before-completion` ainda existem com esses nomes |
-| Plugins novos no marketplace oficial | Algum plugin novo pode cobrir lacuna nossa |
-
-```powershell
-$dir = "$env:USERPROFILE\.claude\scripts"
-$acao = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dir\verificar-skills-wa.ps1`""
-$gatilho = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 09:00
-$config = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
-Register-ScheduledTask -TaskName "Claude - Verificar skills wa" -Action $acao -Trigger $gatilho -Settings $config
-```
-
-O script tem uma guarda: se o `gh` não estiver autenticado como o mantenedor, ele encerra sem
-fazer nada. Sem isso, uma cópia rodando em outra máquina abriria issues em repositório alheio.
-
-O estado da semana anterior fica em `~/.claude/backups/wa-baseline.json`, com as versões **e os
-commits** das dependências — é o commit que permite mostrar na issue exatamente quais arquivos
-mudaram na fonte, em vez de apenas dizer que a versão subiu. Sem divergência, o script não abre
-nada: o log registra e encerra em silêncio. Ambos escrevem em `~/.claude/backups/plugin-update.log`.
-
-O que a verificação **não** faz é julgar se o nosso material derivado ficou desatualizado —
-isso exige leitura e comparação. Esse trabalho é conduzido por `/wa:manter-skills`, que investiga
-os itens da issue, propõe as edições para aprovação, sobe a versão, valida, publica e fecha a
-issue. O ciclo completo fica assim:
-
-```
-sexta    verificacao roda e abre issue se algo mudou
-   |
-   v
-         mantenedor chama /wa:manter-skills, aprova as edicoes, publica
-   |
-   v
-segunda  quem instalou o plugin recebe a versao nova
-```
-
-`-StartWhenAvailable` faz a tarefa rodar assim que possível se a máquina estiver desligada no horário.
+Reinicie o Claude Code depois de atualizar — a tarefa baixa a versão nova, mas os comandos só
+recarregam no restart.
 
 ## Uso
 
@@ -153,14 +75,14 @@ Ao concluir a tarefa, o skill encerra e o Claude volta ao comportamento padrão.
 | `/wa:front-end-ui` | Implementa UI com tokens do Design System | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
 | `/wa:front-end-code` | Revisa código front-end sem alterar o visual | 24/08/2026 | invocação explicita e encerramento ao concluir; `references/` via `${CLAUDE_PLUGIN_ROOT}`; `description` mandava ativar automaticamente após implementação |
 | `/wa:backend` | Endpoints, services, controllers, DTOs, autenticação | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
-| `/wa:database` | Schema, migrações, models, queries, índices | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
+| `/wa:database` | Schema, migrações, models, queries, índices | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois; passo do MCP Supabase |
 | `/wa:tester` | Testes unitários, de integração e E2E | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar código sem cobertura |
 | `/wa:reviewer` | Revisão geral de código e auditoria de qualidade | 24/08/2026 | invocação explicita e encerramento ao concluir; `references/` via `${CLAUDE_PLUGIN_ROOT}` |
 | `/wa:security-reviewer` | Auditoria de segurança e vulnerabilidades (OWASP) | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao fim da implementação de outros skills |
 | `/wa:security-fixer` | Corrige vulnerabilidades já identificadas | 24/08/2026 | invocação explicita e encerramento ao concluir |
-| `/wa:devops` | Deploy, CI/CD, hosting | 24/08/2026 | invocação explicita e encerramento ao concluir |
+| `/wa:devops` | Deploy, CI/CD, hosting | 24/08/2026 | invocação explicita e encerramento ao concluir; passo do MCP Vercel |
 | `/wa:github-integrator` | PRs, branches, workflows de Git | 24/08/2026 | invocação explicita e encerramento ao concluir |
-| `/wa:pagespeed` | Lighthouse, Core Web Vitals, performance | 24/08/2026 | invocação explicita e encerramento ao concluir |
+| `/wa:pagespeed` | Lighthouse, Core Web Vitals, performance | 24/08/2026 | invocação explicita e encerramento ao concluir; passo do MCP Vercel |
 | `/wa:seo-manager` | SEO, meta tags, structured data, sitemap, GSC | 24/08/2026 | invocação explicita e encerramento ao concluir |
 | `/wa:redator` | Copy de landing pages, e-mails, UX writing | 24/08/2026 | invocação explicita e encerramento ao concluir |
 | `/wa:project-manager` | Setup de projeto novo e escolha de stack | 24/08/2026 | invocação explicita e encerramento ao concluir |
@@ -203,3 +125,6 @@ Valide antes de commitar:
 ```bash
 claude plugin validate . && claude plugin validate ./wa
 ```
+
+O `CLAUDE.md` desta pasta traz o resto: o ciclo de manutenção, as regras que não podem ser
+quebradas e as armadilhas já conhecidas. Ele é carregado automaticamente numa sessão aberta aqui.

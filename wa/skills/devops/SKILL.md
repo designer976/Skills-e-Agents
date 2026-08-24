@@ -350,6 +350,20 @@ Performance baselines established
 - **Rollback plan mandatory** — every production change must be reversible
 - **Monitoring not optional** — basic tracking required for production
 
+## Ferramentas do MCP Vercel
+
+Se o plugin `vercel` estiver disponivel nesta sessao, use as ferramentas dele em vez de descrever
+o deploy em abstrato:
+
+1. Conferir o status do build antes de afirmar que algo subiu
+2. Ler os logs reais quando houver falha, em vez de supor a causa
+3. Conferir as variaveis de ambiente configuradas antes de pedir que o usuario as crie
+
+**Nao dispare deploy em producao por conta propria.** O gate de confirmacao vale igual - com
+ferramenta que executa de verdade, vale mais.
+
+Sem o plugin, siga normalmente e declare que nao houve acesso ao ambiente.
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.

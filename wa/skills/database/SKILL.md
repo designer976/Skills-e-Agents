@@ -263,6 +263,26 @@ isso e siga - diagrama obrigatorio vira ruido.
 
 Para um diagrama mais elaborado, ou de uma parte que voce nao tocou, sugira `/wa:diagrama`.
 
+## Ferramentas do MCP Supabase
+
+Se o plugin `supabase` estiver disponivel nesta sessao, **use as ferramentas dele** em vez de
+inferir a estrutura do banco pelo codigo. A diferenca importa: ler o model do ORM mostra o que o
+codigo espera; consultar o banco mostra o que ele **e**, incluindo divergencias que nunca
+aparecem no diff.
+
+Prefira, nesta ordem:
+
+1. Inspecionar o schema real antes de propor qualquer migracao
+2. Conferir indices e constraints existentes antes de sugerir novos
+3. Validar a query contra o banco antes de entregar
+
+**Nao rode DDL nem DML destrutivo por conta propria** - a regra de confirmacao antes de migracao
+vale igual, e com mais rigor quando ha ferramenta que executa de verdade. Proponha, mostre o SQL
+e aguarde.
+
+Se o plugin nao estiver disponivel, siga normalmente pelo codigo e **declare no resultado** que a
+analise foi feita sem acesso ao banco - isso muda a confianca do que voce entrega.
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.

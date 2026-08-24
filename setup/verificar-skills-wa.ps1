@@ -8,7 +8,7 @@
 # (plugins do marketplace oficial) mudaram. Nao altera nenhuma skill: quando
 # encontra divergencia, abre uma issue no GitHub descrevendo o que mudou.
 #
-# Agendado junto com atualizar-plugin-wa.ps1, toda segunda as 09:00.
+# Agendado toda sexta as 09:00, separado do atualizar-plugin-wa.ps1 (que roda na segunda).
 
 $ErrorActionPreference = 'Continue'
 
@@ -36,10 +36,21 @@ $repoDir = Get-ChildItem -Path "$env:USERPROFILE\OneDrive" -Directory -ErrorActi
 function Write-Log($msg) { Add-Content -Path $log -Value $msg -Encoding utf8 }
 
 # Dependencias externas declaradas: o que nas nossas skills depende de que plugin.
+# Toda skill que passar a depender de algo externo precisa entrar aqui - senao a
+# dependencia nasce fora do radar e o drift passa em silencio.
 $DEPS = @(
   @{ plugin = 'superpowers';     motivo = 'references/debugging.md e references/verification.md sao destilados deste plugin' }
   @{ plugin = 'ralph-loop';      motivo = 'front-end-code e reviewer mandam rodar /ralph-loop' }
   @{ plugin = 'frontend-design'; motivo = 'complementa front-end-ui na camada visual' }
+  @{ plugin = 'supabase';        motivo = 'database usa o MCP para inspecionar schema e rodar SQL' }
+  @{ plugin = 'vercel';          motivo = 'devops e pagespeed usam o MCP para deploy, build status e logs' }
+)
+
+# Repositorios de referencia consultados direto no GitHub, fora do marketplace.
+# Sao as fontes de onde o nosso material deriva ou de onde vem padrao que vale adotar.
+$REPOS_REF = @(
+  @{ repo = 'obra/superpowers';  motivo = 'upstream do plugin superpowers, fonte dos destilados em references/' }
+  @{ repo = 'anthropics/skills'; motivo = 'repositorio oficial de skills da Anthropic' }
 )
 
 # Interfaces de comando que as skills assumem que existem.
@@ -78,6 +89,12 @@ if (Test-Path $gh) {
   Write-Log "===== fim ====="
   exit 0
 }
+
+# ---------------------------------------------------------------- 0. Atualizar o indice
+# Sem isso a comparacao roda contra o marketplace.json que o script de segunda baixou,
+# e tudo que o upstream publicar de terca a quinta passa despercebido ate a semana seguinte.
+Write-Log "-- atualizando indice do marketplace oficial"
+& $claude plugin marketplace update claude-plugins-official 2>&1 | ForEach-Object { Write-Log "   $_" }
 
 # ---------------------------------------------------------------- 1. Manifestos e frontmatter
 if (Test-Path $repoDir) {
@@ -213,12 +230,64 @@ if ($anterior -and $anterior.shas) {
   }
 }
 
+# ---------------------------------------------------------------- Repositorios de referencia
+# Consultados direto no GitHub. Guarda-se o sha do ultimo commit e, quando o repo tem pasta
+# skills/, a lista de skills - assim da para dizer o que entrou e o que saiu, nao so que mudou.
+$refs = @{}
+if (Test-Path $gh) {
+  foreach ($r in $REPOS_REF) {
+    $nome = $r.repo
+    $sha = (& $gh api "repos/$nome/commits" --jq '.[0].sha' 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $sha) { Write-Log "  [aviso] nao foi possivel ler $nome"; continue }
+
+    # Sem aspas duplas dentro do --jq: o PowerShell as remove ao repassar, e o jq recebe
+    # select(.type==dir), tratando `dir` como funcao inexistente. Filtra-se aqui em vez de la.
+    $skills = @()
+    $saidaS = & $gh api "repos/$nome/contents/skills" --jq '.[].name' 2>$null
+    if ($LASTEXITCODE -eq 0 -and $saidaS) {
+      $skills = @($saidaS -split "`r?`n" | Where-Object { $_ -ne '' -and $_ -notmatch '\.' })
+    }
+    $refs[$nome] = @{ sha = $sha.Trim(); skills = $skills }
+    Write-Log "  [ok] $nome lido - $($skills.Count) skills, sha $($sha.Trim().Substring(0,8))"
+  }
+}
+
+if ($anterior -and $anterior.refs) {
+  foreach ($r in $REPOS_REF) {
+    $nome = $r.repo
+    $ant = $anterior.refs.$nome
+    $ag  = $refs[$nome]
+    if (-not $ant -or -not $ag) { continue }
+
+    if ($ant.sha -and $ag.sha -and $ant.sha -ne $ag.sha) {
+      [void]$achados.Add("**``$nome`` tem commits novos** - $($r.motivo). Para ver o que mudou:`n``````bash`ngh api repos/$nome/compare/$($ant.sha)...$($ag.sha) --jq '.files[].filename'`n``````")
+      Write-Log "  [DRIFT] $nome mudou de commit"
+    }
+
+    if ($ant.skills -and $ag.skills.Count -gt 0) {
+      $novas = @($ag.skills | Where-Object { $ant.skills -notcontains $_ })
+      if ($novas.Count -gt 0) {
+        $lista = ($novas | ForEach-Object { "``$_``" }) -join ', '
+        [void]$achados.Add("**$($novas.Count) skill(s) nova(s) em ``$nome``**: $lista - vale ver se alguma cobre lacuna nossa ou traz padrao que valha adotar.")
+        Write-Log "  [novo] $($novas.Count) skill(s) em $nome"
+      }
+      $saiu = @($ant.skills | Where-Object { $ag.skills -notcontains $_ })
+      if ($saiu.Count -gt 0) {
+        $lista = ($saiu | ForEach-Object { "``$_``" }) -join ', '
+        [void]$achados.Add("**Skill(s) removida(s) de ``$nome``**: $lista - se derivamos algo delas, a fonte deixou de existir.")
+        Write-Log "  [DRIFT] $($saiu.Count) skill(s) removida(s) de $nome"
+      }
+    }
+  }
+}
+
 # ---------------------------------------------------------------- Salvar baseline
 $novoBaseline = [ordered]@{
   data        = (Get-Date -Format 'yyyy-MM-dd')
   versoes     = $versoes
   shas        = $shas
   marketplace = $pluginsMkt
+  refs        = $refs
 }
 $novoBaseline | ConvertTo-Json -Depth 4 | Out-File -FilePath $baseline -Encoding utf8
 
@@ -235,7 +304,7 @@ if (-not (Test-Path $gh)) { Write-Log "  gh.exe nao encontrado - issue nao criad
 $hoje  = (Get-Date -Format 'dd/MM/yyyy')
 $corpo = "Verificacao automatica de $hoje encontrou $($achados.Count) item(ns) que merecem atencao.`n`n"
 foreach ($a in $achados) { $corpo += "- $a`n" }
-$corpo += "`n---`n`nGerado por ``setup/verificar-skills-wa.ps1``, agendado toda segunda as 09:00. "
+$corpo += "`n---`n`nGerado por ``setup/verificar-skills-wa.ps1``, agendado toda sexta as 09:00. "
 $corpo += "Nenhuma skill foi alterada - esta issue e so o aviso.`n"
 
 $tmp = Join-Path $env:TEMP "wa-drift-$(Get-Random).md"

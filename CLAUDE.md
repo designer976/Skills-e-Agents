@@ -72,7 +72,45 @@ Segunda 09:00 atualizar-plugin-wa.ps1 distribui a versao nova
 ```
 
 A verificação de sexta é **do mantenedor** — o script tem uma guarda e só roda se o `gh`
-estiver autenticado como `designer976`. A de segunda é para quem apenas consome.
+estiver autenticado como `designer976`. A de segunda é para quem apenas consome, e é a única
+mencionada no README.
+
+### O que a verificação de sexta checa
+
+| Check | O que detecta |
+|---|---|
+| Manifestos e frontmatter | YAML quebrado que faria a skill carregar com metadata vazia e sumir da lista |
+| Versão das dependências | `superpowers`, `frontend-design`, `ralph-loop`, `supabase`, `vercel` contra a semana anterior |
+| **Commit** das dependências | Sinal mais fino que a versão: pega upstream que publicou mudança sem subir o número. A issue já vem com o `gh api .../compare/<antes>...<agora>` pronto |
+| Flags do `/ralph-loop` | `front-end-code` e `reviewer` mandam rodar com `--max-iterations` e `--completion-promise`; se a interface mudar, apontam para algo que não existe |
+| Skills-fonte dos destilados | `systematic-debugging` e `verification-before-completion` ainda existem com esses nomes |
+| Plugins novos no marketplace oficial | Os 286 plugins, comparados com a semana anterior |
+| `obra/superpowers` | Upstream do plugin, consultado direto no GitHub: commits novos e skills que entraram ou saíram |
+| `anthropics/skills` | Repositório oficial da Anthropic (19 skills). Skill nova costuma indicar padrão que vale adotar; skill removida significa que uma fonte deixou de existir |
+
+Baseline em `~/.claude/backups/wa-baseline.json`. Sem divergência, não abre issue nenhuma.
+
+O script **atualiza o índice do marketplace antes de comparar**. Sem isso a comparação rodaria contra o `marketplace.json` que a tarefa de segunda baixou, e tudo publicado de terça a quinta passaria despercebido até a semana seguinte.
+
+As três listas de dependência (`$DEPS`, `$COMANDOS`, `$FONTES`) são **declaradas à mão** no script. Skill nova que passe a depender de algo externo precisa entrar ali — senão a dependência nasce fora do radar.
+
+### Registrar a tarefa de sexta numa máquina nova
+
+O `setup/instalar.ps1` **não** cria esta tarefa — ela é só do mantenedor. Copie
+`setup/verificar-skills-wa.ps1` para `~/.claude/scripts/` e registre:
+
+```powershell
+$dir = "$env:USERPROFILE\.claude\scripts"
+$nome = "Claude - Verificar skills wa"
+$acao = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dir\verificar-skills-wa.ps1`""
+$gatilho = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 09:00
+$config = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
+try { Unregister-ScheduledTask -TaskName $nome -Confirm:$false -ErrorAction Stop } catch {}
+Register-ScheduledTask -TaskName $nome -Action $acao -Trigger $gatilho -Settings $config
+```
+
+O `Unregister` antes não é opcional: `Register-ScheduledTask` falha com *"Não é possível criar
+um arquivo já existente"* quando o nome já existe.
 
 ## Para trabalhar aqui
 

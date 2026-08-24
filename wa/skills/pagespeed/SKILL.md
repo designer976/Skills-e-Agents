@@ -224,6 +224,20 @@ MELHORIAS IMPLEMENTADAS
 - **STICK TO SCOPE** — Don't add features, refactor code, or make "improvements" beyond what was asked. A performance fix doesn't need code cleanup. Focus only on the specific performance metrics requested
 - **NO NPM UPDATES** — Never suggest npm update, npm audit fix, or package version updates. Optimize performance with existing dependencies
 
+## Ferramentas do MCP Vercel
+
+Se o plugin `vercel` estiver disponivel, use os dados reais do projeto em vez de estimativas:
+
+1. Build status e tamanho do bundle, para saber onde o peso esta de fato
+2. Logs de build, que expoem dependencia pesada ou etapa lenta
+3. Vercel Analytics, quando disponivel, para Core Web Vitals de campo - dado de usuario real,
+   nao sintetico de laboratorio
+
+Web Vitals de campo e de laboratorio divergem com frequencia. Quando os dois estiverem
+disponiveis, **relate ambos e diga qual e qual** - otimizar para o numero errado e desperdicio.
+
+Sem o plugin, siga com a analise estatica de sempre e declare a limitacao.
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.
