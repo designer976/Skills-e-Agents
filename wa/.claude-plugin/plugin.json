@@ -1,0 +1,12 @@
+{
+  "name": "wa",
+  "description": "Pipeline de agentes WA Project para Claude Code: analista, designer, front-end, backend, database, seguranca, performance, SEO e conteudo",
+  "version": "1.2.0",
+  "author": {
+    "name": "Charles",
+    "email": "charles@waproject.com.br"
+  },
+  "homepage": "https://github.com/designer976/Skills-e-Agents",
+  "repository": "https://github.com/designer976/Skills-e-Agents",
+  "keywords": ["skills", "agents", "frontend", "backend", "design-system", "security", "seo"]
+}

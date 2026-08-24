@@ -1,0 +1,18 @@
+{
+  "name": "wa-skills",
+  "owner": {
+    "name": "Charles",
+    "email": "charles@waproject.com.br"
+  },
+  "metadata": {
+    "description": "Marketplace de skills e agentes da WA Project para Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "wa",
+      "source": "./wa",
+      "description": "Pipeline de agentes WA Project: analista, designer, front-end, backend, database, seguranca, performance, SEO e conteudo",
+      "category": "workflow"
+    }
+  ]
+}
