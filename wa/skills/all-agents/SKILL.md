@@ -149,6 +149,34 @@ Fase 4 - Designer:
 React + Vite + TypeScript + Tailwind CSS + shadcn/ui
 `rounded-lg` = `var(--radius)` = token canônico de border-radius
 
+## Diagrama da Mudanca
+
+Quando o pipeline mexeu em estrutura de tela ou navegacao, entregue tambem um diagrama Mermaid junto com o resultado.
+
+**Tipo:** consolide na entrega final um `flowchart TD` da arvore de componentes, ou `flowchart LR` da navegacao se a mudanca foi de fluxo.
+
+**Convencoes** (definidas em `/wa:diagrama`, siga-as para os diagramas sairem consistentes
+entre skills):
+
+- Maximo de 20 nos. Passou disso, quebre em dois diagramas
+- Nomes reais de arquivo, rota, tabela ou componente - nunca generícos como "Servico A"
+- Marcacao de mudanca, sempre as mesmas tres classes:
+
+```
+classDef novo fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+classDef saiu fill:#fee2e2,stroke:#dc2626,stroke-dasharray: 5 5
+classDef mudou fill:#fef9c3,stroke:#ca8a04,stroke-width:2px
+```
+
+- Dois blocos separados, **Antes** e **Depois**, seguidos de uma lista em texto do que mudou.
+  A lista nao e redundante: e o que sobra para quem abrir o arquivo num editor sem Mermaid
+
+**Nao desenhe de memoria.** Baseie-se nos arquivos que voce leu ou alterou nesta execucao, e
+declare o que ficou de fora. Se a mudanca foi pequena e o diagrama nao acrescenta nada, diga
+isso e siga - diagrama obrigatorio vira ruido.
+
+Para um diagrama mais elaborado, ou de uma parte que voce nao tocou, sugira `/wa:diagrama`.
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.

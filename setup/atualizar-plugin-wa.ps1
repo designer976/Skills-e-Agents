@@ -25,7 +25,16 @@ $depois = (& $claude plugin list 2>&1 | Select-String -Pattern 'Version: (\S+)' 
 
 if ($antes -ne $depois) { Write-Log "   versao: $antes -> $depois" } else { Write-Log "   versao: $depois (sem mudanca)" }
 
-if (-not (Test-Path $gh)) { Write-Log "-- gh.exe nao encontrado, descricao nao atualizada"; exit 0 }
+# Daqui para baixo e trabalho de mantenedor: escreve na descricao do repositorio.
+# Numa maquina que apenas consome as skills, o update acima ja fez todo o servico.
+if (-not (Test-Path $gh)) { Write-Log "-- gh.exe ausente - update concluido, descricao nao atualizada"; exit 0 }
+
+$conta = (& $gh api user --jq '.login' 2>$null)
+if ($LASTEXITCODE -ne 0 -or -not $conta -or $conta.Trim() -ne 'designer976') {
+  Write-Log "-- maquina nao e a do mantenedor - update concluido, descricao nao atualizada"
+  Write-Log "===== fim ====="
+  exit 0
+}
 
 # Data da ultima atualizacao = data do ultimo commit no repositorio.
 $commitISO = & $gh api "repos/$repo/commits" --jq '.[0].commit.committer.date' 2>$null

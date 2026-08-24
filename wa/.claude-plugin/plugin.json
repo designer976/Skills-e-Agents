@@ -1,7 +1,7 @@
 {
   "name": "wa",
   "description": "Pipeline de agentes WA Project para Claude Code: analista, designer, front-end, backend, database, seguranca, performance, SEO e conteudo",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "author": {
     "name": "Charles",
     "email": "charles@waproject.com.br"

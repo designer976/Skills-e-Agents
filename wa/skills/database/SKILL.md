@@ -235,6 +235,34 @@ Have rollback ready to execute
 - **Graceful degradation** — funcionar mesmo sem ferramentas ideais
 - **Backup consciousness** — sempre considerar reversibilidade
 
+## Diagrama da Mudanca
+
+Quando criou ou alterou tabela, relacao, indice ou constraint, entregue tambem um diagrama Mermaid junto com o resultado.
+
+**Tipo:** `erDiagram` com as tabelas afetadas e as vizinhas diretas, mostrando cardinalidade.
+
+**Convencoes** (definidas em `/wa:diagrama`, siga-as para os diagramas sairem consistentes
+entre skills):
+
+- Maximo de 20 nos. Passou disso, quebre em dois diagramas
+- Nomes reais de arquivo, rota, tabela ou componente - nunca generícos como "Servico A"
+- Marcacao de mudanca, sempre as mesmas tres classes:
+
+```
+classDef novo fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+classDef saiu fill:#fee2e2,stroke:#dc2626,stroke-dasharray: 5 5
+classDef mudou fill:#fef9c3,stroke:#ca8a04,stroke-width:2px
+```
+
+- Dois blocos separados, **Antes** e **Depois**, seguidos de uma lista em texto do que mudou.
+  A lista nao e redundante: e o que sobra para quem abrir o arquivo num editor sem Mermaid
+
+**Nao desenhe de memoria.** Baseie-se nos arquivos que voce leu ou alterou nesta execucao, e
+declare o que ficou de fora. Se a mudanca foi pequena e o diagrama nao acrescenta nada, diga
+isso e siga - diagrama obrigatorio vira ruido.
+
+Para um diagrama mais elaborado, ou de uma parte que voce nao tocou, sugira `/wa:diagrama`.
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.

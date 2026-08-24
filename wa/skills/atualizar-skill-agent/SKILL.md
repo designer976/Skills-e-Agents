@@ -81,17 +81,35 @@ all-agents, all-front-end, setup-project, inactive-agents, atualizar-skill-agent
 
 ### Passo 5 — Primeira instalação
 
-Se o plugin ainda não estiver instalado:
+Se o plugin ainda não estiver instalado, o caminho recomendado é o instalador, que faz tudo de
+uma vez — marketplace, plugin, script de update e agendamento semanal:
 
 ```bash
-claude plugin marketplace add designer976/wa-skills
+powershell -ExecutionPolicy Bypass -File "setup/instalar.ps1"
 ```
 
+Ele aceita `-Dia` e `-Hora` para escolher quando a atualização automática roda (padrão: segunda
+09:00), `-SemAgendamento` para instalar sem agendar, e `-Remover` para desfazer tudo.
+
+Se o usuário preferir na mão:
+
 ```bash
-claude plugin install wa@wa-skills
+claude plugin marketplace add designer976/wa-skills && claude plugin install wa@wa-skills
 ```
 
 Depois confirme com `claude plugin list` e peça ao usuário para reiniciar o Claude Code.
+
+### Passo 6 — Verificar o agendamento
+
+Se o plugin já estiver instalado mas não houver atualização automática configurada, ofereça
+configurá-la:
+
+```bash
+powershell -NoProfile -Command "Get-ScheduledTask -TaskName 'Claude - Atualizar plugin wa' -ErrorAction SilentlyContinue | Select-Object TaskName, State"
+```
+
+Se não retornar nada, a tarefa não existe — rode `setup/instalar.ps1` para criá-la. Não registre
+a tarefa por conta própria sem avisar o usuário: é uma alteração no agendador do sistema dele.
 
 ## Publicar mudanças locais
 

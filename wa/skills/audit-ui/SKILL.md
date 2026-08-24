@@ -233,6 +233,34 @@ Após o relatório (e aprovação no Debate Gate se ativado):
 - Debate Gate obrigatório quando mais de 4 telas ou mudança em componente base
 - Sempre listar o que não foi auditado por falta de arquivos ou acesso
 
+## Diagrama da Mudanca
+
+Quando a auditoria cobriu mais de uma tela, entregue tambem um diagrama Mermaid junto com o resultado.
+
+**Tipo:** `flowchart TD` das telas auditadas marcando onde estao as divergencias. Aqui nao ha antes/depois: a auditoria nao altera nada, entao o diagrama e do **estado atual**, com os pontos de divergencia destacados.
+
+**Convencoes** (definidas em `/wa:diagrama`, siga-as para os diagramas sairem consistentes
+entre skills):
+
+- Maximo de 20 nos. Passou disso, quebre em dois diagramas
+- Nomes reais de arquivo, rota, tabela ou componente - nunca generícos como "Servico A"
+- Marcacao de mudanca, sempre as mesmas tres classes:
+
+```
+classDef novo fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+classDef saiu fill:#fee2e2,stroke:#dc2626,stroke-dasharray: 5 5
+classDef mudou fill:#fef9c3,stroke:#ca8a04,stroke-width:2px
+```
+
+- Dois blocos separados, **Antes** e **Depois**, seguidos de uma lista em texto do que mudou.
+  A lista nao e redundante: e o que sobra para quem abrir o arquivo num editor sem Mermaid
+
+**Nao desenhe de memoria.** Baseie-se nos arquivos que voce leu ou alterou nesta execucao, e
+declare o que ficou de fora. Se a mudanca foi pequena e o diagrama nao acrescenta nada, diga
+isso e siga - diagrama obrigatorio vira ruido.
+
+Para um diagrama mais elaborado, ou de uma parte que voce nao tocou, sugira `/wa:diagrama`.
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.
