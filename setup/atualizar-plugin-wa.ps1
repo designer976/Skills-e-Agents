@@ -25,6 +25,24 @@ $depois = (& $claude plugin list 2>&1 | Select-String -Pattern 'Version: (\S+)' 
 
 if ($antes -ne $depois) { Write-Log "   versao: $antes -> $depois" } else { Write-Log "   versao: $depois (sem mudanca)" }
 
+# ---------------------------------------------------------------- Plugins externos
+# Arquivos de terceiros, que nao editamos - atualizar e sempre seguro, sem aprovacao.
+# Nosso material derivado deles (wa/references/*.md) e outra coisa: e sintese adaptada,
+# e so muda com aprovacao, pelo fluxo de /wa:manter-skills.
+#
+# Ressalva: `claude plugin update` compara o campo `version`, nao o commit. Upstream que
+# publica mudanca sem subir a versao passa despercebido aqui - quem pega isso e a
+# verificacao de sexta, que rastreia o sha.
+$EXTERNOS = @('superpowers', 'frontend-design', 'ralph-loop')
+
+Write-Log "-- plugins externos (marketplace oficial)"
+& $claude plugin marketplace update claude-plugins-official 2>&1 | ForEach-Object { Write-Log "   $_" }
+foreach ($ext in $EXTERNOS) {
+  $saida = & $claude plugin update "$ext@claude-plugins-official" 2>&1 | Out-String
+  $linha = ($saida -split "`r?`n" | Where-Object { $_ -match 'updated from|latest version|not found|Error' } | Select-Object -First 1)
+  if ($linha) { Write-Log "   $($ext): $($linha.Trim())" } else { Write-Log "   $($ext): sem retorno" }
+}
+
 # Daqui para baixo e trabalho de mantenedor: escreve na descricao do repositorio.
 # Numa maquina que apenas consome as skills, o update acima ja fez todo o servico.
 if (-not (Test-Path $gh)) { Write-Log "-- gh.exe ausente - update concluido, descricao nao atualizada"; exit 0 }

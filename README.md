@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.4.0 |
+| **Versão** | 1.4.1 |
 | **Skills** | 26 |
 | **Última atualização** | 24/08/2026 |
 | **Última verificação** | 24/08/2026 |
@@ -69,6 +69,20 @@ Register-ScheduledTask -TaskName "Claude - Atualizar plugin wa" -Action $acao -T
 
 O script termina depois do update em qualquer máquina que não seja a do mantenedor — a parte
 que carimba a descrição do repositório é pulada, porque escreve no GitHub.
+
+Ele também atualiza os **plugins externos** que as skills usam — `superpowers`, `frontend-design`
+e `ralph-loop`, do marketplace oficial. São arquivos de terceiros, que não editamos: atualizar é
+sempre seguro e acontece sem aprovação.
+
+O que **não** é atualizado automaticamente é o nosso material derivado deles. `wa/references/debugging.md`
+e `verification.md` são síntese adaptada ao contexto da WA, não cópia — reescrevê-los sozinho
+apagaria essa adaptação sem ninguém ver. Eles só mudam pelo fluxo de `/wa:manter-skills`, com
+aprovação.
+
+> **Ressalva:** `claude plugin update` compara o campo `version`, não o commit. Um upstream que
+> publique mudança sem subir a versão passa despercebido aqui — foi o caso do `superpowers`, que
+> tem 244 commits de diferença entre o instalado e o publicado, ambos declarando 6.3.0. Quem pega
+> isso é a verificação de sexta, que rastreia o sha.
 
 #### Sexta, 09:00 — só para o mantenedor
 

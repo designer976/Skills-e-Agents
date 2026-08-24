@@ -47,6 +47,15 @@ mantenha essa seção e a exigência de invocação explícita na `description`.
 o comando seguinte; não invocam a skill. A única exceção é o `analista`, orquestrador declarado
 no `~/CLAUDE.md`.
 
+## O que atualiza sozinho e o que não
+
+| | Atualiza sozinho? |
+|---|---|
+| Plugin `wa` | Sim — segunda, para quem instalou |
+| Plugins externos (`superpowers`, `frontend-design`, `ralph-loop`) | Sim — segunda, junto com o `wa`. São arquivos de terceiros, não editamos nada neles |
+| `wa/references/*.md` | **Não.** São síntese adaptada da fonte, não cópia. Reescrever automaticamente apagaria a adaptação. Só mudam por `/wa:manter-skills`, com aprovação |
+| `wa/skills/*.md` | **Não.** São autorais |
+
 ## O ciclo semanal
 
 ```
