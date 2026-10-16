@@ -4,10 +4,10 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.5.0 |
+| **Versão** | 1.6.0 |
 | **Skills** | 26 |
 | **Última atualização** | 24/08/2026 |
-| **Última verificação** | 24/08/2026 |
+| **Última verificação** | 16/10/2026 |
 
 *Atualização* é a data do último commit que mudou uma skill. *Verificação* é a data em que o
 update automático rodou pela última vez e confirmou que a versão instalada bate com a publicada

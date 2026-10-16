@@ -52,6 +52,7 @@ no `~/CLAUDE.md`.
 | | Atualiza sozinho? |
 |---|---|
 | Plugin `wa` | Sim — segunda, para quem instalou |
+| Skills em `~/.claude/skills` | Não. São instaladas por `npx skills add`, ficam fora do git e fora do plugin. O verificador apenas as vigia |
 | Plugins externos (`superpowers`, `frontend-design`, `ralph-loop`) | Sim — segunda, junto com o `wa`. São arquivos de terceiros, não editamos nada neles |
 | `wa/references/*.md` | **Não.** São síntese adaptada da fonte, não cópia. Reescrever automaticamente apagaria a adaptação. Só mudam por `/wa:manter-skills`, com aprovação |
 | `wa/skills/*.md` | **Não.** São autorais |
@@ -87,12 +88,15 @@ mencionada no README.
 | Plugins novos no marketplace oficial | Os 286 plugins, comparados com a semana anterior |
 | `obra/superpowers` | Upstream do plugin, consultado direto no GitHub: commits novos e skills que entraram ou saíram |
 | `anthropics/skills` | Repositório oficial da Anthropic (19 skills). Skill nova costuma indicar padrão que vale adotar; skill removida significa que uma fonte deixou de existir |
+| `~/.claude/skills` | Skills instaladas por fora do plugin, via `npx skills add`. Avisa quando aparecem novas e, sobretudo, quando uma colide de nome com as nossas — duas skills disputando o mesmo comando não geram erro, só comportamento imprevisível |
 
 Baseline em `~/.claude/backups/wa-baseline.json`. Sem divergência, não abre issue nenhuma.
 
 O script **atualiza o índice do marketplace antes de comparar**. Sem isso a comparação rodaria contra o `marketplace.json` que a tarefa de segunda baixou, e tudo publicado de terça a quinta passaria despercebido até a semana seguinte.
 
 As três listas de dependência (`$DEPS`, `$COMANDOS`, `$FONTES`) são **declaradas à mão** no script. Skill nova que passe a depender de algo externo precisa entrar ali — senão a dependência nasce fora do radar.
+
+Um repositório que esteja em `$REPOS_REF` **não** é reportado também pelo check de commit das dependências — o aviso sai de um lugar só, com mais informação. Sem isso o mesmo evento aparecia duas vezes em cada issue.
 
 ### Registrar a tarefa de sexta numa máquina nova
 

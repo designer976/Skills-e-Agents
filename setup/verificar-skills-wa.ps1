@@ -222,7 +222,11 @@ if ($anterior -and $anterior.shas) {
     if ($antesSha -and $shas[$k] -and $antesSha -ne $shas[$k]) {
       $urlAntes = ($antesSha -split '@')[0] -replace '^https://github\.com/','' -replace '\.git$',''
       $s1 = ($antesSha -split '@')[1]; $s2 = ($shas[$k] -split '@')[1]
-      if ($s1 -and $s2) {
+      # Se este repositorio ja e acompanhado em $REPOS_REF, o aviso sai de la com mais
+      # informacao (skills que entraram e sairam). Reportar aqui tambem duplicaria o item
+      # em toda issue - foi o que aconteceu nas issues #8 e #11.
+      $jaCoberto = [bool]($REPOS_REF | Where-Object { $_.repo -eq $urlAntes })
+      if ($s1 -and $s2 -and -not $jaCoberto) {
         [void]$achados.Add("**``$k`` mudou de commit** - para ver o que mudou na fonte:`n``````bash`ngh api repos/$urlAntes/compare/$s1...$s2 --jq '.files[].filename'`n``````")
         Write-Log "  [DRIFT] $k mudou de commit"
       }
@@ -281,6 +285,39 @@ if ($anterior -and $anterior.refs) {
   }
 }
 
+# ---------------------------------------------------------------- Skills soltas
+# `npx skills add` instala em ~/.claude/skills, fora do plugin e fora do versionamento.
+# Elas sao legitimas, mas se uma tiver o mesmo nome de uma das nossas, as duas competem
+# pelo mesmo comando e nao ha aviso nenhum do Claude Code - so o comportamento fica errado.
+$soltas = @()
+$dirSoltas = "$env:USERPROFILE\.claude\skills"
+if (Test-Path $dirSoltas) {
+  $soltas = @(Get-ChildItem -Path $dirSoltas -Directory -ErrorAction SilentlyContinue |
+              Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') } |
+              ForEach-Object { $_.Name })
+  Write-Log "  [ok] ~/.claude/skills - $($soltas.Count) skill(s) fora do plugin"
+
+  if ($repoDir) {
+    $nossas = @(Get-ChildItem -Path (Join-Path $repoDir 'wa\skills') -Directory -ErrorAction SilentlyContinue |
+                ForEach-Object { $_.Name })
+    $colisao = @($soltas | Where-Object { $nossas -contains $_ })
+    if ($colisao.Count -gt 0) {
+      $lista = ($colisao | ForEach-Object { "``$_``" }) -join ', '
+      [void]$achados.Add("**Conflito de nome entre skills**: $lista existe(m) tanto em ``~/.claude/skills`` quanto no plugin ``wa``. Duas skills disputando o mesmo nome nao geram erro - o comportamento e que fica imprevisivel. Renomeie uma das duas.")
+      Write-Log "  [DRIFT] $($colisao.Count) conflito(s) de nome com ~/.claude/skills"
+    }
+  }
+}
+
+if ($anterior -and $anterior.soltas -and $soltas.Count -gt 0) {
+  $novasS = @($soltas | Where-Object { $anterior.soltas -notcontains $_ })
+  if ($novasS.Count -gt 0) {
+    $lista = ($novasS | ForEach-Object { "``$_``" }) -join ', '
+    [void]$achados.Add("**$($novasS.Count) skill(s) nova(s) em ``~/.claude/skills``**: $lista - instaladas fora do plugin, sem versionamento. Vale conferir se sobrepoem alguma das nossas.")
+    Write-Log "  [novo] $($novasS.Count) skill(s) em ~/.claude/skills"
+  }
+}
+
 # ---------------------------------------------------------------- Salvar baseline
 $novoBaseline = [ordered]@{
   data        = (Get-Date -Format 'yyyy-MM-dd')
@@ -288,6 +325,7 @@ $novoBaseline = [ordered]@{
   shas        = $shas
   marketplace = $pluginsMkt
   refs        = $refs
+  soltas      = $soltas
 }
 $novoBaseline | ConvertTo-Json -Depth 4 | Out-File -FilePath $baseline -Encoding utf8
 
