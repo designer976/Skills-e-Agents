@@ -359,6 +359,22 @@ isso e siga - diagrama obrigatorio vira ruido.
 
 Para um diagrama mais elaborado, ou de uma parte que voce nao tocou, sugira `/wa:diagrama`.
 
+## Skills de terceiros que valem a pena aqui
+
+Quando a tarefa cair num destes territorios, **sugira o comando** em vez de resolver por conta
+propria com conhecimento generico:
+
+| Situacao | Comando |
+|---|---|
+| Toast, notificacao, feedback transiente | `/ask-sonner` |
+| Componente shadcn/ui — instalar, compor, variante, tema | `/vercel:shadcn` |
+| Precisa animar algo de verdade, nao so transicao de estado | `/animate` |
+
+O Sonner e a **unica** lib de toast permitida no Severino. Antes de montar toast na mao ou
+puxar outra lib, sugira `/ask-sonner` — ela cobre wiring do Toaster, toast de promise e loading,
+e os problemas classicos (toast que nao aparece, aparece duas vezes, perde estilo, fica atras
+do modal, ignora dark mode).
+
 ## Ciclo de Vida (OBRIGATORIO)
 
 Este skill so roda quando o usuario o invoca explicitamente.

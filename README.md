@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.6.0 |
+| **Versão** | 1.7.0 |
 | **Skills** | 26 |
 | **Última atualização** | 24/08/2026 |
 | **Última verificação** | 16/10/2026 |
@@ -68,11 +68,11 @@ Ao concluir a tarefa, o skill encerra e o Claude volta ao comportamento padrão.
 | `/wa:all-agents` | Pipeline completo: designer, front-end-ui, front-end-code, designer | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar feature visual sem spec; passo de diagrama antes/depois |
 | `/wa:all-front-end` | Implementação + revisão de código front-end | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
 | `/wa:designer` | Valida specs e planeja implementação visual | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar mudança visual sem spec; passo de diagrama antes/depois |
-| `/wa:designer-ux` | Auditoria de UX, acessibilidade WCAG e interação | 24/08/2026 | invocação explicita e encerramento ao concluir |
-| `/wa:audit-ui` | Audita a UI implementada contra o Design System - tokens, componente canônico, consistência, estados, responsividade | 24/08/2026 | skill nova; passo de diagrama antes/depois |
+| `/wa:designer-ux` | Auditoria de UX, acessibilidade WCAG e interação | 16/10/2026 | invocação explicita e encerramento ao concluir; timing de animacao encolhido, delega para /animate |
+| `/wa:audit-ui` | Audita a UI implementada contra o Design System - tokens, componente canônico, consistência, estados, responsividade | 16/10/2026 | skill nova; passo de diagrama antes/depois; handoff para /break-ui |
 | `/wa:diagrama` | Gera diagramas Mermaid do codigo real - fluxo, ER, arvore de componentes, navegacao, sequencia - e comparacao antes/depois | 24/08/2026 | skill nova |
 | `/wa:manter-skills` | Fluxo do mantenedor - investiga a issue de verificacao semanal, propoe as edicoes, sobe versao, publica e fecha a issue | 24/08/2026 | skill nova |
-| `/wa:front-end-ui` | Implementa UI com tokens do Design System | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
+| `/wa:front-end-ui` | Implementa UI com tokens do Design System | 16/10/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois; aponta /ask-sonner e /vercel:shadcn |
 | `/wa:front-end-code` | Revisa código front-end sem alterar o visual | 24/08/2026 | invocação explicita e encerramento ao concluir; `references/` via `${CLAUDE_PLUGIN_ROOT}`; `description` mandava ativar automaticamente após implementação |
 | `/wa:backend` | Endpoints, services, controllers, DTOs, autenticação | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
 | `/wa:database` | Schema, migrações, models, queries, índices | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois; passo do MCP Supabase |

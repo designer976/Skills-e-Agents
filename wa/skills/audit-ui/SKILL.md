@@ -218,6 +218,9 @@ Após o relatório (e aprovação no Debate Gate se ativado):
 - Achado que é problema de design, não de aderência → sugerir `/wa:designer-ux`
 - Texto de empty state, erro ou label → sugerir `/wa:redator`
 - Layout shift ou imagem sem dimensão com impacto em CLS → sugerir `/wa:pagespeed`
+- Componente aprovado no DS mas nao testado com dado ruim → sugerir `/break-ui`, que alimenta a
+  UI com nome gigante, e-mail sem quebra, lista vazia, emoji e numero extremo. Aderencia ao
+  Design System e resistencia a dado real sao coisas diferentes: esta auditoria cobre a primeira
 - Se 0 críticos e 0 altos → declarar aderência aprovada e encerrar
 
 ---

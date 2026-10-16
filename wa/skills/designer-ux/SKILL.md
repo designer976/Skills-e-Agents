@@ -77,21 +77,16 @@ Todo componente interativo deve ter todos os estados definidos:
 
 **Ausência de estado é 🟠 Alto — não é info.**
 
-### Timing de Animações
+### Motion — critério de auditoria
 
-| Duração | Tipo de interação |
-|---------|------------------|
-| 100–150ms | Micro-feedback: hover, click, toggle |
-| 200–300ms | Pequenas transições: dropdown, tooltip, chip |
-| 300–500ms | Transições médias: modal, sheet, sidebar, page |
-| 500ms+ | Coreografias complexas: onboarding, introdução |
+Aqui se **audita** motion, não se projeta. Três coisas reprovam, e são as únicas que este
+skill julga:
 
-**Regras de motion:**
-- Elementos que **entram** → `ease-out` (começam rápido, desaceleram)
-- Elementos que **saem** → `ease-in` (começam devagar, aceleram)
-- Preferir `transform` e `opacity` — não causam reflow (60fps garantido)
-- Nunca animar `width`, `height`, `top`, `left` diretamente
-- `prefers-reduced-motion` é **obrigatório** — ausência = 🔴 Crítico
+| Achado | Severidade |
+|---|---|
+| `prefers-reduced-motion` ausente | 🔴 **Crítico** — animação inacessível tem impacto real |
+| Anima `width`, `height`, `top` ou `left` direto | 🟠 **Alto** — causa reflow, derruba o frame budget |
+| Duração visivelmente fora da escala do resto do produto | 🟡 **Médio** |
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -101,6 +96,17 @@ Todo componente interativo deve ter todos os estados definidos:
   }
 }
 ```
+
+Para referência rápida ao julgar a terceira linha: micro-feedback fica em 100–150ms, transições
+pequenas em 200–300ms, médias em 300–500ms.
+
+**Escolher curva, duração, interrupção e saída é outro trabalho** — e existe skill dedicada a
+isso, com muito mais profundidade do que caberia aqui. Quando o achado exigir reprojetar o
+motion, e não apenas apontá-lo, sugira ao usuário:
+
+- `/animate` — decide se deve animar, qual propriedade, qual curva, como interrompe e como sai
+- `/animation-performance` — quando a animação trava, perde frames ou sai do orçamento de quadro
+- `/improve-animations` — auditoria de motion do codebase inteiro, com plano priorizado
 
 ### Empty States e Loading States
 
