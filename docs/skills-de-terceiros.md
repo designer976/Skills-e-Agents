@@ -98,6 +98,28 @@ Dois casos ficam no meio:
 - **Site público novo, sem Design System** — aí as de terceiros ganham: não há DS a respeitar e
   o trabalho é justamente criar a identidade
 
+## Créditos e licenças
+
+Nenhuma destas skills é da WA. Elas são instaladas da fonte original por `npx skills add` e
+**não são redistribuídas neste repositório** — o que também evita o problema de licença, já que
+quase nenhuma declara uma.
+
+| Autor | Pacote | Skills |
+|---|---|---|
+| **Emil Kowalski** | `emilkowalski/skill` | `animate`, `animate-expo`, `animation-performance`, `animation-vocabulary`, `apple-design`, `ask-sonner`, `break-ui`, `emil-design-eng`, `find-animation-opportunities`, `improve-animations`, `mobile-native`, `pick-ui-library`, `prototype`, `review-animations`, `write-swift` |
+| **Leonxlnx** | `Leonxlnx/taste-skill` | `design-taste-frontend` (+ `-v1`, `-v2-experimental`), `brandkit`, `gpt-taste`, `high-end-visual-design`, `image-to-code`, `imagegen-frontend-web`, `imagegen-frontend-mobile`, `industrial-brutalist-ui`, `minimalist-ui`, `redesign-existing-projects`, `stitch-design-taste` |
+| **Vercel Labs** | `vercel-labs/skills`, `vercel-labs/agent-skills` | `find-skills`, `web-design-guidelines` |
+| **impeccable** | `npx impeccable install` | `impeccable` — **Apache 2.0**, a única que declara licença |
+| *origem não identificada* | — | `full-output-enforcement` — instalada antes das demais e não veio de nenhum dos cinco comandos acima |
+
+**Sobre licença:** apenas a `impeccable` declara uma (Apache 2.0). As outras 31 não têm arquivo
+`LICENSE` nem declaração no frontmatter. Sem licença explícita, o padrão legal é *todos os
+direitos reservados* — por isso elas não entram neste repositório, e por isso `/wa:impeccable`
+e companhia não existem: criar esses comandos exigiria copiar o trabalho delas para cá.
+
+Se algum dia precisar do prefixo `/wa:`, o caminho é pedir autorização a cada autor — ou
+escrever skills próprias cobrindo os mesmos temas.
+
 ## Atualização
 
 Estas 32 **não se atualizam sozinhas**. O `npx skills list` reporta `Source: local` para todas e

@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.10.0 |
+| **Versão** | 1.10.1 |
 | **Skills** | 27 |
 | **Última atualização** | 19/10/2026 |
 | **Última verificação** | 19/10/2026 |
@@ -126,6 +126,10 @@ sem prefixo: `/impeccable`, `/emil-design-eng`, `/design-taste-frontend`.
 quando usar as de terceiros em vez das da WA, e por que elas não se atualizam sozinhas.
 
 Se não souber qual escolher, `/wa:super-ui-skills` classifica o pedido e aciona a certa.
+
+Nenhuma delas é da WA — são de Emil Kowalski, Leonxlnx, Vercel Labs e dos autores do
+`impeccable`. Vêm da fonte original pelo `npx skills add` e não são redistribuídas aqui.
+Os créditos estão no documento.
 
 ## Historico
 
