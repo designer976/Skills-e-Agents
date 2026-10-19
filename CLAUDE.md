@@ -143,5 +143,7 @@ valide, commit e push. Depois `claude plugin update wa@wa-skills` e reinicie o C
 
 - `README.md` — visão geral, instalação, tabela das skills com data e o que mudou em cada uma
 - `COMO-TRABALHAR-AQUI.md` — fluxo de edição em detalhe
+- `docs/skills-de-terceiros.md` — as 32 skills de `~/.claude/skills`, o comando de cada uma e
+  quando preferi-las às da WA
 - `docs/AUDITORIA-2026-08-24.md` — auditoria das skills e o incidente que motivou a migração
   do repositório antigo

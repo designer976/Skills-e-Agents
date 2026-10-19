@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.9.0 |
+| **Versão** | 1.9.1 |
 | **Skills** | 27 |
 | **Última atualização** | 19/10/2026 |
 | **Última verificação** | 19/10/2026 |
@@ -105,7 +105,7 @@ wa/
   .claude-plugin/plugin.json      # manifesto do plugin
   skills/                         # 27 skills
   references/                     # material compartilhado entre skills
-docs/                             # auditorias
+docs/                             # auditorias e referencia das skills de terceiros
 setup/instalar.ps1                # instalador: plugin + agendamento, em uma linha
 setup/CLAUDE.global.md            # ~/CLAUDE.md de referencia, com os comandos /wa:
 setup/atualizar-plugin-wa.ps1     # update semanal (segunda) - para quem usa
@@ -113,6 +113,17 @@ setup/verificar-skills-wa.ps1     # verificacao externa (sexta) - do mantenedor
 ```
 
 Para replicar as regras globais numa máquina nova, copie `setup/CLAUDE.global.md` para `~/CLAUDE.md` depois de instalar o plugin.
+
+## Skills de terceiros
+
+Além das 27 deste plugin, há 32 instaladas em `~/.claude/skills` via `npx skills add` —
+polimento de UI, animação, direção de arte, geração de imagem. Cada uma é um comando próprio,
+sem prefixo: `/impeccable`, `/emil-design-eng`, `/design-taste-frontend`.
+
+[`docs/skills-de-terceiros.md`](docs/skills-de-terceiros.md) lista as 32 com o que cada uma faz,
+quando usar as de terceiros em vez das da WA, e por que elas não se atualizam sozinhas.
+
+Se não souber qual escolher, `/wa:super-ui-skills` classifica o pedido e aciona a certa.
 
 ## Historico
 
