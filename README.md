@@ -4,8 +4,8 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.7.0 |
-| **Skills** | 26 |
+| **Versão** | 1.8.0 |
+| **Skills** | 27 |
 | **Última atualização** | 24/08/2026 |
 | **Última verificação** | 16/10/2026 |
 
@@ -65,6 +65,7 @@ Ao concluir a tarefa, o skill encerra e o Claude volta ao comportamento padrão.
 | Skill | O que faz | Última atualização | Item atualizado |
 |---|---|---|---|
 | `/wa:analista` | Classifica a tarefa e aciona o skill apropriado | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` dizia "ativo em todo prompt"; tabelas de classificação com prefixo `wa:` |
+| `/wa:super-skills` | Roteador das 32 skills de terceiros de `~/.claude/skills` - polimento de UI, animacao, direcao de arte, geracao de imagem | 19/10/2026 | skill nova |
 | `/wa:all-agents` | Pipeline completo: designer, front-end-ui, front-end-code, designer | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar feature visual sem spec; passo de diagrama antes/depois |
 | `/wa:all-front-end` | Implementação + revisão de código front-end | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
 | `/wa:designer` | Valida specs e planeja implementação visual | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar mudança visual sem spec; passo de diagrama antes/depois |
@@ -99,7 +100,7 @@ Ao concluir a tarefa, o skill encerra e o Claude volta ao comportamento padrão.
 .claude-plugin/marketplace.json   # manifesto do marketplace
 wa/
   .claude-plugin/plugin.json      # manifesto do plugin
-  skills/                         # 26 skills
+  skills/                         # 27 skills
   references/                     # material compartilhado entre skills
 docs/                             # auditorias
 setup/instalar.ps1                # instalador: plugin + agendamento, em uma linha
