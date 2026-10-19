@@ -6,7 +6,9 @@ próprio**, sem prefixo — chamar direto sempre funciona e é mais rápido que 
 O `/wa:super-ui-skills` existe para o caso oposto: quando você sabe o problema mas não lembra
 o nome da skill.
 
-> Levantado em 19/10/2026. Elas ficam **fora do versionamento** — se uma sumir ou mudar de nome,
+> Levantado em 19/10/2026, após reinstalar tudo pela fonte. Duas mudaram de escopo nessa
+> atualização — `design-taste-frontend` passou a cobrir telas de app, e `impeccable` ganhou
+> iOS/Android e documentação de Design System. Elas ficam **fora do versionamento** — se uma sumir ou mudar de nome,
 > este documento fica desatualizado sem aviso. A verificação de sexta vigia a pasta e avisa
 > quando aparecem novas ou quando uma colide de nome com as do plugin `wa`.
 
@@ -16,9 +18,9 @@ o nome da skill.
 
 | Comando | Para quê |
 |---|---|
-| `/impeccable` | Redesign e crítica de interface. É o mais abrangente: hierarquia visual, carga cognitiva, acessibilidade, responsividade, tipografia, cor, motion, UX copy, estados de erro |
+| `/impeccable` | Redesign e crítica de interface. É o mais abrangente: hierarquia, layout, tipografia, cor, motion, UX copy, acessibilidade, edge cases. Cobre também tela nativa iOS/Android e documentar Design System em `DESIGN.md` |
 | `/emil-design-eng` | Polimento e os detalhes invisíveis que fazem software parecer bom. Filosofia do Emil Kowalski sobre qualidade de componente |
-| `/design-taste-frontend` | Direção de arte para site público, destilada de 247 sites de galeria. **Não serve para dashboard ou tela de app** — ela própria diz isso |
+| `/design-taste-frontend` | Direção de arte, destilada de 247 sites de galeria. Cobre site público **e também telas de app** — dashboard, admin, settings, inbox — cada um com regras próprias |
 | `/break-ui` | Stress-test: alimenta a UI com nome gigante, e-mail sem quebra, lista vazia, emoji, número extremo, e reporta o que quebrou |
 | `/apple-design` | Gesto, spring, drag, swipe, sheet, materiais translúcidos — a abordagem da Apple traduzida para web |
 
@@ -89,8 +91,10 @@ WA. Se vale para qualquer projeto do mundo, é de terceiro.
 
 Dois casos ficam no meio:
 
-- **Dashboard ou tela de app** — a `/design-taste-frontend` declara que não serve para isso.
-  Prefira `/impeccable` ou as skills da WA
+- **Dashboard ou tela de app** — a `/design-taste-frontend` passou a cobrir isso (mudou em
+  19/10/2026; antes declarava não servir). `/impeccable` também cobre. Entre as duas e as skills
+  da WA, decide quem conhece o seu Design System: para aderência a tokens e componentes do
+  projeto, as da WA; para direção visual, as de terceiros
 - **Site público novo, sem Design System** — aí as de terceiros ganham: não há DS a respeitar e
   o trabalho é justamente criar a identidade
 

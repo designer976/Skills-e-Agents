@@ -5,12 +5,14 @@
 #
 # Opcoes:
 #   -SemAgendamento   instala o plugin mas nao registra a tarefa semanal
+#   -SemSkillsTerceiros  pula as skills de ~/.claude/skills (polimento de UI, animacao...)
 #   -Dia <dia>        dia da atualizacao automatica (padrao: Monday)
 #   -Hora <hh:mm>     horario da atualizacao automatica (padrao: 09:00)
 #   -Remover          desinstala o plugin e remove a tarefa agendada
 
 param(
   [switch]$SemAgendamento,
+  [switch]$SemSkillsTerceiros,
   [ValidateSet('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')]
   [string]$Dia = 'Monday',
   [string]$Hora = '09:00',
@@ -126,6 +128,44 @@ if ($SemAgendamento) {
   }
 }
 
+# ------------------------------------------------------------------ Skills de terceiros
+# O plugin wa leva so as skills da WA. As de polimento de UI, animacao e direcao de arte
+# vivem em ~/.claude/skills e vem de outros autores - sao instaladas pelo npx skills add,
+# da fonte original. Sem elas, /wa:super-ui-skills rotearia para comandos inexistentes.
+$TERCEIROS = @(
+  @{ cmd = 'skills';     args = @('add','emilkowalski/skill','-g','-y');                                      nome = 'emilkowalski/skill' }
+  @{ cmd = 'impeccable'; args = @('install');                                                                  nome = 'impeccable' }
+  @{ cmd = 'skills';     args = @('add','Leonxlnx/taste-skill','-g','-y');                                     nome = 'Leonxlnx/taste-skill' }
+  @{ cmd = 'skills';     args = @('add','vercel-labs/skills@find-skills','-g','-y');                           nome = 'vercel-labs find-skills' }
+  @{ cmd = 'skills';     args = @('add','https://github.com/vercel-labs/agent-skills','-s','web-design-guidelines','-g','-y'); nome = 'web-design-guidelines' }
+)
+
+if ($SemSkillsTerceiros) {
+  Passo 6 "Skills de terceiros puladas (-SemSkillsTerceiros)"
+  Aviso "/wa:super-ui-skills vai rotear para comandos que nao existem nesta maquina"
+} else {
+  Passo 6 "Instalando as skills de terceiros"
+  $npx = (Get-Command npx -ErrorAction SilentlyContinue).Source
+  if (-not $npx) {
+    Aviso "npx nao encontrado - instale o Node.js e rode de novo, ou use -SemSkillsTerceiros"
+    Aviso "sem elas, /wa:super-ui-skills roteia para comandos inexistentes"
+  } else {
+    foreach ($t in $TERCEIROS) {
+      Write-Host "    -> $($t.nome)" -ForegroundColor DarkGray
+      & $npx --yes $t.cmd @($t.args) 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host "       $_" -ForegroundColor DarkGray }
+      if ($LASTEXITCODE -ne 0) { Aviso "falhou: $($t.nome) - siga, as demais continuam" }
+    }
+    $dirS = "$env:USERPROFILE\.claude\skills"
+    $n = 0
+    if (Test-Path $dirS) {
+      $n = @(Get-ChildItem $dirS -Directory -ErrorAction SilentlyContinue |
+             Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }).Count
+    }
+    if ($n -gt 0) { Ok "$n skill(s) em ~/.claude/skills" }
+    else { Aviso "nenhuma skill encontrada em ~/.claude/skills - verifique os erros acima" }
+  }
+}
+
 # ------------------------------------------------------------------ Resumo
 $versao = 'desconhecida'
 $m = [regex]::Match((& $claude plugin list 2>&1 | Out-String), 'wa@wa-skills[^\r\n]*\r?\n\s*Version:\s*(\S+)')
@@ -139,6 +179,10 @@ Write-Host ""
 Write-Host " Reinicie o Claude Code para os comandos aparecerem."
 Write-Host ""
 Write-Host " Uso......: /wa:analista, /wa:designer, /wa:backend ..."
+if (-not $SemSkillsTerceiros) {
+  Write-Host " Terceiros: /impeccable, /emil-design-eng, /animate ... (sem prefixo)"
+  Write-Host "            na duvida, /wa:super-ui-skills roteia entre elas"
+}
 Write-Host " Atualizar: /wa:atualizar-skill-agent  (ou o comando abaixo)"
 Write-Host "            claude plugin update $plugin"
 if (-not $SemAgendamento) {

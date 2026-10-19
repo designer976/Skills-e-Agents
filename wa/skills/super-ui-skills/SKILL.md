@@ -55,7 +55,7 @@ roteamento ruim: é melhor devolver o controle do que acionar a skill errada.
 
 | Sinal no pedido | Skill |
 |---|---|
-| Landing page, portfólio, one-pager que precisa não parecer templated | `/design-taste-frontend` |
+| Landing page, portfólio, one-pager, ou tela de app que precisa não parecer templated | `/design-taste-frontend` |
 | "Quero que pareça caro", padrão de agência | `/high-end-visual-design` |
 | Site existente que precisa subir de nível sem quebrar | `/redesign-existing-projects` |
 | GSAP, scroll-trigger, pinning, tipografia editorial larga | `/gpt-taste` |
@@ -109,9 +109,10 @@ WA. Se vale para qualquer projeto do mundo, é skill de terceiro.
 
 Dois casos ficam no meio e valem dizer em voz alta ao usuário:
 
-- **Dashboard ou tela de app** — a `/design-taste-frontend` declara explicitamente que não serve
-  para isso ("not for dashboards or app screens"). Nesses casos, prefira `/impeccable` ou as
-  skills da WA.
+- **Dashboard ou tela de app** — tanto `/design-taste-frontend` quanto `/impeccable` cobrem.
+  A primeira declarava não servir até 19/10/2026, quando mudou. Decide quem precisa conhecer o
+  Design System: aderência a tokens e componentes do projeto é skill da WA; direção visual é de
+  terceiro.
 - **Site público novo, sem Design System** — aí as de terceiros ganham, porque não há DS para
   respeitar e o trabalho é justamente criar a identidade.
 

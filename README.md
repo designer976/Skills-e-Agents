@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.9.1 |
+| **Versão** | 1.10.0 |
 | **Skills** | 27 |
 | **Última atualização** | 19/10/2026 |
 | **Última verificação** | 19/10/2026 |
@@ -19,7 +19,8 @@ update automático rodou pela última vez e confirmou que a versão instalada ba
 
 ## Instalar
 
-Uma linha deixa a máquina pronta — marketplace, plugin e atualização automática semanal:
+Uma linha deixa a máquina pronta — marketplace, plugin, skills de terceiros e atualização
+automática semanal:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "setup/instalar.ps1"
@@ -30,6 +31,7 @@ powershell -ExecutionPolicy Bypass -File "setup/instalar.ps1"
 | `-Dia Friday` | Muda o dia da atualização automática (padrão: `Monday`) |
 | `-Hora 14:30` | Muda o horário (padrão: `09:00`) |
 | `-SemAgendamento` | Instala o plugin sem criar a tarefa agendada |
+| `-SemSkillsTerceiros` | Pula as 32 skills de `~/.claude/skills`. Sem elas, `/wa:super-ui-skills` roteia para comandos que não existem |
 | `-Remover` | Desinstala o plugin e remove a tarefa |
 
 O instalador é idempotente: rodar de novo atualiza em vez de duplicar. Reinicie o Claude Code
