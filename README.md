@@ -4,15 +4,18 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.8.1 |
+| **Versão** | 1.9.0 |
 | **Skills** | 27 |
-| **Última atualização** | 24/08/2026 |
-| **Última verificação** | 16/10/2026 |
+| **Última atualização** | 19/10/2026 |
+| **Última verificação** | 19/10/2026 |
 
 *Atualização* é a data do último commit que mudou uma skill. *Verificação* é a data em que o
 update automático rodou pela última vez e confirmou que a versão instalada bate com a publicada
-— ela avança toda segunda mesmo quando nada muda. Ambas são carimbadas automaticamente na
-descrição do repositório por `setup/atualizar-plugin-wa.ps1`.
+— ela avança toda segunda mesmo quando nada muda.
+
+> O `setup/atualizar-plugin-wa.ps1` carimba essas datas na **descrição dos dois repositórios**,
+> toda segunda. Já este bloco do README é atualizado à mão, no ciclo de manutenção — por isso
+> ele pode ficar atrás da descrição. A descrição é sempre a fonte mais recente.
 
 ## Instalar
 
@@ -65,7 +68,7 @@ Ao concluir a tarefa, o skill encerra e o Claude volta ao comportamento padrão.
 | Skill | O que faz | Última atualização | Item atualizado |
 |---|---|---|---|
 | `/wa:analista` | Classifica a tarefa e aciona o skill apropriado | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` dizia "ativo em todo prompt"; tabelas de classificação com prefixo `wa:` |
-| `/wa:super-skills` | Roteador das 32 skills de terceiros de `~/.claude/skills` - polimento de UI, animacao, direcao de arte, geracao de imagem | 19/10/2026 | skill nova |
+| `/wa:super-ui-skills` | Roteador das 32 skills de terceiros de `~/.claude/skills` - polimento de UI, animacao, direcao de arte, geracao de imagem | 19/10/2026 | skill nova |
 | `/wa:all-agents` | Pipeline completo: designer, front-end-ui, front-end-code, designer | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar feature visual sem spec; passo de diagrama antes/depois |
 | `/wa:all-front-end` | Implementação + revisão de código front-end | 24/08/2026 | invocação explicita e encerramento ao concluir; passo de diagrama antes/depois |
 | `/wa:designer` | Valida specs e planeja implementação visual | 24/08/2026 | invocação explicita e encerramento ao concluir; `description` mandava ativar ao detectar mudança visual sem spec; passo de diagrama antes/depois |

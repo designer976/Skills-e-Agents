@@ -7,7 +7,7 @@ Os agentes são ativados **apenas** quando explicitamente chamados:
 - **`/wa:analista`** → Classifica tarefa e aciona skill apropriado  
 - **Skills individuais** → `/wa:designer`, `/wa:backend`, `/wa:database`, etc.
 - **Pipelines** → `/wa:all-agents`, `/wa:all-front-end`
-- **`/wa:super-skills`** → Roteador das 32 skills de terceiros em `~/.claude/skills`
+- **`/wa:super-ui-skills`** → Roteador das 32 skills de terceiros em `~/.claude/skills`
   (polimento de UI, animação, direção de arte, geração de imagem). Elas são genéricas:
   não conhecem o Design System do projeto
 
@@ -38,7 +38,7 @@ Um skill roda **do momento em que é chamado até concluir a tarefa** — nada a
 - **Ao concluir, o skill se desliga.** Entrega o resultado, indica o próximo comando se
   houver, e o Claude volta ao comportamento padrão.
 - **Duas exceções acionam outras skills:** `/wa:analista`, que roteia entre as skills da WA,
-  e `/wa:super-skills`, que roteia entre as de terceiros. Ambas só rodam quando você as
+  e `/wa:super-ui-skills`, que roteia entre as de terceiros. Ambas só rodam quando você as
   chama, e ambas encerram ao passar o controle.
 - **A marca visual do skill (`🔍 **Analista**`, `🟠 **Backend**`, etc.) vale apenas enquanto
   ele estiver rodando.** Se ela aparecer numa resposta que não faz parte de um skill em

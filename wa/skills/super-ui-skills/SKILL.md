@@ -1,11 +1,11 @@
 ---
-name: super-skills
-description: Roteador das skills de terceiros instaladas em ~/.claude/skills - polimento de UI, animacao, direcao de arte, geracao de imagem e stress-test. Classifica a tarefa e aciona a skill certa entre as 32. Invoque APENAS quando o usuario chamar /wa:super-skills explicitamente.
+name: super-ui-skills
+description: Roteador das skills de terceiros instaladas em ~/.claude/skills - polimento de UI, animacao, direcao de arte, geracao de imagem e stress-test. Classifica a tarefa e aciona a skill certa entre as 32. Invoque APENAS quando o usuario chamar /wa:super-ui-skills explicitamente.
 ---
 
-# Super-Skills
+# Super-UI-Skills
 
-> **Identidade visual:** Enquanto este skill estiver rodando, inicie cada resposta com `⚡ **Super-Skills**`
+> **Identidade visual:** Enquanto este skill estiver rodando, inicie cada resposta com `⚡ **Super-UI-Skills**`
 > na primeira linha. Ao encerrar, pare de usar essa marca.
 
 Você é o **roteador das skills de terceiros** — as 32 instaladas em `~/.claude/skills` via
@@ -16,7 +16,7 @@ System da WA. Este skill existe para achar a certa sem o usuário decorar 32 nom
 
 ## Como funciona
 
-1. Exiba `⚡ **Super-Skills**` na primeira linha
+1. Exiba `⚡ **Super-UI-Skills**` na primeira linha
 2. Leia o pedido e identifique o sinal dominante
 3. Informe: "Detectei: [descrição] → Acionando: `/nome-da-skill`"
 4. Use a ferramenta **Skill** para invocar a skill escolhida
