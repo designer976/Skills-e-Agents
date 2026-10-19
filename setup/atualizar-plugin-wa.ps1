@@ -60,8 +60,20 @@ if ($LASTEXITCODE -ne 0 -or -not $commitISO) { Write-Log "-- nao foi possivel le
 
 $atualizado = ([datetime]$commitISO).ToLocalTime().ToString('dd/MM/yyyy')
 $verificado = (Get-Date).ToString('dd/MM/yyyy')
-$desc = "Plugin de skills e agentes da WA Project para Claude Code | v$depois | atualizado em $atualizado | verificado em $verificado"
+$selo = "v$depois | atualizado em $atualizado | verificado em $verificado"
 
-& $gh repo edit $repo --description $desc 2>&1 | ForEach-Object { Write-Log "   $_" }
-Write-Log "-- descricao: $desc"
+# O espelho publico tem a mesma versao, entao leva o mesmo selo - so com o prefixo que diz
+# o que ele e. Sem isso ele fica sem descricao nenhuma, como ficou ate 19/10/2026.
+$CARIMBAR = @(
+  @{ repo = $repo;                            prefixo = "Plugin de skills e agentes da WA Project para Claude Code" }
+  @{ repo = 'designer976/Skills-e-Agents';    prefixo = "Espelho publico de $repo - plugin de skills e agentes da WA Project para Claude Code" }
+)
+
+foreach ($c in $CARIMBAR) {
+  $desc = "$($c.prefixo) | $selo"
+  & $gh repo edit $c.repo --description $desc 2>&1 | ForEach-Object { Write-Log "   $_" }
+  if ($LASTEXITCODE -eq 0) { Write-Log "-- descricao de $($c.repo) atualizada" }
+  else { Write-Log "-- falhou ao carimbar $($c.repo) - segue sem interromper" }
+}
+Write-Log "   selo: $selo"
 Write-Log "===== fim ====="

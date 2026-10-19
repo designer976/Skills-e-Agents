@@ -4,7 +4,7 @@ Pipeline de agentes da WA Project distribuído como plugin do Claude Code.
 
 | | |
 |---|---|
-| **Versão** | 1.8.0 |
+| **Versão** | 1.8.1 |
 | **Skills** | 27 |
 | **Última atualização** | 24/08/2026 |
 | **Última verificação** | 16/10/2026 |
